@@ -1,3 +1,6 @@
+using DairyIndustry.Data;
+using DairyIndustry.Repositories;
+
 namespace DairyIndustry
 {
     public class Program
@@ -8,6 +11,8 @@ namespace DairyIndustry
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddSingleton<DbHelper>();
+            builder.Services.AddScoped<IAdminRepository,AdminRepository>();
 
             var app = builder.Build();
 
@@ -28,7 +33,7 @@ namespace DairyIndustry
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Admin}/{action=Index}/{id?}");
 
             app.Run();
         }

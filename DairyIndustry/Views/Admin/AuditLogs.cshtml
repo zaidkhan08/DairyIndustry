@@ -1,0 +1,176 @@
+﻿@model List<DairyIndustry.Models.Admin.AuditLogModel>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@{
+    ViewData["Title"] = "Audit Logs";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Audit Logs</h3>
+                <p class="text-muted mb-0">Track all system activity and user actions</p>
+            </div>
+            <a href="/Admin/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-funnel me-1"></i> Filter Logs
+                </div>
+                <div class="card-body">
+
+                    <form method="get" action="/Admin/AuditLogs">
+                        <div class="row g-3">
+
+                            <!-- Entity Name -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Entity Name</label>
+                                <input type="text"
+                                       name="entityName"
+                                       class="form-control"
+                                       placeholder="e.g. Farmer, User"
+                                       value="@Context.Request.Query["entityName"]" />
+                            </div>
+
+                            <!-- From Date -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">From Date</label>
+                                <input type="date"
+                                       name="fromDate"
+                                       class="form-control"
+                                       value="@Context.Request.Query["fromDate"]" />
+                            </div>
+
+                            <!-- To Date -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">To Date</label>
+                                <input type="date"
+                                       name="toDate"
+                                       class="form-control"
+                                       value="@Context.Request.Query["toDate"]" />
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="col-md-3 d-flex align-items-end gap-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search me-1"></i> Search
+                                </button>
+                                <a href="/Admin/AuditLogs" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-x-circle me-1"></i> Clear
+                                </a>
+                            </div>
+
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-1"></i> Log Records</span>
+                    <span class="badge bg-primary">Total : @Model.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Log ID</th>
+                                    <th>Username</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                            No logs found for selected filters
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int sr = 1;
+                                    @foreach (var log in Model)
+                                    {
+                                        <tr>
+                                            <td>@sr</td>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    @log.LogId
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-person-circle me-1 text-secondary"></i>
+                                                @log.Username
+                                            </td>
+                                            <td>
+                                                @{
+                                                    string actionBadge = log.Action.ToLower() switch
+                                                    {
+                                                        var a when a.Contains("create") || a.Contains("add") || a.Contains("register") => "bg-success",
+                                                        var a when a.Contains("update") || a.Contains("edit") => "bg-warning text-dark",
+                                                        var a when a.Contains("delete") || a.Contains("remove") => "bg-danger",
+                                                        var a when a.Contains("login") => "bg-info text-dark",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                }
+                                                <span class="badge @actionBadge">
+                                                    @log.Action
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">
+                                                    @log.EntityName
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    @log.ActionDate.ToString("dd MMM yyyy") &nbsp;
+                                                    <span class="text-muted">
+                                                        @log.ActionDate.ToString("hh:mm tt")
+                                                    </span>
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        sr++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>Showing @Model.Count record(s)</span>
+                    <span>Most recent logs shown first</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>

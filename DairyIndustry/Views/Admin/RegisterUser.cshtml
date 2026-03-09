@@ -1,0 +1,132 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+@{
+    ViewData["Title"] = "Register User";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Register New User</h3>
+                <p class="text-muted mb-0">Create a new login account for a staff member</p>
+            </div>
+            <a href="/Admin/Users" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    User Details
+                </div>
+                <div class="card-body p-4">
+
+                    <form method="post" action="/Admin/RegisterUser">
+
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Username <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   name="username"
+                                   class="form-control"
+                                   placeholder="Enter username"
+                                   required />
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="password"
+                                       name="password"
+                                       id="passwordInput"
+                                       class="form-control"
+                                       placeholder="Enter password"
+                                       required />
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        onclick="togglePassword()">
+                                    <i class="bi bi-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Minimum 6 characters</div>
+                        </div>
+
+                        <!-- Role Dropdown -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select name="roleId" class="form-select" required>
+                                <option value="">-- Select Role --</option>
+                                @foreach (var role in ViewBag.Roles as List<DairyIndustry.Models.Admin.RoleModel>)
+                                {
+                                    <option value="@role.RoleId">@role.RoleName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Staff ID (Optional) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Staff ID
+                                <span class="text-muted small fw-normal">(Optional)</span>
+                            </label>
+                            <input type="number"
+                                   name="staffId"
+                                   class="form-control"
+                                   placeholder="Enter Staff ID if applicable" />
+                            <div class="form-text">
+                                Leave blank if this user is not linked to a staff member
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-person-plus me-1"></i> Register User
+                            </button>
+                            <a href="/Admin/Users" class="btn btn-outline-secondary px-4">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon  = document.getElementById('eyeIcon');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    </script>
+}
