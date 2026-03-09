@@ -2,6 +2,8 @@
 {
     public class AdminRepository
     {
-        
+        public AdminRepository(){
+            //check
+        }
     }
 }
