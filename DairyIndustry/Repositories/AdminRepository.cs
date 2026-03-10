@@ -240,5 +240,388 @@ namespace DairyIndustry.Repositories
 
             return list;
         }
+        // ════════════════════════════════════════════════════════
+        // LOCATION — STATE
+        // ════════════════════════════════════════════════════════
+
+        public int AddState(string stateName)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Location.usp_Location_AddState", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@StateName", stateName);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<StateModel> GetAllStates()
+        {
+            var list = new List<StateModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT StateId, StateName FROM Location.State ORDER BY StateName", con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new StateModel
+                            {
+                                StateId = Convert.ToInt32(reader["StateId"]),
+                                StateName = reader["StateName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // LOCATION — CITY
+        // ════════════════════════════════════════════════════════
+
+        public int AddCity(string cityName, int stateId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Location.usp_Location_AddCity", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@CityName", cityName);
+                    cmd.Parameters.AddWithValue("@StateId", stateId);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<CityModel> GetAllCities()
+        {
+            var list = new List<CityModel>();
+
+            var query = @"
+                SELECT c.CityId, c.CityName, c.StateId, s.StateName
+                FROM Location.City c
+                INNER JOIN Location.State s ON s.StateId = c.StateId
+                ORDER BY c.CityName";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new CityModel
+                            {
+                                CityId = Convert.ToInt32(reader["CityId"]),
+                                CityName = reader["CityName"].ToString(),
+                                StateId = Convert.ToInt32(reader["StateId"]),
+                                StateName = reader["StateName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public List<CityModel> GetCitiesByState(int stateId)
+        {
+            var list = new List<CityModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Location.usp_Location_GetCitiesByState", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@StateId", stateId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new CityModel
+                            {
+                                CityId = Convert.ToInt32(reader["CityId"]),
+                                CityName = reader["CityName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // LOCATION — VILLAGE
+        // ════════════════════════════════════════════════════════
+
+        public int AddVillage(string villageName, int cityId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Location.usp_Location_AddVillage", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@VillageName", villageName);
+                    cmd.Parameters.AddWithValue("@CityId", cityId);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<VillageModel> GetAllVillages()
+        {
+            var list = new List<VillageModel>();
+
+            var query = @"
+                SELECT v.VillageId, v.VillageName, v.CityId,
+                       c.CityName, s.StateName
+                FROM Location.Village v
+                INNER JOIN Location.City  c ON c.CityId  = v.CityId
+                INNER JOIN Location.State s ON s.StateId = c.StateId
+                ORDER BY v.VillageName";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new VillageModel
+                            {
+                                VillageId = Convert.ToInt32(reader["VillageId"]),
+                                VillageName = reader["VillageName"].ToString(),
+                                CityId = Convert.ToInt32(reader["CityId"]),
+                                CityName = reader["CityName"].ToString(),
+                                StateName = reader["StateName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public List<VillageModel> GetVillagesByCity(int cityId)
+        {
+            var list = new List<VillageModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Location.usp_Location_GetVillagesByCity", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@CityId", cityId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new VillageModel
+                            {
+                                VillageId = Convert.ToInt32(reader["VillageId"]),
+                                VillageName = reader["VillageName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // MILK TYPES
+        // ════════════════════════════════════════════════════════
+
+        public int AddMilkType(string milkTypeName)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_AddMilkType", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@MilkTypeName", milkTypeName);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<MilkTypeModel> GetAllMilkTypes()
+        {
+            var list = new List<MilkTypeModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("SELECT MilkTypeId, MilkTypeName FROM Finance.MilkTypes ORDER BY MilkTypeName", con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new MilkTypeModel
+                            {
+                                MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
+                                MilkTypeName = reader["MilkTypeName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // RATE CHART
+        // ════════════════════════════════════════════════════════
+
+        public int AddRateChart(int milkTypeId, decimal fatFrom, decimal fatTo, decimal clrFrom, decimal clrTo, decimal ratePerLiter, DateTime effectiveFrom)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_SetRateChart", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
+                    cmd.Parameters.AddWithValue("@FatFrom", fatFrom);
+                    cmd.Parameters.AddWithValue("@FatTo", fatTo);
+                    cmd.Parameters.AddWithValue("@CLRFrom", clrFrom);
+                    cmd.Parameters.AddWithValue("@CLRTo", clrTo);
+                    cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
+                    cmd.Parameters.AddWithValue("@EffectiveFrom", effectiveFrom);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<RateChartModel> GetAllRateCharts()
+        {
+            var list = new List<RateChartModel>();
+
+            var query = @"
+                SELECT rc.RateChartId, rc.MilkTypeId, rc.FatFrom, rc.FatTo,
+                       rc.CLRFrom, rc.CLRTo, rc.RatePerLiter, rc.EffectiveFrom,
+                       mt.MilkTypeName
+                FROM Finance.RateCharts rc
+                INNER JOIN Finance.MilkTypes mt ON mt.MilkTypeId = rc.MilkTypeId
+                ORDER BY rc.EffectiveFrom DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new RateChartModel
+                            {
+                                RateChartId = Convert.ToInt32(reader["RateChartId"]),
+                                MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
+                                MilkTypeName = reader["MilkTypeName"].ToString(),
+                                FatFrom = Convert.ToDecimal(reader["FatFrom"]),
+                                FatTo = Convert.ToDecimal(reader["FatTo"]),
+                                CLRFrom = Convert.ToDecimal(reader["CLRFrom"]),
+                                CLRTo = Convert.ToDecimal(reader["CLRTo"]),
+                                RatePerLiter = Convert.ToDecimal(reader["RatePerLiter"]),
+                                EffectiveFrom = Convert.ToDateTime(reader["EffectiveFrom"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public RateChartModel GetActiveRate(int milkTypeId, decimal fat, decimal clr, DateTime? asOfDate)
+        {
+            RateChartModel rate = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_GetActiveRate", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
+                    cmd.Parameters.AddWithValue("@Fat", fat);
+                    cmd.Parameters.AddWithValue("@CLR", clr);
+                    cmd.Parameters.AddWithValue("@AsOfDate", (object?)asOfDate ?? DBNull.Value);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            rate = new RateChartModel
+                            {
+                                RateChartId = Convert.ToInt32(reader["RateChartId"]),
+                                RatePerLiter = Convert.ToDecimal(reader["RatePerLiter"]),
+                                EffectiveFrom = Convert.ToDateTime(reader["EffectiveFrom"]),
+                                FatFrom = Convert.ToDecimal(reader["FatFrom"]),
+                                FatTo = Convert.ToDecimal(reader["FatTo"]),
+                                CLRFrom = Convert.ToDecimal(reader["CLRFrom"]),
+                                CLRTo = Convert.ToDecimal(reader["CLRTo"])
+                            };
+                        }
+                    }
+                }
+            }
+
+            return rate;
+        }
     }
 }

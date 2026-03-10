@@ -116,6 +116,111 @@ namespace DairyIndustry.Controllers
             var logs = _adminRepo.GetAuditLogs(userId, entityName, fromDate, toDate);
             return View(logs);
         }
+
+        // ════════════════════════════════════════════════════════
+        // LOCATION — STATE
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult States()
+        {
+            var states = _adminRepo.GetAllStates();
+            return View(states);
+        }
+
+        [HttpPost]
+        public IActionResult AddState(string stateName)
+        {
+            _adminRepo.AddState(stateName);
+            return RedirectToAction("States");
+        }
+
+        // ════════════════════════════════════════════════════════
+        // LOCATION — CITY
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult Cities()
+        {
+            var cities = _adminRepo.GetAllCities();
+            ViewBag.States = _adminRepo.GetAllStates();
+            return View(cities);
+        }
+
+        [HttpPost]
+        public IActionResult AddCity(string cityName, int stateId)
+        {
+            _adminRepo.AddCity(cityName, stateId);
+            return RedirectToAction("Cities");
+        }
+
+        // Cascading dropdown — called via AJAX from Village page
+        public IActionResult GetCitiesByState(int stateId)
+        {
+            var cities = _adminRepo.GetCitiesByState(stateId);
+            return Json(cities);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // LOCATION — VILLAGE
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult Villages()
+        {
+            var villages = _adminRepo.GetAllVillages();
+            ViewBag.States = _adminRepo.GetAllStates();
+            return View(villages);
+        }
+
+        [HttpPost]
+        public IActionResult AddVillage(string villageName, int cityId)
+        {
+            _adminRepo.AddVillage(villageName, cityId);
+            return RedirectToAction("Villages");
+        }
+
+        // Cascading dropdown — called via AJAX from Village page
+        public IActionResult GetVillagesByCity(int cityId)
+        {
+            var villages = _adminRepo.GetVillagesByCity(cityId);
+            return Json(villages);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // MILK TYPES
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult MilkTypes()
+        {
+            var milkTypes = _adminRepo.GetAllMilkTypes();
+            return View(milkTypes);
+        }
+
+        [HttpPost]
+        public IActionResult AddMilkType(string milkTypeName)
+        {
+            _adminRepo.AddMilkType(milkTypeName);
+            return RedirectToAction("MilkTypes");
+        }
+
+        // ════════════════════════════════════════════════════════
+        // RATE CHART
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult RateChart()
+        {
+            var rateCharts = _adminRepo.GetAllRateCharts();
+            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+            return View(rateCharts);
+        }
+
+        [HttpPost]
+        public IActionResult AddRateChart(int milkTypeId, decimal fatFrom, decimal fatTo,
+                                          decimal clrFrom, decimal clrTo,
+                                          decimal ratePerLiter, DateTime effectiveFrom)
+        {
+            _adminRepo.AddRateChart(milkTypeId, fatFrom, fatTo, clrFrom, clrTo, ratePerLiter, effectiveFrom);
+            return RedirectToAction("RateChart");
+        }
+
     }
 
 }

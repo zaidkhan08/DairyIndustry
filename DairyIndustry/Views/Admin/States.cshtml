@@ -1,0 +1,113 @@
+﻿@model List<DairyIndustry.Models.Admin.StateModel>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Manage States";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Manage States</h3>
+                <p class="text-muted mb-0">Add and view all states</p>
+            </div>
+            <a href="/Admin/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Add State Form -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-plus-circle me-1"></i> Add New State
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="/Admin/AddState">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                State Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   name="stateName"
+                                   class="form-control"
+                                   placeholder="e.g. Gujarat, Maharashtra"
+                                   required />
+                            <div class="form-text">State name must be unique</div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Add State
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- States List -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-geo-alt me-1"></i> All States</span>
+                    <span class="badge bg-primary">Total : @Model.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>State ID</th>
+                                    <th>State Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                            No states found. Add one.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int sr = 1;
+                                    @foreach (var state in Model)
+                                    {
+                                        <tr>
+                                            <td>@sr</td>
+                                            <td>
+                                                <span class="badge bg-secondary">@state.StateId</span>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-geo-alt-fill me-1 text-primary"></i>
+                                                @state.StateName
+                                            </td>
+                                        </tr>
+                                        sr++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    @Model.Count state(s) available in the system
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
