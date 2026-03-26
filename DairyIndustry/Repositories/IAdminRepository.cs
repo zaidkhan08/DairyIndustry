@@ -53,7 +53,28 @@ namespace DairyIndustry.Repositories
         List<RateChartModel> GetAllRateCharts();
         RateChartModel GetActiveRate(int milkTypeId, decimal fat, decimal clr, DateTime? asOfDate);
 
+        // ════════════════════════════════════════════════════════
+        // STAFF
+        // ════════════════════════════════════════════════════════
+        int AddStaff(string firstName, string lastName, string phone, string email,
+             string staffType, DateTime? doj,
+             string bankName, string accountNumber, string ifscCode,
+             string profilePhoto = null);
 
+        List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null);
+
+        void ToggleStaffActive(int staffId, bool isActive);
+
+        // ════════════════════════════════════════════════════════
+        // PLANT
+        // ════════════════════════════════════════════════════════
+
+        int AddPlant(string PlantName,string Location);
+
+        List<PlantModel> GetAllPlants();
+        void DeletePlant(int id);
+        void UpdatePlant(PlantModel plant);
+        PlantModel getPlantById(int id);
     }
-    
+
 }

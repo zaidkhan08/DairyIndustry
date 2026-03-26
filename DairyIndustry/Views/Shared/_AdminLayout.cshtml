@@ -69,6 +69,11 @@
                 <span>Roles</span>
             </a>
 
+            <a asp-controller="Admin" asp-action="Staff"
+               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Staff" || ViewContext.RouteData.Values["action"].ToString() == "AddStaff" ? "active" : "")">
+                <i class="bi bi-briefcase-fill"></i>
+                <span>Staff</span>
+            </a>
             <!-- ── Master Data ─────────────────── -->
             <div class="nav-label">Master Data</div>
 
@@ -102,6 +107,11 @@
                 <span>Rate Chart</span>
             </a>
 
+            <a asp-controller="Admin" asp-action="GetAllPlants"
+               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "GetAllPlants" || ViewContext.RouteData.Values["action"].ToString() == "AddPlant" ? "active" : "")">
+                <i class="bi bi-building-fill"></i>
+                <span>Processing Plants</span>
+            </a>
             <!-- ── System ──────────────────────── -->
             <div class="nav-label">System</div>
 
@@ -224,9 +234,9 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                     <li>
                         <div class="px-3 py-2 border-bottom">
-                            <p class="mb-0 fw-semibold text-dark small">Admin</p>
+                            <p class="mb-0 fw-semibold text-dark small">@Context.Session.GetString("RoleName")</p>
                             <p class="mb-0 text-muted" style="font-size:11px;">
-                                Administrator
+                                @Context.Session.GetString("Username")
                             </p>
                         </div>
                     </li>
@@ -243,7 +253,7 @@
                     <li><hr class="dropdown-divider my-1" /></li>
                     <li>
                         <a class="dropdown-item small py-2 text-danger"
-                           asp-controller="Admin" asp-action="Login">
+                           asp-controller="Admin" asp-action="Logout">
                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                         </a>
                     </li>

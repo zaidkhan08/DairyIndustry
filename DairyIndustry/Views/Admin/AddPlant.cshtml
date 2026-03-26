@@ -1,0 +1,113 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Processing Plant";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Add Processing Plant</h3>
+                <p class="text-muted mb-0">Register a new milk processing plant</p>
+            </div>
+            <a asp-controller="Admin" asp-action="ShowPlants" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Plants
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-building me-1 text-primary"></i> Plant Details
+                </div>
+                <div class="card-body p-4">
+
+                    <form method="post"
+                          asp-controller="Admin"
+                          asp-action="AddPlant">
+
+                        <!-- Plant Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Plant Name <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                       name="PlantName"
+                                       class="form-control"
+                                       placeholder="e.g. Surat Processing Plant"
+                                       required />
+                            </div>
+                            <div class="form-text">Enter a unique name for this plant</div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Location <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-geo-alt"></i>
+                                </span>
+                                <input type="text"
+                                       name="Location"
+                                       class="form-control"
+                                       placeholder="e.g. GIDC, Sachin, Surat"
+                                       required />
+                            </div>
+                            <div class="form-text">Enter the physical address or area of the plant</div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-plus-circle me-1"></i> Add Plant
+                            </button>
+                            <a asp-controller="Admin"
+                               asp-action="ShowPlants"
+                               class="btn btn-outline-secondary px-4">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-info-circle me-1 text-primary"></i> About Processing Plants
+                </div>
+                <div class="card-body">
+                    <ul class="text-muted small mb-0">
+                        <li class="mb-2">
+                            Processing plants receive raw milk from collection centers
+                        </li>
+                        <li class="mb-2">
+                            Each plant manages its own raw milk inventory
+                        </li>
+                        <li class="mb-2">
+                            Production batches and wastage are tracked per plant
+                        </li>
+                        <li>
+                            Staff payments are also linked to a specific plant
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>

@@ -1,6 +1,7 @@
 ﻿using DairyIndustry.Data;
 using DairyIndustry.Models.Admin;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 using System.Data;
 
 namespace DairyIndustry.Repositories
@@ -622,6 +623,200 @@ namespace DairyIndustry.Repositories
             }
 
             return rate;
+        }
+        // ════════════════════════════════════════════════════════
+        // STAFF
+        // ════════════════════════════════════════════════════════
+
+        public int AddStaff(string firstName, string lastName, string phone, string email,
+                    string staffType, DateTime? doj,
+                    string bankName, string accountNumber, string ifscCode,
+                    string profilePhoto = null)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_AddStaff", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@FirstName", firstName);
+                    cmd.Parameters.AddWithValue("@LastName", lastName);
+                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@StaffType", staffType);
+                    cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null)
+        {
+            var list = new List<StaffModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaff", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@StaffType", (object?)staffType ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new StaffModel
+                            {
+                                StaffId = Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
+                                StaffType = reader["StaffType"].ToString(),
+                                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
+                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public void ToggleStaffActive(int staffId, bool isActive)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_ToggleActive", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@StaffId", staffId);
+                    cmd.Parameters.AddWithValue("@IsActive", isActive);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        // ════════════════════════════════════════════════════════
+        // PLANT
+        // ════════════════════════════════════════════════════════
+        public int AddPlant(string PlantName,string Location)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_AddPlant", con))
+                {
+                    cmd.CommandType=CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@PlantName", PlantName);
+                    cmd.Parameters.AddWithValue("@Location", Location);
+                    con.Open();
+                    var result=cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        public List<PlantModel> GetAllPlants()
+        {
+            var list = new List<PlantModel>();    
+            using (SqlConnection con = _db.GetConnection())
+            {
+                string query = "select * from Production.ProcessingPlants";
+                using (SqlCommand cmd = new SqlCommand(query,con))
+                {
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new PlantModel
+                            {
+                                PlantId = Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"].ToString(),
+                                Location = reader["Location"].ToString(),
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
+        }
+
+        public void DeletePlant(int id)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                string query = "delete from Production.ProcessingPlants where PlantId=@id";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    con.Open();
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdatePlant(PlantModel plant)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                string query = @"UPDATE Production.ProcessingPlants 
+                         SET PlantName = @PlantName,
+                             Location  = @Location
+                         WHERE PlantId = @PlantId";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    con.Open();
+                    cmd.Parameters.AddWithValue("@PlantId", plant.PlantId);
+                    cmd.Parameters.AddWithValue("@PlantName", plant.PlantName);
+                    cmd.Parameters.AddWithValue("@Location", plant.Location);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public PlantModel getPlantById(int id)
+        {
+            PlantModel plant=new PlantModel();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                string query = "select * from Production.ProcessingPlants where PlantId=@id";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    con.Open();
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if(reader.Read())
+                        {
+                            plant = new PlantModel
+                            {
+                                PlantId = Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"].ToString(),
+                                Location = reader["Location"].ToString(),
+                            };
+                        }
+                    }
+                }
+            }
+            return plant;
         }
     }
 }
