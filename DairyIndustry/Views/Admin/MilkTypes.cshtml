@@ -1,0 +1,143 @@
+﻿@model List<DairyIndustry.Models.Admin.MilkTypeModel>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Manage Milk Types";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Manage Milk Types</h3>
+                <p class="text-muted mb-0">Add and view all milk types</p>
+            </div>
+            <a href="/Admin/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Add Milk Type Form -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Milk Type
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="/Admin/AddMilkType">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Milk Type Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   name="milkTypeName"
+                                   class="form-control"
+                                   placeholder="e.g. Cow, Buffalo, Mixed"
+                                   required />
+                            <div class="form-text">Milk type name must be unique</div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Add Milk Type
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-info-circle me-1 text-primary"></i> Why Milk Types?
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Milk types are used across the system in:
+                    </p>
+                    <ul class="text-muted small mb-0">
+                        <li class="mb-1">Collection — recording milk entry</li>
+                        <li class="mb-1">Rate Chart — setting rates per type</li>
+                        <li class="mb-1">Production — raw milk inventory</li>
+                        <li>Reports — filtering by milk type</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Milk Types List -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-droplet-half me-1"></i> All Milk Types</span>
+                    <span class="badge bg-primary">Total : @Model.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Milk Type ID</th>
+                                    <th>Milk Type Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                            No milk types found. Add one.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int sr = 1;
+                                    @foreach (var milkType in Model)
+                                    {
+                                        <tr>
+                                            <td>@sr</td>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    @milkType.MilkTypeId
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    string iconColor = milkType.MilkTypeName.ToLower() switch
+                                                    {
+                                                        "cow" => "text-warning",
+                                                        "buffalo" => "text-dark",
+                                                        "mixed" => "text-success",
+                                                        _ => "text-primary"
+                                                    };
+                                                }
+                                                <i class="bi bi-droplet-fill me-1 @iconColor"></i>
+                                                @milkType.MilkTypeName
+                                            </td>
+                                        </tr>
+                                        sr++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    @Model.Count milk type(s) available in the system
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
