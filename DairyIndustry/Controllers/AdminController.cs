@@ -164,7 +164,7 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
-        // LOCATION — STATE
+        // STATE
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
