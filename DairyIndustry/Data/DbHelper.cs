@@ -7,10 +7,10 @@ namespace DairyIndustry.Data
 
         public DbHelper(IConfiguration c)
         {
-            _connectionString = c.GetConnectionString("DbConn");
+            _connectionString = c.GetConnectionString("dbConn");
         }
 
-        public SqlConnection GetConnection()
+        public SqlConnection GetSqlConnection()
         {
             var connection = new SqlConnection(_connectionString);
             return connection;

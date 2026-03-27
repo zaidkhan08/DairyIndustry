@@ -1,0 +1,101 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.Farmer>
+
+@{
+    Layout = "_CollectionCenterLayout"; 
+    ViewData["Title"] = "Farmer Dashboard";
+}
+<script>
+    function confirmDelete(id, name) {
+        if (confirm("Are you sure you want to delete farmer: " + name + "?")) {
+            window.location.href = '/CollectionCenter/DeleteFarmer/' + id;
+        }
+    }
+</script>
+<div class="container-fluid px-4 mt-4">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 pb-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold text-dark">Supplier Network</h4>
+                <a asp-action="AddFarmer" asp-controller="CollectionCenter" class="btn btn-danger rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-person-plus-fill me-2"></i>Register Farmer
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="text-secondary small text-uppercase">
+                        <tr>
+                            <th>Farmer Details</th>
+                            <th>Location Hierarchy</th>
+                            <th>Bank Info</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var f in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@(f.ProfilePhoto ?? "/images/default-user.png")"
+                                                    class="rounded-circle me-3 border" width="48" height="48" style="object-fit:cover;">
+                                            <div>
+                                                <div class="fw-bold text-dark">@f.FarmerName</div>
+                                                <small class="text-muted"><i class="bi bi-phone me-1"></i>@f.Phone</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <span class="text-dark fw-semibold">@f.VillageName</span><br />
+                                            <span class="text-muted">@f.CityName, @f.StateName</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-bank me-1"></i> @f.BankName<br />
+                                            <span class="font-monospace">@f.AccountNumber</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(f.IsActive ? "bg-success-subtle text-success" : "bg-light text-muted") rounded-pill px-3">
+                                            @(f.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="Details" asp-route-id="@f.FarmerId" class="btn btn-light btn-sm rounded-circle shadow-sm">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+
+                                        <a asp-action="EditFarmer" asp-route-id="@f.FarmerId" class="btn btn-light btn-sm rounded-circle mx-1 shadow-sm">
+                                            <i class="bi bi-pencil-square text-primary"></i>
+                                        </a>
+
+                                        <button class="btn btn-light btn-sm rounded-circle shadow-sm"
+                                                onclick="confirmDelete('@f.FarmerId', '@f.FarmerName')">
+                                            <i class="bi bi-trash3 text-danger"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-people fs-1 d-block mb-3"></i>
+                                    No farmers registered in this center yet.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

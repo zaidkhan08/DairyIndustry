@@ -1,0 +1,178 @@
+﻿@model DairyIndustry.Models.FarmerModel.Farmer
+@{
+    Layout = "_CollectionCenterLayout";
+    ViewData["Title"] = "Farmer Dashboard";
+}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark p-4 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger rounded-3 p-3 me-3">
+                            <i class="bi bi-person-badge-fill fs-2 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="fw-bold text-white mb-0">Farmer Onboarding</h3>
+                            <p class="text-white-50 small mb-0">Complete the details to register a new supplier</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-5">
+                    <form asp-action="AddFarmer" method="post" enctype="multipart/form-data">
+                        <div class="row g-4">
+
+                            <div class="col-12 text-center mb-4">
+                                <div class="position-relative d-inline-block">
+                                    <img id="preview" src="/images/default-user.png" class="rounded-circle border shadow-sm" style="width: 120px; height: 120px; object-fit: cover;" />
+                                    <label for="photoInput" class="btn btn-danger btn-sm rounded-circle position-absolute bottom-0 end-0 p-2">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </label>
+                                    <input type="file" id="photoInput" name="photo" class="d-none" accept="image/*" onchange="previewImage(this)" />
+                                </div>
+                                <p class="small text-muted mt-2">Upload Profile Photo</p>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Farmer Full Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="bi bi-person"></i></span>
+                                    <input asp-for="FarmerName" class="form-control bg-light border-0 py-2" placeholder="e.g. Rajesh Kumar" required />
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Mobile Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="bi bi-phone"></i></span>
+                                    <input asp-for="Phone" class="form-control bg-light border-0 py-2" placeholder="10-digit number" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">State</label>
+                                <select id="StateId" class="form-select bg-light border-0 py-2">
+                                    <option value="">-- Select State --</option>
+                                    @foreach (var state in ViewBag.States)
+                                    {
+                                        <option value="@state.StateId">@state.StateName</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">City</label>
+                                <select id="CityId" class="form-select bg-light border-0 py-2">
+                                    <option value="">-- Select City --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Village / Route</label>
+                                <select asp-for="VillageId" id="VillageId" class="form-select bg-light border-0 py-2">
+                                    <option value="">-- Select Village --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 mt-5">
+                                <h6 class="text-danger fw-bold text-uppercase small border-bottom pb-2">Banking Details</h6>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Bank Name</label>
+                                <input asp-for="BankName" class="form-control border-0 border-bottom rounded-0" placeholder="e.g. State Bank of India" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Account Number</label>
+                                <input asp-for="AccountNumber" class="form-control border-0 border-bottom rounded-0" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">IFSC Code</label>
+                                <input asp-for="IFSCCode" class="form-control border-0 border-bottom rounded-0" placeholder="SBIN0001234" />
+                            </div>
+
+                            <div class="col-12 mt-5">
+                                <button type="submit" class="btn btn-nescafe w-100 py-3 rounded-pill shadow">
+                                    Confirm Registration
+                                </button>
+                            </div>
+                            
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    // STATE → CITY
+    $("#StateId").change(function () {
+        var stateId = $(this).val();
+
+        $("#CityId").empty().append('<option>Loading...</option>');
+        $("#VillageId").empty().append('<option>-- Select Village --</option>');
+
+        $.get("/CollectionCenter/GetCitiesByState", { stateId: stateId }, function (data) {
+            $("#CityId").empty().append('<option value="">-- Select City --</option>');
+            $.each(data, function (i, city) {
+                $("#CityId").append('<option value="' + city.cityId + '">' + city.cityName + '</option>');
+            });
+        });
+    });
+
+    // CITY → VILLAGE
+    $("#CityId").change(function () {
+        var cityId = $(this).val();
+
+        $("#VillageId").empty().append('<option>Loading...</option>');
+
+        $.get("/CollectionCenter/GetVillagesByCity", { cityId: cityId }, function (data) {
+            $("#VillageId").empty().append('<option value="">-- Select Village --</option>');
+            $.each(data, function (i, village) {
+                $("#VillageId").append('<option value="' + village.villageId + '">' + village.villageName + '</option>');
+            });
+        });
+    });
+</script>
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+
+<style>
+    .input-group-text {
+        color: #666;
+    }
+
+    .form-control:focus {
+        background-color: #fff !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .btn-nescafe {
+        background-color: var(--nescafe-red);
+        color: white;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.3s;
+    }
+
+        .btn-nescafe:hover {
+            background-color: #121212;
+            color: white;
+            transform: translateY(-2px);
+        }
+</style>

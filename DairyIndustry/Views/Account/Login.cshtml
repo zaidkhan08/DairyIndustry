@@ -1,0 +1,153 @@
+﻿@model DairyIndustry.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login Page";
+}
+
+<div class="login-page d-flex align-items-center justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4 p-4">
+
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-800 text-dark mb-1">DAIRY<span class="text-nescafe">MS</span></h1>
+            <p class="text-uppercase tracking-widest text-muted small fw-bold">Management Portal</p>
+        </div>
+
+        <div class="card login-card">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="fw-bold mb-4">Welcome back.</h3>
+
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="UserName" class="form-label text-uppercase small fw-bold tracking-1">Username</label>
+                        <input asp-for="UserName" class="form-control nescafe-input" placeholder="Piyush" autocomplete="username" />
+                        <span asp-validation-for="UserName" class="text-danger x-small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="PasswordHash" class="form-label text-uppercase small fw-bold tracking-1">Password</label>
+                        <input asp-for="PasswordHash" type="password" class="form-control nescafe-input" placeholder="••••••••" autocomplete="current-password" />
+                        <span asp-validation-for="PasswordHash" class="text-danger x-small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input custom-check" type="checkbox" id="rememberMe">
+                            <label class="form-check-label small text-muted" for="rememberMe">Keep me signed in</label>
+                        </div>
+                        <a href="#" class="small text-dark fw-bold text-decoration-none border-bottom border-dark">Forgot?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-nescafe-auth w-100">
+                        Sign In
+                    </button>
+                </form>
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="mt-4 p-3 bg-light-red rounded-3 text-center small text-danger fw-bold">
+                        <i class="bi bi-exclamation-circle-fill me-2"></i> @ViewBag.Error
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <p class="text-muted x-small text-uppercase tracking-2">
+                &copy; @DateTime.Now.Year — Premium Dairy Operations
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --nescafe-red: #E1261C;
+        --nescafe-dark: #121212;
+    }
+
+    /* Page Setup */
+    .login-page {
+        min-height: 90vh;
+        background-color: #ffffff;
+    }
+
+    /* Typography */
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .text-nescafe {
+        color: var(--nescafe-red);
+    }
+
+    .tracking-widest {
+        letter-spacing: 4px;
+    }
+
+    .tracking-1 {
+        letter-spacing: 1px;
+    }
+
+    .tracking-2 {
+        letter-spacing: 2px;
+    }
+
+    /* The Card */
+    .login-card {
+        border: none !important;
+        background: #fdfdfd;
+        border-radius: 40px !important; /* Bold Nescafé rounding */
+        box-shadow: 0 20px 60px rgba(0,0,0,0.06) !important;
+    }
+
+    /* Inputs */
+    .nescafe-input {
+        border: none !important;
+        background-color: #f2f2f2 !important;
+        padding: 14px 20px !important;
+        border-radius: 12px !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+        .nescafe-input:focus {
+            background-color: #e9e9e9 !important;
+            box-shadow: none !important;
+            transform: translateY(-2px);
+        }
+
+    /* Button */
+    .btn-nescafe-auth {
+        background-color: var(--nescafe-red);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+        margin-top: 10px;
+    }
+
+        .btn-nescafe-auth:hover {
+            background-color: var(--nescafe-dark);
+            color: white;
+            transform: scale(1.02);
+        }
+
+    .custom-check:checked {
+        background-color: var(--nescafe-red);
+        border-color: var(--nescafe-red);
+    }
+
+    .bg-light-red {
+        background-color: #fff5f5;
+    }
+
+    .x-small {
+        font-size: 0.7rem;
+    }
+</style>
