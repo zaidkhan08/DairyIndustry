@@ -13,8 +13,7 @@ namespace DairyIndustry
             builder.Services.AddSingleton<DbHelper>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
-            builder.Services.AddScoped<IProductionRepository, ProductionRepository>();
-
+            builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();
             builder.Services.AddControllersWithViews(options =>  
             {
                 options.Filters.Add<ExceptionHandlerFilter>();
