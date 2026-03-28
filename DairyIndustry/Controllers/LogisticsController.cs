@@ -1,4 +1,5 @@
-﻿using DairyIndustry.Repositories;
+﻿using DairyIndustry.Filters;
+using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DairyIndustry.Controllers
@@ -10,16 +11,17 @@ namespace DairyIndustry.Controllers
         {
             _logisticRepo = logisticsRepository;
         }
-
-        public ActionResult Index()
+        [SessionAuthorize("Driver")]
+        public IActionResult Index()
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
 
             var driver = _logisticRepo.GetDriverByUserId(userId);
-            var vehicle = _logisticRepo.GetVehicleByDriverId(driverId);
+            var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
 
-            ViewBag.Vehicle = vehicle;
+            ViewBag.Vehicles = vehicles;
+
             return View(driver);
         }
 
@@ -37,5 +39,31 @@ namespace DairyIndustry.Controllers
             ViewBag.Success = "Registration submitted. Please wait for admin approval.";
             return View();
         }
+
+        
+        [SessionAuthorize("Driver")]
+        public IActionResult RegisterVehicle()
+        {
+            return View();
+        }
+
+        [SessionAuthorize("Driver")]
+        [HttpPost]
+        public IActionResult RegisterVehicle(string vehicleNumber, decimal capacity)
+        {
+            int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
+
+            if (driverId == 0)
+            {
+                TempData["Error"] = "Session expired. Please login again.";
+                return RedirectToAction("Login", "Admin");
+            }
+
+            _logisticRepo.AddVehicle(driverId, vehicleNumber, capacity);
+
+            TempData["Success"] = "Vehicle registered successfully. Waiting for admin approval.";
+            return RedirectToAction("Index");
+        }
+
     }
 }

@@ -98,5 +98,60 @@ namespace DairyIndustry.Repositories
             }
             return vehicles;
         }
+        public int AddVehicle(int driverId, string vehicleNumber, decimal capacity)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_AddVehicle", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@DriverId", driverId);
+                    cmd.Parameters.AddWithValue("@VehicleNumber", vehicleNumber);
+                    cmd.Parameters.AddWithValue("@Capacity", capacity);
+
+                    con.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+        public List<VehiclesModel> GetVehiclesByDriverId(int driverId)
+        {
+            var list = new List<VehiclesModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                string query = @"
+            SELECT VehicleId, DriverId, VehicleNumber, 
+                   Capacity, Status, RegisteredOn
+            FROM Logistics.VehiclesNew
+            WHERE DriverId = @DriverId
+            ORDER BY RegisteredOn DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@DriverId", driverId);
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new VehiclesModel
+                            {
+                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                                DriverId = Convert.ToInt32(reader["DriverId"]),
+                                VehicleNumber = reader["VehicleNumber"].ToString(),
+                                Capacity = Convert.ToDecimal(reader["Capacity"]),
+                                Status = reader["Status"].ToString(),
+                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
     }
 }

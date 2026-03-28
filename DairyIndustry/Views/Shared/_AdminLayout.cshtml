@@ -172,8 +172,8 @@
         <div class="sidebar-footer d-flex align-items-center gap-2">
             <div class="user-avatar">A</div>
             <div class="user-info">
-                <span>Admin</span>
-                <small>Administrator</small>
+                <span>@Context.Session.GetString("RoleName")</p></span>
+                <small>@Context.Session.GetString("Username")</small>
             </div>
         </div>
 

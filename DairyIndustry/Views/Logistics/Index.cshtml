@@ -1,11 +1,11 @@
 ﻿@model DairyIndustry.Models.Logistics.DriversModel
 @{
     ViewData["Title"] = "Driver Dashboard";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
 
     
     var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
-    var vehicle = vehicles?.FirstOrDefault(); 
+    var vehicle = vehicles?.FirstOrDefault();
 
     string DriverStatusBadge(string s) => s switch
     {
@@ -170,13 +170,10 @@
             </div>
         </div>
 
-        <!-- ══════════════════════════════
-             RIGHT — Vehicle Card
-        ══════════════════════════════ -->
+        
         <div class="col-lg-7 col-xl-8">
             <div class="card border-0 shadow-sm h-100">
 
-                <!-- Green top accent -->
                 <div class="bg-success rounded-top" style="height:4px;"></div>
 
                 <div class="card-body p-4">
@@ -184,25 +181,21 @@
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <p class="text-uppercase text-muted fw-semibold small mb-0"
                            style="letter-spacing:.6px; font-size:.72rem;">
-                            <i class="bi bi-truck me-1"></i> My Vehicle
+                            <i class="bi bi-truck me-1"></i> My Vehicles
                         </p>
-                        @if (vehicle == null)
-                        {
-                            <a asp-action="RegisterVehicle" asp-controller="Logistics"
-                               class="btn btn-success btn-sm fw-semibold">
-                                <i class="bi bi-plus-circle me-1"></i> Register Vehicle
-                            </a>
-                        }
+                        <a asp-action="RegisterVehicle" asp-controller="Logistics"
+                           class="btn btn-success btn-sm fw-semibold">
+                            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
+                        </a>
                     </div>
 
-                    @if (vehicle == null)
+                    @if (vehicles == null || !vehicles.Any())
                     {
-                        <!-- No vehicle state -->
                         <div class="text-center text-muted py-5">
                             <i class="bi bi-truck display-3 d-block mb-3 text-secondary"></i>
                             <h6 class="fw-semibold">No Vehicle Registered</h6>
                             <p class="small mb-3">
-                                You haven't registered a vehicle yet.<br>
+                                You haven't registered a vehicle yet.<br />
                                 Click the button above to get started.
                             </p>
                             <a asp-action="RegisterVehicle" asp-controller="Logistics"
@@ -213,78 +206,76 @@
                     }
                     else
                     {
-                        <!-- Vehicle Banner -->
-                        <div class="bg-light border rounded-3 p-4 mb-4">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-success text-white rounded-3 d-flex align-items-center
-                                                justify-content-center flex-shrink-0"
-                                     style="width:56px; height:56px; font-size:1.6rem;">
-                                    <i class="bi bi-truck"></i>
-                                </div>
-                                <div>
-                                    <h5 class="mb-1 fw-bold">@vehicle.VehicleNumber</h5>
-                                    <span class="badge bg-@VehicleStatusBadge(vehicle.Status) me-1">
-                                        @vehicle.Status
-                                    </span>
-                                    <small class="text-muted">Vehicle ID: #@vehicle.VehicleId</small>
-                                </div>
-                            </div>
-                        </div>
+                        @foreach (var v in vehicles)
+                        {
+                            string badgeColor = v.Status switch
+                            {
+                                "Approved" => "success",
+                                "Pending" => "warning",
+                                "Rejected" => "danger",
+                                _ => "secondary"
+                            };
 
-                        <!-- Vehicle Details List -->
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-hash me-2 text-success"></i>Vehicle Number
-                                </span>
-                                <span class="fw-bold">@vehicle.VehicleNumber</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-box-seam me-2 text-success"></i>Capacity
-                                </span>
-                                <span class="fw-bold">
-                                    @(vehicle.Capacity > 0 ? vehicle.Capacity.ToString("F2") + " kg" : "—")
-                                </span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-circle-fill me-2 text-success"></i>Approval Status
-                                </span>
-                                <span class="badge bg-@VehicleStatusBadge(vehicle.Status)">
-                                    @vehicle.Status
-                                </span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-calendar3 me-2 text-success"></i>Registered On
-                                </span>
-                                <span class="fw-bold">@vehicle.RegisteredOn.ToString("dd MMM yyyy")</span>
-                            </li>
-                        </ul>
+                            <div class="card border-0 bg-light mb-3">
+                                <div class="card-body p-3">
 
-                        <!-- Vehicle Status Alert -->
-                        @if (vehicle.Status == "Pending")
-                        {
-                            <div class="alert alert-warning mt-4 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-hourglass-split me-1"></i>
-                                Your vehicle is <strong>pending</strong> admin approval.
-                                You will be notified once reviewed.
-                            </div>
-                        }
-                        else if (vehicle.Status == "Rejected")
-                        {
-                            <div class="alert alert-danger mt-4 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-x-circle me-1"></i>
-                                Your vehicle registration was <strong>rejected</strong>.
-                                Please contact the admin for details.
-                            </div>
-                        }
-                        else if (vehicle.Status == "Approved")
-                        {
-                            <div class="alert alert-success mt-4 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-check-circle me-1"></i>
-                                Your vehicle is <strong>approved</strong> and ready for assignments.
+                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                        <div class="bg-success text-white rounded-3 d-flex align-items-center
+                                                    justify-content-center flex-shrink-0"
+                                             style="width:48px; height:48px; font-size:1.4rem;">
+                                            <i class="bi bi-truck"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">@v.VehicleNumber</h6>
+                                            <small class="text-muted">Vehicle ID: #@v.VehicleId</small>
+                                        </div>
+                                        <span class="badge bg-@badgeColor ms-auto">@v.Status</span>
+                                    </div>
+
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item px-0 bg-transparent
+                                                   d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small fw-semibold">
+                                                <i class="bi bi-box-seam me-2 text-success"></i>Capacity
+                                            </span>
+                                            <span class="fw-bold">
+                                                @(v.Capacity > 0 ? v.Capacity.ToString("F2") + " Ltr" : "—")
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item px-0 bg-transparent
+                                                   d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small fw-semibold">
+                                                <i class="bi bi-calendar3 me-2 text-success"></i>Registered On
+                                            </span>
+                                            <span class="fw-bold">
+                                                @v.RegisteredOn.ToString("dd MMM yyyy")
+                                            </span>
+                                        </li>
+                                    </ul>
+
+                                    @if (v.Status == "Pending")
+                                    {
+                                        <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small rounded-3">
+                                            <i class="bi bi-hourglass-split me-1"></i>
+                                            Waiting for <strong>admin approval</strong>.
+                                        </div>
+                                    }
+                                    else if (v.Status == "Rejected")
+                                    {
+                                        <div class="alert alert-danger mt-2 mb-0 py-2 px-3 small rounded-3">
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Registration <strong>rejected</strong>. Contact admin.
+                                        </div>
+                                    }
+                                    else if (v.Status == "Approved")
+                                    {
+                                        <div class="alert alert-success mt-2 mb-0 py-2 px-3 small rounded-3">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Vehicle <strong>approved</strong> and ready for assignments.
+                                        </div>
+                                    }
+
+                                </div>
                             </div>
                         }
                     }

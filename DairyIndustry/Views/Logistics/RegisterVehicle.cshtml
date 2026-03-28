@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "Register Vehicle";
+    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+}
+
+<div class="bg-success text-white py-4 px-4 mb-4 shadow-sm">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h4 class="mb-1 fw-bold">
+                <i class="bi bi-truck me-2"></i>Register Vehicle
+            </h4>
+            <p class="mb-0 opacity-75 small">
+                Fill in your vehicle details — admin will review and approve it shortly.
+            </p>
+        </div>
+        <a asp-action="Index" asp-controller="Logistics" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid px-4 pb-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-5 col-lg-6 col-md-8">
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 rounded-3" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-3" role="alert">
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+                <div class="bg-success bg-opacity-10 border-bottom px-4 py-3 d-flex align-items-center gap-2">
+                    <div class="bg-success text-white rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:40px; height:40px; font-size:1.1rem;">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-success">Vehicle Details</h6>
+                        <small class="text-muted">All fields marked * are required</small>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="post" action="/Logistics/RegisterVehicle">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">
+                                Vehicle Number <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-card-text text-success"></i>
+                                </span>
+                                <input type="text"
+                                       name="vehicleNumber"
+                                       class="form-control border-start-0 ps-0"
+                                       placeholder="e.g. GJ05 AA 1234"
+                                       required />
+                            </div>
+                            <div class="form-text ms-1">
+                                Enter exactly as printed on your RC book.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">
+                                Capacity (Litres) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-box-seam text-success"></i>
+                                </span>
+                                <input type="number"
+                                       name="capacity"
+                                       class="form-control border-start-0 ps-0"
+                                       placeholder="e.g. 5000"
+                                       min="1"
+                                       step="0.01"
+                                       required />
+                                <span class="input-group-text bg-light text-muted">Ltr</span>
+                            </div>
+                            <div class="form-text ms-1">
+                                Maximum milk carrying capacity in litres.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning border-0 rounded-3 py-2 px-3 small mb-4">
+                            <i class="bi bi-hourglass-split me-1"></i>
+                            Your vehicle will be <strong>pending admin approval</strong> after submission.
+                            Track the status from your dashboard.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success fw-semibold py-2">
+                                <i class="bi bi-send me-2"></i>Submit for Approval
+                            </button>
+                            <a asp-action="Index" asp-controller="Logistics"
+                               class="btn btn-outline-secondary fw-semibold py-2">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-4">
+                    <div class="card border-0 shadow-sm rounded-3 text-center py-3">
+                        <i class="bi bi-1-circle text-success fs-4 mb-1"></i>
+                        <small class="text-muted fw-semibold d-block">Submit</small>
+                        <small class="text-muted" style="font-size:.72rem;">Fill and submit form</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card border-0 shadow-sm rounded-3 text-center py-3">
+                        <i class="bi bi-2-circle text-warning fs-4 mb-1"></i>
+                        <small class="text-muted fw-semibold d-block">Review</small>
+                        <small class="text-muted" style="font-size:.72rem;">Admin reviews it</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card border-0 shadow-sm rounded-3 text-center py-3">
+                        <i class="bi bi-3-circle text-primary fs-4 mb-1"></i>
+                        <small class="text-muted fw-semibold d-block">Approved</small>
+                        <small class="text-muted" style="font-size:.72rem;">Ready for use</small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
