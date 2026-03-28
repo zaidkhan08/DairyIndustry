@@ -124,6 +124,40 @@
             <!-- ── Modules ─────────────────────── -->
             <div class="nav-label">Modules</div>
 
+            <div class="nav-label">Logistics</div>
+
+            <a class="nav-item-link d-flex align-items-center justify-content-between"
+               data-bs-toggle="collapse"
+               href="#logisticsMenu"
+               role="button"
+               aria-expanded="@(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" ? "true" : "false")">
+                <span>
+                    <i class="bi bi-truck-front-fill me-2"></i>Logistics
+                </span>
+                <i class="bi bi-chevron-down small"></i>
+            </a>
+
+            <div class="collapse @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" ? "show" : "")"
+                 id="logisticsMenu">
+
+                <a asp-controller="Logistics" asp-action="AllDrivers"
+                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" &&
+                                (ViewContext.RouteData.Values["action"].ToString() == "AllDrivers" ||
+                                 ViewContext.RouteData.Values["action"].ToString() == "UpdateDriverStatus") ? "active" : "")">
+                    <i class="bi bi-person-badge-fill me-2"></i>
+                    <span>Drivers</span>
+                </a>
+
+                <a asp-controller="Logistics" asp-action="AllVehicles"
+                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" &&
+                                (ViewContext.RouteData.Values["action"].ToString() == "AllVehicles" ||
+                                 ViewContext.RouteData.Values["action"].ToString() == "UpdateVehicleStatus") ? "active" : "")">
+                    <i class="bi bi-truck me-2"></i>
+                    <span>Vehicles</span>
+                </a>
+
+            </div>
+
             <a asp-controller="Farmer" asp-action="Index"
                class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Farmer" ? "active" : "")">
                 <i class="bi bi-person-badge-fill"></i>
