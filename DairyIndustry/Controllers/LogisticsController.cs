@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DairyIndustry.Controllers
 {
+    [ServiceFilter(typeof(ActionLogFilter))]
     public class LogisticsController : Controller
     {
         private readonly ILogisticsRepository _logisticRepo;
