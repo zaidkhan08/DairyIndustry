@@ -1,0 +1,106 @@
+﻿@model List<DairyIndustry.Models.Production.MilkTransferModel>
+
+@{
+    ViewData["Title"] = "Milk Transfers";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🚚 Milk Transfers</h4>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-truck"></i> Dispatch Batch
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Transfer #</th>
+                    <th>Batch #</th>
+                    <th>Center</th>
+                    <th>Plant</th>
+                    <th>Vehicle</th>
+                    <th>Driver</th>
+                    <th>Dispatch Qty (L)</th>
+                    <th>Received Qty (L)</th>
+                    <th>Loss (L)</th>
+                    <th>Dispatch Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="12" class="text-center text-muted py-4">No transfers found.</td>
+                    </tr>
+                }
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td><strong>TR-@t.TransferId</strong></td>
+                        <td>@t.BatchRef</td>
+                        <td>@t.CenterName</td>
+                        <td>@t.PlantName</td>
+                        <td>@t.VehicleNumber</td>
+                        <td>@(t.DriverName ?? "-")</td>
+                        <td>@t.DispatchQty.ToString("N2")</td>
+                        <td>@(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N2") : "-")</td>
+                        <td>
+                            @if (t.LossQty.HasValue)
+                            {
+                                <span class="@(t.LossQty > 0 ? "text-danger" : "text-success")">
+                                    @t.LossQty.Value.ToString("N2")
+                                </span>
+                            }
+                            else
+                            {
+
+                                <span>-</span>
+                            }
+                        </td>
+                        <td>@t.DispatchDate.ToString("dd-MMM-yyyy")</td>
+                        <td>
+                            @if (t.Status == "Received")
+                            {
+                                <span class="badge bg-success">Received</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Dispatched</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Detail" asp-route-id="@t.TransferId"
+                               class="btn btn-sm btn-outline-secondary">Detail</a>
+
+                            @if (t.Status == "Dispatched")
+                            {
+                                <a asp-action="Receive" asp-route-id="@t.TransferId"
+                                   class="btn btn-sm btn-outline-success ms-1">Receive</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

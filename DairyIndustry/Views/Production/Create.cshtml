@@ -1,0 +1,77 @@
+﻿@{
+    ViewData["Title"] = "Dispatch Batch";
+}
+
+<h4 class="mb-4">🚚 Dispatch Milk Batch</h4>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+    <div class="card-header bg-primary text-white">
+        <strong>Dispatch Milk Batch</strong>
+    </div>
+    <div class="card-body">
+
+        <form asp-action="Create" method="post">
+
+            {{!-- BATCH --}}
+            <div class="mb-3">
+                <label class="form-label">Select Closed Batch</label>
+                <select name="batchId" class="form-select" required>
+                    <option value="">-- Select Batch --</option>
+                    @foreach (var b in ViewBag.Batches as List<DairyIndustry.Models.Production.BatchDropdownModel>)
+                    {
+                        <option value="@b.BatchId">@b.DisplayText</option>
+                    }
+                </select>
+                <small class="text-muted">Only closed batches that haven't been dispatched yet are shown.</small>
+            </div>
+
+            {{!-- PLANT --}}
+            <div class="mb-3">
+                <label class="form-label">Destination Processing Plant</label>
+                <select name="plantId" class="form-select" required>
+                    <option value="">-- Select Plant --</option>
+                    @foreach (var p in ViewBag.Plants as List<DairyIndustry.Models.Admin.PlantModel>)
+                    {
+                        <option value="@p.PlantId">@p.PlantName</option>
+                    }
+                </select>
+            </div>
+
+            {{!-- VEHICLE --}}
+            <div class="mb-3">
+                <label class="form-label">Dispatch Vehicle</label>
+                <select name="vehicleId" class="form-select" required>
+                    <option value="">-- Select Vehicle --</option>
+                    @foreach (var v in ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>)
+                    {
+                        <option value="@v.VehicleId">
+                            @v.VehicleNumber @(v.DriverName != null ? "— " + v.DriverName : "")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            {{!-- DISPATCH QTY --}}
+            <div class="mb-3">
+                <label class="form-label">Dispatch Quantity (Litres)</label>
+                <input type="number" name="dispatchQty" class="form-control"
+                       step="0.01" min="1" placeholder="e.g. 500.00" required />
+            </div>
+
+            {{!-- DISPATCH DATE --}}
+            <div class="mb-3">
+                <label class="form-label">Dispatch Date</label>
+                <input type="date" name="dispatchDate" class="form-control"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-warning text-dark fw-bold">
+                    🚛 Dispatch Now
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

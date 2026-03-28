@@ -13,6 +13,8 @@ namespace DairyIndustry
             builder.Services.AddSingleton<DbHelper>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+            builder.Services.AddScoped<IProductionRepository, ProductionRepository>();
+
             builder.Services.AddControllersWithViews(options =>  
             {
                 options.Filters.Add<ExceptionHandlerFilter>();
@@ -40,7 +42,7 @@ namespace DairyIndustry
             app.UseAuthorization();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Admin}/{action=Login}/{id?}");
+                pattern: "{controller=Production}/{action=Index}/{id?}");
 
             app.Run();
         }

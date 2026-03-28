@@ -1,0 +1,111 @@
+﻿@model DairyIndustry.Models.Production.MilkTransferModel
+
+@{
+    ViewData["Title"] = "Transfer Detail";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">📋 Transfer Detail — TR-@Model.TransferId</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← Back to List</a>
+</div>
+
+{{!-- STATUS BANNER --}}
+@if (Model.Status == "Received")
+{
+    <div class="alert alert-success">✅ This transfer has been received at the plant.</div>
+}
+else
+{
+    <div class="alert alert-warning">🚛 This transfer is currently in transit (not yet received).</div>
+}
+
+<div class="row g-3">
+
+    {{!-- LEFT — Transfer Info --}}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">Transfer Info</div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Transfer #</dt>
+                    <dd class="col-sm-7">TR-@Model.TransferId</dd>
+
+                    <dt class="col-sm-5">Batch</dt>
+                    <dd class="col-sm-7">@Model.BatchRef</dd>
+
+                    <dt class="col-sm-5">From Center</dt>
+                    <dd class="col-sm-7">@Model.CenterName</dd>
+
+                    <dt class="col-sm-5">To Plant</dt>
+                    <dd class="col-sm-7">@Model.PlantName</dd>
+
+                    <dt class="col-sm-5">Vehicle</dt>
+                    <dd class="col-sm-7">@Model.VehicleNumber</dd>
+
+                    <dt class="col-sm-5">Driver</dt>
+                    <dd class="col-sm-7">@(Model.DriverName ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {{!-- RIGHT — Quantity Info --}}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">Quantity Info</div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Dispatched</dt>
+                    <dd class="col-sm-7"><strong>@Model.DispatchQty.ToString("N2") L</strong></dd>
+
+                    <dt class="col-sm-5">Dispatch Date</dt>
+                    <dd class="col-sm-7">@Model.DispatchDate.ToString("dd-MMM-yyyy")</dd>
+
+                    <dt class="col-sm-5">Received</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.ReceivedQty.HasValue)
+                        {
+                            <strong>@Model.ReceivedQty.Value.ToString("N2") L</strong>
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-5">Received Date</dt>
+                    <dd class="col-sm-7">
+                        @(Model.ReceivedDate.HasValue
+                                                ? Model.ReceivedDate.Value.ToString("dd-MMM-yyyy")
+                                                : "—")
+                    </dd>
+
+                    <dt class="col-sm-5">Loss</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.LossQty.HasValue)
+                        {
+                            <span class="@(Model.LossQty > 0 ? "text-danger fw-bold" : "text-success")">
+                                @Model.LossQty.Value.ToString("N2") L
+                            </span>
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+                </dl>
+
+                @if (Model.Status == "Dispatched")
+                {
+                    <a asp-action="Receive" asp-route-id="@Model.TransferId"
+                       class="btn btn-success w-100 mt-2">
+                        📥 Mark as Received
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
