@@ -58,7 +58,7 @@ namespace DairyIndustry.Controllers
 
             switch (user.RoleName)
             {
-                case "Administrator":
+                case "Admin":
                     return RedirectToAction("Index", "Admin");
 
                 case "Driver":
@@ -169,15 +169,13 @@ namespace DairyIndustry.Controllers
             return View(logs);
         }
 
-        // ════════════════════════════════════════════════════════
-        // STATE
-        // ════════════════════════════════════════════════════════
-
         [SessionAuthorize("Admin")]
-        public IActionResult States()
+        public IActionResult Location()
         {
-            var states = _adminRepo.GetAllStates();
-            return View(states);
+            ViewBag.States = _adminRepo.GetAllStates();
+            ViewBag.Cities = _adminRepo.GetAllCities();
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+            return View();
         }
 
         [SessionAuthorize("Admin")]
@@ -185,19 +183,9 @@ namespace DairyIndustry.Controllers
         public IActionResult AddState(string stateName)
         {
             _adminRepo.AddState(stateName);
-            return RedirectToAction("States");
-        }
-
-        // ════════════════════════════════════════════════════════
-        // LOCATION — CITY
-        // ════════════════════════════════════════════════════════
-
-        [SessionAuthorize("Admin")]
-        public IActionResult Cities()
-        {
-            var cities = _adminRepo.GetAllCities();
-            ViewBag.States = _adminRepo.GetAllStates();
-            return View(cities);
+            TempData["Success"] = $"State '{stateName}' added successfully.";
+            TempData["ActiveTab"] = "state";
+            return RedirectToAction("Location");
         }
 
         [SessionAuthorize("Admin")]
@@ -205,26 +193,9 @@ namespace DairyIndustry.Controllers
         public IActionResult AddCity(string cityName, int stateId)
         {
             _adminRepo.AddCity(cityName, stateId);
-            return RedirectToAction("Cities");
-        }
-
-        [SessionAuthorize("Admin")]
-        public IActionResult GetCitiesByState(int stateId)
-        {
-            var cities = _adminRepo.GetCitiesByState(stateId);
-            return Json(cities);
-        }
-
-        // ════════════════════════════════════════════════════════
-        // LOCATION — VILLAGE
-        // ════════════════════════════════════════════════════════
-
-        [SessionAuthorize("Admin")]
-        public IActionResult Villages()
-        {
-            var villages = _adminRepo.GetAllVillages();
-            ViewBag.States = _adminRepo.GetAllStates();
-            return View(villages);
+            TempData["Success"] = $"City '{cityName}' added successfully.";
+            TempData["ActiveTab"] = "city";
+            return RedirectToAction("Location");
         }
 
         [SessionAuthorize("Admin")]
@@ -232,7 +203,16 @@ namespace DairyIndustry.Controllers
         public IActionResult AddVillage(string villageName, int cityId)
         {
             _adminRepo.AddVillage(villageName, cityId);
-            return RedirectToAction("Villages");
+            TempData["Success"] = $"Village '{villageName}' added successfully.";
+            TempData["ActiveTab"] = "village";
+            return RedirectToAction("Location");
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult GetCitiesByState(int stateId)
+        {
+            var cities = _adminRepo.GetCitiesByState(stateId);
+            return Json(cities);
         }
 
         [SessionAuthorize("Admin")]

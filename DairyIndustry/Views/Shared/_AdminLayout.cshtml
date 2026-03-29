@@ -77,22 +77,10 @@
             <!-- ── Master Data ─────────────────── -->
             <div class="nav-label">Master Data</div>
 
-            <a asp-controller="Admin" asp-action="States"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "States" ? "active" : "")">
+            <a asp-controller="Admin" asp-action="Location"
+               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Location" ? "active" : "")">
                 <i class="bi bi-geo-alt-fill"></i>
-                <span>States</span>
-            </a>
-
-            <a asp-controller="Admin" asp-action="Cities"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Cities" ? "active" : "")">
-                <i class="bi bi-building"></i>
-                <span>Cities</span>
-            </a>
-
-            <a asp-controller="Admin" asp-action="Villages"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Villages" ? "active" : "")">
-                <i class="bi bi-map"></i>
-                <span>Villages</span>
+                <span>Location</span>
             </a>
 
             <a asp-controller="Admin" asp-action="MilkTypes"
