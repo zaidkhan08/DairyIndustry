@@ -1,0 +1,97 @@
+﻿@model DairyIndustry.Models.ChillingStoreItemModel
+
+@{
+    ViewData["Title"] = "Edit Storage Entry";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-primary mb-0">Edit Storage Entry</h3>
+        <small class="text-muted">Entry # @Model.StorageId</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <span class="fw-semibold">Edit Entry Details</span>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Hidden StorageId — must be posted back -->
+                    <input type="hidden" asp-for="StorageId" />
+
+                    <!-- Plant -->
+                    <div class="mb-3">
+                        <label asp-for="PlantId" class="form-label fw-semibold"></label>
+                        <select asp-for="PlantId" asp-items="ViewBag.Plants"
+                                class="form-select">
+                            <option value="">— Select Plant —</option>
+                        </select>
+                        <span asp-validation-for="PlantId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Product -->
+                    <div class="mb-3">
+                        <label asp-for="ProductId" class="form-label fw-semibold"></label>
+                        <select asp-for="ProductId" asp-items="ViewBag.Products"
+                                class="form-select">
+                            <option value="">— Raw Milk (no product) —</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Quantity and Temperature -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="MilkQuantity" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input asp-for="MilkQuantity" class="form-control"
+                                       type="number" step="0.01" min="0.01" />
+                                <span class="input-group-text">L</span>
+                            </div>
+                            <span asp-validation-for="MilkQuantity" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Temperature" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input asp-for="Temperature" class="form-control"
+                                       type="number" step="0.1" />
+                                <span class="input-group-text">&deg;C</span>
+                            </div>
+                            <span asp-validation-for="Temperature" class="text-danger small"></span>
+                            <div class="form-text">Safe range: 0&deg;C to 5&deg;C</div>
+                        </div>
+                    </div>
+
+                    <!-- Date — readonly on edit, date cannot be changed -->
+                    <div class="mb-4">
+                        <label asp-for="StoredDate" class="form-label fw-semibold"></label>
+                        <input asp-for="StoredDate" class="form-control bg-light"
+                               type="date" readonly />
+                        <div class="form-text">Storage date cannot be changed after entry.</div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">Update Entry</button>
+                        <a asp-action="Details" asp-route-id="@Model.StorageId"
+                           class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

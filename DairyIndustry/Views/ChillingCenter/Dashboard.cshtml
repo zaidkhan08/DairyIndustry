@@ -1,0 +1,255 @@
+﻿@model DairyIndustry.Models.ChillingDashboardViewModel
+
+@{
+    ViewData["Title"] = "Chilling Center — Dashboard";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-primary mb-0">Chilling Center</h3>
+        <small class="text-muted">Dashboard — @Model.Summary.ReportDate.ToString("dd MMM yyyy")</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        + New Entry
+    </a>
+</div>
+
+<!-- Alert / Success Messages -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Summary Cards Row -->
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+        <div class="card border-0 bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="small text-white-50 mb-1">Total Entries Today</div>
+                <div class="fs-2 fw-bold">@Model.Summary.TotalEntries</div>
+                <div class="small text-white-50">storage records</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="small text-white-50 mb-1">Total Quantity Today</div>
+                <div class="fs-2 fw-bold">@Model.Summary.TotalQuantity.ToString("N2")</div>
+                <div class="small text-white-50">litres stored</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 bg-success text-white h-100">
+            <div class="card-body">
+                <div class="small text-white-50 mb-1">Safe</div>
+                <div class="fs-2 fw-bold">@Model.Summary.SafeCount</div>
+                <div class="small text-white-50">temp &le; 5&deg;C</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 @(Model.Summary.CriticalAlerts > 0 ? "bg-danger" : "bg-secondary") text-white h-100">
+            <div class="card-body">
+                <div class="small text-white-50 mb-1">Alerts</div>
+                <div class="fs-2 fw-bold">
+                    @(Model.Summary.CriticalAlerts + Model.Summary.Warnings)
+                </div>
+                <div class="small text-white-50">
+                    @Model.Summary.CriticalAlerts critical &bull; @Model.Summary.Warnings warning
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bottom Row — Plant Capacity + Active Alerts -->
+<div class="row g-3 mb-3">
+
+    <!-- Plant Capacity Table -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-primary">Plant Capacity Overview</span>
+                <a asp-action="Capacity" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.PlantCapacity.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plant</th>
+                                    <th class="text-end">Today (L)</th>
+                                    <th class="text-end">All Time (L)</th>
+                                    <th class="text-center">Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var plant in Model.PlantCapacity)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@plant.PlantName</div>
+                                            @if (!string.IsNullOrEmpty(plant.Location))
+                                            {
+                                                <small class="text-muted">@plant.Location</small>
+                                            }
+                                        </td>
+                                        <td class="text-end">@plant.StoredToday.ToString("N2")</td>
+                                        <td class="text-end">@plant.TotalStoredAllTime.ToString("N2")</td>
+                                        <td class="text-center">
+                                            @if (plant.AlertCount > 0)
+                                            {
+                                                <span class="badge bg-danger">@plant.AlertCount</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">0</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No plants found.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-danger">Active Alerts Today</span>
+                <a asp-action="Alerts" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.ActiveAlerts.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var alert in Model.ActiveAlerts)
+                        {
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-semibold">@alert.PlantName</div>
+                                        <small class="text-muted">
+                                            @alert.ItemName — @alert.MilkQuantity.ToString("N2") L
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-@alert.TempBadgeClass">
+                                        @alert.Temperature&deg;C
+                                    </span>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <span class="text-success fw-semibold">All temperatures safe today.</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Recent Entries -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-primary">Recent Entries</span>
+        <a asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.RecentEntries.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Plant</th>
+                            <th>Item</th>
+                            <th class="text-end">Qty (L)</th>
+                            <th class="text-center">Temp</th>
+                            <th class="text-center">Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model.RecentEntries)
+                        {
+                            <tr>
+                                <td>@entry.StoredDate.ToString("dd MMM yyyy")</td>
+                                <td>@entry.PlantName</td>
+                                <td>@entry.ItemName</td>
+                                <td class="text-end">@entry.MilkQuantity.ToString("N2")</td>
+                                <td class="text-center">
+                                    @(entry.Temperature.HasValue
+                                                                ? entry.Temperature.Value.ToString("N1") + "°C"
+                                                                : "—")
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-@entry.TempBadgeClass">
+                                @entry.TempStatus
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@entry.StorageId"
+                               class="btn btn-sm btn-outline-primary">Details</a>
+                        </td>
+                    </tr>
+                                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-4">No entries yet.</div>
+        }
+    </div>
+</div>
+
+<!-- Quick Navigation -->
+<div class="row g-2">
+    <div class="col-6 col-md-3">
+        <a asp-action="Index" class="btn btn-outline-primary w-100">All Entries</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Create" class="btn btn-primary w-100">Add New Entry</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Alerts" class="btn btn-outline-danger w-100">Temperature Alerts</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Capacity" class="btn btn-outline-secondary w-100">Capacity Monitor</a>
+    </div>
+</div>

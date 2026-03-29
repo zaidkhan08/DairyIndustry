@@ -1,5 +1,8 @@
 using DairyIndustry.Data;
+<<<<<<< Updated upstream
 using DairyIndustry.Filters;
+=======
+>>>>>>> Stashed changes
 using DairyIndustry.Repositories;
 
 namespace DairyIndustry
@@ -10,6 +13,7 @@ namespace DairyIndustry
         {
             var builder = WebApplication.CreateBuilder(args);
 
+<<<<<<< Updated upstream
             builder.Services.AddSingleton<DbHelper>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
@@ -26,6 +30,12 @@ namespace DairyIndustry
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+=======
+            // Add services to the container.
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddSingleton<DbHelper>();
+            builder.Services.AddScoped<IChillingCenterRepository, ChillingCenterRepository>();
+>>>>>>> Stashed changes
 
             var app = builder.Build();
 

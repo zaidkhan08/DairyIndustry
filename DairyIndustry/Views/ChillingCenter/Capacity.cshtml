@@ -1,0 +1,108 @@
+﻿@model List<DairyIndustry.Models.ChillingPlantCapacityModel>
+
+@{
+    ViewData["Title"] = "Capacity Monitor";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-primary mb-0">Plant Capacity Monitor</h3>
+        <small class="text-muted">Storage summary per processing plant</small>
+    </div>
+    <a asp-action="Dashboard" class="btn btn-outline-primary">← Dashboard</a>
+</div>
+
+<!-- Summary bar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 bg-primary text-white">
+            <div class="card-body py-3">
+                <div class="small text-white-50">Total Plants</div>
+                <div class="fs-3 fw-bold">@Model.Count</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-primary text-white">
+            <div class="card-body py-3">
+                <div class="small text-white-50">Total Stored All Time (L)</div>
+                <div class="fs-3 fw-bold">@Model.Sum(x => x.TotalStoredAllTime).ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 @(Model.Sum(x => x.AlertCount) > 0 ? "bg-danger" : "bg-success") text-white">
+            <div class="card-body py-3">
+                <div class="small text-white-50">Total Alerts</div>
+                <div class="fs-3 fw-bold">@Model.Sum(x => x.AlertCount)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Per-plant cards -->
+@foreach (var plant in Model)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold text-primary">@plant.PlantName</span>
+                @if (!string.IsNullOrEmpty(plant.Location))
+                {
+                    <small class="text-muted ms-2">@plant.Location</small>
+                }
+            </div>
+            @if (plant.AlertCount > 0)
+            {
+                <span class="badge bg-danger">@plant.AlertCount alert(s)</span>
+            }
+            else
+            {
+                <span class="badge bg-success">Safe</span>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-6 col-md-3 text-center">
+                    <div class="text-muted small">Stored Today</div>
+                    <div class="fs-4 fw-bold text-primary">
+                        @plant.StoredToday.ToString("N2")
+                    </div>
+                    <div class="text-muted small">litres</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="text-muted small">All Time Total</div>
+                    <div class="fs-4 fw-bold text-primary">
+                        @plant.TotalStoredAllTime.ToString("N2")
+                    </div>
+                    <div class="text-muted small">litres</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="text-muted small">Total Entries</div>
+                    <div class="fs-4 fw-bold text-primary">@plant.TotalEntries</div>
+                    <div class="text-muted small">records</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="text-muted small">Temperature Alerts</div>
+                    <div class="fs-4 fw-bold @(plant.AlertCount > 0 ? "text-danger" : "text-success")">
+                        @plant.AlertCount
+                    </div>
+                    <div class="text-muted small">above 7°C</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white">
+            <a asp-action="Index" asp-route-plantId="@plant.PlantId"
+               class="btn btn-sm btn-outline-primary">
+                View Entries for this Plant
+            </a>
+        </div>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <div class="fs-5">No plants found.</div>
+    </div>
+}

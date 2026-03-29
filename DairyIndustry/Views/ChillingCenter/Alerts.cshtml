@@ -1,0 +1,104 @@
+﻿@model List<DairyIndustry.Models.ChillingStorageModel>
+
+@{
+    ViewData["Title"] = "Temperature Alerts";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-danger mb-0">Temperature Alerts</h3>
+        <small class="text-muted">Entries with temperature above safe range (5&deg;C)</small>
+    </div>
+    <a asp-action="Dashboard" class="btn btn-outline-primary">← Dashboard</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" asp-action="Alerts">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label text-muted small mb-1">From Date</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm"
+                           value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-muted small mb-1">To Date</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm"
+                           value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm w-100">Filter</button>
+                    <a asp-action="Alerts" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="d-flex gap-3 mb-3">
+    <span class="badge bg-warning text-dark fs-6 px-3 py-2">Warning: 5°C – 7°C</span>
+    <span class="badge bg-danger fs-6 px-3 py-2">Critical: above 7°C</span>
+</div>
+
+<!-- Alerts Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-danger">
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Plant</th>
+                            <th>Item</th>
+                            <th class="text-end">Qty (L)</th>
+                            <th class="text-center">Temp (&deg;C)</th>
+                            <th class="text-center">Alert Level</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model)
+                        {
+                            <tr>
+                                <td class="text-muted small">@entry.StorageId</td>
+                                <td>@entry.StoredDate.ToString("dd MMM yyyy")</td>
+                                <td>@entry.PlantName</td>
+                                <td>@entry.ItemName</td>
+                                <td class="text-end">@entry.MilkQuantity.ToString("N2")</td>
+                                <td class="text-center fw-bold text-danger">
+                                    @(entry.Temperature.HasValue
+                                                                ? entry.Temperature.Value.ToString("N1") + "°C"
+                                                                : "—")
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-@entry.TempBadgeClass">
+                                @entry.TempStatus
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@entry.StorageId"
+                               class="btn btn-sm btn-outline-primary">Details</a>
+                        </td>
+                    </tr>
+                                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top text-muted small">
+                @Model.Count alert(s) found
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <div class="text-success fs-5 fw-semibold">No temperature alerts found.</div>
+                <div class="text-muted small mt-1">All entries are within the safe range.</div>
+            </div>
+        }
+    </div>
+</div>

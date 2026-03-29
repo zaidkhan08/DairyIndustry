@@ -1,0 +1,73 @@
+﻿@* ─────────────────────────────────────────────
+   DETAILS VIEW
+   Save this as: Views/ChillingCenter/Details.cshtml
+───────────────────────────────────────────── *@
+@model DairyIndustry.Models.ChillingStorageModel
+
+@{
+    ViewData["Title"] = "Entry Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-primary mb-0">Entry Details</h3>
+        <small class="text-muted">Storage ID — @Model.StorageId</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">@Model.PlantName</span>
+                <span class="badge bg-@Model.TempBadgeClass fs-6">@Model.TempStatus</span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Storage ID</dt>
+                    <dd class="col-sm-8">@Model.StorageId</dd>
+
+                    <dt class="col-sm-4 text-muted">Plant</dt>
+                    <dd class="col-sm-8">@Model.PlantName</dd>
+
+                    <dt class="col-sm-4 text-muted">Item Stored</dt>
+                    <dd class="col-sm-8">
+                        @Model.ItemName
+                        @if (!string.IsNullOrEmpty(Model.ProductType))
+                        {
+                            <span class="text-muted small"> — @Model.ProductType (@Model.Unit)</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Quantity</dt>
+                    <dd class="col-sm-8">@Model.MilkQuantity.ToString("N2") L</dd>
+
+                    <dt class="col-sm-4 text-muted">Temperature</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Temperature.HasValue)
+                        {
+                            <span class="badge bg-@Model.TempBadgeClass">
+                                @Model.Temperature.Value.ToString("N1")&deg;C — @Model.TempStatus
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not recorded</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Stored Date</dt>
+                    <dd class="col-sm-8">@Model.StoredDate.ToString("dd MMM yyyy")</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.StorageId"
+                   class="btn btn-primary">Edit</a>
+                <a asp-action="Delete" asp-route-id="@Model.StorageId"
+                   class="btn btn-outline-danger">Delete</a>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-auto">Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>

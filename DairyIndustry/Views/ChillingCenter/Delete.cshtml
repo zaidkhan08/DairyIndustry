@@ -1,0 +1,54 @@
+﻿@model DairyIndustry.Models.ChillingStorageModel
+
+@{
+    ViewData["Title"] = "Delete Entry";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-danger mb-0">Delete Entry</h3>
+        <small class="text-muted">This action cannot be undone</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger border-0 shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <span class="fw-semibold">Confirm Deletion</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Are you sure you want to delete this storage entry?
+                </p>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Storage ID</dt>
+                    <dd class="col-sm-8">@Model.StorageId</dd>
+
+                    <dt class="col-sm-4 text-muted">Plant</dt>
+                    <dd class="col-sm-8">@Model.PlantName</dd>
+
+                    <dt class="col-sm-4 text-muted">Item</dt>
+                    <dd class="col-sm-8">@Model.ItemName</dd>
+
+                    <dt class="col-sm-4 text-muted">Quantity</dt>
+                    <dd class="col-sm-8">@Model.MilkQuantity.ToString("N2") L</dd>
+
+                    <dt class="col-sm-4 text-muted">Date</dt>
+                    <dd class="col-sm-8">@Model.StoredDate.ToString("dd MMM yyyy")</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.StorageId" />
+                    <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
+                </form>
+                <a asp-action="Details" asp-route-id="@Model.StorageId"
+                   class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
