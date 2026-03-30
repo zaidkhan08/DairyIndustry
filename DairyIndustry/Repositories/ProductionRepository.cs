@@ -1,5 +1,6 @@
 ﻿using DairyIndustry.Data;
 using DairyIndustry.Models.Production;
+using DairyIndustry.Models.Logistics;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
@@ -22,14 +23,13 @@ namespace DairyIndustry.Repositories
         {
             var list = new List<BatchDropdownModel>();
 
-            // Batches that are Closed AND have no transfer record yet
             string query = @"
                 SELECT
                     cb.BatchId,
                     'B-' + CAST(cb.BatchId AS VARCHAR)
                         + ' | ' + cc.CenterName
                         + ' | ' + FORMAT(cb.BatchDate, 'dd-MMM-yyyy')
-                        + ' | ' + cb.Shift          AS DisplayText
+                        + ' | ' + cb.Shift AS DisplayText
                 FROM Collection.CollectionBatches cb
                 INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = cb.CenterId
                 WHERE cb.Status = 'Closed'
@@ -54,6 +54,42 @@ namespace DairyIndustry.Repositories
                             {
                                 BatchId = Convert.ToInt32(reader["BatchId"]),
                                 DisplayText = reader["DisplayText"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // DROPDOWN — All vehicles (with driver info)
+        // ════════════════════════════════════════════════════════
+
+        public List<VehiclesModel> GetAllVehicles()
+        {
+            var list = new List<VehiclesModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetVehicles", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new VehiclesModel
+                            {
+                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                                VehicleNumber = reader["VehicleNumber"].ToString(),
+                                Capacity = reader["Capacity"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["Capacity"]),
+                                DriverId = reader["DriverId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString()
                             });
                         }
                     }
@@ -112,7 +148,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ALL TRANSFERS (with JOIN display fields)
+        // GET ALL TRANSFERS
         // ════════════════════════════════════════════════════════
 
         public List<MilkTransferModel> GetAllTransfers()
@@ -213,7 +249,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // PRIVATE HELPER — map reader row → MilkTransferModel
+        // PRIVATE HELPER
         // ════════════════════════════════════════════════════════
 
         private MilkTransferModel MapTransfer(SqlDataReader reader)

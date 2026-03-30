@@ -8,16 +8,14 @@ namespace DairyIndustry.Controllers
     public class ProductionController : Controller
     {
         private readonly IProductionRepository _productionRepo;
-        private readonly IAdminRepository _adminRepo;       // GetAllPlants()
-       // private readonly ILogisticsRepository _logisticsRepo;   // GetAllVehicles()
+        private readonly IAdminRepository _adminRepo;
+        // ── No ILogisticsRepository needed — vehicles fetched via _productionRepo ──
 
         public ProductionController(IProductionRepository productionRepo,
-                                    IAdminRepository adminRepo,
-                                    ILogisticsRepository logisticsRepo)
+                                    IAdminRepository adminRepo)
         {
             _productionRepo = productionRepo;
             _adminRepo = adminRepo;
-            //_logisticsRepo = logisticsRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -39,9 +37,9 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Batches = _productionRepo.GetClosedBatches();   // only Closed, not yet dispatched
+            ViewBag.Batches = _productionRepo.GetClosedBatches();
             ViewBag.Plants = _adminRepo.GetAllPlants();
-           // ViewBag.Vehicles = _logisticsRepo.GetAllVehicles();
+            ViewBag.Vehicles = _productionRepo.GetAllVehicles(); // ✅ ADD THIS                                                                 // ✅ from ProductionRepository
             return View();
         }
 

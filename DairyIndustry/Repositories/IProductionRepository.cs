@@ -1,4 +1,5 @@
-﻿using DairyIndustry.Models.Production;
+﻿using DairyIndustry.Models.Logistics;
+using DairyIndustry.Models.Production;
 
 namespace DairyIndustry.Repositories
 {
@@ -6,6 +7,7 @@ namespace DairyIndustry.Repositories
     {
         // ── Dropdowns ──────────────────────────────────────────
         List<BatchDropdownModel> GetClosedBatches();   // for Create form
+        List<VehiclesModel> GetAllVehicles();//to get vechical
 
         // ── Transfers ──────────────────────────────────────────
         int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
