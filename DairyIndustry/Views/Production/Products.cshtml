@@ -1,0 +1,123 @@
+﻿@model List<DairyIndustry.Models.Production.ProductModel>
+@{
+    ViewData["Title"] = "Products";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">📦 Products</h4>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-3">
+
+    {{-- LEFT: ADD FORM --}}
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white"><strong>Add New Product</strong></div>
+            <div class="card-body">
+                <form asp-action="AddProduct" method="post">
+
+                    <div class="mb-2">
+                        <label class="form-label">Product Name</label>
+                        <input type="text" name="productName" class="form-control" placeholder="e.g. Full Cream Milk" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Product Type</label>
+                        <select name="productType" class="form-select" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="Milk">Milk</option>
+                            <option value="Butter">Butter</option>
+                            <option value="Ghee">Ghee</option>
+                            <option value="Paneer">Paneer</option>
+                            <option value="Curd">Curd</option>
+                            <option value="Cheese">Cheese</option>
+                            <option value="Cream">Cream</option>
+                            <option value="IceCream">Ice Cream</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">MRP (₹)</label>
+                        <input type="number" name="mrp" class="form-control" step="0.01" min="0" placeholder="e.g. 55.00" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Unit</label>
+                        <select name="unit" class="form-select" required>
+                            <option value="">-- Select Unit --</option>
+                            <option value="Ltr">Ltr</option>
+                            <option value="Kg">Kg</option>
+                            <option value="Gm">Gm</option>
+                            <option value="Pcs">Pcs</option>
+                            <option value="Ml">Ml</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Shelf Life (Days) <span class="text-muted">optional</span></label>
+                        <input type="number" name="shelfLifeDays" class="form-control" min="1" placeholder="e.g. 7" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">+ Add Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- RIGHT: PRODUCT LIST --}}
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Product Name</th>
+                            <th>Type</th>
+                            <th>MRP (₹)</th>
+                            <th>Unit</th>
+                            <th>Shelf Life</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>
+                        }
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td>@p.ProductId</td>
+                                <td><strong>@p.ProductName</strong></td>
+                                <td><span class="badge bg-info text-dark">@p.ProductType</span></td>
+                                <td>₹@p.MRP.ToString("N2")</td>
+                                <td>@p.Unit</td>
+                                <td>@(p.ShelfLifeDays.HasValue? p.ShelfLifeDays + " days" : "—")</td>
+                                <td>
+                                    <a asp-action="EditProduct" asp-route-id="@p.ProductId"
+                                       class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form asp-action="DeleteProduct" method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete @p.ProductName?')">
+                                        <input type="hidden" name="id" value="@p.ProductId" />
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
