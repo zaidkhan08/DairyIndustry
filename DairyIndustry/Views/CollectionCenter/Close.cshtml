@@ -1,0 +1,35 @@
+﻿<h2>Close Batch</h2>
+@{
+    ViewData["Title"] = "Close Batch";
+    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+}
+<div class="container mt-4">
+    <div class="card shadow p-4" style="max-width: 500px; margin:auto;">
+
+        <h4 class="mb-4 text-center">Close Batch</h4>
+
+        <form method="post">
+
+            <div class="mb-3">
+                <label class="form-label">Batch Id</label>
+                <input name="batchId" class="form-control" />
+            </div>
+
+            <div class="text-center">
+                <button class="btn btn-danger px-4">Close Batch</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@if (ViewBag.Message != null)
+{
+    <p style="color:green">@ViewBag.Message</p>
+}
+
+@if (ViewBag.Error != null)
+{
+    <p style="color:red">@ViewBag.Error</p>
+}

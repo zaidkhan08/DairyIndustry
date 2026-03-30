@@ -1,0 +1,82 @@
+﻿@using DairyIndustry.Models.Collection
+@model List<BatchViewModel>
+
+@{
+    ViewData["Title"] = "Batch Collections";
+    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+}
+@if (TempData["Success"] != null)
+{
+    <script>
+        alert('@TempData["Success"]');
+    </script>
+}
+
+@if (TempData["Error"] != null)
+{
+    <script>
+        alert('@TempData["Error"]');
+    </script>
+}
+<div class="container mt-4">
+    <div class="card shadow p-4">
+
+        <h4 class="text-center mb-4">Batch Status</h4>
+
+        <table class="table table-bordered table-hover text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Batch Id</th>
+                    <th>Date</th>
+                    <th>Shift</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.BatchId</td>
+                        <td>@item.BatchDate.ToShortDateString()</td>
+                        <td>@item.Shift</td>
+
+                        <td>
+                            @if (item.Status == "Open")
+                            {
+                                <span class="badge bg-success">Open</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Closed</span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (item.Status == "Open")
+                            {
+                                <form method="post" asp-action="Close">
+                                    <input type="hidden" name="batchId" value="@item.BatchId" />
+                                    <button class="btn btn-sm btn-danger">Close</button>
+                                </form>
+                            }
+                            else
+                            {
+                               
+                                <a asp-action="BatchCollections"
+                                   asp-controller="CollectionCenter"
+                                   asp-route-batchId="@item.BatchId"
+                                   class="btn btn-sm btn-primary">
+                                    View
+                                </a>
+                            }
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div>
+</div>

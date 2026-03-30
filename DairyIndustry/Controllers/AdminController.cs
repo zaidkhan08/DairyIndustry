@@ -1,11 +1,12 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DairyIndustry.Controllers
 {
-    [ServiceFilter(typeof(ActionLogFilter))]
+    //[ServiceFilter(typeof(ActionLogFilter))]
     public class AdminController : Controller
     {
         private readonly IAdminRepository _adminRepo;
@@ -52,6 +53,7 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
+            HttpContext.Session.SetInt32("StaffId", user.StaffId??0);
 
             switch (user.RoleName)
             {
@@ -61,8 +63,8 @@ namespace DairyIndustry.Controllers
                 case "Driver":
                     return RedirectToAction("Index", "Driver");
 
-                //case "Collection Agent":
-                //    return RedirectToAction("Index", "Collection");
+                case "Collection Agent":
+                    return RedirectToAction("Dashboard", "CollectionCenter");
 
                 //case "Production Manager":
                 //    return RedirectToAction("Index", "Production");
@@ -91,7 +93,7 @@ namespace DairyIndustry.Controllers
         // DASHBOARD
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Index()
         {
             var users = _adminRepo.GetAllUsers();
@@ -102,14 +104,14 @@ namespace DairyIndustry.Controllers
         // ROLES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Roles()
         {
             var roles = _adminRepo.GetAllRoles();
             return View(roles);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult CreateRole(string roleName)
         {
@@ -121,21 +123,21 @@ namespace DairyIndustry.Controllers
         // USERS
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Users()
         {
             var users = _adminRepo.GetAllUsers();
             return View(users);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult RegisterUser()
         {
             ViewBag.Roles = _adminRepo.GetAllRoles();
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult RegisterUser(string username, string password, int roleId, int? staffId)
         {
@@ -144,7 +146,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult UpdateUserStatus(int userId, bool isActive)
         {
@@ -156,7 +158,7 @@ namespace DairyIndustry.Controllers
         // AUDIT LOGS
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
         {
             var logs = _adminRepo.GetAuditLogs(userId, entityName, fromDate, toDate);
@@ -167,14 +169,14 @@ namespace DairyIndustry.Controllers
         // STATE
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult States()
         {
             var states = _adminRepo.GetAllStates();
             return View(states);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddState(string stateName)
         {
@@ -186,7 +188,7 @@ namespace DairyIndustry.Controllers
         // LOCATION — CITY
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Cities()
         {
             var cities = _adminRepo.GetAllCities();
@@ -194,7 +196,7 @@ namespace DairyIndustry.Controllers
             return View(cities);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddCity(string cityName, int stateId)
         {
@@ -202,7 +204,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Cities");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult GetCitiesByState(int stateId)
         {
             var cities = _adminRepo.GetCitiesByState(stateId);
@@ -213,7 +215,7 @@ namespace DairyIndustry.Controllers
         // LOCATION — VILLAGE
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Villages()
         {
             var villages = _adminRepo.GetAllVillages();
@@ -221,7 +223,7 @@ namespace DairyIndustry.Controllers
             return View(villages);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddVillage(string villageName, int cityId)
         {
@@ -229,7 +231,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Villages");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult GetVillagesByCity(int cityId)
         {
             var villages = _adminRepo.GetVillagesByCity(cityId);
@@ -281,20 +283,20 @@ namespace DairyIndustry.Controllers
         // STAFF
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Staff()
         {
             var staffList = _adminRepo.GetAllStaff();
             return View(staffList);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult AddStaff()
         {
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public async Task<IActionResult> AddStaff(string firstName, string lastName,
                                                    string phone, string email,
@@ -346,7 +348,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Staff");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult ToggleStaffActive(int staffId, bool isActive)
         {
@@ -358,7 +360,7 @@ namespace DairyIndustry.Controllers
         // PLANT
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpGet]
         public ActionResult AddPlant()
         {

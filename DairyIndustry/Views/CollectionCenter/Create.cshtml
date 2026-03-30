@@ -1,0 +1,107 @@
+﻿@using DairyIndustry.Models.Collection
+@model MilkCollectionViewModel
+
+@{
+    ViewData["Title"] = "Milk Collection Entry";
+    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+}
+
+<div class="container mt-4">
+    <div class="card shadow p-4" style="max-width: 850px; margin:auto; border-radius:12px;">
+
+        <h4 class="text-center mb-4">Milk Collection Entry</h4>
+
+        <form method="post">
+
+            <div class="row g-3">
+
+                <!-- Center -->
+                <div class="col-md-6">
+                    <label class="form-label">Center</label>
+                    <input value="@Model.CenterName" class="form-control" readonly />
+                </div>
+
+                <!-- Farmer -->
+                <div class="col-md-6">
+                    <label class="form-label">Farmer</label>
+                    <select asp-for="FarmerId" asp-items="Model.Farmers" class="form-control">
+                        <option value="">-- Select Farmer --</option>
+                    </select>
+                </div>
+
+                <!-- Milk Type -->
+                <div class="col-md-6">
+                    <label class="form-label">Milk Type</label>
+                    <select asp-for="MilkTypeId" asp-items="Model.MilkTypes" class="form-control">
+                        <option value="">-- Select Milk Type --</option>
+                    </select>
+                </div>
+
+                <!-- Batch -->
+                <div class="col-md-6">
+                    <label class="form-label">Batch</label>
+                    <select asp-for="BatchId" asp-items="Model.Batches" class="form-control">
+                        <option value="">-- Select Batch --</option>
+                    </select>
+                </div>
+
+                <!-- Quantity -->
+                <div class="col-md-6">
+                    <label class="form-label">Quantity (Liters)</label>
+                    <input asp-for="Quantity" class="form-control" />
+                </div>
+
+                <!-- Shift -->
+                <div class="col-md-6">
+                    <label class="form-label">Shift</label>
+                    <select asp-for="Shift" class="form-control">
+                        <option value="">-- Select Shift --</option>
+                        <option>Morning</option>
+                        <option>Evening</option>
+                        <option>Night</option>
+                    </select>
+                </div>
+
+                <!-- Date -->
+                <div class="col-md-6">
+                    <label class="form-label">Date</label>
+                    <input asp-for="CollectionDate" type="date" class="form-control" />
+                </div>
+
+                <!-- Fat -->
+                <div class="col-md-6">
+                    <label class="form-label">Fat</label>
+                    <input asp-for="AppliedFat" class="form-control" />
+                </div>
+
+                <!-- CLR -->
+                <div class="col-md-6">
+                    <label class="form-label">CLR</label>
+                    <input asp-for="AppliedCLR" class="form-control" />
+                </div>
+
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary px-4">Save</button>
+            </div>
+
+        </form>
+
+        <!-- Messages -->
+        @if (ViewBag.Message != null)
+        {
+            <div class="alert alert-success mt-3 text-center">
+                @ViewBag.Message
+            </div>
+        }
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger mt-3 text-center">
+                @ViewBag.Error
+            </div>
+        }
+
+    </div>
+</div>

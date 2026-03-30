@@ -1,17 +1,42 @@
 ﻿using DairyIndustry.Models.Collection;
 using DairyIndustry.Models.FarmerModel;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Repositories.Interfaces
 {
     public interface ICollectionCenterRepository
     {
+       // CollectionCenter GetCollectionCenterByStaff(int staffId);
 
-        //Details
-        CollectionCenter GetCollectionCenterById(int  id);
+        int OpenBatch(int centerId, string shift, DateTime batchDate);
+        bool CloseBatch(int batchId);
+        (int collectionId, decimal rate, decimal amount) RecordMilk(
+       int farmerId,
+       int centerId,
+       int milkTypeId,
+       int batchId,
+       decimal quantity,
+       string shift,
+       DateTime collectionDate,
+       decimal fat,
+       decimal clr
+   );
 
-        bool AddFarmer(Farmer farmer, int value);
-        List<Farmer> GetFarmersByCenterStaff(int centerId);
-      //  bool DeleteFarmerById(int id);
+        List<Farmer> GetFarmers();
 
+        List<BatchCollectionView> GetBatchCollections(int batchId);
+        int GetCurrentBatchId(int centerId);
+
+        List<BatchViewModel> GetBatchesByCenter(int centerId);
+
+        List<MilkTypes> GetMilkTypes();
+        List<BatchViewModel> GetOpenBatches(int centerId);
+
+
+        List<CenterInventoryViewModel> GetCenterInventory(int? centerId);
+
+
+        DashboardViewModel GetCollectionCenterByStaff(int staffId);
     }
+      
 }

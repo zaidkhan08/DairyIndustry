@@ -6,19 +6,12 @@ namespace DairyIndustry.Controllers
 {
     public class FarmerController : Controller
     {
-
-        private readonly IFarmerRepository _repository;
-
-        public FarmerController(IFarmerRepository repository)
+        private readonly IFarmerRepository _farmerRepo;
+        public FarmerController(IFarmerRepository farmerRepo, IWebHostEnvironment env)
         {
-            _repository = repository;
+            _farmerRepo = farmerRepo;
         }
 
-        public IActionResult Dashboard()
-        {
-            return View();
-        }
 
-        
     }
 }

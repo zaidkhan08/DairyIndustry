@@ -1,6 +1,10 @@
+using DairyIndustry.Controllers;
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
 using DairyIndustry.Repositories;
+using DairyIndustry.Repositories.Interfaces;
+using DairyIndustry.Repository;
+using Microsoft.AspNetCore.Identity.Data;
 
 namespace DairyIndustry
 {
@@ -11,6 +15,10 @@ namespace DairyIndustry
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddSingleton<DbHelper>();
+            
+            builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
+            builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
+            //builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddControllersWithViews(options =>  

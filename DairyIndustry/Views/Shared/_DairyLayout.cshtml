@@ -6,36 +6,38 @@
     <title>@ViewData["Title"] - DairyMS</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <style>
         :root {
-            --nescafe-red: #E1261C;
-            --nescafe-dark: #121212;
-            --nescafe-gray: #f4f4f4;
+            --primary-blue: #0d6efd;
+            --dark-blue: #0a3d91;
+            --light-blue: #eaf2ff;
+            --text-dark: #1a1a1a;
         }
 
         body {
             background-color: #ffffff;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: var(--nescafe-dark);
+            color: var(--text-dark);
             margin: 0;
         }
 
-        /* Modern minimalist Navbar */
+        /* Navbar */
         .navbar {
             padding: 1.5rem 0;
-            background: #fff;
-            transition: all 0.3s;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e5e5;
         }
 
         .navbar-brand {
             font-weight: 800;
             font-size: 1.5rem;
             letter-spacing: -1px;
-            color: var(--nescafe-dark) !important;
+            color: var(--dark-blue) !important;
         }
 
             .navbar-brand span {
-                color: var(--nescafe-red);
+                color: var(--primary-blue);
             }
 
         .nav-link {
@@ -44,29 +46,29 @@
             font-weight: 700;
             letter-spacing: 1px;
             margin: 0 15px;
-            color: var(--nescafe-dark) !important;
+            color: var(--text-dark) !important;
         }
 
             .nav-link:hover {
-                color: var(--nescafe-red) !important;
+                color: var(--primary-blue) !important;
             }
 
-        /* Nescafé style buttons */
-        .btn-nescafe {
-            background-color: var(--nescafe-red);
+        /* Blue Button */
+        .btn-blue {
+            background-color: var(--primary-blue);
             color: white;
-            border-radius: 50px; /* High rounding */
+            border-radius: 50px;
             padding: 10px 30px;
             font-weight: bold;
             text-transform: uppercase;
             border: none;
-            transition: transform 0.2s;
+            transition: all 0.3s;
         }
 
-            .btn-nescafe:hover {
+            .btn-blue:hover {
+                background-color: var(--dark-blue);
                 transform: scale(1.05);
                 color: white;
-                background-color: #c11e16;
             }
 
         .main-content {
@@ -74,20 +76,29 @@
         }
 
         footer {
-            background: var(--nescafe-dark);
+            background: var(--dark-blue);
             color: #fff;
             padding: 60px 0;
             margin-top: 100px;
         }
+
+            footer span {
+                color: #9ec5ff;
+            }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" asp-controller="Home" asp-action="Index">DAIRY<span>MS</span></a>
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                DAIRY<span>MS</span>
+            </a>
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item"><a class="nav-link" href="#">Collection</a></li>
@@ -95,8 +106,10 @@
                     <li class="nav-item"><a class="nav-link" href="#">Suppliers</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Sustainability</a></li>
                 </ul>
-                
-                <a class="btn btn-nescafe" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+
+                <a class="btn btn-blue" asp-area="" asp-controller="Admin" asp-action="Login">
+                    Login
+                </a>
             </div>
         </div>
     </nav>
@@ -108,7 +121,7 @@
     <footer>
         <div class="container text-center">
             <h4 class="fw-bold mb-4">DAIRY<span>MS</span></h4>
-            <p class="text-secondary small">© 2026 Dairy Management System. All Rights Reserved.</p>
+            <p class="text-light small">© 2026 Dairy Management System. All Rights Reserved.</p>
         </div>
     </footer>
 

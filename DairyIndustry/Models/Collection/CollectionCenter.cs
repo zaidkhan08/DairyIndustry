@@ -2,14 +2,18 @@
 {
     public class CollectionCenter
     {
-
-        public int CenterId { get; set; }
-        public string CenterName { get; set; }
+            public int CenterId { get; set; }
+            public string CenterName { get; set; }
+            public int VillageId { get; set; }
+            public decimal Capacity { get; set; }
+            public string Location { get; set; }
+            public int StaffId { get; set; }
         
-        public int VillageId { get; set; }
-        public string VillageName { get; set; }
+            //To Display Staff Name
+            public string StaffFirstName { get; set; }
+            public string StaffLastName { get; set; }
 
-        public decimal Capacity {  get; set; }
-        public string Location { get; set; }
+        public int? BatchId { get; set; }
     }
-}
+    }
+

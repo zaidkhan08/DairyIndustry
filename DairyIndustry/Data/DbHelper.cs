@@ -10,7 +10,7 @@ namespace DairyIndustry.Data
             _connectionString = c.GetConnectionString("dbConn");
         }
 
-        public SqlConnection GetSqlConnection()
+        public SqlConnection GetConnection()
         {
             var connection = new SqlConnection(_connectionString);
             return connection;
