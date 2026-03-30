@@ -1,0 +1,98 @@
+﻿@model DairyIndustry.Models.Production.ProductionBatchModel
+@{
+    ViewData["Title"] = "Batch Detail";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🏭 Batch Detail — PB-@Model.ProductionBatchId</h4>
+    <a asp-action="Batches" class="btn btn-outline-secondary btn-sm">← Back to List</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-3">
+
+    {{-- LEFT: Batch Info --}}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">Batch Info</div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Batch #</dt>
+                    <dd class="col-sm-7">PB-@Model.ProductionBatchId</dd>
+
+                    <dt class="col-sm-5">Plant</dt>
+                    <dd class="col-sm-7">@Model.PlantName</dd>
+
+                    <dt class="col-sm-5">Product</dt>
+                    <dd class="col-sm-7">@Model.ProductName</dd>
+
+                    <dt class="col-sm-5">Product Type</dt>
+                    <dd class="col-sm-7"><span class="badge bg-info text-dark">@Model.ProductType</span></dd>
+
+                    <dt class="col-sm-5">Unit</dt>
+                    <dd class="col-sm-7">@Model.Unit</dd>
+
+                    <dt class="col-sm-5">Milk Used</dt>
+                    <dd class="col-sm-7"><strong>@Model.MilkUsedQuantity.ToString("N2") L</strong></dd>
+
+                    <dt class="col-sm-5">Production Date</dt>
+                    <dd class="col-sm-7">@Model.ProductionDate.ToString("dd-MMM-yyyy")</dd>
+
+                    <dt class="col-sm-5">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge @Model.StatusBadgeClass fs-6">@Model.BatchStatus</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {{-- RIGHT: Update Status (only if InProgress) --}}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">Update Batch Status</div>
+            <div class="card-body">
+                @if (Model.BatchStatus == "InProgress")
+                {
+                    <p class="text-muted mb-3">This batch is currently <strong>In Progress</strong>. Select the outcome below:</p>
+
+                    <form asp-action="UpdateBatchStatus" method="post">
+                        <input type="hidden" name="productionBatchId" value="@Model.ProductionBatchId" />
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="batchStatus" value="Completed"
+                                    class="btn btn-success"
+                                    onclick="return confirm('Mark this batch as Completed?')">
+                                ✅ Mark as Completed
+                            </button>
+                            <button type="submit" name="batchStatus" value="QCFailed"
+                                    class="btn btn-danger"
+                                    onclick="return confirm('Mark this batch as QC Failed?')">
+                                ❌ Mark as QC Failed
+                            </button>
+                            <button type="submit" name="batchStatus" value="Cancelled"
+                                    class="btn btn-secondary"
+                                    onclick="return confirm('Cancel this batch?')">
+                                🚫 Cancel Batch
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-2">
+                        This batch is <strong>@Model.BatchStatus</strong> and cannot be updated further.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

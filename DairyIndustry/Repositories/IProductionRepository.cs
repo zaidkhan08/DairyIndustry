@@ -1,22 +1,43 @@
-﻿using DairyIndustry.Models.Logistics;
-using DairyIndustry.Models.Production;
+﻿using DairyIndustry.Models.Production;
+using DairyIndustry.Models.Logistics;
 
 namespace DairyIndustry.Repositories
 {
     public interface IProductionRepository
     {
-        // ── Dropdowns ──────────────────────────────────────────
-        List<BatchDropdownModel> GetClosedBatches();   // for Create form
-        List<VehiclesModel> GetAllVehicles();//to get vechical
+        // ════════════════════════════════════════════════════════
+        // DROPDOWNS
+        // ════════════════════════════════════════════════════════
+        List<BatchDropdownModel> GetClosedBatches();
+        List<VehiclesModel> GetAllVehicles();
 
-        // ── Transfers ──────────────────────────────────────────
+
+        // ════════════════════════════════════════════════════════
+        // MILK TRANSFERS
+        // ════════════════════════════════════════════════════════
         int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
                                   decimal dispatchQty, DateTime dispatchDate);
-
         void ReceiveMilkTransfer(int transferId, decimal receivedQty, DateTime receivedDate);
-
         List<MilkTransferModel> GetAllTransfers();
-
         MilkTransferModel GetTransferById(int transferId);
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCTS
+        // ════════════════════════════════════════════════════════
+        int AddProduct(string productName, string productType,
+                                    decimal mrp, string unit, int? shelfLifeDays);
+        List<ProductModel> GetAllProducts();
+        ProductModel GetProductById(int productId);
+        void UpdateProduct(ProductModel product);
+        void DeleteProduct(int productId);
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCTION BATCHES
+        // ════════════════════════════════════════════════════════
+        int StartProductionBatch(int plantId, int productId,
+                                  decimal milkUsedQuantity, DateTime productionDate);
+        void UpdateBatchStatus(int productionBatchId, string batchStatus);
+        List<ProductionBatchModel> GetAllProductionBatches();
+        ProductionBatchModel GetProductionBatchById(int productionBatchId);
     }
 }
