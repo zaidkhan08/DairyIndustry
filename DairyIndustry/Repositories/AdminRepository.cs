@@ -732,30 +732,43 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<PlantModel> GetAllPlants()
+        public List<PlantModel> GetAllPlants(bool? isActive = true)
         {
-            var list = new List<PlantModel>();    
+            var list = new List<PlantModel>();
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetPlants", con))
             {
-                string query = "select * from Production.ProcessingPlants";
-                using (SqlCommand cmd = new SqlCommand(query,con))
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@IsActive", (object)(isActive.HasValue ? (object)(isActive.Value ? 1 : 0) : DBNull.Value));
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new PlantModel
                         {
-                            list.Add(new PlantModel
-                            {
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                Location = reader["Location"].ToString(),
-                            });
-                        }
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        });
                     }
                 }
             }
             return list;
+        }
+
+        public void TogglePlant(int id, bool isActive)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_TogglePlant", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", id);
+                cmd.Parameters.AddWithValue("@IsActive", isActive ? 1 : 0);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public void DeletePlant(int id)
@@ -775,48 +788,39 @@ namespace DairyIndustry.Repositories
         public void UpdatePlant(PlantModel plant)
         {
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_UpdatePlant", con))
             {
-                string query = @"UPDATE Production.ProcessingPlants 
-                         SET PlantName = @PlantName,
-                             Location  = @Location
-                         WHERE PlantId = @PlantId";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    con.Open();
-                    cmd.Parameters.AddWithValue("@PlantId", plant.PlantId);
-                    cmd.Parameters.AddWithValue("@PlantName", plant.PlantName);
-                    cmd.Parameters.AddWithValue("@Location", plant.Location);
-                    cmd.ExecuteNonQuery();
-                }
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", plant.PlantId);
+                cmd.Parameters.AddWithValue("@PlantName", plant.PlantName);
+                cmd.Parameters.AddWithValue("@Location", (object)plant.Location ?? DBNull.Value);
+                con.Open();
+                cmd.ExecuteNonQuery();
             }
         }
-
         public PlantModel getPlantById(int id)
         {
-            PlantModel plant=new PlantModel();
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetPlantById", con))
             {
-                string query = "select * from Production.ProcessingPlants where PlantId=@id";
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", id);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    con.Open();
-                    cmd.Parameters.AddWithValue("@id", id);
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    if (reader.Read())
                     {
-                        if(reader.Read())
+                        return new PlantModel
                         {
-                            plant = new PlantModel
-                            {
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                Location = reader["Location"].ToString(),
-                            };
-                        }
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        };
                     }
                 }
             }
-            return plant;
+            return null;
         }
     }
 }

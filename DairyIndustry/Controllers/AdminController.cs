@@ -363,7 +363,7 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public ActionResult GetAllPlants()
         {
-            var plants = _adminRepo.GetAllPlants();
+            var plants = _adminRepo.GetAllPlants(isActive: null);
             return View(plants);
         }
 
@@ -371,7 +371,15 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public ActionResult DeletePlant(int id)
         {
-            _adminRepo.DeletePlant(id);
+            _adminRepo.TogglePlant(id, isActive: false);
+            return RedirectToAction("GetAllPlants");
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult RestorePlant(int id)
+        {
+            _adminRepo.TogglePlant(id, isActive: true);
             return RedirectToAction("GetAllPlants");
         }
 
@@ -397,6 +405,6 @@ namespace DairyIndustry.Controllers
             return View("EditPlant", plant);
         }
 
-        
+
     }
 }

@@ -71,8 +71,8 @@ namespace DairyIndustry.Repositories
 
         int AddPlant(string PlantName,string Location);
 
-        List<PlantModel> GetAllPlants();
-        void DeletePlant(int id);
+        List<PlantModel> GetAllPlants(bool? isActive = true);
+        void TogglePlant(int id, bool isActive);
         void UpdatePlant(PlantModel plant);
         PlantModel getPlantById(int id);
     }
