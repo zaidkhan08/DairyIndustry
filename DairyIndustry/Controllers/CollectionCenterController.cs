@@ -3,6 +3,7 @@ using DairyIndustry.Models.Collection;
 using DairyIndustry.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public class CollectionCenterController : Controller
 {
@@ -60,12 +61,14 @@ public class CollectionCenterController : Controller
             var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
 
             int batchId = _collectionCenterRepo.OpenBatch(
+
                 center.CenterId,
+               // center.CenterName,
                 request.Shift,
                 request.BatchDate
             );
 
-            // 🔥 STORE IN SESSION
+           
             HttpContext.Session.SetInt32("BatchId", batchId);
 
             TempData["Message"] = "Batch opened successfully. ID: " + batchId;
@@ -77,6 +80,7 @@ public class CollectionCenterController : Controller
 
         return RedirectToAction("Dashboard");
     }
+
 
     // ================= CLOSE BATCH =================
     public IActionResult Close()
@@ -143,26 +147,23 @@ public class CollectionCenterController : Controller
 
         return View(model);
     }
-
     [HttpPost]
     public IActionResult Create(MilkCollectionViewModel model)
     {
         try
         {
             int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
-
             var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
 
             model.CenterName = center.CenterName;
 
-            //  Ensure BatchId from Session
-            model.BatchId = HttpContext.Session.GetInt32("BatchId") ?? 0;
+            // DO NOT override BatchId
 
             var result = _collectionCenterRepo.RecordMilk(
                 model.FarmerId,
                 center.CenterId,
                 model.MilkTypeId,
-                model.BatchId,
+                model.BatchId, // 👈 use form value
                 model.Quantity,
                 model.Shift,
                 model.CollectionDate,
@@ -170,7 +171,14 @@ public class CollectionCenterController : Controller
                 model.AppliedCLR
             );
 
-            TempData["Message"] = $"Saved! ID: {result.collectionId}, Amount: {result.amount}";
+            if (result.collectionId == 0)
+            {
+                TempData["Error"] = "Insert failed (Check SP)";
+            }
+            else
+            {
+                TempData["Message"] = $"Saved! ID: {result.collectionId}, Amount: {result.amount}";
+            }
         }
         catch (Exception ex)
         {
@@ -188,16 +196,16 @@ public class CollectionCenterController : Controller
             return RedirectToAction("BatchStatus"); // 👈 go back safely
         }
 
-        // ✅ Always update session with current batch
+        // Always update session with current batch
         HttpContext.Session.SetInt32("BatchId", batchId.Value);
 
-        // ✅ For display purpose
+        //  For display purpose
         ViewBag.BatchId = batchId.Value;
 
-        // ✅ Get data
+        //  Get data
         var data = _collectionCenterRepo.GetBatchCollections(batchId.Value);
 
-        // ✅ Handle no data case (optional)
+        //  Handle no data case (optional)
         if (data == null || data.Count == 0)
         {
             TempData["Error"] = "No records found for this batch.";

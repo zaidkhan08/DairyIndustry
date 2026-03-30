@@ -120,7 +120,7 @@ namespace DairyIndustry.Repository
             return farmers;
         }
 
-        // ✅ Record Milk (SP CALL)
+        // Record Milk (SP CALL)
         public (int collectionId, decimal rate, decimal amount) RecordMilk(
             int farmerId,
             int centerId,
@@ -150,15 +150,32 @@ namespace DairyIndustry.Repository
 
                     conn.Open();
 
-                    SqlDataReader rdr = cmd.ExecuteReader();
+                    //SqlDataReader rdr = cmd.ExecuteReader();
 
-                    if (rdr.Read())
+                    //if (rdr.Read())
+                    //{
+                    //    return (
+                    //        Convert.ToInt32(rdr["NewCollectionId"]),
+                    //        Convert.ToDecimal(rdr["RateApplied"]),
+                    //        Convert.ToDecimal(rdr["AmountPayable"])
+                    //    );
+                    //}
+                    try
                     {
-                        return (
-                            Convert.ToInt32(rdr["NewCollectionId"]),
-                            Convert.ToDecimal(rdr["RateApplied"]),
-                            Convert.ToDecimal(rdr["AmountPayable"])
-                        );
+                        SqlDataReader rdr = cmd.ExecuteReader();
+
+                        if (rdr.Read())
+                        {
+                            return (
+                                Convert.ToInt32(rdr["NewCollectionId"]),
+                                Convert.ToDecimal(rdr["RateApplied"]),
+                                Convert.ToDecimal(rdr["AmountPayable"])
+                            );
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("SP ERROR: " + ex.Message);
                     }
                 }
             }
@@ -345,27 +362,39 @@ namespace DairyIndustry.Repository
             SELECT 
                 s.FirstName + ' ' + s.LastName AS StaffName,
                 cc.CenterId,
-                cc.CenterName
+                cc.CenterName,
+                cc.Capacity,
+                cc.Location,
+                lv.VillageName
             FROM HR.Staffs s
             INNER JOIN Collection.StaffCenters sc 
                 ON sc.StaffId = s.StaffId
             INNER JOIN Collection.CollectionCenters cc 
                 ON cc.CenterId = sc.CenterId
+               INNER JOIN Location.Village lv
+                ON cc.VillageId = lv.VillageId
             WHERE s.StaffId = @StaffId
+
         ", con);
 
                 cmd.Parameters.AddWithValue("@StaffId", staffId);
 
                 con.Open();
                 var reader = cmd.ExecuteReader();
-
                 if (reader.Read())
                 {
                     model = new DashboardViewModel
                     {
                         StaffName = reader["StaffName"].ToString(),
                         CenterId = Convert.ToInt32(reader["CenterId"]),
-                        CenterName = reader["CenterName"].ToString()
+                        CenterName = reader["CenterName"].ToString(),
+
+                        Capacity = reader["Capacity"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["Capacity"]) : 0,
+
+                        Location = reader["Location"]?.ToString() ?? "",
+
+                        VillageName = reader["VillageName"]?.ToString() ?? ""
                     };
                 }
             }

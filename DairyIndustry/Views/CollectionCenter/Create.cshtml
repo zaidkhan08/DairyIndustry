@@ -11,7 +11,7 @@
 
         <h4 class="text-center mb-4">Milk Collection Entry</h4>
 
-        <form method="post">
+        <form asp-action="Create" method="post">
 
             <div class="row g-3">
 
@@ -64,9 +64,14 @@
 
                 <!-- Date -->
                 <div class="col-md-6">
-                    <label class="form-label">Date</label>
-                    <input asp-for="CollectionDate" type="date" class="form-control" />
+                    <label class="form-label">Date</label>@* 
+                    <input asp-for="CollectionDate" type="date" class="form-control" /> *@
+
+                    <input asp-for="CollectionDate" type="date"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           class="form-control" />
                 </div>
+
 
                 <!-- Fat -->
                 <div class="col-md-6">

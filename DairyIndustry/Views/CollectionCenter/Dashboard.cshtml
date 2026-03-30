@@ -22,14 +22,14 @@
                     <div class="col">
                         <h6 class="text-uppercase tracking-2 text-nescafe fw-bold mb-1">Center Overview</h6>
                         <h1 class="fw-800 mb-0">@Model.CenterName</h1>
-                      @*   <p class="opacity-75 mb-0"><i class="bi bi-geo-alt me-2"></i>@Model.VillageName | @Model.Location</p> *@
+                        <p class="opacity-75 mb-0"><i class="bi bi-geo-alt me-2"></i>@Model.VillageName | @Model.Location</p>
                     </div>
-                    @* <div class="col-md-3 text-md-end">
+                    <div class="col-md-3 text-md-end">
                         <div class="p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-10">
                             <small class="d-block text-uppercase tracking-1 opacity-75">Storage Limit</small>
                             <h3 class="mb-0 fw-bold">@Model.Capacity <small class="fs-6 fw-normal">Liters</small></h3>
                         </div>
-                    </div> *@
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
                 <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-droplet-fill text-nescafe fs-3"></i></div>
                 <div>
                     <p class="text-muted small fw-bold text-uppercase mb-0">Today's Milk</p>
-                    <h2 class="fw-800 mb-0">1,420 L</h2>
+                    <h2 class="fw-800 mb-0">@Model.TodayMilkTotal L</h2>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
                 <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-people-fill text-dark fs-3"></i></div>
                 <div>
                     <p class="text-muted small fw-bold text-uppercase mb-0">Active Farmers</p>
-                    <h2 class="fw-800 mb-0">84</h2>
+                    <h2 class="fw-800 mb-0">@Model.TotalFarmers</h2>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@
                 <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-check-circle-fill text-success fs-3"></i></div>
                 <div>
                     <p class="text-muted small fw-bold text-uppercase mb-0">Batch Status</p>
-                    <h2 class="fw-800 mb-0 text-success">OPEN</h2>
+                    <h2 class="fw-800 mb-0 text-success">@Model.BatchStatus</h2>
                 </div>
             </div>
         </div>

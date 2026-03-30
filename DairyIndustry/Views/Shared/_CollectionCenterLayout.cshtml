@@ -66,6 +66,12 @@
             transition: all 0.3s ease;
         }
 
+        #sidebar .small {
+            letter-spacing: 1px;
+            margin-top: 15px;
+            padding-left: 15px;
+        }
+
             .nav-link-sidebar:hover {
                 background: rgba(255,255,255,0.15);
                 color: #fff;
@@ -145,36 +151,55 @@
 <body>
 
     <nav id="sidebar">
-        <a class="sidebar-heading" href="#">DAIRY<span>MS</span></a>
+        <a class="sidebar-heading" asp-controller="CollectionCenter" asp-action="Dashboard">
+            DAIRY<span>MS</span>
+        </a>
 
-        <a class="nav-link-sidebar active" asp-controller="CollectionCenter" asp-action="Dashboard">
+        <!-- DASHBOARD -->
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")"
+           asp-controller="CollectionCenter" asp-action="Dashboard">
             <i class="bi bi-grid-1x2 me-2"></i> Dashboard
         </a>
 
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="Create">
+        <!-- FARMER MANAGEMENT -->
+        <div class="px-3 mt-3 text-uppercase text-white-50 small">Farmer Management</div>
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "AddFarmer" ? "active" : "")"
+           asp-controller="Farmer" asp-action="AddFarmer">
+            <i class="bi bi-person-plus me-2"></i> Add Farmer
+        </a>
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "DeactivateFarmer" ? "active" : "")"
+           asp-controller="Farmer" asp-action="DeactivateFarmer">
+            <i class="bi bi-person-x me-2"></i> Deactivate Farmer
+        </a>
+
+        <!-- MILK COLLECTION -->
+        <div class="px-3 mt-3 text-uppercase text-white-50 small">Milk Collection</div>
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")"
+           asp-controller="CollectionCenter" asp-action="Create">
             <i class="bi bi-droplet me-2"></i> Milk Entry
         </a>
 
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="Open">
-            <i class="bi bi-box-seam me-2"></i>Open Batch
+        <!-- MANAGE BATCHES -->
+        <div class="px-3 mt-3 text-uppercase text-white-50 small">Manage Batches</div>
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "Open" ? "active" : "")"
+           asp-controller="CollectionCenter" asp-action="Open">
+            <i class="bi bi-box-seam me-2"></i> Open Batch
         </a>
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="Close">
-            <i class="bi bi-list-check me-2"></i>Close Batch
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "BatchStatus" ? "active" : "")"
+           asp-controller="CollectionCenter" asp-action="BatchStatus">
+            <i class="bi bi-list-check me-2"></i> Batch Status
         </a>
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="BatchStatus">
-            <i class="bi bi-list-check me-2"></i>Batch Status
-        </a>
-       
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter"
+
+        <a class="nav-link-sidebar @(ViewContext.RouteData.Values["action"]?.ToString() == "BatchCollections" ? "active" : "")"
+           asp-controller="CollectionCenter"
            asp-action="BatchCollections"
            asp-route-batchId="@Context.Session.GetInt32("BatchId")">
-            View Collections
-        </a>
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="FarmersDashboard">
-            <i class="bi bi-people me-2"></i> Farmers
-        </a>
-        <a class="nav-link-sidebar" asp-controller="CollectionCenter" asp-action="Inventory">
-            View Inventory
+            <i class="bi bi-collection me-2"></i> View Collections
         </a>
     </nav>
 

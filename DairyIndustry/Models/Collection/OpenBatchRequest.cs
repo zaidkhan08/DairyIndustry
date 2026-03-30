@@ -8,5 +8,7 @@
         public string CenterName { get; set; }
         public string Shift { get; set; }
         public DateTime BatchDate { get; set; }
+
+
     }
 }
