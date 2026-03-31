@@ -21,6 +21,7 @@ namespace DairyIndustry
             //builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+            builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();
             builder.Services.AddControllersWithViews(options =>  
             {
                 options.Filters.Add<ExceptionHandlerFilter>();

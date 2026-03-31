@@ -10,10 +10,13 @@ namespace DairyIndustry.Controllers
     public class AdminController : Controller
     {
         private readonly IAdminRepository _adminRepo;
+        private readonly ILogisticsRepository _logisticsRepo;
 
-        public AdminController(IAdminRepository adminRepo)
+
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo)
         {
             _adminRepo = adminRepo;
+            _logisticsRepo = logisticsRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -61,7 +64,10 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index", "Admin");
 
                 case "Driver":
-                    return RedirectToAction("Index", "Driver");
+                    var driver = _logisticsRepo.GetDriverByUserId(user.UserId);
+                    if (driver != null)
+                        HttpContext.Session.SetInt32("DriverId", driver.DriverId);
+                    return RedirectToAction("Index", "Logistics");
 
                 case "Collection Agent":
                     return RedirectToAction("Dashboard", "CollectionCenter");
