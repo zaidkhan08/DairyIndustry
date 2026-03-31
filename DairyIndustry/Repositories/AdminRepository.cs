@@ -897,5 +897,175 @@ namespace DairyIndustry.Repositories
             }
             return null;
         }
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+
+        public int AddProduct(string productName, string productType, decimal mrp,
+                              string unit, int? shelfLifeDays, string description,
+                              int createdBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_AddProduct", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductName", productName);
+                    cmd.Parameters.AddWithValue("@ProductType", productType);
+                    cmd.Parameters.AddWithValue("@MRP", mrp);
+                    cmd.Parameters.AddWithValue("@Unit", unit);
+                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Description", (object?)description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return Convert.ToInt32(reader["ProductId"]);
+                    }
+                }
+            }
+            return 0;
+        }
+
+        // ── Get All Products ──────────────────────────────────
+        public List<ProductModel> GetAllProducts(string productType = null, bool? isActive = true)
+        {
+            var list = new List<ProductModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetAllProducts", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductType", (object?)productType ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(MapProduct(reader));
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ── Get Product By ID ─────────────────────────────────
+        public ProductModel GetProductById(int productId)
+        {
+            ProductModel product = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetProductById", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            product = MapProduct(reader);
+                    }
+                }
+            }
+
+            return product;
+        }
+
+        // ── Get Product Types for dropdown ────────────────────
+        public List<string> GetProductTypes()
+        {
+            var list = new List<string>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetProductTypes", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(reader["ProductType"].ToString());
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ── Update Product ────────────────────────────────────
+        public void UpdateProduct(int productId, string productName, string productType,
+                          decimal mrp, string unit, int? shelfLifeDays,
+                          string description, int modifiedBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_UpdateProduct", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    cmd.Parameters.AddWithValue("@ProductName", productName);
+                    cmd.Parameters.AddWithValue("@ProductType", productType);
+                    cmd.Parameters.AddWithValue("@MRP", mrp);
+                    cmd.Parameters.AddWithValue("@Unit", unit);
+                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Description", (object?)description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ModifiedBy", modifiedBy);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        reader.Read();
+                    }
+                }
+            }
+        }
+
+        // ── Toggle Active / Inactive ──────────────────────────
+        public void ToggleProductStatus(int productId, bool isActive, int modifiedBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_ToggleProductStatus", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    cmd.Parameters.AddWithValue("@IsActive", isActive);
+                    cmd.Parameters.AddWithValue("@ModifiedBy", modifiedBy);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        // ── Private mapper ────────────────────────────────────
+        private static ProductModel MapProduct(SqlDataReader reader)
+        {
+            return new ProductModel
+            {
+                ProductId = Convert.ToInt32(reader["ProductId"]),
+                ProductName = reader["ProductName"].ToString(),
+                ProductType = reader["ProductType"].ToString(),
+                MRP = Convert.ToDecimal(reader["MRP"]),
+                Unit = reader["Unit"].ToString(),
+                ShelfLifeDays = reader["ShelfLifeDays"] == DBNull.Value ? null : Convert.ToInt32(reader["ShelfLifeDays"]),
+                Description = reader["Description"] == DBNull.Value ? null : reader["Description"].ToString(),
+                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                CreatedBy = reader["CreatedBy"] == DBNull.Value ? null : Convert.ToInt32(reader["CreatedBy"]),
+                CreatedByName = reader["CreatedByName"] == DBNull.Value ? null : reader["CreatedByName"].ToString(),
+                ModifiedDate = reader["ModifiedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ModifiedDate"]),
+                ModifiedBy = reader["ModifiedBy"] == DBNull.Value ? null : Convert.ToInt32(reader["ModifiedBy"]),
+                ModifiedByName = reader["ModifiedByName"] == DBNull.Value ? null : reader["ModifiedByName"].ToString()
+            };
+        }
     }
 }

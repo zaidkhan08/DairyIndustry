@@ -421,6 +421,114 @@ namespace DairyIndustry.Controllers
             return View("EditPlant", plant);
         }
 
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+        
+        [SessionAuthorize("Admin")]
+        public IActionResult Products(string productType = null, bool? isActive = null)
+        {
+            var products = _adminRepo.GetAllProducts(productType, isActive);
+            ViewBag.ProductTypes = _adminRepo.GetProductTypes();
+            ViewBag.CurrentType = productType;
+            ViewBag.CurrentActive = isActive;   // ← must be bool? not string
+            return View(products);
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult ProductDetail(int id)
+        {
+            var product = _adminRepo.GetProductById(id);
+            if (product == null)
+            {
+                TempData["Error"] = "Product not found.";
+                return RedirectToAction("Products");
+            }
+            return View(product);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AddProduct()
+        {
+            return View();
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AddProduct(string productName, string productType,
+                                        decimal mrp, string unit,
+                                        int? shelfLifeDays, string description)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            try
+            {
+                _adminRepo.AddProduct(productName, productType, mrp,
+                                           unit, shelfLifeDays, description, userId);
+
+                TempData["Success"] = $"{productName} added successfully.";
+                return RedirectToAction("Products");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                return View();
+            }
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult EditProduct(int id)
+        {
+            var product = _adminRepo.GetProductById(id);
+            if (product == null)
+            {
+                TempData["Error"] = "Product not found.";
+                return RedirectToAction("Products");
+            }
+            return View(product);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult EditProduct(int productId, string productName,
+                                         string productType, decimal mrp,
+                                         string unit, int? shelfLifeDays,
+                                         string description)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            try
+            {
+                _adminRepo.UpdateProduct(productId, productName, productType,
+                                              mrp, unit, shelfLifeDays, description, userId);
+
+                TempData["Success"] = $"{productName} updated successfully.";
+                return RedirectToAction("Products");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                var product = _adminRepo.GetProductById(productId);
+                return View(product);
+            }
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult ToggleProductStatus(int productId, bool isActive)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+            _adminRepo.ToggleProductStatus(productId, isActive, userId);
+
+            TempData["Success"] = isActive
+                ? "Product activated."
+                : "Product deactivated.";
+
+            return RedirectToAction("Products");
+        }
+
 
     }
 }

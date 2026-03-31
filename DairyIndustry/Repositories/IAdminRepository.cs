@@ -77,6 +77,25 @@ namespace DairyIndustry.Repositories
         void TogglePlant(int id, bool isActive);
         void UpdatePlant(PlantModel plant);
         PlantModel getPlantById(int id);
+
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+
+        int AddProduct(string productName, string productType, decimal mrp,
+                                    string unit, int? shelfLifeDays, string description,
+                                    int createdBy);
+
+        List<ProductModel> GetAllProducts(string productType = null, bool? isActive = true);
+        ProductModel GetProductById(int productId);
+        List<string> GetProductTypes();
+
+        void UpdateProduct(int productId, string productName, string productType,
+                           decimal mrp, string unit, int? shelfLifeDays,
+                           string description, int modifiedBy);
+
+        void ToggleProductStatus(int productId, bool isActive, int modifiedBy);
+
     }
 
 }
