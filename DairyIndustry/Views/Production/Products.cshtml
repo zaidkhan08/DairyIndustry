@@ -1,59 +1,65 @@
 ﻿@model List<DairyIndustry.Models.Production.ProductModel>
 @{
     ViewData["Title"] = "Products";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
 }
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">📦 Products</h4>
-</div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+
+
+
+    @TempData["Success"]
+
+
+
 }
 
-<div class="row g-3">
+@* LEFT: ADD FORM *@
+<div class="col-lg-4">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-dark py-3">
+            <h6 class="card-title mb-0 text-white fw-bold">
+                <i class="bi bi-plus-lg me-2"></i>Add New Product
+            </h6>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="AddProduct" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Product Name</label>
+                    <input type="text" name="productName" class="form-control form-control-lg fs-6 rounded-3 shadow-none border-light bg-light bg-opacity-50" placeholder="e.g. Full Cream Milk" required />
+                </div>
 
-    {{-- LEFT: ADD FORM --}}
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white"><strong>Add New Product</strong></div>
-            <div class="card-body">
-                <form asp-action="AddProduct" method="post">
-
-                    <div class="mb-2">
-                        <label class="form-label">Product Name</label>
-                        <input type="text" name="productName" class="form-control" placeholder="e.g. Full Cream Milk" required />
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label">Product Type</label>
-                        <select name="productType" class="form-select" required>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold small">Product Type</label>
+                        <select name="productType" class="form-select rounded-3 border-light bg-light bg-opacity-50" required>
                             <option value="">-- Select Type --</option>
-                            <option value="Milk">Milk</option>
-                            <option value="Butter">Butter</option>
-                            <option value="Ghee">Ghee</option>
-                            <option value="Paneer">Paneer</option>
-                            <option value="Curd">Curd</option>
-                            <option value="Cheese">Cheese</option>
-                            <option value="Cream">Cream</option>
-                            <option value="IceCream">Ice Cream</option>
-                            <option value="Other">Other</option>
+                            <option value="Milk">🥛 Milk</option>
+                            <option value="Butter">🧈 Butter</option>
+                            <option value="Ghee">🍯 Ghee</option>
+                            <option value="Paneer">🧀 Paneer</option>
+                            <option value="Curd">🥣 Curd</option>
+                            <option value="Cheese">🍕 Cheese</option>
+                            <option value="Cream">🍦 Cream</option>
+                            <option value="IceCream">🍨 Ice Cream</option>
+                            <option value="Other">✨ Other</option>
                         </select>
                     </div>
+                </div>
 
-                    <div class="mb-2">
-                        <label class="form-label">MRP (₹)</label>
-                        <input type="number" name="mrp" class="form-control" step="0.01" min="0" placeholder="e.g. 55.00" required />
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">MRP (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-light text-muted">₹</span>
+                            <input type="number" name="mrp" class="form-control rounded-3 border-light bg-light bg-opacity-50" step="0.01" min="0" placeholder="0.00" required />
+                        </div>
                     </div>
-
-                    <div class="mb-2">
-                        <label class="form-label">Unit</label>
-                        <select name="unit" class="form-select" required>
-                            <option value="">-- Select Unit --</option>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">Unit</label>
+                        <select name="unit" class="form-select rounded-3 border-light bg-light bg-opacity-50" required>
+                            <option value="">Select Unit</option>
                             <option value="Ltr">Ltr</option>
                             <option value="Kg">Kg</option>
                             <option value="Gm">Gm</option>
@@ -61,56 +67,88 @@
                             <option value="Ml">Ml</option>
                         </select>
                     </div>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Shelf Life (Days) <span class="text-muted">optional</span></label>
-                        <input type="number" name="shelfLifeDays" class="form-control" min="1" placeholder="e.g. 7" />
-                    </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small">Shelf Life (Days)</label>
+                    <input type="number" name="shelfLifeDays" class="form-control rounded-3 border-light bg-light bg-opacity-50" min="1" placeholder="Optional" />
+                </div>
 
-                    <button type="submit" class="btn btn-primary w-100">+ Add Product</button>
-                </form>
-            </div>
+                <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm transition-all hover-up">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>Save Product
+                </button>
+            </form>
         </div>
     </div>
+</div>
 
-    {{-- RIGHT: PRODUCT LIST --}}
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+@* RIGHT: PRODUCT LIST *@
+<div class="col-lg-8">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th>#</th>
-                            <th>Product Name</th>
-                            <th>Type</th>
-                            <th>MRP (₹)</th>
-                            <th>Unit</th>
-                            <th>Shelf Life</th>
-                            <th>Actions</th>
+                            <th class="ps-4 text-uppercase text-muted small fw-bold" style="width: 60px;">ID</th>
+                            <th class="text-uppercase text-muted small fw-bold">Product Details</th>
+                            <th class="text-uppercase text-muted small fw-bold text-center">Type</th>
+                            <th class="text-uppercase text-muted small fw-bold text-end">Price</th>
+                            <th class="text-uppercase text-muted small fw-bold text-center">Shelf Life</th>
+                            <th class="pe-4 text-uppercase text-muted small fw-bold text-end">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="border-top-0">
                         @if (!Model.Any())
                         {
-                            <tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="bi bi-box-seam text-light" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-3 mb-0">No products in the catalog yet.</p>
+                                </td>
+                            </tr>
                         }
                         @foreach (var p in Model)
                         {
                             <tr>
-                                <td>@p.ProductId</td>
-                                <td><strong>@p.ProductName</strong></td>
-                                <td><span class="badge bg-info text-dark">@p.ProductType</span></td>
-                                <td>₹@p.MRP.ToString("N2")</td>
-                                <td>@p.Unit</td>
-                                <td>@(p.ShelfLifeDays.HasValue? p.ShelfLifeDays + " days" : "—")</td>
+                                <td class="ps-4 text-muted">#@p.ProductId</td>
                                 <td>
-                                    <a asp-action="EditProduct" asp-route-id="@p.ProductId"
-                                       class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form asp-action="DeleteProduct" method="post" class="d-inline"
-                                          onsubmit="return confirm('Delete @p.ProductName?')">
-                                        <input type="hidden" name="id" value="@p.ProductId" />
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-3 p-2 me-3 d-none d-sm-block">
+                                            <i class="bi bi-box-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark mb-0">@p.ProductName</div>
+                                            <div class="text-muted x-small" style="font-size: 0.75rem;">Base Unit: @p.Unit</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill bg-light text-dark border px-3">@p.ProductType</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="fw-bold text-dark">₹@p.MRP.ToString("N2")</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="text-muted">
+                                        <i class="bi bi-hourglass-split me-1 text-warning"></i>
+                                        @(p.ShelfLifeDays.HasValue? p.ShelfLifeDays + "d" : "—")
+                                    </span>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="btn-group shadow-sm rounded-3 overflow-hidden">
+                                        <a asp-action="EditProduct" asp-route-id="@p.ProductId"
+                                           class="btn btn-sm btn-white border-end" title="Edit">
+                                            <i class="bi bi-pencil-square text-primary"></i>
+                                        </a>
+                                        <form asp-action="DeleteProduct" method="post" class="d-inline"
+                                              onsubmit="return confirm('Delete @p.ProductName?')">
+                                            <input type="hidden" name="id" value="@p.ProductId" />
+                                            <button class="btn btn-sm btn-white" title="Delete">
+                                                <i class="bi bi-trash3 text-danger"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -118,6 +156,17 @@
                 </table>
             </div>
         </div>
+        <div class="card-footer bg-white py-3 px-4 border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted font-monospace">DATA_SYNC_ID: @Guid.NewGuid().ToString().Substring(0, 8)</small>
+                <nav aria-label="Table navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><a class="page-link border-0" href="#"><i class="bi bi-chevron-left"></i></a></li>
+                        <li class="page-item active"><a class="page-link border-0 shadow-none" href="#">1</a></li>
+                        <li class="page-item disabled"><a class="page-link border-0" href="#"><i class="bi bi-chevron-right"></i></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
     </div>
-
 </div>

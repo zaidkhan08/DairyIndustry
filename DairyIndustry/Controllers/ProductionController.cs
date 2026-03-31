@@ -106,6 +106,17 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
+        // RAW MILK INVENTORY — VIEW ONLY
+        // GET /Production/RawMilkInventory
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult RawMilkInventory()
+        {
+            var inventory = _productionRepo.GetRawMilkInventory();
+            return View(inventory);
+        }
+
+        // ════════════════════════════════════════════════════════
         // PRODUCTS — LIST
         // GET /Production/Products
         // ════════════════════════════════════════════════════════
@@ -183,6 +194,7 @@ namespace DairyIndustry.Controllers
         {
             ViewBag.Plants = _adminRepo.GetAllPlants();
             ViewBag.Products = _productionRepo.GetAllProducts();
+            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
             return View();
         }
 
@@ -192,9 +204,9 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult StartBatch(int plantId, int productId,
-                                        decimal milkUsedQuantity, DateTime productionDate)
+                                        decimal milkUsedQuantity, DateTime productionDate,int milkTypeId)
         {
-            _productionRepo.StartProductionBatch(plantId, productId, milkUsedQuantity, productionDate);
+            _productionRepo.StartProductionBatch(plantId, productId, milkUsedQuantity, productionDate, milkTypeId);
             TempData["Success"] = "Production batch started successfully.";
             return RedirectToAction("Batches");
         }
@@ -221,6 +233,57 @@ namespace DairyIndustry.Controllers
             _productionRepo.UpdateBatchStatus(productionBatchId, batchStatus);
             TempData["Success"] = $"Batch status updated to {batchStatus}.";
             return RedirectToAction("BatchDetail", new { id = productionBatchId });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCT WASTAGE — LIST
+        // GET /Production/ProductWastage
+        // ════════════════════════════════════════════════════════
+
+        public IActionResult ProductWastage()
+        {
+            var wastage = _productionRepo.GetAllProductWastage();
+            return View(wastage);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCT WASTAGE — ADD (GET)
+        // GET /Production/AddWastage
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult AddWastage()
+        {
+            ViewBag.Batches = _productionRepo.GetBatchesForWastage();
+            ViewBag.Products = _productionRepo.GetAllProducts();
+            return View();
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCT WASTAGE — ADD (POST)
+        // POST /Production/AddWastage
+        // ════════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult AddWastage(int batchId, int productId,
+                                        decimal quantity, string reason)
+        {
+            _productionRepo.AddProductWastage(batchId, productId, quantity, reason);
+            TempData["Success"] = "Wastage recorded successfully.";
+            return RedirectToAction("ProductWastage");
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCT WASTAGE — BY BATCH
+        // GET /Production/WastageByBatch/5
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult WastageByBatch(int id)
+        {
+            var wastage = _productionRepo.GetWastageByBatch(id);
+            ViewBag.BatchId = id;
+            return View(wastage);
         }
     }
 }

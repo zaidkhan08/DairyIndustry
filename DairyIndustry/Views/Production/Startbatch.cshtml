@@ -1,5 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Start Production Batch";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
 }
 
 <h4 class="mb-4">🏭 Start Production Batch</h4>
@@ -16,6 +18,16 @@
                     @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
                     {
                         <option value="@p.PlantId">@p.PlantName</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Milk Type to Use</label>
+                <select name="milkTypeId" class="form-select" required>
+                    <option value="">-- Select Milk Type --</option>
+                    @foreach (var m in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
+                    {
+                        <option value="@m.MilkTypeId">@m.MilkTypeName</option>
                     }
                 </select>
             </div>

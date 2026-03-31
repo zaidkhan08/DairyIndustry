@@ -11,7 +11,6 @@ namespace DairyIndustry.Repositories
         List<BatchDropdownModel> GetClosedBatches();
         List<VehiclesModel> GetAllVehicles();
 
-
         // ════════════════════════════════════════════════════════
         // MILK TRANSFERS
         // ════════════════════════════════════════════════════════
@@ -32,12 +31,25 @@ namespace DairyIndustry.Repositories
         void DeleteProduct(int productId);
 
         // ════════════════════════════════════════════════════════
+        // RAW MILK INVENTORY
+        // ════════════════════════════════════════════════════════
+        List<RawMilkInventoryModel> GetRawMilkInventory();
+
+        // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES
         // ════════════════════════════════════════════════════════
         int StartProductionBatch(int plantId, int productId,
-                                  decimal milkUsedQuantity, DateTime productionDate);
+                                  decimal milkUsedQuantity, DateTime productionDate, int MilkTypeId);
         void UpdateBatchStatus(int productionBatchId, string batchStatus);
         List<ProductionBatchModel> GetAllProductionBatches();
         ProductionBatchModel GetProductionBatchById(int productionBatchId);
+
+        // ════════════════════════════════════════════════════════
+        // PRODUCT WASTAGE
+        // ════════════════════════════════════════════════════════
+        List<BatchForWastageModel> GetBatchesForWastage();   // InProgress + Completed
+        int AddProductWastage(int batchId, int productId, decimal quantity, string reason);
+        List<ProductWastageModel> GetAllProductWastage();
+        List<ProductWastageModel> GetWastageByBatch(int batchId);
     }
 }
