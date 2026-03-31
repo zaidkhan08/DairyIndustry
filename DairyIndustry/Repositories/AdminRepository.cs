@@ -629,21 +629,20 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         public int AddStaff(string firstName, string lastName, string phone, string email,
-                    string staffType, DateTime? doj,
-                    string bankName, string accountNumber, string ifscCode,
-                    string profilePhoto = null)
+                             int roleId, DateTime? doj,
+                             string bankName, string accountNumber, string ifscCode,
+                             string profilePhoto = null)
         {
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("HR.usp_HR_AddStaff", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
                     cmd.Parameters.AddWithValue("@FirstName", firstName);
                     cmd.Parameters.AddWithValue("@LastName", lastName);
                     cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@StaffType", staffType);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
                     cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
@@ -657,7 +656,7 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null)
+        public List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null)
         {
             var list = new List<StaffModel>();
 
@@ -666,12 +665,10 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaff", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@StaffType", (object?)staffType ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RoleId", (object?)roleId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
 
                     con.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -683,9 +680,11 @@ namespace DairyIndustry.Repositories
                                 LastName = reader["LastName"].ToString(),
                                 Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
                                 Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
-                                StaffType = reader["StaffType"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString(),
                                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString()
                             });
@@ -712,6 +711,82 @@ namespace DairyIndustry.Repositories
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+        public List<StaffModel> GetUnlinkedStaff()
+        {
+            var list = new List<StaffModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(@"
+            SELECT s.StaffId, s.FirstName, s.LastName, s.RoleId, r.RoleName
+            FROM HR.Staffs s
+            INNER JOIN Admin.Roles r ON r.RoleId = s.RoleId
+            WHERE s.IsActive = 1
+              AND s.StaffId NOT IN (
+                  SELECT StaffId FROM Admin.Users WHERE StaffId IS NOT NULL
+              )
+            ORDER BY s.LastName, s.FirstName", con))
+                {
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new StaffModel
+                            {
+                                StaffId = Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+        public StaffModel GetStaffById(int staffId)
+        {
+            StaffModel staff = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaffById", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            staff = new StaffModel
+                            {
+                                StaffId = Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString(),
+                                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
+                                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
+                                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
+                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+                            };
+                        }
+                    }
+                }
+            }
+
+            return staff;
         }
         // ════════════════════════════════════════════════════════
         // PLANT

@@ -57,13 +57,15 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
         int AddStaff(string firstName, string lastName, string phone, string email,
-             string staffType, DateTime? doj,
-             string bankName, string accountNumber, string ifscCode,
-             string profilePhoto = null);
+                     int roleId, DateTime? doj,
+                     string bankName, string accountNumber, string ifscCode,
+                     string profilePhoto = null);
 
-        List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null);
+        List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
+        List<StaffModel> GetUnlinkedStaff();
+        StaffModel GetStaffById(int staffId);
 
         // ════════════════════════════════════════════════════════
         // PLANT

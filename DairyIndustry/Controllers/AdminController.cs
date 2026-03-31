@@ -135,18 +135,30 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        [HttpGet]
         public IActionResult RegisterUser()
         {
-            ViewBag.Roles = _adminRepo.GetAllRoles();
+            ViewBag.StaffList = _adminRepo.GetUnlinkedStaff();
             return View();
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult RegisterUser(string username, string password, int roleId, int? staffId)
+        public IActionResult RegisterUser(string username, string password, int staffId)
         {
+            var staff = _adminRepo.GetStaffById(staffId);
+
+            if (staff == null)
+            {
+                ViewBag.Error = "Selected staff not found.";
+                ViewBag.StaffList = _adminRepo.GetUnlinkedStaff();
+                return View();
+            }
+
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-            _adminRepo.RegisterUser(username, passwordHash, roleId, staffId);
+            _adminRepo.RegisterUser(username, passwordHash, staff.RoleId, staffId);
+
+            TempData["Success"] = $"User account created for {staff.FullName}.";
             return RedirectToAction("Users");
         }
 
@@ -275,18 +287,20 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        [HttpGet]
         public IActionResult AddStaff()
         {
-            return View();
+            var Roles = _adminRepo.GetAllRoles();
+            return View(Roles);
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public async Task<IActionResult> AddStaff(string firstName, string lastName,
-                                                   string phone, string email,
-                                                   string staffType, DateTime? doj,
-                                                   string bankName, string accountNumber,
-                                                   string ifscCode, IFormFile profilePhoto)
+        public IActionResult AddStaff(string firstName, string lastName,
+                              string phone, string email,
+                              int roleId, DateTime? doj,
+                              string bankName, string accountNumber,
+                              string ifscCode, IFormFile profilePhoto)
         {
             string photoPath = null;
 
@@ -298,13 +312,13 @@ namespace DairyIndustry.Controllers
                 if (!allowedExtensions.Contains(extension))
                 {
                     ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
-                    return View();
+                    return View(_adminRepo.GetAllRoles());
                 }
 
                 if (profilePhoto.Length > 2 * 1024 * 1024)
                 {
                     ViewBag.Error = "Photo size must be less than 2MB.";
-                    return View();
+                    return View(_adminRepo.GetAllRoles());
                 }
 
                 string uploadsFolder = Path.Combine(
@@ -319,18 +333,20 @@ namespace DairyIndustry.Controllers
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await profilePhoto.CopyToAsync(stream);
+                    profilePhoto.CopyTo(stream);   // ← no await, no async
                 }
 
                 photoPath = $"/uploads/staff/{uniqueFileName}";
             }
 
             _adminRepo.AddStaff(firstName, lastName, phone, email,
-                                staffType, doj, bankName, accountNumber,
+                                roleId, doj, bankName, accountNumber,
                                 ifscCode, photoPath);
 
+            TempData["Success"] = "Staff member added successfully.";
             return RedirectToAction("Staff");
         }
+
 
         [SessionAuthorize("Admin")]
         [HttpPost]
