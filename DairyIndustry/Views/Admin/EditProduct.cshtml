@@ -1,0 +1,106 @@
+﻿@model DairyIndustry.Models.Admin.ProductModel
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Edit Product";
+}
+
+<div class="container mt-4">
+
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Edit Product</h3>
+                <p class="text-muted mb-0">Update product details</p>
+            </div>
+            <a asp-controller="Admin" asp-action="Products" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-circle me-1"></i> @ViewBag.Error
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-pencil me-1 text-warning"></i> Edit — @Model.ProductName
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" asp-controller="Admin" asp-action="EditProduct">
+
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+                            <input type="text" name="productName" class="form-control"
+                                   value="@Model.ProductName" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Product Type <span class="text-danger">*</span></label>
+                            <select name="productType" class="form-select" required>
+                                <option value="Milk" selected="@(Model.ProductType == "Milk")">Milk</option>
+                                <option value="Dairy" selected="@(Model.ProductType == "Dairy")">Dairy</option>
+                                <option value="Beverage" selected="@(Model.ProductType == "Beverage")">Beverage</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">MRP (₹) <span class="text-danger">*</span></label>
+                                <input type="number" name="mrp" class="form-control"
+                                       value="@Model.MRP" step="0.01" min="0.01" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Unit <span class="text-danger">*</span></label>
+                                <input type="text" name="unit" class="form-control"
+                                       value="@Model.Unit" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Shelf Life (Days)</label>
+                            <input type="number" name="shelfLifeDays" class="form-control"
+                                   value="@Model.ShelfLifeDays" min="1" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Description</label>
+                            <textarea name="description" class="form-control" rows="3">@Model.Description</textarea>
+                        </div>
+
+                        <!-- Audit info -->
+                        <div class="alert alert-light border small mb-4">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Created by <strong>@(Model.CreatedByName ?? "—")</strong>
+                            on @Model.CreatedDate.ToString("dd MMM yyyy")
+                            @if (Model.ModifiedDate.HasValue)
+                            {
+                                <span>
+                                    · Last modified by <strong>@Model.ModifiedByName</strong>
+                                    on @Model.ModifiedDate.Value.ToString("dd MMM yyyy")
+                                </span>
+                            }
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Save Changes
+                            </button>
+                            <a asp-action="Products" class="btn btn-outline-secondary px-4">Cancel</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -23,6 +23,7 @@ namespace DairyIndustry
         
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
+            builder.Services.AddScoped<IReportRepository, ReportRepository>();
             builder.Services.AddControllersWithViews(options =>  
             {
                 options.Filters.Add<ExceptionHandlerFilter>();

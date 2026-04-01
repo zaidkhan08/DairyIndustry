@@ -629,21 +629,20 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         public int AddStaff(string firstName, string lastName, string phone, string email,
-                    string staffType, DateTime? doj,
-                    string bankName, string accountNumber, string ifscCode,
-                    string profilePhoto = null)
+                             int roleId, DateTime? doj,
+                             string bankName, string accountNumber, string ifscCode,
+                             string profilePhoto = null)
         {
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("HR.usp_HR_AddStaff", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
                     cmd.Parameters.AddWithValue("@FirstName", firstName);
                     cmd.Parameters.AddWithValue("@LastName", lastName);
                     cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@StaffType", staffType);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
                     cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
@@ -657,7 +656,7 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null)
+        public List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null)
         {
             var list = new List<StaffModel>();
 
@@ -666,12 +665,10 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaff", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@StaffType", (object?)staffType ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RoleId", (object?)roleId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
 
                     con.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -683,9 +680,11 @@ namespace DairyIndustry.Repositories
                                 LastName = reader["LastName"].ToString(),
                                 Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
                                 Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
-                                StaffType = reader["StaffType"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString(),
                                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString()
                             });
@@ -713,6 +712,82 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<StaffModel> GetUnlinkedStaff()
+        {
+            var list = new List<StaffModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(@"
+            SELECT s.StaffId, s.FirstName, s.LastName, s.RoleId, r.RoleName
+            FROM HR.Staffs s
+            INNER JOIN Admin.Roles r ON r.RoleId = s.RoleId
+            WHERE s.IsActive = 1
+              AND s.StaffId NOT IN (
+                  SELECT StaffId FROM Admin.Users WHERE StaffId IS NOT NULL
+              )
+            ORDER BY s.LastName, s.FirstName", con))
+                {
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new StaffModel
+                            {
+                                StaffId = Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+        public StaffModel GetStaffById(int staffId)
+        {
+            StaffModel staff = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaffById", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            staff = new StaffModel
+                            {
+                                StaffId = Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
+                                RoleId = Convert.ToInt32(reader["RoleId"]),
+                                RoleName = reader["RoleName"].ToString(),
+                                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
+                                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
+                                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
+                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+                            };
+                        }
+                    }
+                }
+            }
+
+            return staff;
+        }
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
@@ -732,30 +807,43 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<PlantModel> GetAllPlants()
+        public List<PlantModel> GetAllPlants(bool? isActive = true)
         {
-            var list = new List<PlantModel>();    
+            var list = new List<PlantModel>();
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetPlants", con))
             {
-                string query = "select * from Production.ProcessingPlants";
-                using (SqlCommand cmd = new SqlCommand(query,con))
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@IsActive", (object)(isActive.HasValue ? (object)(isActive.Value ? 1 : 0) : DBNull.Value));
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new PlantModel
                         {
-                            list.Add(new PlantModel
-                            {
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                Location = reader["Location"].ToString(),
-                            });
-                        }
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        });
                     }
                 }
             }
             return list;
+        }
+
+        public void TogglePlant(int id, bool isActive)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_TogglePlant", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", id);
+                cmd.Parameters.AddWithValue("@IsActive", isActive ? 1 : 0);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public void DeletePlant(int id)
@@ -775,48 +863,209 @@ namespace DairyIndustry.Repositories
         public void UpdatePlant(PlantModel plant)
         {
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_UpdatePlant", con))
             {
-                string query = @"UPDATE Production.ProcessingPlants 
-                         SET PlantName = @PlantName,
-                             Location  = @Location
-                         WHERE PlantId = @PlantId";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", plant.PlantId);
+                cmd.Parameters.AddWithValue("@PlantName", plant.PlantName);
+                cmd.Parameters.AddWithValue("@Location", (object)plant.Location ?? DBNull.Value);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+        public PlantModel getPlantById(int id)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetPlantById", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", id);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
+                    if (reader.Read())
+                    {
+                        return new PlantModel
+                        {
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+
+        public int AddProduct(string productName, string productType, decimal mrp,
+                              string unit, int? shelfLifeDays, string description,
+                              int createdBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_AddProduct", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductName", productName);
+                    cmd.Parameters.AddWithValue("@ProductType", productType);
+                    cmd.Parameters.AddWithValue("@MRP", mrp);
+                    cmd.Parameters.AddWithValue("@Unit", unit);
+                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Description", (object?)description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
+
                     con.Open();
-                    cmd.Parameters.AddWithValue("@PlantId", plant.PlantId);
-                    cmd.Parameters.AddWithValue("@PlantName", plant.PlantName);
-                    cmd.Parameters.AddWithValue("@Location", plant.Location);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return Convert.ToInt32(reader["ProductId"]);
+                    }
+                }
+            }
+            return 0;
+        }
+
+        // ── Get All Products ──────────────────────────────────
+        public List<ProductModel> GetAllProducts(string productType = null, bool? isActive = true)
+        {
+            var list = new List<ProductModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetAllProducts", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductType", (object?)productType ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(MapProduct(reader));
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ── Get Product By ID ─────────────────────────────────
+        public ProductModel GetProductById(int productId)
+        {
+            ProductModel product = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetProductById", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            product = MapProduct(reader);
+                    }
+                }
+            }
+
+            return product;
+        }
+
+        // ── Get Product Types for dropdown ────────────────────
+        public List<string> GetProductTypes()
+        {
+            var list = new List<string>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetProductTypes", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(reader["ProductType"].ToString());
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ── Update Product ────────────────────────────────────
+        public void UpdateProduct(int productId, string productName, string productType,
+                          decimal mrp, string unit, int? shelfLifeDays,
+                          string description, int modifiedBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_UpdateProduct", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    cmd.Parameters.AddWithValue("@ProductName", productName);
+                    cmd.Parameters.AddWithValue("@ProductType", productType);
+                    cmd.Parameters.AddWithValue("@MRP", mrp);
+                    cmd.Parameters.AddWithValue("@Unit", unit);
+                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Description", (object?)description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ModifiedBy", modifiedBy);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        reader.Read();
+                    }
+                }
+            }
+        }
+
+        // ── Toggle Active / Inactive ──────────────────────────
+        public void ToggleProductStatus(int productId, bool isActive, int modifiedBy)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_ToggleProductStatus", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    cmd.Parameters.AddWithValue("@IsActive", isActive);
+                    cmd.Parameters.AddWithValue("@ModifiedBy", modifiedBy);
+
+                    con.Open();
                     cmd.ExecuteNonQuery();
                 }
             }
         }
 
-        public PlantModel getPlantById(int id)
+        // ── Private mapper ────────────────────────────────────
+        private static ProductModel MapProduct(SqlDataReader reader)
         {
-            PlantModel plant=new PlantModel();
-            using (SqlConnection con = _db.GetConnection())
+            return new ProductModel
             {
-                string query = "select * from Production.ProcessingPlants where PlantId=@id";
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    con.Open();
-                    cmd.Parameters.AddWithValue("@id", id);
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if(reader.Read())
-                        {
-                            plant = new PlantModel
-                            {
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                Location = reader["Location"].ToString(),
-                            };
-                        }
-                    }
-                }
-            }
-            return plant;
+                ProductId = Convert.ToInt32(reader["ProductId"]),
+                ProductName = reader["ProductName"].ToString(),
+                ProductType = reader["ProductType"].ToString(),
+                MRP = Convert.ToDecimal(reader["MRP"]),
+                Unit = reader["Unit"].ToString(),
+                ShelfLifeDays = reader["ShelfLifeDays"] == DBNull.Value ? null : Convert.ToInt32(reader["ShelfLifeDays"]),
+                Description = reader["Description"] == DBNull.Value ? null : reader["Description"].ToString(),
+                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                CreatedBy = reader["CreatedBy"] == DBNull.Value ? null : Convert.ToInt32(reader["CreatedBy"]),
+                CreatedByName = reader["CreatedByName"] == DBNull.Value ? null : reader["CreatedByName"].ToString(),
+                ModifiedDate = reader["ModifiedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ModifiedDate"]),
+                ModifiedBy = reader["ModifiedBy"] == DBNull.Value ? null : Convert.ToInt32(reader["ModifiedBy"]),
+                ModifiedByName = reader["ModifiedByName"] == DBNull.Value ? null : reader["ModifiedByName"].ToString()
+            };
         }
     }
 }
