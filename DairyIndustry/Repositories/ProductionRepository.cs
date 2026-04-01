@@ -239,10 +239,10 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ALL TRANSFERS
+        // GET ALL TRANSFERS  (plantId = null → all, plantId = X → scoped)
         // ════════════════════════════════════════════════════════
 
-        public List<MilkTransferModel> GetAllTransfers()
+        public List<MilkTransferModel> GetAllTransfers(int? plantId = null)
         {
             var list = new List<MilkTransferModel>();
 
@@ -268,6 +268,7 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId  = mt.PlantId
                 INNER JOIN Logistics.Vehicles               v  ON v.VehicleId = mt.VehicleId
                 LEFT  JOIN Logistics.Drivers                d  ON d.DriverId  = v.DriverId
+                WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
                 ORDER BY mt.DispatchDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
@@ -275,6 +276,7 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                     con.Open();
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -549,12 +551,12 @@ namespace DairyIndustry.Repositories
 
         public int StartProductionBatch(int plantId, int productId,
                                 decimal milkUsedQuantity, DateTime productionDate,
-                                int milkTypeId)  // ✅ ADD
+                                int milkTypeId)
         {
             string checkQuery = @"
         SELECT ISNULL(Quantity, 0)
         FROM Production.RawMilkInventory
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";  // ✅ filter by type
+        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
             string insertQuery = @"
         INSERT INTO Production.ProductionBatches
@@ -565,7 +567,7 @@ namespace DairyIndustry.Repositories
             string deductQuery = @"
         UPDATE Production.RawMilkInventory
         SET Quantity = Quantity - @MilkUsedQuantity, LastUpdated = GETDATE()
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";  // ✅ deduct specific type
+        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
             using (SqlConnection con = _db.GetConnection())
             {

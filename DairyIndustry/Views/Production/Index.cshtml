@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Milk Transfers";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var RoleName = Context.Session.GetString("RoleName");
 }
 
 <style>
@@ -113,9 +114,12 @@
 </style>
 
 <div class="d-flex justify-content-end mb-4 pt-2">
-    <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
-        <i class="bi bi-plus-lg me-2"></i>Create New Batch
-    </a>
+    @if (RoleName == "Collection Agent")
+    {
+        <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>Create New Batch
+        </a>
+    }
 </div>
 
 @if (TempData["Success"] != null)
@@ -155,7 +159,10 @@
                         <th class="text-end">Loss (L)</th>
                         <th>Date</th>
                         <th>Status</th>
-                        <th class="text-center">Actions</th>
+                        @if (RoleName == "Plant Manager")
+                        {
+                            <th class="text-center">Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -216,21 +223,24 @@
                                     </span>
                                 }
                             </td>
-                            <td class="text-center text-nowrap">
-                                <div class="btn-group-custom">
-                                    <a asp-action="Detail" asp-route-id="@t.TransferId"
-                                       class="btn-table-action" title="View Details">
-                                        <i class="bi bi-eye"></i> Detail
-                                    </a>
-                                    @if (t.Status == "Dispatched")
-                                    {
-                                        <a asp-action="Receive" asp-route-id="@t.TransferId"
-                                           class="btn-table-action btn-table-success" title="Confirm Receipt">
-                                            <i class="bi bi-download"></i> Receive
+                            @if (RoleName == "Plant Manager")
+                            {
+                                <td class="text-center text-nowrap">
+                                    <div class="btn-group-custom">
+                                        <a asp-action="Detail" asp-route-id="@t.TransferId"
+                                           class="btn-table-action" title="View Details">
+                                            <i class="bi bi-eye"></i> Detail
                                         </a>
-                                    }
-                                </div>
-                            </td>
+                                        @if (t.Status == "Dispatched")
+                                        {
+                                            <a asp-action="Receive" asp-route-id="@t.TransferId"
+                                               class="btn-table-action btn-table-success" title="Confirm Receipt">
+                                                <i class="bi bi-download"></i> Receive
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>

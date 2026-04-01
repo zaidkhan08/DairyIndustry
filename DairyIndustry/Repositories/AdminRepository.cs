@@ -1067,5 +1067,22 @@ namespace DairyIndustry.Repositories
                 ModifiedByName = reader["ModifiedByName"] == DBNull.Value ? null : reader["ModifiedByName"].ToString()
             };
         }
+
+        //Added By Zaid
+
+        public int? GetPlantIdByUser(int userId)
+        {
+            using (var con = _db.GetConnection())
+            using (var cmd = new SqlCommand(
+                "SELECT PlantId FROM Admin.UserPlants WHERE UserId = @UserId", con))
+            {
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                con.Open();
+                var result = cmd.ExecuteScalar();
+                return result == null || result == DBNull.Value
+                       ? null
+                       : Convert.ToInt32(result);
+            }
+        }
     }
 }

@@ -22,13 +22,26 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
-        // INDEX — list all transfers
+        // INDEX — list transfers (scoped by plant for Plant Manager)
         // GET /Production/Index
         // ════════════════════════════════════════════════════════
         public IActionResult Index()
         {
-            var transfers = _productionRepo.GetAllTransfers();
-            return View(transfers);
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            {
+                // Plant Manager sees only their plant's transfers
+                // Collection Agent sees all transfers
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
+
+                var transfers = _productionRepo.GetAllTransfers(plantId);
+                return View(transfers);
+            }
+
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -38,10 +51,16 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Batches = _productionRepo.GetClosedBatches();
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Vehicles = _productionRepo.GetAllVehicles();   // ✅ from ProductionRepository
-            return View();
+            var RoleName = HttpContext.Session.GetString("RoleName");
+
+            if (RoleName == "Plant Manager" || RoleName == "Collection Agent")
+            {
+                ViewBag.Batches = _productionRepo.GetClosedBatches();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Vehicles = _productionRepo.GetAllVehicles();
+                return View();
+            }
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -52,9 +71,16 @@ namespace DairyIndustry.Controllers
         public IActionResult Create(int batchId, int vehicleId, int plantId,
                                     decimal dispatchQty, DateTime dispatchDate)
         {
-            _productionRepo.DispatchMilkTransfer(batchId, vehicleId, plantId, dispatchQty, dispatchDate);
-            TempData["Success"] = "Milk batch dispatched successfully.";
-            return RedirectToAction("Index");
+            var RoleName = HttpContext.Session.GetString("RoleName");
+
+            if (RoleName == "Plant Manager" || RoleName == "Collection Agent")
+            {
+                _productionRepo.DispatchMilkTransfer(batchId, vehicleId, plantId, dispatchQty, dispatchDate);
+                TempData["Success"] = "Milk batch dispatched successfully.";
+                return RedirectToAction("Index");
+            }
+
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -62,20 +88,28 @@ namespace DairyIndustry.Controllers
         // GET /Production/Receive/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
+        [SessionAuthorize("Plant Manager")]
         public IActionResult Receive(int id)
         {
-            var transfer = _productionRepo.GetTransferById(id);
+            var RoleName = HttpContext.Session.GetString("RoleName");
 
-            if (transfer == null)
-                return NotFound();
-
-            if (transfer.ReceivedDate.HasValue)
+            if (RoleName == "Plant Manager" || RoleName == "Collection Agent")
             {
-                TempData["Error"] = "This transfer has already been received.";
-                return RedirectToAction("Index");
+                var transfer = _productionRepo.GetTransferById(id);
+
+                if (transfer == null)
+                    return NotFound();
+
+                if (transfer.ReceivedDate.HasValue)
+                {
+                    TempData["Error"] = "This transfer has already been received.";
+                    return RedirectToAction("Index");
+                }
+
+                return View(transfer);
             }
 
-            return View(transfer);
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -83,11 +117,19 @@ namespace DairyIndustry.Controllers
         // POST /Production/Receive
         // ════════════════════════════════════════════════════════
         [HttpPost]
+        [SessionAuthorize("Plant Manager")]
         public IActionResult Receive(int transferId, decimal receivedQty, DateTime receivedDate)
         {
-            _productionRepo.ReceiveMilkTransfer(transferId, receivedQty, receivedDate);
-            TempData["Success"] = "Transfer marked as received. Raw milk inventory updated.";
-            return RedirectToAction("Index");
+            var RoleName = HttpContext.Session.GetString("RoleName");
+
+            if (RoleName == "Plant Manager" || RoleName == "Collection Agent")
+            {
+                _productionRepo.ReceiveMilkTransfer(transferId, receivedQty, receivedDate);
+                TempData["Success"] = "Transfer marked as received. Raw milk inventory updated.";
+                return RedirectToAction("Index");
+            }
+
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -95,21 +137,28 @@ namespace DairyIndustry.Controllers
         // GET /Production/Detail/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
+        [SessionAuthorize("Plant Manager")]
         public IActionResult Detail(int id)
         {
-            var transfer = _productionRepo.GetTransferById(id);
+            var RoleName = HttpContext.Session.GetString("RoleName");
 
-            if (transfer == null)
-                return NotFound();
+            if (RoleName == "Plant Manager" || RoleName == "Collection Agent")
+            {
+                var transfer = _productionRepo.GetTransferById(id);
 
-            return View(transfer);
+                if (transfer == null)
+                    return NotFound();
+
+                return View(transfer);
+            }
+
+            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
         // RAW MILK INVENTORY — VIEW ONLY
         // GET /Production/RawMilkInventory
         // ════════════════════════════════════════════════════════
-
         public IActionResult RawMilkInventory()
         {
             var inventory = _productionRepo.GetRawMilkInventory();
@@ -204,7 +253,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult StartBatch(int plantId, int productId,
-                                        decimal milkUsedQuantity, DateTime productionDate,int milkTypeId)
+                                        decimal milkUsedQuantity, DateTime productionDate, int milkTypeId)
         {
             _productionRepo.StartProductionBatch(plantId, productId, milkUsedQuantity, productionDate, milkTypeId);
             TempData["Success"] = "Production batch started successfully.";
@@ -239,7 +288,6 @@ namespace DairyIndustry.Controllers
         // PRODUCT WASTAGE — LIST
         // GET /Production/ProductWastage
         // ════════════════════════════════════════════════════════
-
         public IActionResult ProductWastage()
         {
             var wastage = _productionRepo.GetAllProductWastage();
@@ -250,7 +298,6 @@ namespace DairyIndustry.Controllers
         // PRODUCT WASTAGE — ADD (GET)
         // GET /Production/AddWastage
         // ════════════════════════════════════════════════════════
-
         [HttpGet]
         public IActionResult AddWastage()
         {
@@ -263,7 +310,6 @@ namespace DairyIndustry.Controllers
         // PRODUCT WASTAGE — ADD (POST)
         // POST /Production/AddWastage
         // ════════════════════════════════════════════════════════
-
         [HttpPost]
         public IActionResult AddWastage(int batchId, int productId,
                                         decimal quantity, string reason)
@@ -277,7 +323,6 @@ namespace DairyIndustry.Controllers
         // PRODUCT WASTAGE — BY BATCH
         // GET /Production/WastageByBatch/5
         // ════════════════════════════════════════════════════════
-
         [HttpGet]
         public IActionResult WastageByBatch(int id)
         {

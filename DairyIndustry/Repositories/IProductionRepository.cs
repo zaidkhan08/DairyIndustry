@@ -17,7 +17,7 @@ namespace DairyIndustry.Repositories
         int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
                                   decimal dispatchQty, DateTime dispatchDate);
         void ReceiveMilkTransfer(int transferId, decimal receivedQty, DateTime receivedDate);
-        List<MilkTransferModel> GetAllTransfers();
+        List<MilkTransferModel> GetAllTransfers(int? plantId = null);
         MilkTransferModel GetTransferById(int transferId);
 
         // ════════════════════════════════════════════════════════
