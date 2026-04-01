@@ -8,7 +8,8 @@
         public string FullName => FirstName + " " + LastName;
         public string Phone { get; set; }
         public string Email { get; set; }
-        public string StaffType { get; set; }
+        public int RoleId { get; set; }
+        public string RoleName { get; set; }   
         public DateTime? DOJ { get; set; }
         public bool IsActive { get; set; }
         public string ProfilePhoto { get; set; }

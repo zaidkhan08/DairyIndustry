@@ -1,6 +1,9 @@
-﻿@{
+﻿@model List<DairyIndustry.Models.Admin.RoleModel>
+@{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Add Staff";
+
+    // var roles = ViewBag.Roles as List<(int RoleId, string RoleName)> ?? new List<(int, string)>();
 }
 
 <div class="container mt-4">
@@ -20,138 +23,79 @@
 
     @if (ViewBag.Error != null)
     {
-        <div class="alert alert-danger border-0 mb-4">
+        <div class="alert alert-danger mb-4">
             <i class="bi bi-exclamation-circle me-1"></i> @ViewBag.Error
         </div>
     }
 
-    <form method="post"
-          asp-controller="Admin"
-          asp-action="AddStaff"
-          enctype="multipart/form-data">
+    <form method="post" asp-controller="Admin" asp-action="AddStaff" enctype="multipart/form-data">
 
         <div class="row g-4">
 
-            <!-- Left Column — Personal Details -->
-            <div class="col-md-4">
+            <!-- Personal Details -->
+            <div class="col-md-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white fw-semibold">
                         <i class="bi bi-person me-1 text-primary"></i> Personal Details
                     </div>
                     <div class="card-body p-4">
 
-                        <!-- Profile Photo Upload -->
+                        <!-- Photo Preview -->
                         <div class="mb-4 text-center">
-
-                            <!-- Preview -->
-                            <div id="photoPreviewWrapper"
-                                 style="width:100px; height:100px; border-radius:50%;
-                                        background:#e2e8f0; margin:0 auto 12px;
-                                        display:flex; align-items:center;
-                                        justify-content:center; overflow:hidden;
-                                        border: 3px solid #e2e8f0;">
-                                <img id="photoPreview"
-                                     src="#"
-                                     alt="Preview"
-                                     style="width:100%; height:100%;
-                                            object-fit:cover; display:none;" />
-                                <i id="photoPlaceholder"
-                                   class="bi bi-person-fill text-secondary"
-                                   style="font-size:40px;"></i>
+                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2 overflow-hidden"
+                                 style="width:100px; height:100px;">
+                                <img id="photoPreview" src="#" alt="Preview"
+                                     class="w-100 h-100" style="object-fit:cover; display:none;" />
+                                <i id="photoPlaceholder" class="bi bi-person-fill text-secondary fs-1"></i>
                             </div>
-
                             <label class="form-label fw-semibold d-block">
-                                Profile Photo
-                                <span class="text-muted fw-normal small">(Optional)</span>
+                                Profile Photo <span class="text-muted fw-normal small">(Optional)</span>
                             </label>
-
-                            <input type="file"
-                                   name="profilePhoto"
-                                   id="profilePhotoInput"
-                                   class="form-control"
-                                   accept=".jpg,.jpeg,.png"
+                            <input type="file" name="profilePhoto" id="profilePhotoInput"
+                                   class="form-control" accept=".jpg,.jpeg,.png"
                                    onchange="previewPhoto(this)" />
-
                             <div class="form-text">JPG or PNG — Max 2MB</div>
                         </div>
 
-                        <!-- First Name -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                First Name <span class="text-danger">*</span>
-                            </label>
-                            <input type="text"
-                                   name="firstName"
-                                   class="form-control"
-                                   placeholder="Enter first name"
-                                   required />
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="firstName" class="form-control"
+                                   placeholder="Enter first name" required />
                         </div>
 
-                        <!-- Last Name -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Last Name <span class="text-danger">*</span>
-                            </label>
-                            <input type="text"
-                                   name="lastName"
-                                   class="form-control"
-                                   placeholder="Enter last name"
-                                   required />
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="lastName" class="form-control"
+                                   placeholder="Enter last name" required />
                         </div>
 
-                        <!-- Phone -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Phone</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-telephone"></i>
-                                </span>
-                                <input type="text"
-                                       name="phone"
-                                       class="form-control"
-                                       placeholder="Enter phone number"
-                                       maxlength="15" />
-                            </div>
+                            <input type="text" name="phone" class="form-control"
+                                   placeholder="Enter phone number" maxlength="15" />
                         </div>
 
-                        <!-- Email -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Email</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-envelope"></i>
-                                </span>
-                                <input type="email"
-                                       name="email"
-                                       class="form-control"
-                                       placeholder="Enter email address" />
-                            </div>
+                            <input type="email" name="email" class="form-control"
+                                   placeholder="Enter email address" />
                         </div>
 
-                        <!-- Staff Type -->
+                        <!-- Role dropdown — loaded from Admin.Roles, no hardcoded values -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Staff Type <span class="text-danger">*</span>
-                            </label>
-                            <select name="staffType" class="form-select" required>
-                                <option value="">-- Select Staff Type --</option>
-                                <option value="Collection Agent">Collection Agent</option>
-                                <option value="Production Manager">Production Manager</option>
-                                <option value="Finance Manager">Finance Manager</option>
-                                <option value="Sales Manager">Sales Manager</option>
-                                <option value="HR Manager">HR Manager</option>
-                                <option value="Driver">Driver</option>
-                                <option value="Accountant">Accountant</option>
-                                <option value="Supervisor">Supervisor</option>
+                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                            <select name="roleId" class="form-select" required>
+                                <option value="">-- Select Role --</option>
+                                @foreach (var role in Model)
+                                {
+                                    <option value="@role.RoleId">@role.RoleName</option>
+                                }
                             </select>
                         </div>
 
-                        <!-- Date of Joining -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Date of Joining</label>
-                            <input type="date"
-                                   name="doj"
-                                   class="form-control" />
+                            <input type="date" name="doj" class="form-control" />
                             <div class="form-text">Leave blank if not confirmed yet</div>
                         </div>
 
@@ -159,8 +103,8 @@
                 </div>
             </div>
 
-            <!-- Right Column — Bank Details -->
-            <div class="col-md-4">
+            <!-- Bank Details -->
+            <div class="col-md-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white fw-semibold">
                         <i class="bi bi-bank me-1 text-success"></i> Bank Details
@@ -168,70 +112,37 @@
                     </div>
                     <div class="card-body p-4">
 
-                        <div class="alert alert-info border-0 small mb-4">
+                        <div class="alert alert-info small mb-4">
                             <i class="bi bi-info-circle me-1"></i>
-                            Bank details are required for salary payments.
-                            You can add them later if not available now.
+                            Bank details are required for salary payments. You can add them later.
                         </div>
 
-                        <!-- Bank Name -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Bank Name</label>
-                            <input type="text"
-                                   name="bankName"
-                                   class="form-control"
+                            <input type="text" name="bankName" class="form-control"
                                    placeholder="e.g. SBI, HDFC, ICICI" />
                         </div>
 
-                        <!-- Account Number -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Account Number</label>
-                            <input type="text"
-                                   name="accountNumber"
-                                   class="form-control"
+                            <input type="text" name="accountNumber" class="form-control"
                                    placeholder="Enter account number" />
                         </div>
 
-                        <!-- IFSC Code -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">IFSC Code</label>
-                            <input type="text"
-                                   name="ifscCode"
-                                   class="form-control"
-                                   placeholder="e.g. SBIN0001001"
-                                   maxlength="20" />
-                            <div class="form-text">
-                                11 character code found on your cheque book
-                            </div>
+                            <input type="text" name="ifscCode" class="form-control"
+                                   placeholder="e.g. SBIN0001001" maxlength="20" />
+                            <div class="form-text">11 character code found on your cheque book</div>
                         </div>
 
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column — Info Card -->
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-lightbulb me-1 text-warning"></i> What Happens Next
-                    </div>
-                    <div class="card-body">
-                        <ul class="text-muted small mb-0">
-                            <li class="mb-2">Staff member will be added to the system</li>
-                            <li class="mb-2">
-                                Admin can then create a login account for this staff
-                                from <strong>Register User</strong> page
-                            </li>
-                            <li class="mb-2">Staff ID will be linked to the user account</li>
-                            <li>Staff can be activated or deactivated anytime</li>
-                        </ul>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Submit Buttons -->
+        <!-- Submit -->
         <div class="row mt-4">
             <div class="col">
                 <div class="card shadow-sm border-0">
@@ -239,9 +150,7 @@
                         <button type="submit" class="btn btn-primary px-4">
                             <i class="bi bi-person-plus me-1"></i> Add Staff Member
                         </button>
-                        <a asp-controller="Admin"
-                           asp-action="Staff"
-                           class="btn btn-outline-secondary px-4">
+                        <a asp-controller="Admin" asp-action="Staff" class="btn btn-outline-secondary px-4">
                             Cancel
                         </a>
                     </div>
@@ -258,12 +167,11 @@
         function previewPhoto(input) {
             const preview     = document.getElementById('photoPreview');
             const placeholder = document.getElementById('photoPlaceholder');
-
             if (input.files && input.files[0]) {
-                const reader  = new FileReader();
-                reader.onload = function (e) {
-                    preview.src          = e.target.result;
-                    preview.style.display    = 'block';
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.src               = e.target.result;
+                    preview.style.display     = 'block';
                     placeholder.style.display = 'none';
                 };
                 reader.readAsDataURL(input.files[0]);
