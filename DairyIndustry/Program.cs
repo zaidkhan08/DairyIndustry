@@ -1,9 +1,6 @@
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
 using DairyIndustry.Repositories;
-using Stripe;
-using DinkToPdf;
-using DinkToPdf.Contracts;
 
 namespace DairyIndustry
 {
@@ -17,12 +14,6 @@ namespace DairyIndustry
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();
-            builder.Services.AddScoped<IProductionRepository,ProductionRepository>();
-            builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
-            builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
-        
-            StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
-
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
             builder.Services.AddControllersWithViews(options =>  
             {
@@ -51,7 +42,7 @@ namespace DairyIndustry
             app.UseAuthorization();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Production}/{action=Index}/{id?}");
+                pattern: "{controller=Admin}/{action=Login}/{id?}");
 
             app.Run();
         }
