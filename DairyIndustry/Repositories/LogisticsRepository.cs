@@ -254,6 +254,56 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<MilkTransferModel> GetDriverTransfers(int userId)
+        {
+            var list = new List<MilkTransferModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetDriverTransfers", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new MilkTransferModel
+                            {
+                                TransferId = Convert.ToInt32(reader["TransferId"]),
+                                DispatchDate = Convert.ToDateTime(reader["DispatchDate"]),
+                                ReceivedDate = reader["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ReceivedDate"]),
+                                DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
+                                ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
+                                LossQty = reader["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["LossQty"]),
+                                LossPercent = Convert.ToDecimal(reader["LossPercent"]),
+                                TransferStatus = reader["TransferStatus"].ToString(),
+                                CenterId = Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"].ToString(),
+                                PlantId = Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"].ToString(),
+                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                                VehicleNumber = reader["VehicleNumber"].ToString(),
+                                DriverId = reader["DriverId"] == DBNull.Value ? null : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverPhone = reader["DriverPhone"] == DBNull.Value ? null : reader["DriverPhone"].ToString(),
+                                TestedFat = reader["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedFat"]),
+                                TestedCLR = reader["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedCLR"]),
+                                TestDate = reader["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["TestDate"]),
+                                BatchId = Convert.ToInt32(reader["BatchId"]),
+                                Shift = reader["Shift"].ToString(),
+                                BatchDate = Convert.ToDateTime(reader["BatchDate"]),
+                                BatchAvgFat = reader["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgFat"]),
+                                BatchAvgCLR = reader["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgCLR"])
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
+        }
 
     }
 }

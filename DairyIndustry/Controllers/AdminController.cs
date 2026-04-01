@@ -10,12 +10,14 @@ namespace DairyIndustry.Controllers
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly IReportRepository _reportRepo;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo,IReportRepository reportRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _reportRepo= reportRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -528,7 +530,50 @@ namespace DairyIndustry.Controllers
 
             return RedirectToAction("Products");
         }
+        [SessionAuthorize("Admin")]
+        public IActionResult ProductionBatches(int? plantId = null, int? productId = null,
+                                        string batchStatus = null,
+                                        DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var batches = _adminRepo.GetProductionBatches(plantId, productId, batchStatus, fromDate, toDate);
 
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Products = _adminRepo.GetActiveProducts();
+            ViewBag.PlantId = plantId;
+            ViewBag.ProductId = productId;
+            ViewBag.BatchStatus = batchStatus;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
 
+            return View(batches);
+        }
+        [SessionAuthorize("Admin")]
+        public IActionResult WastageSummary(int? plantId = null, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var wastage = _reportRepo.GetWastageSummary(plantId, fromDate, toDate);
+
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.PlantId = plantId;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            return View(wastage);
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult MilkTransfers(int? plantId = null, int? centerId = null,
+                                    DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var transfers = _adminRepo.GetMilkTransfers(plantId, centerId, fromDate, toDate);
+
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            return View(transfers);
+        }
     }
 }

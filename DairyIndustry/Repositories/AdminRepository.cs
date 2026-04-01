@@ -1067,5 +1067,159 @@ namespace DairyIndustry.Repositories
                 ModifiedByName = reader["ModifiedByName"] == DBNull.Value ? null : reader["ModifiedByName"].ToString()
             };
         }
+        public List<ProductModel> GetActiveProducts()
+        {
+            var list = new List<ProductModel>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetActiveProducts", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductType", DBNull.Value);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new ProductModel
+                            {
+                                ProductId = Convert.ToInt32(reader["ProductId"]),
+                                ProductName = reader["ProductName"].ToString(),
+                                ProductType = reader["ProductType"].ToString(),
+                                Unit = reader["Unit"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
+        }
+        public List<ProductionBatchModel> GetProductionBatches(int? plantId = null, int? productId = null,
+                                                        string batchStatus = null,
+                                                        DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var list = new List<ProductionBatchModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetProductionBatches", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ProductId", (object?)productId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@BatchStatus", (object?)batchStatus ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new ProductionBatchModel
+                            {
+                                ProductionBatchId = Convert.ToInt32(reader["ProductionBatchId"]),
+                                ProductionDate = Convert.ToDateTime(reader["ProductionDate"]),
+                                MilkUsedQuantity = Convert.ToDecimal(reader["MilkUsedQuantity"]),
+                                BatchStatus = reader["BatchStatus"].ToString(),
+                                ProductId = Convert.ToInt32(reader["ProductId"]),
+                                ProductName = reader["ProductName"].ToString(),
+                                ProductType = reader["ProductType"].ToString(),
+                                Unit = reader["Unit"].ToString(),
+                                PlantId = Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+        public List<MilkTransferModel> GetMilkTransfers(int? plantId = null, int? centerId = null,
+                                                  DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var list = new List<MilkTransferModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetMilkTransfers", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new MilkTransferModel
+                            {
+                                TransferId = Convert.ToInt32(reader["TransferId"]),
+                                DispatchDate = Convert.ToDateTime(reader["DispatchDate"]),
+                                ReceivedDate = reader["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ReceivedDate"]),
+                                DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
+                                ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
+                                LossQty = reader["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["LossQty"]),
+                                LossPercent = Convert.ToDecimal(reader["LossPercent"]),
+                                TransferStatus = reader["TransferStatus"].ToString(),
+                                CenterId = Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"].ToString(),
+                                PlantId = Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"].ToString(),
+                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                                VehicleNumber = reader["VehicleNumber"].ToString(),
+                                VehicleCapacity = reader["VehicleCapacity"] == DBNull.Value ? null : Convert.ToDecimal(reader["VehicleCapacity"]),
+                                DriverId = reader["DriverId"] == DBNull.Value ? null : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverPhone = reader["DriverPhone"] == DBNull.Value ? null : reader["DriverPhone"].ToString(),
+                                TestedFat = reader["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedFat"]),
+                                TestedCLR = reader["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedCLR"]),
+                                TestDate = reader["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["TestDate"]),
+                                BatchId = Convert.ToInt32(reader["BatchId"]),
+                                Shift = reader["Shift"].ToString(),
+                                BatchDate = Convert.ToDateTime(reader["BatchDate"]),
+                                BatchAvgFat = reader["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgFat"]),
+                                BatchAvgCLR = reader["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgCLR"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+
+        //Collection center
+
+        public List<CollectionCenterModel> GetAllCenters()
+        {
+            var list = new List<CollectionCenterModel>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(
+                    "SELECT CenterId, CenterName, Location FROM Collection.CollectionCenters ORDER BY CenterName", con))
+                {
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new CollectionCenterModel
+                            {
+                                CenterId = Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"].ToString(),
+                                Location = reader["Location"] == DBNull.Value ? null : reader["Location"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
+        }
     }
 }

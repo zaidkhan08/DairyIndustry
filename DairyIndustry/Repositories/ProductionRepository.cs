@@ -79,8 +79,8 @@ namespace DairyIndustry.Repositories
                     v.DriverId,
                     d.DriverName,
                     d.Status AS DriverStatus
-                FROM Logistics.Vehicles v
-                LEFT JOIN Logistics.Drivers d ON d.DriverId = v.DriverId
+                FROM Logistics.VehiclesNew v
+                LEFT JOIN Logistics.DriversNew d ON d.DriverId = v.DriverId
                 ORDER BY v.VehicleNumber";
 
             using (SqlConnection con = _db.GetConnection())
@@ -266,8 +266,8 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Collection.CollectionBatches    cb ON cb.BatchId  = mt.BatchId
                 INNER JOIN Collection.CollectionCenters    cc ON cc.CenterId = cb.CenterId
                 INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId  = mt.PlantId
-                INNER JOIN Logistics.Vehicles               v  ON v.VehicleId = mt.VehicleId
-                LEFT  JOIN Logistics.Drivers                d  ON d.DriverId  = v.DriverId
+                INNER JOIN Logistics.VehiclesNew               v  ON v.VehicleId = mt.VehicleId
+                LEFT  JOIN Logistics.DriversNew                d  ON d.DriverId  = v.DriverId
                 ORDER BY mt.DispatchDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
@@ -316,8 +316,8 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Collection.CollectionBatches    cb ON cb.BatchId  = mt.BatchId
                 INNER JOIN Collection.CollectionCenters    cc ON cc.CenterId = cb.CenterId
                 INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId  = mt.PlantId
-                INNER JOIN Logistics.Vehicles               v  ON v.VehicleId = mt.VehicleId
-                LEFT  JOIN Logistics.Drivers                d  ON d.DriverId  = v.DriverId
+                INNER JOIN Logistics.VehiclesNew               v  ON v.VehicleId = mt.VehicleId
+                LEFT  JOIN Logistics.DriversNew                d  ON d.DriverId  = v.DriverId
                 WHERE mt.TransferId = @TransferId";
 
             using (SqlConnection con = _db.GetConnection())

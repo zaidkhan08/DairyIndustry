@@ -1,4 +1,5 @@
 ﻿using DairyIndustry.Models.Admin;
+using System;
 using System.Data;
 
 namespace DairyIndustry.Repositories
@@ -95,6 +96,18 @@ namespace DairyIndustry.Repositories
                            string description, int modifiedBy);
 
         void ToggleProductStatus(int productId, bool isActive, int modifiedBy);
+
+        List<ProductModel> GetActiveProducts();
+
+        List<ProductionBatchModel> GetProductionBatches(int? plantId = null, int? productId = null,
+                                                         string batchStatus = null,
+                                                         DateTime? fromDate = null, DateTime? toDate = null);
+
+        List<MilkTransferModel> GetMilkTransfers(int? plantId = null, int? centerId = null,
+                                          DateTime? fromDate = null, DateTime? toDate = null);
+
+        //collection center
+        List<CollectionCenterModel> GetAllCenters();
 
     }
 

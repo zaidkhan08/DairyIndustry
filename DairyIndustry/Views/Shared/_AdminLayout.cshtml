@@ -188,6 +188,12 @@
                     <i class="bi bi-layers me-2"></i>
                     <span>Production Batches</span>
                 </a>
+                <a asp-controller="Admin" asp-action="WastageSummary"
+                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
+                                                                             ViewContext.RouteData.Values["action"].ToString() == "WastageSummary" ? "active" : "")">
+                    <i class="bi bi-layers me-2"></i>
+                    <span>Wastage</span>
+                </a>
 
                 <a asp-controller="Admin" asp-action="MilkTransfers"
                    class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&

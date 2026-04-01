@@ -97,5 +97,13 @@ namespace DairyIndustry.Controllers
             TempData["Success"] = $"Vehicle status updated to {status} successfully.";
             return RedirectToAction("AllVehicles");
         }
+        
+        [SessionAuthorize("Driver")]
+        public IActionResult MyTransfers()
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+            var transfers = _logisticRepo.GetDriverTransfers(userId);
+            return View(transfers);
+        }
     }
 }
