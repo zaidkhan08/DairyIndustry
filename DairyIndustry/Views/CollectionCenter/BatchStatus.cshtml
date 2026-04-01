@@ -1,82 +1,193 @@
-﻿@using DairyIndustry.Models.Collection
-@model List<BatchViewModel>
+﻿@model List<DairyIndustry.Models.Collection.BatchStatusViewModel>
 
 @{
-    ViewData["Title"] = "Batch Collections";
-    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
-}
-@if (TempData["Success"] != null)
-{
-    <script>
-        alert('@TempData["Success"]');
-    </script>
+    ViewData["Title"] = "Batch Status";
+    Layout = "_CollectionCenterLayout";
+    var centerName = ViewBag.CenterName as string ?? "Your Center";
+    var now = DateTime.Now;
 }
 
-@if (TempData["Error"] != null)
-{
-    <script>
-        alert('@TempData["Error"]');
-    </script>
-}
 <div class="container mt-4">
-    <div class="card shadow p-4">
 
-        <h4 class="text-center mb-4">Batch Status</h4>
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
 
-        <table class="table table-bordered table-hover text-center">
-            <thead class="table-light">
-                <tr>
-                    <th>Batch Id</th>
-                    <th>Date</th>
-                    <th>Shift</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4>Batch Status</h4>
+            <p class="text-muted mb-0">
+                @centerName - @now.ToString("dd MMM yyyy")
+            </p>
+        </div>
 
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    <tr>
-                        <td>@item.BatchId</td>
-                        <td>@item.BatchDate.ToShortDateString()</td>
-                        <td>@item.Shift</td>
+        <a asp-action="Create" class="btn btn-primary">
+            New Milk Entry
+        </a>
+    </div>
 
-                        <td>
-                            @if (item.Status == "Open")
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            No batch data available.
+        </div>
+    }
+    else
+    {
+        <!-- Cards -->
+        <div class="row mb-4">
+            @foreach (var batch in Model)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            @batch.Shift
+                        </div>
+
+                        <div class="card-body">
+
+                            <p><strong>Time:</strong> @batch.ShiftWindow</p>
+
+                            <p>
+                                <strong>Status:</strong>
+                                @if (batch.BatchStatus == "Open")
+                                {
+                                    <span class="badge bg-success">Open</span>
+                                }
+                                else if (batch.BatchStatus == "Closed")
+                                {
+                                    <span class="badge bg-danger">Closed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@batch.BatchStatus</span>
+                                }
+                            </p>
+
+                            @if (batch.BatchId.HasValue)
                             {
-                                <span class="badge bg-success">Open</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Closed</span>
-                            }
-                        </td>
+                                <p><strong>Batch ID:</strong> #@batch.BatchId</p>
+                                <p><strong>Total Qty:</strong> @batch.TotalQuantity.ToString("F2") L</p>
 
-                        <td>
-                            @if (item.Status == "Open")
-                            {
-                                <form method="post" asp-action="Close">
-                                    <input type="hidden" name="batchId" value="@item.BatchId" />
-                                    <button class="btn btn-sm btn-danger">Close</button>
-                                </form>
-                            }
-                            else
-                            {
-                               
+                                @if (batch.AvgFat.HasValue)
+                                {
+                                    <p><strong>Avg Fat:</strong> @batch.AvgFat.Value.ToString("F2") %</p>
+                                }
+
+                                @if (batch.AvgCLR.HasValue)
+                                {
+                                    <p><strong>Avg CLR:</strong> @batch.AvgCLR.Value.ToString("F2")</p>
+                                }
+
                                 <a asp-action="BatchCollections"
-                                   asp-controller="CollectionCenter"
-                                   asp-route-batchId="@item.BatchId"
-                                   class="btn btn-sm btn-primary">
-                                    View
+                                   asp-route-batchId="@batch.BatchId"
+                                   class="btn btn-outline-primary btn-sm">
+                                    View Entries
                                 </a>
                             }
-                        </td>
+                            else
+                            {
+                                <p class="text-muted">
+                                    No batch available for this shift.
+                                </p>
+                            }
 
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
 
-    </div>
+        <!-- Table -->
+        <div class="card">
+            <div class="card-header">
+                Today's Summary
+            </div>
+
+            <div class="card-body">
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Shift</th>
+                            <th>Time</th>
+                            <th>Batch ID</th>
+                            <th>Status</th>
+                            <th>Total Qty</th>
+                            <th>Avg Fat</th>
+                            <th>Avg CLR</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var batch in Model)
+                        {
+                            <tr>
+                                <td>@batch.Shift</td>
+                                <td>@batch.ShiftWindow</td>
+
+                                <td>
+                                    @(batch.BatchId.HasValue ? "#" + batch.BatchId : "-")
+                                </td>
+
+                                <td>
+                                    @if (batch.BatchStatus == "Open")
+                                    {
+                                        <span class="badge bg-success">Open</span>
+                                    }
+                                    else if (batch.BatchStatus == "Closed")
+                                    {
+                                        <span class="badge bg-danger">Closed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@batch.BatchStatus</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @(batch.BatchId.HasValue? batch.TotalQuantity.ToString("F2") : "-")
+                                </td>
+
+                                <td>
+                                    @(batch.AvgFat.HasValue? batch.AvgFat.Value.ToString("F2") : "-")
+                                </td>
+
+                                <td>
+                                    @(batch.AvgCLR.HasValue? batch.AvgCLR.Value.ToString("F2") : "-")
+                                </td>
+
+                                <td>
+                                    @if (batch.BatchId.HasValue)
+                                    {
+                                        <a asp-action="BatchCollections"
+                                           asp-route-batchId="@batch.BatchId"
+                                           class="btn btn-outline-primary btn-sm">
+                                            View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+
+            </div>
+        </div>
+    }
+
 </div>

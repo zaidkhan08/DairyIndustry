@@ -1,84 +1,143 @@
-﻿@using DairyIndustry.Models.Collection
-@model List<CenterInventoryViewModel>
+﻿@model List<DairyIndustry.Models.Collection.CenterInventoryViewModel>
 
 @{
-    ViewData["Title"] = "Batch Collections";
-    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+    ViewData["Title"] = "Inventory";
+    Layout = "_CollectionCenterLayout";
+    var totalQty = Model?.Sum(x => x.AvailableQuantity) ?? 0;
+    var milkTypes = Model != null ? Model.Select(x => x.MilkTypeName).Distinct().Count() : 0;
+    var lastUpdated = Model != null && Model.Any() ? Model.Max(x => x.LastUpdated) : DateTime.MinValue;
 }
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
 
 <div class="container mt-4">
 
-    <div class="card shadow">
-        <div class="card-header bg-success text-white">
-            <h4>Center Milk Inventory</h4>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4>Center Inventory</h4>
+            <p class="text-muted mb-0">Available milk stock</p>
         </div>
 
-        <div class="card-body">
-@* 
-            <!-- FORM -->
-            @using (Html.BeginForm("Inventory", "CollectionCenter", FormMethod.Get))
-            {
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Select Center</label>
+        <a asp-action="Dashboard" class="btn btn-outline-primary">
+            Back to Dashboard
+        </a>
+    </div>
 
-                        @Html.DropDownList(
-                        "centerId",
-                                        new SelectList(ViewBag.CenterList, "Value", "Text", ViewBag.SelectedCenter),
-                                        new { @class = "form-control" }
-                                        )
-                </div>
+    @if (Model != null && Model.Any())
+    {
+        <!-- Summary -->
+        <div class="row mb-4">
 
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        View Inventory
-                    </button>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Total Stock</h6>
+                        <h5>@totalQty.ToString("F2") L</h5>
+                    </div>
                 </div>
             </div>
-                        } *@
 
-            <!-- TABLE -->
-            <table class="table table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Center</th>
-                        <th>Milk Type</th>
-                        <th>Available (Liters)</th>
-                        <th>Last Updated</th>
-                    </tr>
-                </thead>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Milk Types</h6>
+                        <h5>@milkTypes</h5>
+                    </div>
+                </div>
+            </div>
 
-                <tbody>
-                    @if (Model != null && Model.Count > 0)
-                    {
-                        foreach (var item in Model)
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Last Updated</h6>
+                        <h5>
+                            @(lastUpdated != DateTime.MinValue ? lastUpdated.ToString("HH:mm") : "-")
+                        </h5>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cards -->
+        <div class="row mb-4">
+            @foreach (var item in Model)
+            {
+                var pct = totalQty > 0 ? (item.AvailableQuantity / totalQty) * 100 : 0;
+
+                <div class="col-md-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+
+                            <h6>@item.MilkTypeName</h6>
+
+                            <h4>@item.AvailableQuantity.ToString("F2") L</h4>
+
+                            <p class="text-muted mb-1">
+                                @pct.ToString("F0")% of total
+                            </p>
+
+                            <small class="text-muted">
+                                @item.LastUpdated.ToString("dd MMM, HH:mm")
+                            </small>
+
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+            <div class="card-header">
+                Inventory Details (@Model.Count)
+            </div>
+
+            <div class="card-body">
+
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Center</th>
+                            <th>Milk Type</th>
+                            <th>Available Qty</th>
+                            <th>%</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model)
                         {
+                            var pct = totalQty > 0 ? (item.AvailableQuantity / totalQty) * 100 : 0;
+
                             <tr>
                                 <td>@item.CenterName</td>
                                 <td>@item.MilkTypeName</td>
-                                <td class="fw-bold text-success">
-                                    @item.AvailableQuantity
-                                </td>
-                                <td>
-                                    @item.LastUpdated.ToString("dd MMM yyyy hh:mm tt")
-                                </td>
+                                <td>@item.AvailableQuantity.ToString("F2")</td>
+                                <td>@pct.ToString("F0")%</td>
+                                <td>@item.LastUpdated.ToString("dd MMM yyyy, HH:mm")</td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">
-                                No inventory found
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </tbody>
 
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Total</th>
+                            <th>@totalQty.ToString("F2") L</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+
+                </table>
+
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No inventory data found.
+        </div>
+    }
 
 </div>

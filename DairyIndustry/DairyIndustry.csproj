@@ -15,4 +15,8 @@
     <Folder Include="wwwroot\uploads\profiles\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\css\collection.css" />
+  </ItemGroup>
+
 </Project>

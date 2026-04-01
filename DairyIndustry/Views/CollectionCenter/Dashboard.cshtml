@@ -1,150 +1,180 @@
-﻿@model DairyIndustry.Models.Collection.DashboardViewModel
+@model DairyIndustry.Models.Collection.DashboardViewModel
 @{
-    ViewData["Title"] = "Center Dashboard";
-    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+    ViewData["Title"] = "Dashboard";
+    Layout = "_CollectionCenterLayout";
+    var now = DateTime.Now;
+
+    string shift = "No Active Shift";
+    if (now.Hour >= 6 && now.Hour < 10) { shift = "Morning"; }
+    else if (now.Hour >= 15 && now.Hour < 19) { shift = "Evening"; }
+    else if (now.Hour >= 21 || now.Hour < 1) { shift = "Night"; }
 }
-@if (TempData["Success"] != null)
-{
-    <script>
-        alert('@TempData["Success"]');
-    </script>
-}
-<div class="row g-4">
-    <div class="col-12">
-        <div class="card border-0 rounded-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #121212 0%, #2c3e50 100%); color: white;">
-            <div class="card-body p-5">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <div class="bg-nescafe rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: #E1261C;">
-                            <i class="bi bi-building fs-1"></i>
-                        </div>
+
+<div class="container mt-4">
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4>Dashboard</h4>
+            <p class="text-muted mb-0">Welcome, @Model?.StaffName</p>
+        </div>
+
+        <a asp-action="Create" class="btn btn-primary">
+            New Milk Entry
+        </a>
+    </div>
+
+    @if (Model == null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+    else
+    {
+        <!-- Center Info -->
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card p-2">
+                    <strong>Center</strong>
+                    <div>@Model.CenterName</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-2">
+                    <strong>Center ID</strong>
+                    <div>#@Model.CenterId</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-2">
+                    <strong>Date</strong>
+                    <div>@now.ToString("dd MMM yyyy")</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-2">
+                    <strong>Shift</strong>
+                    <div>
+                        @if (shift == "No Active Shift")
+                        {
+                            <span class="badge bg-secondary">No Active Shift</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">@shift</span>
+                        }
                     </div>
-                    <div class="col">
-                        <h6 class="text-uppercase tracking-2 text-nescafe fw-bold mb-1">Center Overview</h6>
-                        <h1 class="fw-800 mb-0">@Model.CenterName</h1>
-                      @*   <p class="opacity-75 mb-0"><i class="bi bi-geo-alt me-2"></i>@Model.VillageName | @Model.Location</p> *@
-                    </div>
-                    @* <div class="col-md-3 text-md-end">
-                        <div class="p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-10">
-                            <small class="d-block text-uppercase tracking-1 opacity-75">Storage Limit</small>
-                            <h3 class="mb-0 fw-bold">@Model.Capacity <small class="fs-6 fw-normal">Liters</small></h3>
-                        </div>
-                    </div> *@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
-            <div class="d-flex align-items-center">
-                <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-droplet-fill text-nescafe fs-3"></i></div>
-                <div>
-                    <p class="text-muted small fw-bold text-uppercase mb-0">Today's Milk</p>
-                    <h2 class="fw-800 mb-0">1,420 L</h2>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Quick Actions -->
+        <div class="card mb-3">
+            <div class="card-header">Quick Actions</div>
+            <div class="card-body">
 
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
-            <div class="d-flex align-items-center">
-                <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-people-fill text-dark fs-3"></i></div>
-                <div>
-                    <p class="text-muted small fw-bold text-uppercase mb-0">Active Farmers</p>
-                    <h2 class="fw-800 mb-0">84</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
-            <div class="d-flex align-items-center">
-                <div class="bg-light p-3 rounded-3 me-3"><i class="bi bi-check-circle-fill text-success fs-3"></i></div>
-                <div>
-                    <p class="text-muted small fw-bold text-uppercase mb-0">Batch Status</p>
-                    <h2 class="fw-800 mb-0 text-success">OPEN</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 mt-4">
-        <h5 class="fw-800 text-uppercase tracking-1 mb-4">Operations</h5>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <a href="/MilkCollection/Create" class="btn action-tile">
-                    <i class="bi bi-plus-circle"></i>
-                    <span>New Milk Entry</span>
+                <a asp-action="Create" class="btn btn-primary me-2 mb-2">
+                    Record Milk Entry
                 </a>
-            </div>
-            <div class="col-md-3">
-                <a href="/CollectionBatch/Index" class="btn action-tile">
-                    <i class="bi bi-box-seam"></i>
-                    <span>Manage Batches</span>
+
+                <a asp-action="BatchStatus" class="btn btn-outline-primary me-2 mb-2">
+                    Batch Status
                 </a>
-            </div>
-            <div class="col-md-3">
-                <a href="/Farmer/Index" class="btn action-tile">
-                    <i class="bi bi-person-lines-fill"></i>
-                    <span>Farmer Directory</span>
+
+                <a asp-action="Inventory" class="btn btn-outline-primary mb-2">
+                    Inventory
                 </a>
 
             </div>
-            <div class="col-md-3">
-                <a href="#" class="btn action-tile dark">
-                    <i class="bi bi-printer"></i>
-                    <span>Print Receipts</span>
-                </a>
+        </div>
+
+        <!-- Shift Status -->
+        <div class="card">
+            <div class="card-header">Today's Shift Status</div>
+            <div class="card-body">
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Shift</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        <!-- Morning -->
+                        <tr>
+                            <td>Morning</td>
+                            <td>06:00 - 10:00</td>
+                            <td>
+                                @if (now.Hour >= 6 && now.Hour < 10)
+                                {
+                                    <span class="badge bg-success">Open</span>
+                                }
+                                else if (now.Hour >= 10)
+                                {
+                                    <span class="badge bg-danger">Closed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Not Started</span>
+                                }
+                            </td>
+                        </tr>
+
+                        <!-- Evening -->
+                        <tr>
+                            <td>Evening</td>
+                            <td>15:00 - 19:00</td>
+                            <td>
+                                @if (now.Hour >= 15 && now.Hour < 19)
+                                {
+                                    <span class="badge bg-success">Open</span>
+                                }
+                                else if (now.Hour >= 19)
+                                {
+                                    <span class="badge bg-danger">Closed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Not Started</span>
+                                }
+                            </td>
+                        </tr>
+
+                        <!-- Night -->
+                        <tr>
+                            <td>Night</td>
+                            <td>21:00 - 01:00</td>
+                            <td>
+                                @if (now.Hour >= 21 || now.Hour < 1)
+                                {
+                                    <span class="badge bg-success">Open</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Closed</span>
+                                }
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
             </div>
         </div>
-    </div>
+    }
 </div>
-<style>
-    /* ... existing variables ... */
-
-    /* Initially, let's hide the sidebar off-screen for mobile, 
-       or just allow it to shift for desktop */
-    .sidebar {
-        width: var(--sidebar-width);
-        height: 100vh;
-        position: fixed;
-        left: 0;
-        top: 0;
-        background: var(--nescafe-dark);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1050;
-    }
-
-    /* State when sidebar is closed */
-    .sidebar.collapsed {
-        left: calc(var(--sidebar-width) * -1);
-    }
-
-    .main-wrapper {
-        margin-left: var(--sidebar-width);
-        width: calc(100% - var(--sidebar-width));
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* When sidebar is collapsed, main wrapper takes full width */
-    .main-wrapper.full-width {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    /* The Hamburger Icon Styling */
-    .menu-toggle {
-        font-size: 1.5rem;
-        cursor: pointer;
-        padding: 5px 10px;
-        border-radius: 8px;
-        transition: background 0.2s;
-    }
-
-    .menu-toggle:hover {
-        background: #f0f0f0;
-    }
-</style>

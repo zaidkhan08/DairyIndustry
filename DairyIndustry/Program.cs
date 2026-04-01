@@ -2,7 +2,6 @@ using DairyIndustry.Controllers;
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
 using DairyIndustry.Repositories;
-using DairyIndustry.Repositories.Interfaces;
 using DairyIndustry.Repository;
 using Microsoft.AspNetCore.Identity.Data;
 
@@ -18,7 +17,6 @@ namespace DairyIndustry
             
             builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
             builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
-            //builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();

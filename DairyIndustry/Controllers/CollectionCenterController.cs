@@ -1,273 +1,240 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Collection;
-using DairyIndustry.Repositories.Interfaces;
+using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-public class CollectionCenterController : Controller
+namespace DairyIndustry.Controllers
 {
-    private readonly ICollectionCenterRepository _collectionCenterRepo;
-    private readonly IFarmerRepository _farmerRepo;
-
-    public CollectionCenterController(ICollectionCenterRepository repository, IFarmerRepository farmerRepo)
+    [ServiceFilter(typeof(ActionLogFilter))]
+    public class CollectionCenterController : Controller
     {
-        _collectionCenterRepo = repository;
-        _farmerRepo = farmerRepo;
-    }
+        private readonly ICollectionCenterRepository _collectionCenterRepo;
 
-    // ================= DASHBOARD =================
-    [HttpGet]
-    [SessionAuthorize("Collection Agent")]
-    public IActionResult Dashboard()
-    {
-        int? staffId = HttpContext.Session.GetInt32("StaffId");
-
-        if (!staffId.HasValue || staffId == 0)
-            return RedirectToAction("Login", "Admin");
-
-        var dashboard = _collectionCenterRepo.GetCollectionCenterByStaff(staffId.Value);
-
-        if (dashboard == null)
+        public CollectionCenterController(ICollectionCenterRepository repository)
         {
-            ViewBag.Error = "No collection center assigned to you.";
-            return View();
+            _collectionCenterRepo = repository;
         }
 
-        // 🔥 Get current batch
-        int batchId = _collectionCenterRepo.GetCurrentBatchId(dashboard.CenterId);
+        // ─────────────────────────────────────────────────────────────
+        // DASHBOARD
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        [SessionAuthorize("Collection Agent")]
+        public IActionResult Dashboard()
+        {
+            int? staffId = HttpContext.Session.GetInt32("StaffId");
 
-        dashboard.BatchId = batchId;
+            if (!staffId.HasValue)
+                return RedirectToAction("Login", "Admin");
 
-        // 🔥 STORE IN SESSION (IMPORTANT)
-        HttpContext.Session.SetInt32("BatchId", batchId);
+            var dashboard = _collectionCenterRepo.GetCollectionCenterByStaff(staffId.Value);
 
-        return View(dashboard);
-    }
+            if (dashboard == null)
+            {
+                ViewBag.Error = "No collection center assigned to you.";
+                return View();
+            }
 
-    // ================= OPEN BATCH =================
-    public IActionResult Open()
-    {
-        return View();
-    }
+            return View(dashboard);
+        }
 
-    [HttpPost]
-    public IActionResult Open(OpenBatchRequest request)
-    {
-        try
+        // ─────────────────────────────────────────────────────────────
+        // BATCH STATUS PAGE
+        // Batches open/close automatically by time via usp_SyncBatches
+        // Staff can only VIEW status here — no manual open/close
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult BatchStatus()
         {
             int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
 
             var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
 
-            int batchId = _collectionCenterRepo.OpenBatch(
-                center.CenterId,
-                request.Shift,
-                request.BatchDate
-            );
+            if (center == null || center.CenterId == 0)
+            {
+                TempData["Error"] = "No collection center assigned to you.";
+                return View(new List<BatchStatusViewModel>());
+            }
 
-            // 🔥 STORE IN SESSION
-            HttpContext.Session.SetInt32("BatchId", batchId);
+            // GetBatchStatus internally calls usp_GetBatchStatus
+            // which calls usp_SyncBatches — so batches are auto-synced on every page load
+            var batches = _collectionCenterRepo.GetBatchStatus(center.CenterId);
 
-            TempData["Message"] = "Batch opened successfully. ID: " + batchId;
-        }
-        catch (Exception ex)
-        {
-            TempData["Error"] = ex.Message;
-        }
+            ViewBag.CenterName = center.CenterName;
 
-        return RedirectToAction("Dashboard");
-    }
-
-    // ================= CLOSE BATCH =================
-    public IActionResult Close()
-    {
-        return View();
-    }
-
-    //[HttpPost]
-    //public IActionResult Close(int batchId)
-    //{
-    //    try
-    //    {
-    //        _collectionCenterRepo.CloseBatch(batchId);
-
-    //        // 🔥 REMOVE FROM SESSION (optional)
-    //        HttpContext.Session.Remove("BatchId");
-
-    //        TempData["Message"] = "Batch closed successfully.";
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        TempData["Error"] = ex.Message;
-    //    }
-
-    //    return RedirectToAction("Dashboard");
-    //}
-
-    [HttpPost]
-    public IActionResult Close(int batchId)
-    {
-        try
-        {
-            _collectionCenterRepo.CloseBatch(batchId);
-
-            // SUCCESS MESSAGE
-            TempData["Success"] = $"Batch {batchId} closed successfully!";
-        }
-        catch (Exception ex)
-        {
-            TempData["Error"] = ex.Message;
+            return View(batches);
         }
 
-        // Redirect back to SAME page
-        return RedirectToAction("BatchStatus");
-    }
-
-    // ================= CREATE COLLECTION =================
-    public IActionResult Create()
-    {
-        var model = new MilkCollectionViewModel();
-
-        int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
-
-        var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
-
-        model.CenterName = center.CenterName;
-
-        // 🔥 GET BatchId from Session
-        model.BatchId = HttpContext.Session.GetInt32("BatchId") ?? 0;
-
-        LoadFarmers(model);
-        LoadMilkTypes(model);
-        LoadBatches(model, center.CenterId);
-
-        return View(model);
-    }
-
-    [HttpPost]
-    public IActionResult Create(MilkCollectionViewModel model)
-    {
-        try
+        // ─────────────────────────────────────────────────────────────
+        // MILK ENTRY — CREATE
+        // CollectionDate = today only (enforced here & in SP)
+        // Shift          = auto-detected in SP from current time
+        // BatchId        = resolved in SP from open batch
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult Create()
         {
             int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
 
             var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
 
-            model.CenterName = center.CenterName;
+            if (center == null || center.CenterId == 0)
+            {
+                TempData["Error"] = "No collection center assigned to you.";
+                return RedirectToAction("Dashboard");
+            }
 
-            //  Ensure BatchId from Session
-            model.BatchId = HttpContext.Session.GetInt32("BatchId") ?? 0;
+            var shift = GetCurrentShift();   //  ADD THIS LINE
 
-            var result = _collectionCenterRepo.RecordMilk(
-                model.FarmerId,
-                center.CenterId,
-                model.MilkTypeId,
-                model.BatchId,
-                model.Quantity,
-                model.Shift,
-                model.CollectionDate,
-                model.AppliedFat,
-                model.AppliedCLR
-            );
+            var model = new MilkCollectionViewModel
+            {
+                CenterName = center.CenterName,
+                CollectionDate = DateTime.Today,
+                CurrentShift = shift,   //  for UI
+                Shift = shift,          //  for POST
+                Farmers = LoadFarmers(),
+                MilkTypes = LoadMilkTypes()
+            };
 
-            TempData["Message"] = $"Saved! ID: {result.collectionId}, Amount: {result.amount}";
+            return View(model);
         }
-        catch (Exception ex)
+        [HttpPost]
+        public IActionResult Create(MilkCollectionViewModel model)
         {
-            TempData["Error"] = ex.Message;
+            int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
+
+            var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
+
+            if (center == null || center.CenterId == 0)
+            {
+                TempData["Error"] = "No collection center assigned to you.";
+                return RedirectToAction("Dashboard");
+            }
+
+            // Always enforce today — never trust client date
+            model.CollectionDate = DateTime.Today;
+
+            try
+            {
+                var result = _collectionCenterRepo.RecordMilk(
+                 farmerId: model.FarmerId,
+                 centerId: center.CenterId,
+                 milkTypeId: model.MilkTypeId,
+                 shift: model.Shift,   // ✅ ADD THIS
+                 quantity: model.Quantity,
+                 fat: model.AppliedFat,
+                 clr: model.AppliedCLR
+             );
+                TempData["Success"] = $"Entry saved! Collection ID: {result.collectionId} | " +
+                                      $"Rate: ₹{result.rate}/L | Amount: ₹{result.amount}";
+
+                return RedirectToAction("Dashboard");
+            }
+            catch (Exception ex)
+            {
+                // SP raises clear messages like "Morning shift is closed. It closed at 10:00 AM."
+                TempData["Error"] = ex.Message;
+
+                // Reload dropdowns before returning view
+                model.CenterName = center.CenterName;
+                model.CollectionDate = DateTime.Today;
+                model.Shift = GetCurrentShift();
+                model.Farmers = LoadFarmers();
+                model.MilkTypes = LoadMilkTypes();
+
+                return View(model);
+            }
         }
 
-        return RedirectToAction("Dashboard");
-    }
-    public IActionResult BatchCollections(int? batchId)
-    {
-        // ❌ If batchId NOT coming from URL → don't rely on old session silently
-        if (batchId == null || batchId == 0)
+        // ─────────────────────────────────────────────────────────────
+        // BATCH COLLECTIONS  —  view entries for a specific batch
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult BatchCollections(int? batchId)
         {
-            TempData["Error"] = "Invalid batch selected.";
-            return RedirectToAction("BatchStatus"); // 👈 go back safely
+            if (batchId == null || batchId == 0)
+            {
+                TempData["Error"] = "Invalid batch selected.";
+                return RedirectToAction("BatchStatus");
+            }
+
+            ViewBag.BatchId = batchId.Value;
+
+            var data = _collectionCenterRepo.GetBatchCollections(batchId.Value);
+
+            if (data == null || data.Count == 0)
+                TempData["Info"] = "No entries found for this batch yet.";
+
+            return View(data);
         }
 
-        // ✅ Always update session with current batch
-        HttpContext.Session.SetInt32("BatchId", batchId.Value);
-
-        // ✅ For display purpose
-        ViewBag.BatchId = batchId.Value;
-
-        // ✅ Get data
-        var data = _collectionCenterRepo.GetBatchCollections(batchId.Value);
-
-        // ✅ Handle no data case (optional)
-        if (data == null || data.Count == 0)
+        // ─────────────────────────────────────────────────────────────
+        // INVENTORY
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult Inventory(int? centerId)
         {
-            TempData["Error"] = "No records found for this batch.";
+            int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
+
+            var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
+
+            int selectedCenterId = centerId ?? center.CenterId;
+
+            var inventory = _collectionCenterRepo.GetCenterInventory(selectedCenterId);
+
+            ViewBag.CenterList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = center.CenterId.ToString(), Text = center.CenterName }
+            };
+
+            ViewBag.SelectedCenter = selectedCenterId;
+
+            return View(inventory);
         }
 
-        return View(data);
-    }
-    private void LoadMilkTypes(MilkCollectionViewModel model)
-    {
-        var types = _collectionCenterRepo.GetMilkTypes();
+        // ─────────────────────────────────────────────────────────────
+        // PRIVATE HELPERS
+        // ─────────────────────────────────────────────────────────────
 
-        model.MilkTypes = types.Select(t => new SelectListItem
+        /// <summary>
+        /// Returns the shift name based on current server time.
+        /// Used only for display on the Create page — actual enforcement is in the SP.
+        /// </summary>
+        private string GetCurrentShift()
         {
-            Value = t.MilkTypeId.ToString(),
-            Text = t.MilkTypeName
-        }).ToList();
-    }
-    private void LoadBatches(MilkCollectionViewModel model, int centerId)
-    {
-        var batches = _collectionCenterRepo.GetOpenBatches(centerId);
+            var now = DateTime.Now.TimeOfDay;
 
-        model.Batches = batches.Select(b => new SelectListItem
+            if (now >= TimeSpan.FromHours(6) && now < TimeSpan.FromHours(10))
+                return "Morning";
+
+            if (now >= TimeSpan.FromHours(15) && now < TimeSpan.FromHours(19))
+                return "Evening";
+
+            if (now >= TimeSpan.FromHours(21) || now < TimeSpan.FromHours(1))
+                return "Night";
+
+            return "No Active Shift";
+        }
+
+        private List<SelectListItem> LoadFarmers()
         {
-            Value = b.BatchId.ToString(),
-            Text = $"Batch {b.BatchId} - {b.Shift} ({b.BatchDate:dd MMM})"
-        }).ToList();
-    }
+            return _collectionCenterRepo.GetFarmers()
+                .Select(f => new SelectListItem
+                {
+                    Value = f.FarmerId.ToString(),
+                    Text = f.FarmerName
+                }).ToList();
+        }
 
-    // ================= HELPERS =================
-    private void LoadFarmers(MilkCollectionViewModel model)
-    {
-        var farmers = _collectionCenterRepo.GetFarmers();
-
-        model.Farmers = farmers.Select(f => new SelectListItem
+        private List<SelectListItem> LoadMilkTypes()
         {
-            Value = f.FarmerId.ToString(),
-            Text = f.FarmerName
-        }).ToList();
+            return _collectionCenterRepo.GetMilkTypes()
+                .Select(t => new SelectListItem
+                {
+                    Value = t.MilkTypeId.ToString(),
+                    Text = t.MilkTypeName
+                }).ToList();
+        }
     }
-
-    public IActionResult BatchStatus()
-    {
-        int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
-
-        var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
-
-        var batches = _collectionCenterRepo.GetBatchesByCenter(center.CenterId);
-
-        return View(batches);
-    }
-    public IActionResult Inventory(int? centerId)
-    {
-        int staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
-
-        var center = _collectionCenterRepo.GetCollectionCenterByStaff(staffId);
-
-        // If no centerId passed → use logged-in user's center
-        int selectedCenterId = centerId ?? center.CenterId;
-
-        var inventory = _collectionCenterRepo.GetCenterInventory(selectedCenterId);
-
-        // For dropdown (optional if multi-center access)
-        ViewBag.CenterList = new List<SelectListItem>
-    {
-        new SelectListItem { Value = center.CenterId.ToString(), Text = center.CenterName }
-    };
-
-        ViewBag.SelectedCenter = selectedCenterId;
-
-        return View(inventory);
-    }
-
 }

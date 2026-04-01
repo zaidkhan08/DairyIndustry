@@ -1,0 +1,49 @@
+@using DairyIndustry.Models.FarmerModel
+@model List<FarmerViewModel>
+@{
+    ViewData["Title"] = "Batch Collections";
+    Layout = "_CollectionCenterLayout";
+}
+<div class="container mt-4">
+    <h2>Farmers</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <a asp-controller="Farmer" asp-action="Create" class="btn btn-primary mb-3">+ Add Farmer</a>
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-warning">No farmers registered yet for your center.</div>
+    }
+    else
+    {
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Village / City</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    }
+</div>

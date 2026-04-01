@@ -1,0 +1,86 @@
+@model DairyIndustry.Models.FarmerModel.FarmerViewModel
+
+<div class="container mt-4">
+    <h3>Farmer Registration</h3>
+
+    <form method="post" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label>Farmer Name</label>
+            <input asp-for="FarmerName" class="form-control" />
+            <span asp-validation-for="FarmerName" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label>Phone</label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label>State</label>
+            <select asp-for="StateId" class="form-control" onchange="this.form.submit()">
+                <option value="">Select State</option>
+                @foreach (var s in Model.States)
+                {
+                    <option value="@s.StateId">@s.StateName</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label>City</label>
+            <select asp-for="CityId" class="form-control" onchange="this.form.submit()">
+                <option value="">Select City</option>
+                @foreach (var c in Model.Cities)
+                {
+                    <option value="@c.CityId">@c.CityName</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label>Village</label>
+            <select asp-for="VillageId" class="form-control">
+                <option value="">Select Village</option>
+                @foreach (var v in Model.Villages)
+                {
+                    <option value="@v.VillageId">@v.VillageName</option>
+                }
+            </select>
+            <span asp-validation-for="VillageId" class="text-danger"></span>
+        </div>
+
+        <hr />
+
+        <h5>Bank Details</h5>
+
+        <div class="mb-3">
+            <label>Bank Name</label>
+            <input asp-for="BankName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label>Account Number</label>
+            <input asp-for="AccountNumber" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label>IFSC Code</label>
+            <input asp-for="IFSCCode" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label>Profile Photo</label>
+            <input asp-for="PhotoFile" type="file" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Register</button>
+
+    </form>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mt-3">@TempData["Success"]</div>
+    }
+</div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -6,126 +6,351 @@
     <title>@ViewData["Title"] - DairyMS</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@@9..40,300;400;500;600;700&family=DM+Serif+Display:ital@@0;1&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary-blue: #0d6efd;
-            --dark-blue: #0a3d91;
-            --light-blue: #eaf2ff;
-            --text-dark: #1a1a1a;
+            --blue-900: #0a2540;
+            --blue-700: #1a4480;
+            --blue-500: #1d6fce;
+            --blue-300: #5ea3f0;
+            --blue-100: #dbeafe;
+            --blue-50:  #f0f7ff;
+            --cream:    #fafaf8;
+            --ink:      #0f1923;
+            --muted:    #6b7a8d;
+            --border:   #e2e8f0;
+            --white:    #ffffff;
         }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
-            background-color: #ffffff;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: var(--text-dark);
+            background-color: var(--cream);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--ink);
             margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Navbar */
-        .navbar {
-            padding: 1.5rem 0;
-            background: #ffffff;
-            border-bottom: 1px solid #e5e5e5;
+        /* ── NAVBAR ── */
+        .site-nav {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .navbar-brand {
-            font-weight: 800;
-            font-size: 1.5rem;
-            letter-spacing: -1px;
-            color: var(--dark-blue) !important;
+        .site-nav .container {
+            display: flex;
+            align-items: center;
+            height: 68px;
+            gap: 1.5rem;
         }
 
-            .navbar-brand span {
-                color: var(--primary-blue);
-            }
-
-        .nav-link {
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin: 0 15px;
-            color: var(--text-dark) !important;
+        .nav-brand {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.55rem;
+            color: var(--blue-900) !important;
+            text-decoration: none;
+            letter-spacing: -0.3px;
+            flex-shrink: 0;
         }
 
-            .nav-link:hover {
-                color: var(--primary-blue) !important;
-            }
-
-        /* Blue Button */
-        .btn-blue {
-            background-color: var(--primary-blue);
-            color: white;
-            border-radius: 50px;
-            padding: 10px 30px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: none;
-            transition: all 0.3s;
+        .nav-brand em {
+            font-style: italic;
+            color: var(--blue-500);
         }
 
-            .btn-blue:hover {
-                background-color: var(--dark-blue);
-                transform: scale(1.05);
-                color: white;
-            }
+        .nav-sep {
+            width: 1px;
+            height: 22px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
 
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            flex: 1;
+        }
+
+        .nav-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 13px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-links a:hover {
+            background: var(--blue-50);
+            color: var(--blue-700);
+        }
+
+        .nav-actions {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .btn-login {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--blue-900);
+            color: var(--white) !important;
+            padding: 9px 22px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 8px rgba(10,37,64,0.18);
+        }
+
+        .btn-login:hover {
+            background: var(--blue-700);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(10,37,64,0.22);
+        }
+
+        .nav-toggler {
+            display: none;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            margin-left: auto;
+        }
+
+        /* ── MAIN ── */
         .main-content {
-            padding-top: 20px;
+            flex: 1;
+            padding-top: 32px;
+            padding-bottom: 56px;
         }
 
-        footer {
-            background: var(--dark-blue);
-            color: #fff;
-            padding: 60px 0;
-            margin-top: 100px;
+        /* ── GLOBAL COMPONENT OVERRIDES ── */
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            background: var(--white);
         }
 
-            footer span {
-                color: #9ec5ff;
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            padding: 1.1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            font-weight: 500;
+            border-radius: 9px;
+            font-size: 0.875rem;
+            transition: all 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--blue-500);
+            border-color: var(--blue-500);
+        }
+
+        .btn-primary:hover {
+            background: var(--blue-700);
+            border-color: var(--blue-700);
+            transform: translateY(-1px);
+        }
+
+        .btn-success:hover,
+        .btn-warning:hover,
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            filter: brightness(0.92);
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .alert-success { background:#f0fdf4; color:#15803d; border-left:4px solid #16a34a; }
+        .alert-danger  { background:#fff1f2; color:#be123c; border-left:4px solid #e11d48; }
+        .alert-warning { background:#fffbeb; color:#b45309; border-left:4px solid #d97706; }
+        .alert-info    { background:var(--blue-50); color:var(--blue-700); border-left:4px solid var(--blue-300); }
+
+        .table { font-size: 0.9rem; }
+
+        .table thead th {
+            background: var(--blue-900);
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            padding: 13px 16px;
+        }
+
+        .table thead th:first-child { border-radius: 10px 0 0 0; }
+        .table thead th:last-child  { border-radius: 0 10px 0 0; }
+
+        .table tbody td {
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-color: var(--border);
+        }
+
+        .table tbody tr:hover { background: var(--blue-50); }
+
+        .form-control, .form-select {
+            border-radius: 9px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            padding: 10px 14px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--blue-500);
+            box-shadow: 0 0 0 3px rgba(29,111,206,0.12);
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 6px;
+        }
+
+        .badge {
+            font-weight: 500;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+        }
+
+        /* ── FOOTER ── */
+        .site-footer {
+            background: var(--blue-900);
+            color: rgba(255,255,255,0.6);
+            padding: 44px 0 28px;
+        }
+
+        .footer-brand {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.45rem;
+            color: white;
+        }
+
+        .footer-brand em {
+            font-style: italic;
+            color: var(--blue-300);
+        }
+
+        hr.footer-hr {
+            border-color: rgba(255,255,255,0.1);
+            margin: 20px 0 16px;
+        }
+
+        .footer-copy {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.38);
+        }
+
+        /* ── MOBILE ── */
+        @@media (max-width: 991px) {
+            .nav-toggler  { display: block; }
+            .nav-links    { display: none; flex-direction: column; width: 100%; padding: 6px 0 10px; }
+            .nav-links.open { display: flex; }
+            .nav-sep      { display: none; }
+            .nav-actions  { display: none; }
+            .nav-actions.open { display: block; padding-bottom: 10px; }
+
+            .site-nav .container {
+                flex-wrap: wrap;
+                height: auto;
+                padding-top: 12px;
+                padding-bottom: 4px;
             }
+        }
     </style>
 </head>
-
 <body>
-    <nav class="navbar navbar-expand-lg">
+
+    <!-- NAVBAR -->
+    <nav class="site-nav">
         <div class="container">
-            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
-                DAIRY<span>MS</span>
+            <a class="nav-brand" asp-controller="Home" asp-action="Index">
+                Dairy<em>MS</em>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="nav-sep"></div>
 
-            <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav mx-auto">
-                    <li class="nav-item"><a class="nav-link" href="#">Collection</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Products</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Suppliers</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Sustainability</a></li>
-                </ul>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#"><i class="bi bi-droplet-half"></i> Collection</a></li>
+                <li><a href="#"><i class="bi bi-box-seam"></i> Products</a></li>
+                <li><a href="#"><i class="bi bi-people"></i> Farmers</a></li>
+                <li><a href="#"><i class="bi bi-bar-chart-line"></i> Reports</a></li>
+            </ul>
 
-                <a class="btn btn-blue" asp-area="" asp-controller="Admin" asp-action="Login">
+            <div class="nav-actions" id="navActions">
+                <a class="btn-login" asp-area="" asp-controller="Admin" asp-action="Login">
+                    <i class="bi bi-box-arrow-in-right"></i>
                     Login
                 </a>
             </div>
+
+            <button class="nav-toggler" id="navToggle" aria-label="Menu">
+                <i class="bi bi-list" style="font-size:1.25rem;color:var(--ink)"></i>
+            </button>
         </div>
     </nav>
 
-    <div class="main-content">
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
         @RenderBody()
-    </div>
+    </main>
 
-    <footer>
+    <!-- FOOTER -->
+    <footer class="site-footer">
         <div class="container text-center">
-            <h4 class="fw-bold mb-4">DAIRY<span>MS</span></h4>
-            <p class="text-light small">© 2026 Dairy Management System. All Rights Reserved.</p>
+            <div class="footer-brand">Dairy<em>MS</em></div>
+            <p class="mt-1 mb-0" style="font-size:0.85rem;">Modern dairy operations, simplified.</p>
+            <hr class="footer-hr" />
+            <p class="footer-copy mb-0">© 2026 Dairy Management System. All rights reserved.</p>
         </div>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('navToggle')?.addEventListener('click', function () {
+            document.getElementById('navLinks')?.classList.toggle('open');
+            document.getElementById('navActions')?.classList.toggle('open');
+        });
+    </script>
+
+    @* CRITICAL FIX — This renders @@section Scripts from child views *@
+    @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

@@ -1,107 +1,160 @@
-﻿@using DairyIndustry.Models.Collection
-@model MilkCollectionViewModel
-
+@model DairyIndustry.Models.Collection.MilkCollectionViewModel
 @{
-    ViewData["Title"] = "Milk Collection Entry";
-    Layout = "_CollectionCenterLayout"; // Using the sidebar layout we created
+    ViewData["Title"] = "Milk Entry";
+    Layout = "_CollectionCenterLayout";
+    var now = DateTime.Now;
+    bool hasActiveShift = Model?.CurrentShift != "No Active Shift";
 }
 
 <div class="container mt-4">
-    <div class="card shadow p-4" style="max-width: 850px; margin:auto; border-radius:12px;">
 
-        <h4 class="text-center mb-4">Milk Collection Entry</h4>
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
 
-        <form method="post">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4>Milk Entry</h4>
+            <p class="text-muted mb-0">Record milk collection</p>
+        </div>
 
-            <div class="row g-3">
+        <a asp-action="BatchStatus" class="btn btn-outline-secondary">
+            Back to Batch Status
+        </a>
+    </div>
 
-                <!-- Center -->
-                <div class="col-md-6">
-                    <label class="form-label">Center</label>
-                    <input value="@Model.CenterName" class="form-control" readonly />
-                </div>
+    <!-- No Active Shift -->
+    @if (!hasActiveShift)
+    {
+        <div class="alert alert-warning">
+            <strong>No active shift.</strong>
+            Milk entry allowed only during shift time.
+        </div>
+    }
 
-                <!-- Farmer -->
-                <div class="col-md-6">
-                    <label class="form-label">Farmer</label>
-                    <select asp-for="FarmerId" asp-items="Model.Farmers" class="form-control">
-                        <option value="">-- Select Farmer --</option>
-                    </select>
-                </div>
+    <!-- Info Cards -->
+    <div class="row mb-3">
 
-                <!-- Milk Type -->
-                <div class="col-md-6">
-                    <label class="form-label">Milk Type</label>
-                    <select asp-for="MilkTypeId" asp-items="Model.MilkTypes" class="form-control">
-                        <option value="">-- Select Milk Type --</option>
-                    </select>
-                </div>
-
-                <!-- Batch -->
-                <div class="col-md-6">
-                    <label class="form-label">Batch</label>
-                    <select asp-for="BatchId" asp-items="Model.Batches" class="form-control">
-                        <option value="">-- Select Batch --</option>
-                    </select>
-                </div>
-
-                <!-- Quantity -->
-                <div class="col-md-6">
-                    <label class="form-label">Quantity (Liters)</label>
-                    <input asp-for="Quantity" class="form-control" />
-                </div>
-
-                <!-- Shift -->
-                <div class="col-md-6">
-                    <label class="form-label">Shift</label>
-                    <select asp-for="Shift" class="form-control">
-                        <option value="">-- Select Shift --</option>
-                        <option>Morning</option>
-                        <option>Evening</option>
-                        <option>Night</option>
-                    </select>
-                </div>
-
-                <!-- Date -->
-                <div class="col-md-6">
-                    <label class="form-label">Date</label>
-                    <input asp-for="CollectionDate" type="date" class="form-control" />
-                </div>
-
-                <!-- Fat -->
-                <div class="col-md-6">
-                    <label class="form-label">Fat</label>
-                    <input asp-for="AppliedFat" class="form-control" />
-                </div>
-
-                <!-- CLR -->
-                <div class="col-md-6">
-                    <label class="form-label">CLR</label>
-                    <input asp-for="AppliedCLR" class="form-control" />
-                </div>
-
+        <div class="col-md-3">
+            <div class="card p-2">
+                <strong>Center</strong>
+                <div>@Model?.CenterName</div>
             </div>
+        </div>
 
-            <div class="text-center mt-4">
-                <button type="submit" class="btn btn-primary px-4">Save</button>
+        <div class="col-md-3">
+            <div class="card p-2">
+                <strong>Date</strong>
+                <div>@now.ToString("dd MMM yyyy")</div>
             </div>
+        </div>
 
-        </form>
-
-        <!-- Messages -->
-        @if (ViewBag.Message != null)
-        {
-            <div class="alert alert-success mt-3 text-center">
-                @ViewBag.Message
+        <div class="col-md-3">
+            <div class="card p-2">
+                <strong>Shift</strong>
+                <div>
+                    @if (hasActiveShift)
+                    {
+                        <span class="badge bg-success">@Model.CurrentShift</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">None</span>
+                    }
+                </div>
             </div>
-        }
+        </div>
 
-        @if (ViewBag.Error != null)
-        {
-            <div class="alert alert-danger mt-3 text-center">
-                @ViewBag.Error
+        <div class="col-md-3">
+            <div class="card p-2">
+                <strong>Batch</strong>
+                <div class="text-muted">Auto</div>
             </div>
-        }
+        </div>
 
     </div>
+
+    <!-- Form -->
+    <div class="card">
+        <div class="card-header">Entry Details</div>
+        <div class="card-body">
+
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+
+                <!-- ✅ FIX: Hidden Shift inside form -->
+                <input type="hidden" asp-for="Shift" />
+
+                <div class="row">
+
+                    <!-- Farmer -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Farmer</label>
+                        <select asp-for="FarmerId" class="form-select" required>
+                            <option value="">Select Farmer</option>
+                            @foreach (var f in Model.Farmers)
+                            {
+                                <option value="@f.Value">@f.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Milk Type -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Milk Type</label>
+                        <select asp-for="MilkTypeId" class="form-select" required>
+                            <option value="">Select Type</option>
+                            @foreach (var t in Model.MilkTypes)
+                            {
+                                <option value="@t.Value">@t.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Quantity (Litres)</label>
+                        <input asp-for="Quantity" class="form-control"
+                               type="number" step="0.01" min="0.01" required />
+                    </div>
+
+                    <!-- Fat -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fat %</label>
+                        <input asp-for="AppliedFat" class="form-control"
+                               type="number" step="0.01" min="0" max="20" required />
+                    </div>
+
+                    <!-- CLR -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">CLR</label>
+                        <input asp-for="AppliedCLR" class="form-control"
+                               type="number" step="0.01" min="0" required />
+                    </div>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Dashboard" class="btn btn-secondary">Cancel</a>
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            @(hasActiveShift ? "" : "disabled")>
+                        Save Entry
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
 </div>
