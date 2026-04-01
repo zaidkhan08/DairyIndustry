@@ -58,7 +58,7 @@ namespace DairyIndustry.Controllers
 
             switch (user.RoleName)
             {
-                case "Administrator":
+                case "Admin":
                     return RedirectToAction("Index", "Admin");
 
                 case "Driver":
@@ -135,18 +135,30 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        [HttpGet]
         public IActionResult RegisterUser()
         {
-            ViewBag.Roles = _adminRepo.GetAllRoles();
+            ViewBag.StaffList = _adminRepo.GetUnlinkedStaff();
             return View();
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult RegisterUser(string username, string password, int roleId, int? staffId)
+        public IActionResult RegisterUser(string username, string password, int staffId)
         {
+            var staff = _adminRepo.GetStaffById(staffId);
+
+            if (staff == null)
+            {
+                ViewBag.Error = "Selected staff not found.";
+                ViewBag.StaffList = _adminRepo.GetUnlinkedStaff();
+                return View();
+            }
+
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-            _adminRepo.RegisterUser(username, passwordHash, roleId, staffId);
+            _adminRepo.RegisterUser(username, passwordHash, staff.RoleId, staffId);
+
+            TempData["Success"] = $"User account created for {staff.FullName}.";
             return RedirectToAction("Users");
         }
 
@@ -169,15 +181,13 @@ namespace DairyIndustry.Controllers
             return View(logs);
         }
 
-        // ════════════════════════════════════════════════════════
-        // STATE
-        // ════════════════════════════════════════════════════════
-
         [SessionAuthorize("Admin")]
-        public IActionResult States()
+        public IActionResult Location()
         {
-            var states = _adminRepo.GetAllStates();
-            return View(states);
+            ViewBag.States = _adminRepo.GetAllStates();
+            ViewBag.Cities = _adminRepo.GetAllCities();
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+            return View();
         }
 
         [SessionAuthorize("Admin")]
@@ -185,19 +195,9 @@ namespace DairyIndustry.Controllers
         public IActionResult AddState(string stateName)
         {
             _adminRepo.AddState(stateName);
-            return RedirectToAction("States");
-        }
-
-        // ════════════════════════════════════════════════════════
-        // LOCATION — CITY
-        // ════════════════════════════════════════════════════════
-
-        [SessionAuthorize("Admin")]
-        public IActionResult Cities()
-        {
-            var cities = _adminRepo.GetAllCities();
-            ViewBag.States = _adminRepo.GetAllStates();
-            return View(cities);
+            TempData["Success"] = $"State '{stateName}' added successfully.";
+            TempData["ActiveTab"] = "state";
+            return RedirectToAction("Location");
         }
 
         [SessionAuthorize("Admin")]
@@ -205,26 +205,9 @@ namespace DairyIndustry.Controllers
         public IActionResult AddCity(string cityName, int stateId)
         {
             _adminRepo.AddCity(cityName, stateId);
-            return RedirectToAction("Cities");
-        }
-
-        [SessionAuthorize("Admin")]
-        public IActionResult GetCitiesByState(int stateId)
-        {
-            var cities = _adminRepo.GetCitiesByState(stateId);
-            return Json(cities);
-        }
-
-        // ════════════════════════════════════════════════════════
-        // LOCATION — VILLAGE
-        // ════════════════════════════════════════════════════════
-
-        [SessionAuthorize("Admin")]
-        public IActionResult Villages()
-        {
-            var villages = _adminRepo.GetAllVillages();
-            ViewBag.States = _adminRepo.GetAllStates();
-            return View(villages);
+            TempData["Success"] = $"City '{cityName}' added successfully.";
+            TempData["ActiveTab"] = "city";
+            return RedirectToAction("Location");
         }
 
         [SessionAuthorize("Admin")]
@@ -232,7 +215,16 @@ namespace DairyIndustry.Controllers
         public IActionResult AddVillage(string villageName, int cityId)
         {
             _adminRepo.AddVillage(villageName, cityId);
-            return RedirectToAction("Villages");
+            TempData["Success"] = $"Village '{villageName}' added successfully.";
+            TempData["ActiveTab"] = "village";
+            return RedirectToAction("Location");
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult GetCitiesByState(int stateId)
+        {
+            var cities = _adminRepo.GetCitiesByState(stateId);
+            return Json(cities);
         }
 
         [SessionAuthorize("Admin")]
@@ -295,18 +287,20 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        [HttpGet]
         public IActionResult AddStaff()
         {
-            return View();
+            var Roles = _adminRepo.GetAllRoles();
+            return View(Roles);
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public async Task<IActionResult> AddStaff(string firstName, string lastName,
-                                                   string phone, string email,
-                                                   string staffType, DateTime? doj,
-                                                   string bankName, string accountNumber,
-                                                   string ifscCode, IFormFile profilePhoto)
+        public IActionResult AddStaff(string firstName, string lastName,
+                              string phone, string email,
+                              int roleId, DateTime? doj,
+                              string bankName, string accountNumber,
+                              string ifscCode, IFormFile profilePhoto)
         {
             string photoPath = null;
 
@@ -318,13 +312,13 @@ namespace DairyIndustry.Controllers
                 if (!allowedExtensions.Contains(extension))
                 {
                     ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
-                    return View();
+                    return View(_adminRepo.GetAllRoles());
                 }
 
                 if (profilePhoto.Length > 2 * 1024 * 1024)
                 {
                     ViewBag.Error = "Photo size must be less than 2MB.";
-                    return View();
+                    return View(_adminRepo.GetAllRoles());
                 }
 
                 string uploadsFolder = Path.Combine(
@@ -339,18 +333,20 @@ namespace DairyIndustry.Controllers
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await profilePhoto.CopyToAsync(stream);
+                    profilePhoto.CopyTo(stream);   // ← no await, no async
                 }
 
                 photoPath = $"/uploads/staff/{uniqueFileName}";
             }
 
             _adminRepo.AddStaff(firstName, lastName, phone, email,
-                                staffType, doj, bankName, accountNumber,
+                                roleId, doj, bankName, accountNumber,
                                 ifscCode, photoPath);
 
+            TempData["Success"] = "Staff member added successfully.";
             return RedirectToAction("Staff");
         }
+
 
         [SessionAuthorize("Admin")]
         [HttpPost]
@@ -383,7 +379,7 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public ActionResult GetAllPlants()
         {
-            var plants = _adminRepo.GetAllPlants();
+            var plants = _adminRepo.GetAllPlants(isActive: null);
             return View(plants);
         }
 
@@ -391,7 +387,15 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public ActionResult DeletePlant(int id)
         {
-            _adminRepo.DeletePlant(id);
+            _adminRepo.TogglePlant(id, isActive: false);
+            return RedirectToAction("GetAllPlants");
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult RestorePlant(int id)
+        {
+            _adminRepo.TogglePlant(id, isActive: true);
             return RedirectToAction("GetAllPlants");
         }
 
@@ -416,5 +420,115 @@ namespace DairyIndustry.Controllers
             }
             return View("EditPlant", plant);
         }
+
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+        
+        [SessionAuthorize("Admin")]
+        public IActionResult Products(string productType = null, bool? isActive = null)
+        {
+            var products = _adminRepo.GetAllProducts(productType, isActive);
+            ViewBag.ProductTypes = _adminRepo.GetProductTypes();
+            ViewBag.CurrentType = productType;
+            ViewBag.CurrentActive = isActive;   // ← must be bool? not string
+            return View(products);
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult ProductDetail(int id)
+        {
+            var product = _adminRepo.GetProductById(id);
+            if (product == null)
+            {
+                TempData["Error"] = "Product not found.";
+                return RedirectToAction("Products");
+            }
+            return View(product);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AddProduct()
+        {
+            return View();
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AddProduct(string productName, string productType,
+                                        decimal mrp, string unit,
+                                        int? shelfLifeDays, string description)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            try
+            {
+                _adminRepo.AddProduct(productName, productType, mrp,
+                                           unit, shelfLifeDays, description, userId);
+
+                TempData["Success"] = $"{productName} added successfully.";
+                return RedirectToAction("Products");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                return View();
+            }
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult EditProduct(int id)
+        {
+            var product = _adminRepo.GetProductById(id);
+            if (product == null)
+            {
+                TempData["Error"] = "Product not found.";
+                return RedirectToAction("Products");
+            }
+            return View(product);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult EditProduct(int productId, string productName,
+                                         string productType, decimal mrp,
+                                         string unit, int? shelfLifeDays,
+                                         string description)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            try
+            {
+                _adminRepo.UpdateProduct(productId, productName, productType,
+                                              mrp, unit, shelfLifeDays, description, userId);
+
+                TempData["Success"] = $"{productName} updated successfully.";
+                return RedirectToAction("Products");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                var product = _adminRepo.GetProductById(productId);
+                return View(product);
+            }
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult ToggleProductStatus(int productId, bool isActive)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+            _adminRepo.ToggleProductStatus(productId, isActive, userId);
+
+            TempData["Success"] = isActive
+                ? "Product activated."
+                : "Product deactivated.";
+
+            return RedirectToAction("Products");
+        }
+
+
     }
 }

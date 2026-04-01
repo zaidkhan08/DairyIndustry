@@ -57,13 +57,15 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
         int AddStaff(string firstName, string lastName, string phone, string email,
-             string staffType, DateTime? doj,
-             string bankName, string accountNumber, string ifscCode,
-             string profilePhoto = null);
+                     int roleId, DateTime? doj,
+                     string bankName, string accountNumber, string ifscCode,
+                     string profilePhoto = null);
 
-        List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null);
+        List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
+        List<StaffModel> GetUnlinkedStaff();
+        StaffModel GetStaffById(int staffId);
 
         // ════════════════════════════════════════════════════════
         // PLANT
@@ -71,10 +73,29 @@ namespace DairyIndustry.Repositories
 
         int AddPlant(string PlantName,string Location);
 
-        List<PlantModel> GetAllPlants();
-        void DeletePlant(int id);
+        List<PlantModel> GetAllPlants(bool? isActive = true);
+        void TogglePlant(int id, bool isActive);
         void UpdatePlant(PlantModel plant);
         PlantModel getPlantById(int id);
+
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+
+        int AddProduct(string productName, string productType, decimal mrp,
+                                    string unit, int? shelfLifeDays, string description,
+                                    int createdBy);
+
+        List<ProductModel> GetAllProducts(string productType = null, bool? isActive = true);
+        ProductModel GetProductById(int productId);
+        List<string> GetProductTypes();
+
+        void UpdateProduct(int productId, string productName, string productType,
+                           decimal mrp, string unit, int? shelfLifeDays,
+                           string description, int modifiedBy);
+
+        void ToggleProductStatus(int productId, bool isActive, int modifiedBy);
+
     }
 
 }

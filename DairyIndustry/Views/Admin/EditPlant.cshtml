@@ -7,14 +7,13 @@
 
 <div class="container mt-4">
 
-    <!-- Page Title -->
     <div class="row mb-4">
         <div class="col d-flex justify-content-between align-items-center">
             <div>
                 <h3 class="fw-bold mb-0">Edit Processing Plant</h3>
                 <p class="text-muted mb-0">Update details of an existing processing plant</p>
             </div>
-            <a asp-controller="Admin" asp-action="ShowPlants" class="btn btn-outline-secondary">
+            <a asp-controller="Admin" asp-action="GetAllPlants" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Back to Plants
             </a>
         </div>
@@ -29,14 +28,10 @@
                 </div>
                 <div class="card-body p-4">
 
-                    <form method="post"
-                          asp-controller="Admin"
-                          asp-action="UpdatePlant">
+                    <form method="post" asp-controller="Admin" asp-action="UpdatePlant">
 
-                        <!-- Hidden PlantId -->
                         <input type="hidden" asp-for="PlantId" />
 
-                        <!-- Plant Name -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">
                                 Plant Name <span class="text-danger">*</span>
@@ -55,7 +50,6 @@
                             <div class="form-text">Enter a unique name for this plant</div>
                         </div>
 
-                        <!-- Location -->
                         <div class="mb-4">
                             <label class="form-label fw-semibold">
                                 Location <span class="text-danger">*</span>
@@ -74,13 +68,12 @@
                             <div class="form-text">Enter the physical address or area of the plant</div>
                         </div>
 
-                        <!-- Buttons -->
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-warning px-4">
                                 <i class="bi bi-save me-1"></i> Save Changes
                             </button>
                             <a asp-controller="Admin"
-                               asp-action="ShowPlants"
+                               asp-action="GetAllPlants"
                                class="btn btn-outline-secondary px-4">
                                 Cancel
                             </a>
@@ -91,28 +84,7 @@
                 </div>
             </div>
 
-            <!-- Info Card -->
-            <div class="card shadow-sm border-0 mt-4">
-                <div class="card-header bg-white fw-semibold">
-                    <i class="bi bi-info-circle me-1 text-warning"></i> About Editing Plants
-                </div>
-                <div class="card-body">
-                    <ul class="text-muted small mb-0">
-                        <li class="mb-2">
-                            Updating the plant name will reflect across all related records
-                        </li>
-                        <li class="mb-2">
-                            Location changes do not affect existing inventory or batches
-                        </li>
-                        <li class="mb-2">
-                            Ensure the plant name remains unique across all plants
-                        </li>
-                        <li>
-                            Contact a system administrator for structural changes
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            
 
         </div>
     </div>

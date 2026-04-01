@@ -2,63 +2,407 @@
     Layout = null;
     ViewData["Title"] = "Login";
 }
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
     <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-wrapper {
+            display: flex;
+            width: 900px;
+            min-height: 520px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* ── LEFT ILLUSTRATION PANEL ── */
+        .left-panel {
+            flex: 1.1;
+            background: linear-gradient(145deg, #eaf6fb 0%, #ddf0f8 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            overflow: hidden;
+        }
+
+        /* Brand */
+        .brand {
+            position: absolute;
+            top: 28px;
+            left: 32px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #4bbcd8;
+            letter-spacing: -0.5px;
+        }
+
+            .brand span {
+                color: #333;
+            }
+
+        /* Floating decorative dots / shapes */
+        .deco {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.18;
+        }
+
+        .deco-1 {
+            width: 180px;
+            height: 180px;
+            background: #4bbcd8;
+            top: -50px;
+            right: -50px;
+        }
+
+        .deco-2 {
+            width: 80px;
+            height: 80px;
+            background: #4bbcd8;
+            bottom: 30px;
+            left: 10px;
+        }
+
+        .deco-3 {
+            width: 30px;
+            height: 30px;
+            background: #333;
+            top: 120px;
+            right: 40px;
+            border-radius: 6px;
+            opacity: 0.1;
+            transform: rotate(20deg);
+        }
+
+        /* Scattered small icons */
+        .scatter {
+            position: absolute;
+            opacity: 0.35;
+            font-size: 18px;
+        }
+
+        .sc1 {
+            top: 60px;
+            right: 90px;
+        }
+
+        .sc2 {
+            top: 180px;
+            left: 30px;
+            font-size: 14px;
+        }
+
+        .sc3 {
+            bottom: 90px;
+            right: 60px;
+            font-size: 22px;
+        }
+
+        .sc4 {
+            bottom: 140px;
+            left: 60px;
+            font-size: 12px;
+        }
+
+        /* The SVG illustration */
+        .illustration {
+            width: 100%;
+            max-width: 340px;
+            z-index: 1;
+        }
+
+        /* ── RIGHT FORM PANEL ── */
+        .right-panel {
+            flex: 0.9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 56px 52px;
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #9aa5b4;
+            margin-bottom: 32px;
+            font-weight: 400;
+        }
+
+        /* Error alert */
+        .alert-danger {
+            background: #fff0f0;
+            border: 1px solid #ffc7c7;
+            color: #e05c5c;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* Input group */
+        .input-group {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+            .input-group svg.icon {
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 16px;
+                height: 16px;
+                color: #b0bec5;
+                pointer-events: none;
+            }
+
+            .input-group input {
+                width: 100%;
+                padding: 12px 14px 12px 40px;
+                border: 1.5px solid #e2e8f0;
+                border-radius: 8px;
+                font-family: 'Nunito', sans-serif;
+                font-size: 14px;
+                color: #333;
+                background: #fafbfc;
+                outline: none;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+
+                .input-group input::placeholder {
+                    color: #b0bec5;
+                }
+
+                .input-group input:focus {
+                    border-color: #4bbcd8;
+                    box-shadow: 0 0 0 3px rgba(75,188,216,0.12);
+                    background: #fff;
+                }
+
+        /* Options row */
+        .options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 12px;
+            color: #9aa5b4;
+        }
+
+            .options-row a {
+                color: #9aa5b4;
+                text-decoration: none;
+            }
+
+                .options-row a:hover {
+                    color: #4bbcd8;
+                }
+
+       
+
+        /* Login button */
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #4bbcd8 0%, #38a8c4 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(75,188,216,0.35);
+        }
+
+            .btn-login:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(75,188,216,0.45);
+            }
+
+            .btn-login:active {
+                transform: translateY(0);
+            }
+
+        /* Footer links */
+        .footer-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #9aa5b4;
+        }
+
+            .footer-links a {
+                color: #9aa5b4;
+                text-decoration: none;
+            }
+
+                .footer-links a:hover {
+                    color: #4bbcd8;
+                }
+
+        /* Responsive */
+        @@media (max-width: 700px) {
+            .login-wrapper
+
+        {
+            flex-direction: column;
+            width: 95vw;
+            min-height: auto;
+        }
+
+        .left-panel {
+            min-height: 200px;
+        }
+
+        .right-panel {
+            padding: 36px 28px;
+        }
+
+        }
+    </style>
 </head>
-
 <body>
+    <div class="login-wrapper">
 
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
+        <!-- LEFT: Illustration -->
+        <div class="left-panel">
+            <div class="brand">Dairy<span>Industry</span></div>
 
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white text-center">
-                        <h4 class="mb-0">Dairy Management System</h4>
-                        <small>Please login to continue</small>
-                    </div>
+            <!-- Decorative blobs -->
+            <div class="deco deco-1"></div>
+            <div class="deco deco-2"></div>
+            <div class="deco deco-3"></div>
 
-                    <div class="card-body p-4">
+            <!-- Scattered icons -->
+            <span class="scatter sc1">✈</span>
+            <span class="scatter sc2">✦</span>
+            <span class="scatter sc3">◈</span>
+            <span class="scatter sc4">✧</span>
 
-                        @if (ViewBag.Error != null)
-                        {
-                            <div class="alert alert-danger">
-                                @ViewBag.Error
-                            </div>
-                        }
+            <!-- Inline SVG Illustration (document + two characters) -->
+            <svg class="illustration" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Document card -->
+                <rect x="80" y="20" width="140" height="175" rx="10" fill="#fff" stroke="#d9edf4" stroke-width="1.5" />
+                <rect x="97" y="42" width="60" height="40" rx="4" fill="#4bbcd8" opacity="0.25" />
+                <rect x="97" y="42" width="60" height="40" rx="4" fill="#4bbcd8" opacity="0.5" />
+                <rect x="97" y="92" width="106" height="7" rx="3" fill="#e0edf3" />
+                <rect x="97" y="107" width="90" height="7" rx="3" fill="#e0edf3" />
+                <rect x="97" y="122" width="106" height="7" rx="3" fill="#e0edf3" />
+                <rect x="97" y="137" width="70" height="7" rx="3" fill="#e0edf3" />
+                <rect x="97" y="152" width="95" height="7" rx="3" fill="#e0edf3" />
 
-                        <form method="post" action="/Admin/Login">
+                <!-- Person standing left -->
+                <!-- Head -->
+                <circle cx="62" cy="80" r="14" fill="#f9c9a0" />
+                <!-- Hair -->
+                <path d="M48 76 Q62 62 76 76" fill="#3d2b1f" />
+                <!-- Body -->
+                <rect x="52" y="94" width="20" height="38" rx="6" fill="#4bbcd8" />
+                <!-- Left arm raised -->
+                <path d="M52 100 Q38 90 42 78" stroke="#f9c9a0" stroke-width="6" stroke-linecap="round" fill="none" />
+                <!-- Right arm down -->
+                <path d="M72 100 Q82 112 76 122" stroke="#f9c9a0" stroke-width="6" stroke-linecap="round" fill="none" />
+                <!-- Legs -->
+                <path d="M56 132 L52 165" stroke="#3d2b1f" stroke-width="6" stroke-linecap="round" />
+                <path d="M68 132 L72 165" stroke="#3d2b1f" stroke-width="6" stroke-linecap="round" />
+                <!-- Shoes -->
+                <ellipse cx="51" cy="167" rx="8" ry="4" fill="#3d2b1f" />
+                <ellipse cx="73" cy="167" rx="8" ry="4" fill="#3d2b1f" />
 
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Username</label>
-                                <input type="text" name="username" class="form-control" required />
-                            </div>
+                <!-- Person sitting right -->
+                <!-- Head -->
+                <circle cx="275" cy="145" r="14" fill="#f9c9a0" />
+                <!-- Hair -->
+                <path d="M261 141 Q275 127 289 141" fill="#1a1a2e" />
+                <!-- Body -->
+                <rect x="263" y="159" width="24" height="30" rx="6" fill="#e8a87c" />
+                <!-- Legs stretched -->
+                <path d="M263 185 Q230 195 215 190" stroke="#3d2b1f" stroke-width="6" stroke-linecap="round" fill="none" />
+                <path d="M287 185 Q300 198 310 195" stroke="#3d2b1f" stroke-width="6" stroke-linecap="round" fill="none" />
+                <!-- Arms -->
+                <path d="M263 170 Q250 162 245 155" stroke="#f9c9a0" stroke-width="6" stroke-linecap="round" fill="none" />
+                <path d="M287 170 Q298 162 295 150" stroke="#f9c9a0" stroke-width="6" stroke-linecap="round" fill="none" />
+                <!-- Laptop on lap -->
+                <rect x="232" y="175" width="55" height="18" rx="3" fill="#cce9f4" />
+                <rect x="236" y="178" width="47" height="12" rx="2" fill="#4bbcd8" opacity="0.5" />
 
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Password</label>
-                                <input type="password" name="password" class="form-control" required />
-                            </div>
+                <!-- Ground line -->
+                <line x1="30" y1="195" x2="310" y2="195" stroke="#c8dfe8" stroke-width="1.5" stroke-dasharray="4 4" />
 
-                            <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-primary">
-                                    Login
-                                </button>
-                            </div>
+                <!-- Small plants -->
+                <rect x="28" y="175" width="6" height="20" rx="3" fill="#8bc34a" />
+                <ellipse cx="31" cy="170" rx="9" ry="10" fill="#a5d64c" />
+                <rect x="305" y="170" width="6" height="24" rx="3" fill="#8bc34a" />
+                <ellipse cx="308" cy="162" rx="11" ry="12" fill="#a5d64c" />
+            </svg>
+        </div>
 
-                        </form>
+        <!-- RIGHT: Form -->
+        <div class="right-panel">
+            <h1 class="form-title">Login</h1>
+            <p class="form-subtitle">Welcome back!</p>
 
-                    </div>
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert-danger">@ViewBag.Error</div>
+            }
+
+            <form method="post" action="/Admin/Login">
+
+                <div class="input-group">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <input type="text" name="username" placeholder="Username" required />
                 </div>
 
-            </div>
-        </div>
-    </div>
+                <div class="input-group">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <input type="password" name="password" placeholder="Password" required />
+                </div>
 
+                
+                <button type="submit" class="btn-login">LOG IN</button>
+            </form>
+        </div>
+
+    </div>
 </body>
 </html>

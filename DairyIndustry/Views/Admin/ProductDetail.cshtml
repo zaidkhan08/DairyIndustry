@@ -1,0 +1,224 @@
+﻿@model DairyIndustry.Models.Admin.ProductModel
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Product Detail";
+}
+
+<div class="container mt-4">
+
+    <!-- Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Product Detail</h3>
+                <p class="text-muted mb-0">@Model.ProductName</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-controller="Admin" asp-action="EditProduct"
+                   asp-route-id="@Model.ProductId"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i> Edit
+                </a>
+                <a asp-controller="Admin" asp-action="Products"
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Products
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Left — Product Info -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-box-seam me-1 text-primary"></i> Product Information
+                </div>
+                <div class="card-body p-4">
+
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted small fw-semibold" style="width:140px;">Product ID</td>
+                                <td class="small">#@Model.ProductId</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Product Name</td>
+                                <td class="small fw-semibold">@Model.ProductName</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Type</td>
+                                <td>
+                                    @{
+                                        string typeBadge = Model.ProductType?.ToLower() switch
+                                        {
+                                            "milk" => "bg-info text-dark",
+                                            "dairy" => "bg-warning text-dark",
+                                            "beverage" => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @typeBadge">@Model.ProductType</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">MRP</td>
+                                <td class="small fw-semibold text-success">₹ @Model.MRP.ToString("0.00")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Unit</td>
+                                <td class="small">@Model.Unit</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Shelf Life</td>
+                                <td class="small">
+                                    @if (Model.ShelfLifeDays.HasValue)
+                                    {
+                                        <span>@Model.ShelfLifeDays days</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Status</td>
+                                <td>
+                                    @if (Model.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                <tr>
+                                    <td class="text-muted small fw-semibold">Description</td>
+                                    <td class="small">@Model.Description</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Right — Audit Info -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-clock-history me-1 text-secondary"></i> Audit Information
+                </div>
+                <div class="card-body p-4">
+
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted small fw-semibold" style="width:140px;">Created By</td>
+                                <td class="small">
+                                    @if (!string.IsNullOrEmpty(Model.CreatedByName))
+                                    {
+                                        <i class="bi bi-person me-1 text-muted"></i>
+                                        @Model.CreatedByName
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Created On</td>
+                                <td class="small">
+                                    <i class="bi bi-calendar3 me-1 text-muted"></i>
+                                    @Model.CreatedDate.ToString("dd MMM yyyy, hh:mm tt")
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Modified By</td>
+                                <td class="small">
+                                    @if (!string.IsNullOrEmpty(Model.ModifiedByName))
+                                    {
+                                        <i class="bi bi-person me-1 text-muted"></i>
+                                        @Model.ModifiedByName
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not modified yet</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Modified On</td>
+                                <td class="small">
+                                    @if (Model.ModifiedDate.HasValue)
+                                    {
+                                        <i class="bi bi-calendar3 me-1 text-muted"></i>
+                                        @Model.ModifiedDate.Value.ToString("dd MMM yyyy, hh:mm tt")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom — Quick Actions -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-lightning me-1 text-warning"></i> Quick Actions
+                </div>
+                <div class="card-body d-flex gap-2">
+                    <a asp-controller="Admin" asp-action="EditProduct"
+                       asp-route-id="@Model.ProductId"
+                       class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i> Edit Product
+                    </a>
+
+                    <form id="toggleDetailForm" method="post"
+                          asp-controller="Admin"
+                          asp-action="ToggleProductStatus">
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                        <input type="hidden" name="isActive" value="@(!Model.IsActive).ToString().ToLower()" />
+                        @if (Model.IsActive)
+                        {
+                            <button type="submit" class="btn btn-outline-danger"
+                                    onclick="return confirm('Deactivate @Model.ProductName?')">
+                                <i class="bi bi-x-circle me-1"></i> Deactivate
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-outline-success"
+                                    onclick="return confirm('Activate @Model.ProductName?')">
+                                <i class="bi bi-check-circle me-1"></i> Activate
+                            </button>
+                        }
+                    </form>
+
+                    <a asp-controller="Admin" asp-action="Products"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Products
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

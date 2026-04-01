@@ -153,5 +153,107 @@ namespace DairyIndustry.Repositories
 
             return list;
         }
+        public List<DriversModel> GetAllDrivers()
+        {
+            var list = new List<DriversModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetAllDrivers", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new DriversModel
+                            {
+                                DriverId = Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"].ToString(),
+                                LicenseNo = reader["LicenseNo"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+                                Status = reader["Status"].ToString(),
+                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
+                                Username = reader["Username"].ToString(),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                VehicleNumber = reader["VehicleNumber"] == DBNull.Value ? null : reader["VehicleNumber"].ToString(),
+                                VehicleStatus = reader["VehicleStatus"] == DBNull.Value ? null : reader["VehicleStatus"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public void UpdateDriverStatus(int driverId, string status)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_UpdateDriverStatus", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@DriverId", driverId);
+                    cmd.Parameters.AddWithValue("@Status", status);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        public List<VehiclesModel> GetAllVehicles()
+        {
+            var list = new List<VehiclesModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetAllVehicles", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new VehiclesModel
+                            {
+                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                                VehicleNumber = reader["VehicleNumber"].ToString(),
+                                Capacity = Convert.ToDecimal(reader["Capacity"]),
+                                Status = reader["Status"].ToString(),
+                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
+                                DriverId = Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+                                DriverStatus = reader["DriverStatus"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public void UpdateVehicleStatus(int vehicleId, string status)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_UpdateVehicleStatus", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
+                    cmd.Parameters.AddWithValue("@Status", status);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
     }
 }
