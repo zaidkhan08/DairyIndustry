@@ -1,0 +1,168 @@
+﻿@model DairyIndustry.Models.Production.MilkTransferModel
+
+@{
+    ViewData["Title"] = "Dispatch Batch";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
+}
+
+<style>
+    .glass-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-header-custom {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #495057;
+        padding: 1.25rem;
+        border-radius: 12px 12px 0 0 !important;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        }
+
+    .btn-dispatch {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+
+        .btn-dispatch:hover {
+            transform: translateY(-1px);
+        }
+
+    .input-group-text-custom {
+        background-color: #f8f9fa;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+    }
+</style>
+
+<div class="row justify-content-center pt-2">
+    <div class="col-lg-7 col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">Dispatch Milk Batch</h3>
+            <a asp-action="Index" class="btn btn-link text-decoration-none text-muted p-0">
+                <i class="bi bi-x-lg me-1"></i> Close
+            </a>
+        </div>
+
+        <div class="card glass-card">
+            <div class="card-header-custom">
+                <i class="bi bi-send me-2"></i>Dispatch Log Details
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Create" method="post">
+                    <div class="row g-4">
+                        @* BATCH SELECTION *@
+                        <div class="col-12">
+                            <label class="form-label">Select Closed Batch</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-box-seam"></i></span>
+                                <select name="batchId" class="form-select border-start-0" required>
+                                    <option value="">-- Choose Batch Reference --</option>
+                                    @foreach (var b in (IEnumerable<DairyIndustry.Models.Production.BatchDropdownModel>)ViewBag.Batches)
+                                    {
+                                        <option value="@b.BatchId">@b.DisplayText</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Only closed batches available for transport are listed here.</div>
+                        </div>
+
+                        @* PLANT SELECTION *@
+                        <div class="col-12">
+                            <label class="form-label">Destination Processing Plant</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-building"></i></span>
+                                <select name="plantId" class="form-select border-start-0" required>
+                                    <option value="">-- Select Receiving Plant --</option>
+                                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
+                                    {
+                                        <option value="@p.PlantId">@p.PlantName</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @* VEHICLE SELECTION *@
+                        <div class="col-md-6">
+                            <label class="form-label">Logistics Vehicle</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-truck"></i></span>
+                                <select name="vehicleId" class="form-select border-start-0" required>
+                                    <option value="">-- Select Vehicle --</option>
+                                    @foreach (var v in (IEnumerable<DairyIndustry.Models.Logistics.VehiclesModel>)ViewBag.Vehicles)
+                                    {
+                                        <option value="@v.VehicleId">
+                                            @v.VehicleNumber @(v.DriverName != null ? "— " + v.DriverName : "")
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @* DISPATCH DATE *@
+                        <div class="col-md-6">
+                            <label class="form-label">Dispatch Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-calendar-event"></i></span>
+                                <input type="date" name="dispatchDate" class="form-control border-start-0"
+                                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            </div>
+                        </div>
+
+                        @* QUANTITY *@
+                        <div class="col-12">
+                            <label class="form-label">Dispatch Volume (Litres)</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-droplet"></i></span>
+                                <input type="number" name="dispatchQty" class="form-control border-start-0 fs-5 fw-bold"
+                                       step="0.01" min="1" placeholder="0.00" required />
+                                <span class="input-group-text border bg-white fw-bold">LITRES</span>
+                            </div>
+                        </div>
+
+                        @* ACTIONS *@
+                        <div class="col-12 mt-5">
+                            <div class="d-flex flex-column flex-md-row gap-3">
+                                <a asp-action="Index" class="btn btn-outline-secondary px-4 btn-dispatch order-2 order-md-1 flex-grow-1">
+                                    Discard
+                                </a>
+                                <button type="submit" class="btn btn-primary px-5 btn-dispatch order-1 order-md-2 flex-grow-1 shadow-sm">
+                                    <i class="bi bi-truck me-2"></i>Initiate Dispatch
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
