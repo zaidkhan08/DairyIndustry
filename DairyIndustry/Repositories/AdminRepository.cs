@@ -182,7 +182,22 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public void AssignUserToPlant(int userId, int plantId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_AssignUserToPlant", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
 
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@PlantId", plantId);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
         // ════════════════════════════════════════════════════════
         // AUDIT LOG
         // ════════════════════════════════════════════════════════

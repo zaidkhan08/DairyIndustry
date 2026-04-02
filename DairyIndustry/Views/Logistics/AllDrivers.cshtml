@@ -204,7 +204,7 @@
 
                                             @if (driver.Status == "Pending" || driver.Status == "Inactive" || driver.Status == "Suspended")
                                             {
-                                                <form method="post" action="/Admin/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus">
                                                     <input type="hidden" name="driverId" value="@driver.DriverId" />
                                                     <input type="hidden" name="status" value="Active" />
                                                     <button type="submit" class="btn btn-success btn-sm fw-semibold">
@@ -215,7 +215,7 @@
 
                                             @if (driver.Status == "Active")
                                             {
-                                                <form method="post" action="/Admin/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus">
                                                     <input type="hidden" name="driverId" value="@driver.DriverId" />
                                                     <input type="hidden" name="status" value="Inactive" />
                                                     <button type="submit" class="btn btn-secondary btn-sm fw-semibold">
@@ -226,7 +226,7 @@
 
                                             @if (driver.Status != "Suspended")
                                             {
-                                                <form method="post" action="/Admin/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus">
                                                     <input type="hidden" name="driverId" value="@driver.DriverId" />
                                                     <input type="hidden" name="status" value="Suspended" />
                                                     <button type="submit" class="btn btn-danger btn-sm fw-semibold">

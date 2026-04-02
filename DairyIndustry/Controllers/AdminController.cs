@@ -172,6 +172,35 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AssignUserToPlant()
+        {
+            ViewBag.Users = _adminRepo.GetAllUsers();   
+            ViewBag.Plants = _adminRepo.GetAllPlants(); 
+
+            return View();
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AssignUserToPlant(int userId, int plantId)
+        {
+            if (userId == 0 || plantId == 0)
+            {
+                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Users = _adminRepo.GetAllUsers();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                return View();
+            }
+
+            _adminRepo.AssignUserToPlant(userId, plantId);
+
+            TempData["Success"] = "User assigned to plant successfully.";
+
+            return RedirectToAction("Users");
+        }
+
+
         // ════════════════════════════════════════════════════════
         // AUDIT LOGS
         // ════════════════════════════════════════════════════════

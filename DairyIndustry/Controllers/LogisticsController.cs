@@ -97,12 +97,16 @@ namespace DairyIndustry.Controllers
             TempData["Success"] = $"Vehicle status updated to {status} successfully.";
             return RedirectToAction("AllVehicles");
         }
-        
         [SessionAuthorize("Driver")]
         public IActionResult MyTransfers()
         {
-            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
-            var transfers = _logisticRepo.GetDriverTransfers(userId);
+            int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
+            if (driverId == 0)
+            {
+                TempData["Error"] = "Session expired. Please login again.";
+                return RedirectToAction("Login", "Admin");
+            }
+            var transfers = _logisticRepo.GetDriverTransfers(driverId);
             return View(transfers);
         }
     }

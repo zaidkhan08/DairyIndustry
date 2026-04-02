@@ -16,9 +16,10 @@ namespace DairyIndustry.Repositories
             User GetUserByUsername(string username);
             List<User> GetAllUsers();
             void UpdateUserStatus(int userId, bool isActive);
+            void AssignUserToPlant(int userId, int plantId);
 
-            // ── AUDIT LOG ──────────────────────────────────────────
-            void WriteAuditLog(int userId, string action, string entityName);
+        // ── AUDIT LOG ──────────────────────────────────────────
+        void WriteAuditLog(int userId, string action, string entityName);
             List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
 
         // ════════════════════════════════════════════════════════
