@@ -69,8 +69,8 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("DriverId", driver.DriverId);
                     return RedirectToAction("Index", "Logistics");
 
-                //case "Collection Agent":
-                //    return RedirectToAction("Index", "Collection");
+                case "Plant Manager":
+                    return RedirectToAction("Index", "Production");
 
                 //case "Production Manager":
                 //    return RedirectToAction("Index", "Production");
@@ -317,66 +317,74 @@ namespace DairyIndustry.Controllers
             return View(staffList);
         }
 
+        // Update GET action to pass plants and centers to view
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AddStaff()
         {
-            var Roles = _adminRepo.GetAllRoles();
-            return View(Roles);
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            return View(_adminRepo.GetAllRoles());
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddStaff(string firstName, string lastName,
-                              string phone, string email,
-                              int roleId, DateTime? doj,
-                              string bankName, string accountNumber,
-                              string ifscCode, IFormFile profilePhoto)
+                               string phone, string email,
+                               int roleId, DateTime? doj,
+                               string bankName, string accountNumber,
+                               string ifscCode, IFormFile profilePhoto,Decimal Salary,
+                               int? centerId, int? plantId)   // NEW
         {
-            string photoPath = null;
+            // Validate — cannot assign both
+            if (centerId.HasValue && plantId.HasValue)
+            {
+                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                return View(_adminRepo.GetAllRoles());
+            }
 
+            string photoPath = null;
             if (profilePhoto != null && profilePhoto.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
-
                 if (!allowedExtensions.Contains(extension))
                 {
                     ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
                     return View(_adminRepo.GetAllRoles());
                 }
-
                 if (profilePhoto.Length > 2 * 1024 * 1024)
                 {
                     ViewBag.Error = "Photo size must be less than 2MB.";
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
                     return View(_adminRepo.GetAllRoles());
                 }
-
                 string uploadsFolder = Path.Combine(
-                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff"
-                );
-
+                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
-
                 string uniqueFileName = $"staff_{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(profilePhoto.FileName)}";
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
                 using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    profilePhoto.CopyTo(stream);   // ← no await, no async
-                }
-
+                    profilePhoto.CopyTo(stream);
                 photoPath = $"/uploads/staff/{uniqueFileName}";
             }
 
             _adminRepo.AddStaff(firstName, lastName, phone, email,
-                                roleId, doj, bankName, accountNumber,
-                                ifscCode, photoPath);
+    roleId, doj, bankName, accountNumber,
+    ifscCode, Salary, photoPath,
+    centerId, plantId); // NEW
 
             TempData["Success"] = "Staff member added successfully.";
             return RedirectToAction("Staff");
         }
+
+        
 
 
         [SessionAuthorize("Admin")]

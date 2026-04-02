@@ -59,9 +59,12 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
         int AddStaff(string firstName, string lastName, string phone, string email,
-                     int roleId, DateTime? doj,
-                     string bankName, string accountNumber, string ifscCode,
-                     string profilePhoto = null);
+             int roleId, DateTime? doj,
+             string bankName, string accountNumber, string ifscCode,
+             decimal salary,
+             string profilePhoto = null,
+             int? centerId = null,
+             int? plantId = null);
 
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 

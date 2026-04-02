@@ -644,9 +644,12 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         public int AddStaff(string firstName, string lastName, string phone, string email,
-                             int roleId, DateTime? doj,
-                             string bankName, string accountNumber, string ifscCode,
-                             string profilePhoto = null)
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null)
         {
             using (SqlConnection con = _db.GetConnection())
             {
@@ -663,7 +666,9 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
-
+                    cmd.Parameters.AddWithValue("@Salary", salary);
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value); // NEW
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value); // NEW
                     con.Open();
                     var result = cmd.ExecuteScalar();
                     return Convert.ToInt32(result);
@@ -699,9 +704,14 @@ namespace DairyIndustry.Repositories
                                 RoleName = reader["RoleName"].ToString(),
                                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                Salary = reader["Salary"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["Salary"]),
                                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString()
+                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                                 CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
+                                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString()
                             });
                         }
                     }
