@@ -1,0 +1,100 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Assign User to Plant";
+
+    var users = ViewBag.Users as List<DairyIndustry.Models.Admin.User>
+                ?? new List<DairyIndustry.Models.Admin.User>();
+
+    var plants = ViewBag.Plants as List<DairyIndustry.Models.Admin.PlantModel>
+                 ?? new List<DairyIndustry.Models.Admin.PlantModel>();
+}
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Assign User to Plant</h3>
+                <p class="text-muted mb-0">Map a user to a specific plant</p>
+            </div>
+            <a asp-action="Users" class="btn btn-outline-secondary">
+                Back
+            </a>
+        </div>
+    </div>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    Assign Details
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form method="post" asp-action="AssignUserToPlant">
+
+                        <!-- User Dropdown -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Select User
+                            </label>
+                            <select name="userId" class="form-select" required>
+                                <option value="">-- Select User --</option>
+                                @foreach (var user in users)
+                                {
+                                    <option value="@user.UserId">
+                                        @user.Username
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Plant Dropdown -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Select Plant
+                            </label>
+                            <select name="plantId" class="form-select" required>
+                                <option value="">-- Select Plant --</option>
+                                @foreach (var plant in plants)
+                                {
+                                    <option value="@plant.PlantId">
+                                        @plant.PlantName
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                Assign
+                            </button>
+
+                            <a asp-action="Users" class="btn btn-outline-secondary px-4">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>

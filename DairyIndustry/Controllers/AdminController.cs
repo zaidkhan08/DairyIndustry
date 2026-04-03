@@ -10,12 +10,14 @@ namespace DairyIndustry.Controllers
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly IReportRepository _reportRepo;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _reportRepo = reportRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -67,8 +69,8 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("DriverId", driver.DriverId);
                     return RedirectToAction("Index", "Logistics");
 
-                //case "Collection Agent":
-                //    return RedirectToAction("Index", "Collection");
+                case "Plant Manager":
+                    return RedirectToAction("Index", "Production");
 
                 //case "Production Manager":
                 //    return RedirectToAction("Index", "Production");
@@ -167,6 +169,61 @@ namespace DairyIndustry.Controllers
         public IActionResult UpdateUserStatus(int userId, bool isActive)
         {
             _adminRepo.UpdateUserStatus(userId, isActive);
+            return RedirectToAction("Users");
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AssignUserToPlant()
+        {
+            ViewBag.Users = _adminRepo.GetAllUsers();
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+
+            return View();
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AssignUserToPlant(int userId, int plantId)
+        {
+            if (userId == 0 || plantId == 0)
+            {
+                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Users = _adminRepo.GetAllUsers();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                return View();
+            }
+
+            _adminRepo.AssignUserToPlant(userId, plantId);
+
+            TempData["Success"] = "User assigned to plant successfully.";
+
+            return RedirectToAction("Users");
+        }
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AssignUserToCenter()
+        {
+            ViewBag.Users = _adminRepo.GetAllUsers();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+
+            return View();
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AssignUserToCenter(int userId, int centerId)
+        {
+            if (userId == 0 || centerId == 0)
+            {
+                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Users = _adminRepo.GetAllUsers();
+                ViewBag.center = _adminRepo.GetAllCenters();
+                return View();
+            }
+
+            _adminRepo.AssignUserToPlant(userId, centerId);
+
+            TempData["Success"] = "User assigned to center successfully.";
+
             return RedirectToAction("Users");
         }
 
@@ -286,73 +343,91 @@ namespace DairyIndustry.Controllers
             return View(staffList);
         }
 
+        // Update GET action to pass plants and centers to view
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AddStaff()
         {
-            var Roles = _adminRepo.GetAllRoles();
-            return View(Roles);
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            return View(_adminRepo.GetAllRoles());
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult GetStaffById(int id)
+        {
+            var staff = _adminRepo.GetStaffById(id);
+            if (staff == null)
+            {
+                TempData["Error"] = "Staff not found.";
+                return RedirectToAction("staff");
+            }
+            return View(staff);
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddStaff(string firstName, string lastName,
-                              string phone, string email,
-                              int roleId, DateTime? doj,
-                              string bankName, string accountNumber,
-                              string ifscCode, IFormFile profilePhoto)
+                               string phone, string email,
+                               int roleId, DateTime? doj,
+                               string bankName, string accountNumber,
+                               string ifscCode, IFormFile profilePhoto, Decimal Salary,
+                               int? centerId, int? plantId)   // NEW
         {
-            string photoPath = null;
+            // Validate — cannot assign both
+            if (centerId.HasValue && plantId.HasValue)
+            {
+                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                return View(_adminRepo.GetAllRoles());
+            }
 
+            string photoPath = null;
             if (profilePhoto != null && profilePhoto.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
-
                 if (!allowedExtensions.Contains(extension))
                 {
                     ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
                     return View(_adminRepo.GetAllRoles());
                 }
-
                 if (profilePhoto.Length > 2 * 1024 * 1024)
                 {
                     ViewBag.Error = "Photo size must be less than 2MB.";
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
                     return View(_adminRepo.GetAllRoles());
                 }
-
                 string uploadsFolder = Path.Combine(
-                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff"
-                );
-
+                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
-
                 string uniqueFileName = $"staff_{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(profilePhoto.FileName)}";
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
                 using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    profilePhoto.CopyTo(stream);   // ← no await, no async
-                }
-
+                    profilePhoto.CopyTo(stream);
                 photoPath = $"/uploads/staff/{uniqueFileName}";
             }
 
             _adminRepo.AddStaff(firstName, lastName, phone, email,
-                                roleId, doj, bankName, accountNumber,
-                                ifscCode, photoPath);
+    roleId, doj, bankName, accountNumber,
+    ifscCode, Salary, photoPath,
+    centerId, plantId); // NEW
 
             TempData["Success"] = "Staff member added successfully.";
             return RedirectToAction("Staff");
         }
 
-
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult ToggleStaffActive(int staffId, bool isActive)
+        public IActionResult ToggleStaffActive(int staffId, int isActive)
         {
-            _adminRepo.ToggleStaffActive(staffId, isActive);
+            _adminRepo.ToggleStaffActive(staffId, isActive == 1);
+            TempData["Success"] = isActive == 1 ? "Staff activated." : "Staff deactivated.";
             return RedirectToAction("Staff");
         }
 
@@ -424,7 +499,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════
-        
+
         [SessionAuthorize("Admin")]
         public IActionResult Products(string productType = null, bool? isActive = null)
         {
@@ -528,7 +603,50 @@ namespace DairyIndustry.Controllers
 
             return RedirectToAction("Products");
         }
+        [SessionAuthorize("Admin")]
+        public IActionResult ProductionBatches(int? plantId = null, int? productId = null,
+                                        string batchStatus = null,
+                                        DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var batches = _adminRepo.GetProductionBatches(plantId, productId, batchStatus, fromDate, toDate);
 
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Products = _adminRepo.GetActiveProducts();
+            ViewBag.PlantId = plantId;
+            ViewBag.ProductId = productId;
+            ViewBag.BatchStatus = batchStatus;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
 
+            return View(batches);
+        }
+        [SessionAuthorize("Admin")]
+        public IActionResult WastageSummary(int? plantId = null, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var wastage = _reportRepo.GetWastageSummary(plantId, fromDate, toDate);
+
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.PlantId = plantId;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            return View(wastage);
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult MilkTransfers(int? plantId = null, int? centerId = null,
+                                    DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var transfers = _adminRepo.GetMilkTransfers(plantId, centerId, fromDate, toDate);
+
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            return View(transfers);
+        }
     }
 }

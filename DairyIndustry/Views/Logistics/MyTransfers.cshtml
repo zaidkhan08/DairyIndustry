@@ -1,0 +1,241 @@
+﻿@model List<DairyIndustry.Models.Admin.MilkTransferModel>
+
+@{
+    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    ViewData["Title"] = "Transfers";
+}
+
+<div class="container mt-4">
+
+    <!-- Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">My Transfers</h3>
+                <p class="text-muted mb-0">Milk transfers completed by your vehicle</p>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Total Transfers</p>
+                        <h4 class="fw-bold mb-0">@Model.Count</h4>
+                    </div>
+                    <i class="bi bi-arrow-left-right fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Total Dispatched (L)</p>
+                        <h4 class="fw-bold mb-0">@Model.Sum(t => t.DispatchQty).ToString("0.00")</h4>
+                    </div>
+                    <i class="bi bi-box-arrow-up fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Total Received (L)</p>
+                        <h4 class="fw-bold mb-0">
+                            @Model.Where(t => t.ReceivedQty.HasValue).Sum(t => t.ReceivedQty ?? 0).ToString("0.00")
+                        </h4>
+                    </div>
+                    <i class="bi bi-box-arrow-in-down fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Total Loss (L)</p>
+                        <h4 class="fw-bold mb-0">
+                            @Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty ?? 0).ToString("0.00")
+                        </h4>
+                    </div>
+                    <i class="bi bi-droplet-half fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-truck me-1"></i> Transfer History</span>
+            <span class="badge bg-primary">Total : @Model.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Transfer</th>
+                            <th>Route</th>
+                            <th>Vehicle</th>
+                            <th>Dispatched</th>
+                            <th>Received</th>
+                            <th>Loss</th>
+                            <th>Quality</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                    No transfers found for your vehicle.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int sr = 1;
+                            foreach (var t in Model)
+                            {
+                                <tr>
+                                    <td>@sr</td>
+
+                                    <td>
+                                        <div class="fw-semibold small">#@t.TransferId</div>
+                                        <div class="text-muted" style="font-size:11px;">
+                                            <i class="bi bi-calendar3 me-1"></i>
+                                            @t.DispatchDate.ToString("dd MMM yyyy")
+                                        </div>
+                                        <div class="text-muted" style="font-size:11px;">
+                                            Batch #@t.BatchId — @t.Shift
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="small">
+                                            <i class="bi bi-geo-alt text-muted me-1"></i>
+                                            <span class="fw-semibold">@t.CenterName</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size:11px;">
+                                            <i class="bi bi-arrow-down"></i>
+                                        </div>
+                                        <div class="small">
+                                            <i class="bi bi-building text-muted me-1"></i>
+                                            <span class="fw-semibold">@t.PlantName</span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <small class="fw-semibold">
+                                            <i class="bi bi-truck me-1 text-muted"></i>@t.VehicleNumber
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <div class="small fw-semibold">@t.DispatchQty.ToString("0.00") L</div>
+                                        @if (t.BatchAvgFat.HasValue)
+                                        {
+                                            <div class="text-muted" style="font-size:11px;">
+                                                Fat: @t.BatchAvgFat.Value.ToString("0.00") |
+                                                CLR: @t.BatchAvgCLR?.ToString("0.00")
+                                            </div>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @if (t.ReceivedQty.HasValue)
+                                        {
+                                            <div class="small fw-semibold text-success">
+                                                @t.ReceivedQty.Value.ToString("0.00") L
+                                            </div>
+                                            @if (t.ReceivedDate.HasValue)
+                                            {
+                                                <div class="text-muted" style="font-size:11px;">
+                                                    @t.ReceivedDate.Value.ToString("dd MMM yyyy")
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @if (t.LossQty.HasValue)
+                                        {
+                                            <div class="small fw-semibold @(t.LossPercent > 5 ? "text-danger" : "text-warning")">
+                                                @t.LossQty.Value.ToString("0.00") L
+                                            </div>
+                                            <div class="text-muted" style="font-size:11px;">
+                                                @t.LossPercent.ToString("0.00")%
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @if (t.TestedFat.HasValue)
+                                        {
+                                            <div class="small">
+                                                Fat: <span class="fw-semibold">@t.TestedFat.Value.ToString("0.00")</span>
+                                            </div>
+                                            <div class="small">
+                                                CLR: <span class="fw-semibold">@t.TestedCLR?.ToString("0.00")</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Not Tested</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @if (t.TransferStatus == "Received")
+                                        {
+                                            <span class="badge bg-success">Received</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        }
+                                    </td>
+
+                                </tr>
+                                sr++;
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+            <span>
+                Total: @Model.Count |
+                Received: @Model.Count(t => t.TransferStatus == "Received") |
+                Pending: @Model.Count(t => t.TransferStatus == "Pending")
+            </span>
+            <span>
+                Dispatched: @Model.Sum(t => t.DispatchQty).ToString("0.00") L |
+                Loss: @Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty ?? 0).ToString("0.00") L
+            </span>
+        </div>
+    </div>
+
+</div>

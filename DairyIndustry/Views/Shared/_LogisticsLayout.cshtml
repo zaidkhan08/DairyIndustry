@@ -73,7 +73,12 @@
                     <i class="bi bi-truck fs-5"></i>
                     <span class="fw-medium">Register Vehicle</span>
                 </a>
-
+                <a asp-controller="Logistics" asp-action="MyTransfers"
+                   class="d-flex align-items-center gap-3 px-3 py-2 rounded-3 mb-1 text-decoration-none
+                      @(ViewContext.RouteData.Values["action"]?.ToString() == "MyTransfers" ? "bg-success text-white" : "text-secondary")">
+                    <i class="bi bi-truck fs-5"></i>
+                    <span class="fw-medium">Transfers</span>
+                </a>
                 <div class="text-uppercase text-secondary fw-semibold mt-4 mb-2 px-2"
                      style="font-size:.65rem; letter-spacing:.8px;">
                     Account

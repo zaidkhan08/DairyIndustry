@@ -1,4 +1,5 @@
-﻿using DairyIndustry.Models.Logistics;
+﻿using DairyIndustry.Models.Admin;
+using DairyIndustry.Models.Logistics;
 
 namespace DairyIndustry.Repositories
 {
@@ -14,6 +15,7 @@ namespace DairyIndustry.Repositories
         void UpdateDriverStatus(int driverId, string status);
         List<VehiclesModel> GetAllVehicles();
         void UpdateVehicleStatus(int vehicleId, string status);
+        List<MilkTransferModel> GetDriverTransfers(int userId);
 
     }
 }
