@@ -1,0 +1,220 @@
+﻿@model DairyIndustry.Models.Finance.CenterPaymentModel
+@{
+    ViewData["Title"] = $"Center Payment — CP-{Model.CenterPaymentId:D4}";
+    bool isPending = Model.PaymentStatus == "Pending";
+    bool isProcessed = Model.PaymentStatus == "Processed";
+    bool isFailed = Model.PaymentStatus == "Failed";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+
+}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="CenterPayments">Center Payments</a></li>
+                <li class="breadcrumb-item active">CP-@Model.CenterPaymentId.ToString("D4")</li>
+            </ol>
+        </nav>
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-building-check me-2 text-primary"></i>
+            Center Payment — CP-@Model.CenterPaymentId.ToString("D4")
+        </h4>
+    </div>
+    <span class="badge @Model.StatusBadgeClass fs-6 px-3 py-2 align-self-center">
+        @Model.PaymentStatus
+    </span>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+
+    <!-- LEFT: Payment details -->
+    <div class="col-lg-7">
+
+        <!-- Center & Plant -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-info-circle me-2 text-primary"></i>Transfer & Center Details
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-muted small">Transfer Reference</div>
+                        <div class="fw-semibold">@Model.BatchRef</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Payment Date</div>
+                        <div class="fw-semibold">@Model.PaymentDate.ToString("dd-MMM-yyyy")</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Collection Center</div>
+                        <div class="fw-semibold">@Model.CenterName</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Processing Plant</div>
+                        <div class="fw-semibold">@Model.PlantName</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Milk Quality & Rate -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light fw-semibold">
+                <i class="bi bi-droplet me-2 text-info"></i>Quality & Rate
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Received Qty</div>
+                            <div class="fw-bold fs-5 text-primary">@Model.ReceivedQty.ToString("N2")</div>
+                            <div class="text-muted small">Litres</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Tested Fat</div>
+                            <div class="fw-bold fs-5">@(Model.TestedFat.HasValue? Model.TestedFat.Value.ToString("N2") + "%" : "—")</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Tested CLR</div>
+                            <div class="fw-bold fs-5">@(Model.TestedCLR.HasValue? Model.TestedCLR.Value.ToString("N2") : "—")</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Rate / Liter</div>
+                            <div class="fw-bold fs-5 text-success">₹@Model.RatePerLiter.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total -->
+        <div class="card shadow-sm mb-3 border-primary">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Total Amount</div>
+                    <div class="text-muted small">@Model.ReceivedQty.ToString("N2") L × ₹@Model.RatePerLiter.ToString("N2")</div>
+                </div>
+                <div class="fw-bold fs-3 text-primary">₹ @Model.TotalAmount.ToString("N2")</div>
+            </div>
+        </div>
+
+        <!-- Bank / Transaction (shown after payment) -->
+        @if (Model.BankStatus != null)
+        {
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-bank me-2"></i>Transaction Details
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-5 text-muted small">Bank Status</div>
+                        <div class="col-7">
+                            @if (Model.BankStatus == "Success")
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Success</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">@Model.BankStatus</span>
+                            }
+                        </div>
+                        <div class="col-5 text-muted small">Transaction Ref</div>
+                        <div class="col-7 small font-monospace text-break">@Model.TransactionReference</div>
+                        <div class="col-5 text-muted small">Payment Via</div>
+                        <div class="col-7">Stripe</div>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+
+    <!-- RIGHT: Action panel -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm sticky-top" style="top: 80px;">
+            <div class="card-header bg-dark text-white fw-semibold">
+                <i class="bi bi-credit-card me-2"></i>Payment Action
+            </div>
+            <div class="card-body text-center py-4">
+
+                @if (isPending)
+                {
+                    <div class="mb-3">
+                        <i class="bi bi-hourglass-split text-warning" style="font-size:2.5rem;"></i>
+                        <div class="fw-semibold mt-2">Payment Pending</div>
+                        <div class="text-muted small">Click below to pay via Stripe</div>
+                    </div>
+
+                    <div class="alert alert-info text-start small py-2 mb-3">
+                        <i class="bi bi-shield-check me-1"></i>
+                        Payments are processed securely via <strong>Stripe</strong>.
+                        After successful payment, the status updates to <strong>Processed</strong> automatically.
+                    </div>
+
+                    <form asp-action="CreateCenterCheckoutSession" method="post">
+                        <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
+                        <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+                        <input type="hidden" name="centerName" value="@Model.CenterName" />
+                        <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="bi bi-stripe me-2"></i>Pay ₹@Model.TotalAmount.ToString("N2") via Stripe
+                        </button>
+                    </form>
+                    <a asp-action="CenterPayments" class="btn btn-outline-secondary btn-sm w-100">
+                        Back to List
+                    </a>
+                }
+                else if (isProcessed)
+                {
+                    <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
+                    <div class="fw-bold fs-5 mt-2 text-success">Payment Processed!</div>
+                    <div class="text-muted small mb-3">Transaction completed successfully via Stripe.</div>
+                    <a asp-action="CenterPayments" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left me-1"></i>Back to List
+                    </a>
+                }
+                else if (isFailed)
+                {
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size:3rem;"></i>
+                    <div class="fw-bold fs-5 mt-2 text-danger">Payment Failed</div>
+                    <div class="text-muted small mb-3">Stripe transaction was not successful.</div>
+
+                    <form asp-action="CreateCenterCheckoutSession" method="post">
+                        <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
+                        <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+                        <input type="hidden" name="centerName" value="@Model.CenterName" />
+                        <button type="submit" class="btn btn-warning w-100 mb-2">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Retry Payment via Stripe
+                        </button>
+                    </form>
+                    <a asp-action="CenterPayments" class="btn btn-outline-secondary btn-sm w-100">
+                        Back to List
+                    </a>
+                }
+
+            </div>
+        </div>
+    </div>
+
+</div>

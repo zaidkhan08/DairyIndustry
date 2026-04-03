@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Milk Transfers";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var RoleName = Context.Session.GetString("RoleName");
 }
 
 <style>
@@ -68,7 +69,6 @@
         border-left: 4px solid #198754;
     }
 
-    /* Improved Action Button Visibility with Text */
     .btn-group-custom {
         display: flex;
         gap: 6px;
@@ -110,12 +110,62 @@
         .btn-table-success:hover {
             background-color: #157347;
         }
+
+    /* ── NEW: QC Test button ─────────────────────────────── */
+    .btn-table-qc {
+        background-color: #0d6efd;
+        border-color: #0d6efd !important;
+        color: white !important;
+    }
+
+        .btn-table-qc:hover {
+            background-color: #0b5ed7;
+            border-color: #0b5ed7 !important;
+            color: white !important;
+        }
+
+    /* Already-tested muted button */
+    .btn-table-qc-done {
+        background-color: #e9ecef;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    /* QC Pending — yellow */
+    .btn-table-qc-pending {
+        background-color: #ffc107;
+        border-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+        .btn-table-qc-pending:hover {
+            background-color: #e0a800;
+            border-color: #e0a800 !important;
+            color: #000 !important;
+        }
+
+    /* QC Done — muted grey, not clickable for add */
+    .btn-table-qc-done {
+        background-color: #e9ecef;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+    }
+
+        .btn-table-qc-done:hover {
+            background-color: #dee2e6;
+            color: #495057 !important;
+        }
 </style>
 
 <div class="d-flex justify-content-end mb-4 pt-2">
-    <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
-        <i class="bi bi-plus-lg me-2"></i>Create New Batch
-    </a>
+    @if (RoleName == "Collection Agent")
+    {
+        <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>Create New Batch
+        </a>
+    }
 </div>
 
 @if (TempData["Success"] != null)
@@ -155,7 +205,10 @@
                         <th class="text-end">Loss (L)</th>
                         <th>Date</th>
                         <th>Status</th>
-                        <th class="text-center">Actions</th>
+                        @if (RoleName == "Plant Manager")
+                        {
+                            <th class="text-center">Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -216,21 +269,48 @@
                                     </span>
                                 }
                             </td>
-                            <td class="text-center text-nowrap">
-                                <div class="btn-group-custom">
-                                    <a asp-action="Detail" asp-route-id="@t.TransferId"
-                                       class="btn-table-action" title="View Details">
-                                        <i class="bi bi-eye"></i> Detail
-                                    </a>
-                                    @if (t.Status == "Dispatched")
-                                    {
-                                        <a asp-action="Receive" asp-route-id="@t.TransferId"
-                                           class="btn-table-action btn-table-success" title="Confirm Receipt">
-                                            <i class="bi bi-download"></i> Receive
+                            @if (RoleName == "Plant Manager")
+                            {
+                                <td class="text-center text-nowrap">
+                                    <div class="btn-group-custom">
+
+                                   
+                                        <a asp-action="Detail" asp-route-id="@t.TransferId"
+                                           class="btn-table-action" title="View Details">
+                                            <i class="bi bi-eye"></i> Detail
                                         </a>
-                                    }
-                                </div>
-                            </td>
+
+                                        
+                                        @if (t.Status == "Dispatched")
+                                        {
+                                            <a asp-action="Receive" asp-route-id="@t.TransferId"
+                                               class="btn-table-action btn-table-success" title="Confirm Receipt">
+                                                <i class="bi bi-download"></i> Receive
+                                            </a>
+                                        }
+
+
+                                        @if (t.Status == "Received")
+                                        {
+                                            @if (!t.HasQualityTest)
+                                            {
+                                                <a asp-action="AddQualityTest" asp-route-id="@t.TransferId"
+                                                   class="btn-table-action btn-table-qc-pending" title="QC Test Pending">
+                                                    <i class="bi bi-clock me-1"></i> QC Test
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId"
+                                                   class="btn-table-action btn-table-qc-done" title="QC Done">
+                                                    <i class="bi bi-clipboard2-check me-1"></i> QC Done
+                                                </a>
+                                            }
+                                        }
+
+                                    </div>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>

@@ -18,6 +18,7 @@
         public string VehicleNumber { get; set; }
         public string DriverName { get; set; }
         public string CenterName { get; set; }
+        public bool HasQualityTest { get; set; }
 
         // ── Derived Status (no Status column — use ReceivedDate) 
         public string Status => ReceivedDate.HasValue ? "Received" : "Dispatched";

@@ -69,6 +69,19 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("DriverId", driver.DriverId);
                     return RedirectToAction("Index", "Logistics");
 
+                //Added By Zaid
+                case "Plant Manager":
+                    var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
+                    if (plantId.HasValue)
+                    {
+                        HttpContext.Session.SetInt32("PlantId", plantId.Value);
+                        var plant = _adminRepo.getPlantById(plantId.Value);
+                        if (plant != null)
+                            HttpContext.Session.SetString("PlantName", plant.PlantName);
+                    }
+                    return RedirectToAction("Index", "Production");
+
+                case "Collection Agent":
                 case "Plant Manager":
                     return RedirectToAction("Index", "Production");
 

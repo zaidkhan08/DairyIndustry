@@ -153,14 +153,14 @@ namespace DairyIndustry.Repositories
                 decimal lossQty = 0;
 
                 string lookupQuery = @"
-            SELECT TOP 1
-                mt.PlantId,
-                mt.DispatchQty,
-                mc.MilkTypeId
-            FROM Production.MilkTransfers mt
-            INNER JOIN Collection.CollectionBatches cb ON cb.BatchId = mt.BatchId
-            INNER JOIN Collection.MilkCollection   mc ON mc.BatchId  = cb.BatchId
-            WHERE mt.TransferId = @TransferId";
+    SELECT TOP 1
+        mt.PlantId,
+        mt.DispatchQty,
+        ISNULL(mc.MilkTypeId, 1) AS MilkTypeId
+    FROM Production.MilkTransfers mt
+    INNER JOIN Collection.CollectionBatches cb ON cb.BatchId  = mt.BatchId
+    LEFT  JOIN Collection.MilkCollection   mc ON mc.BatchId  = cb.BatchId
+    WHERE mt.TransferId = @TransferId";
 
                 using (SqlCommand cmd = new SqlCommand(lookupQuery, con))
                 {
@@ -239,10 +239,10 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ALL TRANSFERS
+        // GET ALL TRANSFERS  (plantId = null → all, plantId = X → scoped)
         // ════════════════════════════════════════════════════════
 
-        public List<MilkTransferModel> GetAllTransfers()
+        public List<MilkTransferModel> GetAllTransfers(int? plantId = null)
         {
             var list = new List<MilkTransferModel>();
 
@@ -275,6 +275,7 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                     con.Open();
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -343,8 +344,19 @@ namespace DairyIndustry.Repositories
         // PRIVATE HELPER
         // ════════════════════════════════════════════════════════
 
+        // Replace your existing MapTransfer method in ProductionRepository.cs with this:
+
         private MilkTransferModel MapTransfer(SqlDataReader reader)
         {
+            // Safe helper — returns true only if the column exists AND has a value
+            bool HasColumn(string name)
+            {
+                for (int i = 0; i < reader.FieldCount; i++)
+                    if (reader.GetName(i).Equals(name, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                return false;
+            }
+
             return new MilkTransferModel
             {
                 TransferId = Convert.ToInt32(reader["TransferId"]),
@@ -360,10 +372,12 @@ namespace DairyIndustry.Repositories
                 CenterName = reader["CenterName"].ToString(),
                 PlantName = reader["PlantName"].ToString(),
                 VehicleNumber = reader["VehicleNumber"].ToString(),
-                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString()
+                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+
+                // Only read HasQualityTest if the column was SELECTed (GetAllTransfers has it, GetTransferById does not)
+                HasQualityTest = HasColumn("HasQualityTest") && Convert.ToInt32(reader["HasQualityTest"]) == 1
             };
         }
-
         // ════════════════════════════════════════════════════════
         // PRODUCTS — CRUD
         // ════════════════════════════════════════════════════════
@@ -497,7 +511,7 @@ namespace DairyIndustry.Repositories
         // RAW MILK INVENTORY
         // ════════════════════════════════════════════════════════
 
-        public List<RawMilkInventoryModel> GetRawMilkInventory()
+        public List<RawMilkInventoryModel> GetRawMilkInventory(int? plantId = null)
         {
             var list = new List<RawMilkInventoryModel>();
 
@@ -513,6 +527,7 @@ namespace DairyIndustry.Repositories
                 FROM Production.RawMilkInventory r
                 INNER JOIN Production.ProcessingPlants pp ON pp.PlantId    = r.PlantId
                 INNER JOIN Finance.MilkTypes           mt ON mt.MilkTypeId = r.MilkTypeId
+                WHERE (@PlantId IS NULL OR r.PlantId = @PlantId)
                 ORDER BY pp.PlantName, mt.MilkTypeName";
 
             using (SqlConnection con = _db.GetConnection())
@@ -520,6 +535,7 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                     con.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -549,12 +565,12 @@ namespace DairyIndustry.Repositories
 
         public int StartProductionBatch(int plantId, int productId,
                                 decimal milkUsedQuantity, DateTime productionDate,
-                                int milkTypeId)  // ✅ ADD
+                                int milkTypeId)
         {
             string checkQuery = @"
         SELECT ISNULL(Quantity, 0)
         FROM Production.RawMilkInventory
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";  // ✅ filter by type
+        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
             string insertQuery = @"
         INSERT INTO Production.ProductionBatches
@@ -565,7 +581,7 @@ namespace DairyIndustry.Repositories
             string deductQuery = @"
         UPDATE Production.RawMilkInventory
         SET Quantity = Quantity - @MilkUsedQuantity, LastUpdated = GETDATE()
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";  // ✅ deduct specific type
+        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
             using (SqlConnection con = _db.GetConnection())
             {
@@ -627,7 +643,7 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<ProductionBatchModel> GetAllProductionBatches()
+        public List<ProductionBatchModel> GetAllProductionBatches(int? plantId = null)
         {
             var list = new List<ProductionBatchModel>();
             string query = @"
@@ -645,6 +661,7 @@ namespace DairyIndustry.Repositories
                 FROM Production.ProductionBatches pb
                 INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = pb.PlantId
                 INNER JOIN Production.Products         p  ON p.ProductId = pb.ProductId
+                WHERE (@PlantId IS NULL OR pb.PlantId = @PlantId)
                 ORDER BY pb.ProductionDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
@@ -652,6 +669,7 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                     con.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -784,7 +802,7 @@ namespace DairyIndustry.Repositories
             }
         }
 
-        public List<ProductWastageModel> GetAllProductWastage()
+        public List<ProductWastageModel> GetAllProductWastage(int? plantId = null)
         {
             var list = new List<ProductWastageModel>();
 
@@ -805,6 +823,7 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Production.ProductionBatches pb ON pb.ProductionBatchId = pw.BatchId
                 INNER JOIN Production.Products          p  ON p.ProductId          = pw.ProductId
                 INNER JOIN Production.ProcessingPlants  pp ON pp.PlantId           = pb.PlantId
+                WHERE (@PlantId IS NULL OR pb.PlantId = @PlantId)
                 ORDER BY pw.RecordedDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
@@ -812,6 +831,7 @@ namespace DairyIndustry.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                     con.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -881,6 +901,168 @@ namespace DairyIndustry.Repositories
                 Unit = reader["Unit"].ToString(),
                 PlantName = reader["PlantName"].ToString(),
                 BatchStatus = reader["BatchStatus"].ToString()
+            };
+        }
+
+        //Test Quality
+
+        // ════════════════════════════════════════════════════════════════════════════
+        // ADD THESE METHODS INSIDE ProductionRepository : IProductionRepository
+        // (paste before the closing brace of the class)
+        // ════════════════════════════════════════════════════════════════════════════
+
+        // ════════════════════════════════════════════════════════
+        // TRANSFER QUALITY TESTS
+        // ════════════════════════════════════════════════════════
+
+        public List<QualityTestModel> GetAllQualityTests(int? plantId = null)
+        {
+            var list = new List<QualityTestModel>();
+
+            string query = @"
+        SELECT
+            tqt.TestId,
+            tqt.TransferId,
+            tqt.TestedFat,
+            tqt.TestedCLR,
+            tqt.TestDate,
+            mt.DispatchQty,
+            mt.ReceivedQty,
+            mt.DispatchDate,
+            pp.PlantName,
+            cc.CenterName,
+            v.VehicleNumber,
+            d.DriverName,
+            cb.AvgFat   AS BatchAvgFat,
+            cb.AvgCLR   AS BatchAvgCLR
+        FROM Production.TransferQualityTests tqt
+        INNER JOIN Production.MilkTransfers          mt  ON mt.TransferId  = tqt.TransferId
+        INNER JOIN Production.ProcessingPlants        pp  ON pp.PlantId     = mt.PlantId
+        INNER JOIN Logistics.VehiclesNew              v   ON v.VehicleId    = mt.VehicleId
+        INNER JOIN Logistics.DriversNew               d   ON d.DriverId     = v.DriverId
+        INNER JOIN Collection.CollectionBatches       cb  ON cb.BatchId     = mt.BatchId
+        INNER JOIN Collection.CollectionCenters       cc  ON cc.CenterId    = cb.CenterId
+        WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
+        ORDER BY tqt.TestDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                        list.Add(MapQualityTest(reader));
+                }
+            }
+
+            return list;
+        }
+
+        public QualityTestModel GetQualityTestByTransfer(int transferId)
+        {
+            string query = @"
+        SELECT
+            tqt.TestId,
+            tqt.TransferId,
+            tqt.TestedFat,
+            tqt.TestedCLR,
+            tqt.TestDate,
+            mt.DispatchQty,
+            mt.ReceivedQty,
+            mt.DispatchDate,
+            pp.PlantName,
+            cc.CenterName,
+            v.VehicleNumber,
+            d.DriverName,
+            cb.AvgFat   AS BatchAvgFat,
+            cb.AvgCLR   AS BatchAvgCLR
+        FROM Production.TransferQualityTests tqt
+        INNER JOIN Production.MilkTransfers          mt  ON mt.TransferId  = tqt.TransferId
+        INNER JOIN Production.ProcessingPlants        pp  ON pp.PlantId     = mt.PlantId
+        INNER JOIN Logistics.VehiclesNew              v   ON v.VehicleId    = mt.VehicleId
+        INNER JOIN Logistics.DriversNew               d   ON d.DriverId     = v.DriverId
+        INNER JOIN Collection.CollectionBatches       cb  ON cb.BatchId     = mt.BatchId
+        INNER JOIN Collection.CollectionCenters       cc  ON cc.CenterId    = cb.CenterId
+        WHERE tqt.TransferId = @TransferId";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@TransferId", transferId);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                        return MapQualityTest(reader);
+                }
+            }
+
+            return null;
+        }
+
+        public int AddQualityTest(int transferId, decimal testedFat, decimal testedCLR, DateTime testDate)
+        {
+            // Prevent duplicate tests for the same transfer
+            string checkQuery = @"
+        SELECT COUNT(1) FROM Production.TransferQualityTests
+        WHERE TransferId = @TransferId";
+
+            string insertQuery = @"
+        INSERT INTO Production.TransferQualityTests
+            (TransferId, TestedFat, TestedCLR, TestDate)
+        VALUES
+            (@TransferId, @TestedFat, @TestedCLR, @TestDate);
+        SELECT SCOPE_IDENTITY();";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+
+                using (SqlCommand chk = new SqlCommand(checkQuery, con))
+                {
+                    chk.Parameters.AddWithValue("@TransferId", transferId);
+                    int count = (int)chk.ExecuteScalar();
+                    if (count > 0)
+                        throw new InvalidOperationException(
+                            $"A quality test already exists for Transfer #{transferId}.");
+                }
+
+                using (SqlCommand cmd = new SqlCommand(insertQuery, con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@TransferId", transferId);
+                    cmd.Parameters.AddWithValue("@TestedFat", testedFat);
+                    cmd.Parameters.AddWithValue("@TestedCLR", testedCLR);
+                    cmd.Parameters.AddWithValue("@TestDate", testDate.Date);
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+
+        // ── Private helper ──────────────────────────────────────────────────────────
+        private QualityTestModel MapQualityTest(SqlDataReader reader)
+        {
+            return new QualityTestModel
+            {
+                TestId = Convert.ToInt32(reader["TestId"]),
+                TransferId = Convert.ToInt32(reader["TransferId"]),
+                TestedFat = reader["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedFat"]),
+                TestedCLR = reader["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedCLR"]),
+                TestDate = Convert.ToDateTime(reader["TestDate"]),
+                DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
+                ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
+                DispatchDate = Convert.ToDateTime(reader["DispatchDate"]),
+                PlantName = reader["PlantName"].ToString(),
+                CenterName = reader["CenterName"].ToString(),
+                VehicleNumber = reader["VehicleNumber"].ToString(),
+                DriverName = reader["DriverName"].ToString(),
+                BatchAvgFat = reader["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgFat"]),
+                BatchAvgCLR = reader["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgCLR"]),
             };
         }
     }

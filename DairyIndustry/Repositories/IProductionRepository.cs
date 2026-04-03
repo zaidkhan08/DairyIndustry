@@ -17,7 +17,7 @@ namespace DairyIndustry.Repositories
         int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
                                   decimal dispatchQty, DateTime dispatchDate);
         void ReceiveMilkTransfer(int transferId, decimal receivedQty, DateTime receivedDate);
-        List<MilkTransferModel> GetAllTransfers();
+        List<MilkTransferModel> GetAllTransfers(int? plantId = null);
         MilkTransferModel GetTransferById(int transferId);
 
         // ════════════════════════════════════════════════════════
@@ -33,7 +33,7 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // RAW MILK INVENTORY
         // ════════════════════════════════════════════════════════
-        List<RawMilkInventoryModel> GetRawMilkInventory();
+        List<RawMilkInventoryModel> GetRawMilkInventory(int? plantId = null);
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES
@@ -41,7 +41,7 @@ namespace DairyIndustry.Repositories
         int StartProductionBatch(int plantId, int productId,
                                   decimal milkUsedQuantity, DateTime productionDate, int MilkTypeId);
         void UpdateBatchStatus(int productionBatchId, string batchStatus);
-        List<ProductionBatchModel> GetAllProductionBatches();
+        List<ProductionBatchModel> GetAllProductionBatches(int? plantId = null);
         ProductionBatchModel GetProductionBatchById(int productionBatchId);
 
         // ════════════════════════════════════════════════════════
@@ -49,7 +49,23 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         List<BatchForWastageModel> GetBatchesForWastage();   // InProgress + Completed
         int AddProductWastage(int batchId, int productId, decimal quantity, string reason);
-        List<ProductWastageModel> GetAllProductWastage();
+        List<ProductWastageModel> GetAllProductWastage(int? plantId = null);
         List<ProductWastageModel> GetWastageByBatch(int batchId);
+
+        // ════════════════════════════════════════════════════════
+        // TRANSFER QUALITY TESTS
+        // ════════════════════════════════════════════════════════
+
+        /// <summary>Returns all quality tests, optionally filtered by plant.</summary>
+        List<QualityTestModel> GetAllQualityTests(int? plantId = null);
+
+        /// <summary>Returns the quality test for a single transfer (null if not yet tested).</summary>
+        QualityTestModel GetQualityTestByTransfer(int transferId);
+
+        /// <summary>
+        /// Inserts a new quality test record.
+        /// Returns the newly created TestId.
+        /// </summary>
+        int AddQualityTest(int transferId, decimal testedFat, decimal testedCLR, DateTime testDate);
     }
 }

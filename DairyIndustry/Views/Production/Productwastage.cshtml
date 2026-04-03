@@ -1,102 +1,763 @@
 ﻿@model List<DairyIndustry.Models.Production.ProductWastageModel>
+
 @{
     ViewData["Title"] = "Product Wastage";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var roleName = Context.Session.GetString("RoleName");
+    var plantName = Context.Session.GetString("PlantName");
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">🗑️ Product Wastage</h4>
-    <a asp-action="AddWastage" class="btn btn-danger">+ Record Wastage</a>
+<style>
+    .pw-page {
+        padding: 24px;
+        font-family: inherit;
+    }
+
+    /* ── Alerts ── */
+    .pw-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 18px;
+    }
+
+    .pw-alert-success {
+        background: #EAF3DE;
+        border: 1px solid #C0DD97;
+        color: #3B6D11;
+    }
+
+    .pw-alert-error {
+        background: #FCEBEB;
+        border: 1px solid #F7C1C1;
+        color: #A32D2D;
+    }
+
+    .pw-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        color: inherit;
+    }
+
+    /* ── Top bar ── */
+    .pw-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .pw-page-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
+
+    .pw-page-sub {
+        font-size: 12px;
+        color: #888;
+        margin-top: 3px;
+    }
+
+    .btn-record-wastage {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #A32D2D;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .15s;
+        white-space: nowrap;
+    }
+
+        .btn-record-wastage:hover {
+            background: #791F1F;
+        }
+
+    /* ── Stats ── */
+    .pw-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .pw-stat {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 10px;
+        padding: 14px 16px;
+    }
+
+    .pw-stat-label {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .pw-stat-val {
+        font-size: 22px;
+        font-weight: 600;
+        color: #111;
+    }
+
+        .pw-stat-val.red {
+            color: #A32D2D;
+        }
+
+        .pw-stat-val.amber {
+            color: #854F0B;
+        }
+
+        .pw-stat-val.blue {
+            color: #185FA5;
+        }
+
+    @@media (max-width: 640px) {
+        .pw-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    /* ── Card ── */
+    .pw-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .pw-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pw-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* ── Filters ── */
+    .pw-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+        .pw-filters select, .pw-filters input {
+            padding: 7px 11px;
+            font-size: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 7px;
+            background: #fafafa;
+            color: #333;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+            .pw-filters select:focus, .pw-filters input:focus {
+                border-color: #A32D2D;
+            }
+
+        .pw-filters input {
+            width: 200px;
+        }
+
+    /* ── Table ── */
+    .pw-table-wrap {
+        overflow-x: auto;
+    }
+
+    .pw-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .pw-table thead th {
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            white-space: nowrap;
+        }
+
+        .pw-table tbody tr {
+            border-bottom: 1px solid #f5f5f5;
+            transition: background .1s;
+        }
+
+            .pw-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .pw-table tbody tr:hover {
+                background: #fff8f8;
+            }
+
+        .pw-table tbody td {
+            padding: 11px 16px;
+            color: #222;
+            vertical-align: middle;
+        }
+
+    .pw-id {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        color: #aaa;
+        font-weight: 600;
+    }
+
+    .pw-batch-id {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: #185FA5;
+    }
+
+    .pw-product-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #111;
+    }
+
+    .pw-type-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+        background: #f0f0f0;
+        color: #555;
+    }
+
+    .pw-qty {
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: #A32D2D;
+    }
+
+    .pw-reason {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .pw-date {
+        font-size: 12px;
+        color: #888;
+    }
+
+    .btn-by-batch {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid #dde4f0;
+        border-radius: 6px;
+        background: #f0f4ff;
+        color: #185FA5;
+        text-decoration: none;
+        display: inline-block;
+        transition: all .15s;
+    }
+
+        .btn-by-batch:hover {
+            background: #dde4f0;
+            color: #185FA5;
+        }
+
+    .pw-card-foot {
+        padding: 10px 18px;
+        border-top: 1px solid #f0f0f0;
+        font-size: 11px;
+        color: #bbb;
+    }
+
+    .pw-empty {
+        padding: 48px 20px;
+        text-align: center;
+        color: #ccc;
+        font-size: 13px;
+    }
+
+    /* ══════════════════════════════════════════
+           DRAWER
+        ══════════════════════════════════════════ */
+    .pw-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .28s ease;
+        z-index: 1040;
+    }
+
+        .pw-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .pw-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 400px;
+        max-width: 100vw;
+        height: 100vh;
+        background: #fff;
+        border-left: 1px solid #e8e8e8;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform .32s cubic-bezier(.4,0,.2,1);
+        z-index: 1050;
+    }
+
+        .pw-drawer.open {
+            transform: translateX(0);
+        }
+
+    .pw-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .pw-drawer-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
+
+    .pw-drawer-sub {
+        font-size: 12px;
+        color: #aaa;
+        margin-top: 3px;
+    }
+
+    .pw-drawer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        border: 1px solid #ebebeb;
+        background: #fafafa;
+        cursor: pointer;
+        font-size: 15px;
+        color: #888;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .pw-drawer-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+    .pw-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ── Fields ── */
+    .pw-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .pw-field label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .pw-field input, .pw-field select, .pw-field textarea {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 13px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+            color: #222;
+            outline: none;
+            transition: border-color .15s, background .15s;
+        }
+
+            .pw-field input:focus, .pw-field select:focus, .pw-field textarea:focus {
+                border-color: #A32D2D;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(163,45,45,.1);
+            }
+
+    .pw-field-hint {
+        font-size: 10px;
+        color: #bbb;
+    }
+
+    .pw-field-opt {
+        font-size: 10px;
+        color: #bbb;
+        font-weight: 400;
+        margin-left: 2px;
+    }
+
+    .pw-divider {
+        height: 1px;
+        background: #f0f0f0;
+    }
+
+    .pw-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #bbb;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .pw-drawer-foot {
+        padding: 14px 22px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+
+    .btn-drawer-cancel {
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        color: #666;
+        cursor: pointer;
+        transition: background .12s;
+    }
+
+        .btn-drawer-cancel:hover {
+            background: #f5f5f5;
+        }
+
+    .btn-drawer-submit {
+        padding: 9px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: #A32D2D;
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-drawer-submit:hover {
+            background: #791F1F;
+        }
+
+        .btn-drawer-submit:disabled {
+            background: #d4a0a0;
+            cursor: not-allowed;
+        }
+</style>
+
+<div class="pw-overlay" id="pwOverlay"></div>
+
+@* ══════════════════════ RECORD WASTAGE DRAWER ══════════════════════ *@
+<div class="pw-drawer" id="pwDrawer" role="dialog" aria-modal="true">
+    <div class="pw-drawer-head">
+        <div>
+            <p class="pw-drawer-title">Record wastage</p>
+            <p class="pw-drawer-sub">Log a new product wastage entry</p>
+        </div>
+        <button class="pw-drawer-close" id="pwDrawerClose">&times;</button>
+    </div>
+
+    <div class="pw-drawer-body">
+        <form asp-action="AddWastage" method="post" id="pwAddForm">
+
+            <div class="pw-section-label" style="margin-bottom:12px">Batch &amp; product</div>
+
+            <div class="pw-field" style="margin-bottom:14px">
+                <label>Production batch</label>
+                <select name="batchId" id="pw-batchId" required>
+                    <option value="">— Select batch —</option>
+                    @foreach (var b in (IEnumerable<DairyIndustry.Models.Production.BatchForWastageModel>)ViewBag.Batches)
+                    {
+                        <option value="@b.BatchId">@b.DisplayText</option>
+                    }
+                </select>
+            </div>
+
+            <div class="pw-field" style="margin-bottom:0">
+                <label>Product</label>
+                <select name="productId" id="pw-productId" required>
+                    <option value="">— Select product —</option>
+                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
+                    {
+                        <option value="@p.ProductId">@p.ProductName (@p.Unit)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="pw-divider" style="margin:18px 0"></div>
+            <div class="pw-section-label" style="margin-bottom:12px">Wastage details</div>
+
+            <div class="pw-field" style="margin-bottom:14px">
+                <label>Wasted quantity</label>
+                <input type="number" name="quantity" id="pw-quantity"
+                       step="0.01" min="0.01" placeholder="e.g. 5.00" required />
+                <span class="pw-field-hint">Enter the quantity in the product's base unit</span>
+            </div>
+
+            <div class="pw-field">
+                <label>Reason <span class="pw-field-opt">(optional)</span></label>
+                <select name="reason" id="pw-reason">
+                    <option value="">— Select reason —</option>
+                    <option value="Packaging damage">Packaging damage</option>
+                    <option value="Quality check failed">Quality check failed</option>
+                    <option value="Spillage">Spillage</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Contamination">Contamination</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+        </form>
+    </div>
+
+    <div class="pw-drawer-foot">
+        <button type="button" class="btn-drawer-cancel" id="pwDrawerCancel">Cancel</button>
+        <button type="submit" form="pwAddForm" class="btn-drawer-submit" id="pwSubmitBtn">Record wastage</button>
+    </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+@* ══════════════════════ MAIN PAGE ══════════════════════ *@
+<div class="pw-page">
 
-@* Summary *@
-@if (Model.Any())
-{
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-danger text-white">
-                <div class="card-body">
-                    <p class="mb-1 small">Total Records</p>
-                    <h4 class="fw-bold mb-0">@Model.Count</h4>
-                </div>
-            </div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="pw-alert pw-alert-success" id="pwAlertS">
+            ✅ @TempData["Success"]
+            <button class="pw-alert-close" onclick="document.getElementById('pwAlertS').remove()">×</button>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-warning text-dark">
-                <div class="card-body">
-                    <p class="mb-1 small">Total Wasted</p>
-                    <h4 class="fw-bold mb-0">@Model.Sum(x => x.Quantity).ToString("N2")</h4>
-                </div>
-            </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="pw-alert pw-alert-error" id="pwAlertE">
+            ⚠️ @TempData["Error"]
+            <button class="pw-alert-close" onclick="document.getElementById('pwAlertE').remove()">×</button>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-dark text-white">
-                <div class="card-body">
-                    <p class="mb-1 small">Products Affected</p>
-                    <h4 class="fw-bold mb-0">@Model.Select(x => x.ProductId).Distinct().Count()</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-secondary text-white">
-                <div class="card-body">
-                    <p class="mb-1 small">Batches Affected</p>
-                    <h4 class="fw-bold mb-0">@Model.Select(x => x.BatchId).Distinct().Count()</h4>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+    }
 
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-dark">
-                <tr>
-                    <th>#</th>
-                    <th>Batch</th>
-                    <th>Plant</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Qty Wasted</th>
-                    <th>Reason</th>
-                    <th>Recorded Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Any())
+    @* Top bar *@
+    <div class="pw-topbar">
+        <div>
+            <h1 class="pw-page-title">Product wastage</h1>
+            <p class="pw-page-sub">
+                Manufacturing ›
+                @if (roleName == "Plant Manager" && plantName != null)
                 {
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-4">No wastage records found.</td>
-                    </tr>
+                    @plantName
                 }
-                @foreach (var w in Model)
+                else
                 {
-                    <tr>
-                        <td>@w.WastageId</td>
-                        <td><strong>PB-@w.BatchId</strong></td>
-                        <td>@w.PlantName</td>
-                        <td>@w.ProductName</td>
-                        <td><span class="badge bg-info text-dark">@w.ProductType</span></td>
-                        <td><span class="text-danger fw-bold">@w.Quantity.ToString("N2") @w.Unit</span></td>
-                        <td>@(w.Reason ?? "—")</td>
-                        <td>@w.RecordedDate.ToString("dd-MMM-yyyy")</td>
-                        <td>
-                            <a asp-action="WastageByBatch" asp-route-id="@w.BatchId"
-                               class="btn btn-sm btn-outline-secondary">By Batch</a>
-                        </td>
-                    </tr>
+                    <text>All plants</text>
                 }
-            </tbody>
-        </table>
+            </p>
+        </div>
+        <button class="btn-record-wastage" id="pwOpenDrawer">+ Record wastage</button>
     </div>
+
+    @* Stats *@
+    <div class="pw-stats">
+        <div class="pw-stat">
+            <div class="pw-stat-label">Total records</div>
+            <div class="pw-stat-val" id="statTotal">@Model.Count</div>
+        </div>
+        <div class="pw-stat">
+            <div class="pw-stat-label">Total wasted</div>
+            <div class="pw-stat-val red" id="statQty">@Model.Sum(x => x.Quantity).ToString("N2")</div>
+        </div>
+        <div class="pw-stat">
+            <div class="pw-stat-label">Products affected</div>
+            <div class="pw-stat-val amber">@Model.Select(x => x.ProductId).Distinct().Count()</div>
+        </div>
+        <div class="pw-stat">
+            <div class="pw-stat-label">Batches affected</div>
+            <div class="pw-stat-val blue">@Model.Select(x => x.BatchId).Distinct().Count()</div>
+        </div>
+    </div>
+
+    @* Table card *@
+    <div class="pw-card">
+        <div class="pw-card-head">
+            <span class="pw-card-title">Wastage records</span>
+            <div class="pw-filters">
+                <select id="pwReasonFilter">
+                    <option value="">All reasons</option>
+                    <option value="packaging damage">Packaging damage</option>
+                    <option value="quality check failed">Quality check failed</option>
+                    <option value="spillage">Spillage</option>
+                    <option value="expired">Expired</option>
+                    <option value="contamination">Contamination</option>
+                    <option value="other">Other</option>
+                </select>
+                <input type="text" id="pwSearch" placeholder="Search batch, product, plant...">
+            </div>
+        </div>
+
+        <div class="pw-table-wrap">
+            <table class="pw-table">
+                <thead>
+                    <tr>
+                        <th style="width:55px">ID</th>
+                        <th style="width:90px">Batch</th>
+                        <th>Plant</th>
+                        <th>Product</th>
+                        <th style="width:90px">Type</th>
+                        <th style="width:110px">Qty wasted</th>
+                        <th>Reason</th>
+                        <th style="width:110px">Date</th>
+                        <th style="width:90px;text-align:center">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="pwTableBody">
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="9"><div class="pw-empty">No wastage records found.</div></td>
+                        </tr>
+                    }
+                    @foreach (var w in Model)
+                    {
+                        <tr class="pw-row"
+                            data-search="@w.BatchId @w.ProductName.ToLower() @w.PlantName.ToLower()"
+                            data-reason="@(w.Reason != null ? w.Reason.ToLower() : "")">
+                            <td><span class="pw-id">#@w.WastageId</span></td>
+                            <td><span class="pw-batch-id">PB-@w.BatchId</span></td>
+                            <td style="font-size:13px">@w.PlantName</td>
+                            <td><div class="pw-product-name">@w.ProductName</div></td>
+                            <td><span class="pw-type-pill">@w.ProductType</span></td>
+                            <td>
+                                <span class="pw-qty">@w.Quantity.ToString("N2")</span>
+                                <span style="font-size:11px;color:#aaa"> @w.Unit</span>
+                            </td>
+                            <td><span class="pw-reason">@(w.Reason ?? "—")</span></td>
+                            <td><span class="pw-date">@w.RecordedDate.ToString("dd MMM yyyy")</span></td>
+                            <td style="text-align:center">
+                                <a asp-action="WastageByBatch" asp-route-id="@w.BatchId" class="btn-by-batch">
+                                    By batch
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="pwNoResults" style="display:none">
+                        <td colspan="9"><div class="pw-empty">No records match your filters.</div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pw-card-foot">
+            Showing <span id="pwCount">@Model.Count</span> record(s)
+        </div>
+    </div>
+
 </div>
+
+<script>
+    (function(){
+        var overlay   = document.getElementById('pwOverlay');
+        var drawer    = document.getElementById('pwDrawer');
+        var openBtn   = document.getElementById('pwOpenDrawer');
+        var closeBtn  = document.getElementById('pwDrawerClose');
+        var cancelBtn = document.getElementById('pwDrawerCancel');
+        var submitBtn = document.getElementById('pwSubmitBtn');
+
+        function openDrawer(){
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer(){
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        openBtn.addEventListener('click', openDrawer);
+        closeBtn.addEventListener('click', closeDrawer);
+        cancelBtn.addEventListener('click', closeDrawer);
+        overlay.addEventListener('click', closeDrawer);
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
+
+        // Spinner on submit
+        document.getElementById('pwAddForm').addEventListener('submit', function(){
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Recording...';
+        });
+
+        // Search + reason filter
+        var rows      = document.querySelectorAll('.pw-row');
+        var noResults = document.getElementById('pwNoResults');
+        var countEl   = document.getElementById('pwCount');
+
+        function filter(){
+            var term   = document.getElementById('pwSearch').value.toLowerCase().trim();
+            var reason = document.getElementById('pwReasonFilter').value;
+            var n = 0;
+            rows.forEach(function(r){
+                var matchSearch = !term   || r.dataset.search.includes(term);
+                var matchReason = !reason || r.dataset.reason === reason;
+                var show = matchSearch && matchReason;
+                r.style.display = show ? '' : 'none';
+                if(show) n++;
+            });
+            noResults.style.display = (n===0 && rows.length>0) ? '' : 'none';
+            countEl.textContent = n;
+        }
+
+        document.getElementById('pwSearch').addEventListener('input', filter);
+        document.getElementById('pwReasonFilter').addEventListener('change', filter);
+    })();
+</script>

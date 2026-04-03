@@ -1,0 +1,103 @@
+﻿@model DairyIndustry.Models.Production.MilkTransferModel
+@{
+    ViewData["Title"] = $"Quality Test — Transfer #{Model.TransferId}";
+}
+
+<div class="container py-4" style="max-width:640px">
+
+    <!-- ── Page Header ─────────────────────────────────────── -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Record Quality Test
+        </h4>
+        <small class="text-muted">Transfer #@Model.TransferId — @Model.CenterName → @Model.PlantName</small>
+    </div>
+
+    <!-- ── Transfer Context Card ───────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-truck me-1"></i>Transfer Summary
+        </div>
+        <div class="card-body">
+            <div class="row g-2 text-sm">
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Batch Ref</span>
+                    <strong>@Model.BatchRef</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Vehicle</span>
+                    <strong>@Model.VehicleNumber</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Driver</span>
+                    <strong>@Model.DriverName</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Dispatch Date</span>
+                    <strong>@Model.DispatchDate.ToString("dd MMM yyyy")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Dispatched Qty</span>
+                    <strong>@Model.DispatchQty.ToString("F2") L</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" style="font-size:.8rem">Received Qty</span>
+                    <strong>@(Model.ReceivedQty?.ToString("F2") ?? "-") L</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Quality Test Form ────────────────────────────────── -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white fw-semibold">
+            <i class="bi bi-eyedropper me-1"></i>Enter Quality Readings
+        </div>
+        <div class="card-body">
+            <form asp-action="AddQualityTest" method="post">
+                <input type="hidden" name="transferId" value="@Model.TransferId" />
+
+                <!-- Fat % -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Fat % <span class="text-danger">*</span>
+                        <small class="text-muted fw-normal">(e.g. 3.50)</small>
+                    </label>
+                    <input type="number" name="testedFat" step="0.01" min="0" max="10"
+                           class="form-control" placeholder="Enter fat percentage" required />
+                    <div class="form-text">Acceptable range: 3.00 – 7.00 %</div>
+                </div>
+
+                <!-- CLR -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        CLR <span class="text-danger">*</span>
+                        <small class="text-muted fw-normal">(Corrected Lactometer Reading)</small>
+                    </label>
+                    <input type="number" name="testedCLR" step="0.1" min="20" max="40"
+                           class="form-control" placeholder="Enter CLR value" required />
+                    <div class="form-text">Acceptable range: 26 – 32</div>
+                </div>
+
+                <!-- Test Date -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Test Date <span class="text-danger">*</span>
+                    </label>
+                    <input type="date" name="testDate"
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           class="form-control" required />
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-save me-1"></i>Save Quality Test
+                    </button>
+                    <a asp-action="QualityTests" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

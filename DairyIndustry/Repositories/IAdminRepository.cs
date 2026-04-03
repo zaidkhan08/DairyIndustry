@@ -4,19 +4,25 @@ using System.Data;
 
 namespace DairyIndustry.Repositories
 {
-    
-        public interface IAdminRepository
-        {
-            // ── ROLES ──────────────────────────────────────────────
-            int CreateRole(string roleName);
-            List<RoleModel> GetAllRoles();
 
-            // ── USERS ──────────────────────────────────────────────
-            int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
-            User GetUserByUsername(string username);
-            List<User> GetAllUsers();
-            void UpdateUserStatus(int userId, bool isActive);
+    public interface IAdminRepository
+    {
+        // ── ROLES ──────────────────────────────────────────────
+        int CreateRole(string roleName);
+        List<RoleModel> GetAllRoles();
 
+        // ── USERS ──────────────────────────────────────────────
+        int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
+        User GetUserByUsername(string username);
+        List<User> GetAllUsers();
+        void UpdateUserStatus(int userId, bool isActive);
+
+        // ── AUDIT LOG ──────────────────────────────────────────
+        void WriteAuditLog(int userId, string action, string entityName);
+        List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
+
+        //Added By Zaid
+        int? GetPlantIdByUser(int userId);
         // ── AUDIT LOG ──────────────────────────────────────────
         void WriteAuditLog(int userId, string action, string entityName);
             List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
@@ -77,7 +83,7 @@ namespace DairyIndustry.Repositories
         // PLANT
         // ════════════════════════════════════════════════════════
 
-        int AddPlant(string PlantName,string Location);
+        int AddPlant(string PlantName, string Location);
 
         List<PlantModel> GetAllPlants(bool? isActive = true);
         void TogglePlant(int id, bool isActive);

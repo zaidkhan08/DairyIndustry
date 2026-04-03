@@ -1,0 +1,229 @@
+﻿@{
+    ViewData["Title"] = "New Center Payment";
+    var transfers = ViewBag.Transfers as List<DairyIndustry.Models.Finance.TransferForPaymentModel>
+                    ?? new List<DairyIndustry.Models.Finance.TransferForPaymentModel>();
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+
+}
+
+<div class="page-header mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a asp-action="CenterPayments">Center Payments</a></li>
+            <li class="breadcrumb-item active">New Payment</li>
+        </ol>
+    </nav>
+    <h4 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-primary"></i>New Center Payment</h4>
+    <small class="text-muted">Select a received transfer — details are auto-filled from the database.</small>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <!-- STEP 1: SELECT TRANSFER -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+                <span class="badge bg-white text-primary fw-bold">1</span>
+                <span class="fw-semibold">Select Transfer</span>
+            </div>
+            <div class="card-body">
+                @if (!transfers.Any())
+                {
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No eligible transfers found. All received transfers have already been paid,
+                        or no transfers have been received yet.
+                    </div>
+                }
+                else
+                {
+                    <label class="form-label fw-semibold">Received Milk Transfer <span class="text-danger">*</span></label>
+                    <select id="transferSelect" class="form-select form-select-lg">
+                        <option value="">— Select a transfer —</option>
+                        @foreach (var t in transfers)
+                        {
+                            <option value="@t.TransferId">@t.DisplayText</option>
+                        }
+                    </select>
+                    <div class="form-text mt-1">Only transfers with <strong>ReceivedDate</strong> and no existing payment are shown.</div>
+                }
+            </div>
+        </div>
+
+        <!-- STEP 2: AUTO-FILL PREVIEW (hidden until transfer selected) -->
+        <div id="previewCard" class="card shadow-sm mb-3 d-none">
+            <div class="card-header bg-light d-flex align-items-center gap-2">
+                <span class="badge bg-primary fw-bold">2</span>
+                <span class="fw-semibold">Auto-filled Payment Details</span>
+                <span id="rateWarning" class="ms-auto badge bg-warning text-dark d-none">
+                    <i class="bi bi-exclamation-triangle me-1"></i>No rate found — enter manually
+                </span>
+            </div>
+            <div class="card-body">
+
+                <!-- Info grid -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="info-box border rounded p-3 bg-light h-100">
+                            <div class="text-muted small mb-1">Collection Center</div>
+                            <div id="displayCenter" class="fw-semibold">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-box border rounded p-3 bg-light h-100">
+                            <div class="text-muted small mb-1">Processing Plant</div>
+                            <div id="displayPlant" class="fw-semibold">—</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="info-box border rounded p-3 bg-light h-100">
+                            <div class="text-muted small mb-1">Received Qty (L)</div>
+                            <div id="displayQty" class="fw-semibold fs-5">—</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="info-box border rounded p-3 bg-light h-100">
+                            <div class="text-muted small mb-1">Tested Fat %</div>
+                            <div id="displayFat" class="fw-semibold">—</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="info-box border rounded p-3 bg-light h-100">
+                            <div class="text-muted small mb-1">Tested CLR</div>
+                            <div id="displayCLR" class="fw-semibold">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate (editable in case auto-lookup fails) -->
+                <div class="row g-3 align-items-end mb-3">
+                    <div class="col-5">
+                        <label class="form-label fw-semibold">Rate per Liter (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" id="rateInput" class="form-control"
+                                   step="0.01" min="0.01" placeholder="Auto-filled from Rate Chart"
+                                   oninput="recalcTotal()" />
+                        </div>
+                        <div class="form-text">Auto-looked up from <strong>Finance.RateCharts</strong>. Edit if needed.</div>
+                    </div>
+                    <div class="col-2 text-center fs-4 text-muted pb-2">×</div>
+                    <div class="col-5">
+                        <label class="form-label fw-semibold">Received Qty (L)</label>
+                        <input type="text" id="qtyDisplay" class="form-control bg-light" readonly />
+                    </div>
+                </div>
+
+                <!-- Total amount -->
+                <div class="alert alert-primary d-flex justify-content-between align-items-center mb-0">
+                    <span class="fw-semibold fs-5">Total Amount</span>
+                    <span id="displayTotal" class="fw-bold fs-4">₹ —</span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- STEP 3: CONFIRM & CREATE -->
+        <div id="confirmCard" class="d-none">
+            <form asp-action="CreateCenterPayment" method="post" id="paymentForm">
+                <input type="hidden" name="transferId" id="hiddenTransferId" />
+                <input type="hidden" name="ratePerLiter" id="hiddenRate" />
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg" id="confirmBtn">
+                        <i class="bi bi-check2-circle me-2"></i>Confirm &amp; Create Payment Record
+                    </button>
+                    <a asp-action="CenterPayments" class="btn btn-outline-secondary">
+                        <i class="bi bi-x me-1"></i>Cancel
+                    </a>
+                </div>
+                <p class="text-muted small text-center mt-2">
+                    This creates a <strong>Pending</strong> record. You'll be redirected to pay via Stripe.
+                </p>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const transferSelect = document.getElementById('transferSelect');
+        const previewCard    = document.getElementById('previewCard');
+        const confirmCard    = document.getElementById('confirmCard');
+        const rateWarning    = document.getElementById('rateWarning');
+
+        let currentQty = 0;
+
+        transferSelect?.addEventListener('change', function () {
+            const id = this.value;
+            if (!id) {
+                previewCard.classList.add('d-none');
+                confirmCard.classList.add('d-none');
+                return;
+            }
+
+            // Show loading state
+            previewCard.classList.remove('d-none');
+            confirmCard.classList.add('d-none');
+            document.getElementById('displayCenter').textContent = '...';
+            document.getElementById('displayPlant').textContent  = '...';
+
+            fetch(`/Finance/GetTransferDetails?transferId=${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(data.message || 'Could not load transfer details.');
+                        previewCard.classList.add('d-none');
+                        return;
+                    }
+
+                    // Populate display fields
+                    document.getElementById('displayCenter').textContent = `Center #${data.centerId}`;
+                    document.getElementById('displayPlant').textContent  = `Plant #${data.plantId}`;
+                    document.getElementById('displayQty').textContent    = parseFloat(data.receivedQty).toFixed(2) + ' L';
+                    document.getElementById('displayFat').textContent    = data.testedFat  != null ? parseFloat(data.testedFat).toFixed(2)  + ' %' : '—';
+                    document.getElementById('displayCLR').textContent    = data.testedCLR  != null ? parseFloat(data.testedCLR).toFixed(2)         : '—';
+
+                    currentQty = parseFloat(data.receivedQty) || 0;
+                    document.getElementById('qtyDisplay').value = currentQty.toFixed(2);
+
+                    // Rate
+                    const rateInput = document.getElementById('rateInput');
+                    if (data.hasRate) {
+                        rateInput.value = parseFloat(data.ratePerLiter).toFixed(2);
+                        rateWarning.classList.add('d-none');
+                    } else {
+                        rateInput.value = '';
+                        rateWarning.classList.remove('d-none');
+                    }
+
+                    recalcTotal();
+
+                    // Hidden fields
+                    document.getElementById('hiddenTransferId').value = data.transferId;
+                    confirmCard.classList.remove('d-none');
+                })
+                .catch(() => alert('Error fetching transfer details. Please try again.'));
+        });
+
+        function recalcTotal() {
+            const rate  = parseFloat(document.getElementById('rateInput').value) || 0;
+            const total = rate * currentQty;
+            document.getElementById('displayTotal').textContent = '₹ ' + total.toFixed(2);
+            document.getElementById('hiddenRate').value         = rate.toFixed(2);
+
+            // Disable confirm if rate is 0
+            const btn = document.getElementById('confirmBtn');
+            if (btn) btn.disabled = (rate <= 0);
+        }
+    </script>
+}

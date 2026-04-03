@@ -10,30 +10,39 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         List<FarmerDropdownModel> GetAllFarmers();
         List<CenterDropdownModel> GetAllCenters();
+
         // ════════════════════════════════════════════════════════
         // FARMER PAYMENTS
         // ════════════════════════════════════════════════════════
 
-        // Preview — calculate totals before creating payment
         FarmerPaymentPreviewModel PreviewFarmerPayment(int farmerId, int centerId,
                                                        DateTime fromDate, DateTime toDate);
-
-        // Create payment record (status = Pending) using SP 8.4
         int CreateFarmerPayment(int centerId, int farmerId,
                                 DateTime fromDate, DateTime toDate, DateTime paymentDate);
-
-        // List all farmer payments
         List<FarmerPaymentModel> GetAllFarmerPayments();
-
-        // Get single payment by ID
         FarmerPaymentModel GetFarmerPaymentById(int paymentId);
         CenterDropdownModel GetFarmerDefaultCenter(int farmerId);
-
-        // Check if farmer has bank account linked
         bool FarmerHasBankAccount(int farmerId);
-
-        // Record Stripe transaction + update status using SP 8.7
         void RecordPaymentTransaction(string paymentType, int paymentId,
                                       string bankStatus, string transactionReference);
+
+        // ════════════════════════════════════════════════════════
+        // CENTER PAYMENTS
+        // ════════════════════════════════════════════════════════
+
+        // Get eligible transfers: ReceivedDate IS NOT NULL, no existing CenterPayment
+        List<TransferForPaymentModel> GetEligibleTransfers();
+
+        // Look up rate from Finance.RateCharts via SP
+        decimal GetActiveRate(int milkTypeId, decimal fat, decimal clr);
+
+        // Create center payment record (status = Pending)
+        int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate);
+
+        // List all center payments (for index page)
+        List<CenterPaymentModel> GetAllCenterPayments();
+
+        // Get single center payment by ID (for detail/pay page)
+        CenterPaymentModel GetCenterPaymentById(int centerPaymentId);
     }
 }
