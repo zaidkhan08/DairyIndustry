@@ -198,6 +198,23 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public void AssignUserToCenter(int userId, int centerId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_AssignUserToCenter", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@CenterId", centerId);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         // ════════════════════════════════════════════════════════
         // AUDIT LOG
         // ════════════════════════════════════════════════════════
@@ -708,7 +725,7 @@ namespace DairyIndustry.Repositories
                                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                                 CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
                                 CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
                                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
                                 PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString()
@@ -800,11 +817,14 @@ namespace DairyIndustry.Repositories
                                 RoleName = reader["RoleName"].ToString(),
                                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                Salary = reader["Salary"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["Salary"]),
                                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
-                                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+                                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
+                                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString()
                             };
                         }
                     }
@@ -816,17 +836,17 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
-        public int AddPlant(string PlantName,string Location)
+        public int AddPlant(string PlantName, string Location)
         {
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Production.usp_Production_AddPlant", con))
                 {
-                    cmd.CommandType=CommandType.StoredProcedure;
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@PlantName", PlantName);
                     cmd.Parameters.AddWithValue("@Location", Location);
                     con.Open();
-                    var result=cmd.ExecuteScalar();
+                    var result = cmd.ExecuteScalar();
                     return Convert.ToInt32(result);
                 }
             }

@@ -16,7 +16,6 @@ namespace DairyIndustry.Repositories
             User GetUserByUsername(string username);
             List<User> GetAllUsers();
             void UpdateUserStatus(int userId, bool isActive);
-            void AssignUserToPlant(int userId, int plantId);
 
         // ── AUDIT LOG ──────────────────────────────────────────
         void WriteAuditLog(int userId, string action, string entityName);
@@ -71,7 +70,9 @@ namespace DairyIndustry.Repositories
         void ToggleStaffActive(int staffId, bool isActive);
         List<StaffModel> GetUnlinkedStaff();
         StaffModel GetStaffById(int staffId);
+        void AssignUserToPlant(int userId, int plantId);
 
+        void AssignUserToCenter(int userId, int centerId);
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════

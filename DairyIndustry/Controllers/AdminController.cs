@@ -13,11 +13,11 @@ namespace DairyIndustry.Controllers
         private readonly IReportRepository _reportRepo;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo,IReportRepository reportRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
-            _reportRepo= reportRepo;
+            _reportRepo = reportRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -176,8 +176,8 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult AssignUserToPlant()
         {
-            ViewBag.Users = _adminRepo.GetAllUsers();   
-            ViewBag.Plants = _adminRepo.GetAllPlants(); 
+            ViewBag.Users = _adminRepo.GetAllUsers();
+            ViewBag.Plants = _adminRepo.GetAllPlants();
 
             return View();
         }
@@ -199,7 +199,33 @@ namespace DairyIndustry.Controllers
 
             return RedirectToAction("Users");
         }
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult AssignUserToCenter()
+        {
+            ViewBag.Users = _adminRepo.GetAllUsers();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
 
+            return View();
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult AssignUserToCenter(int userId, int centerId)
+        {
+            if (userId == 0 || centerId == 0)
+            {
+                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Users = _adminRepo.GetAllUsers();
+                ViewBag.center = _adminRepo.GetAllCenters();
+                return View();
+            }
+
+            _adminRepo.AssignUserToPlant(userId, centerId);
+
+            TempData["Success"] = "User assigned to center successfully.";
+
+            return RedirectToAction("Users");
+        }
 
         // ════════════════════════════════════════════════════════
         // AUDIT LOGS
@@ -328,12 +354,24 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        public IActionResult GetStaffById(int id)
+        {
+            var staff = _adminRepo.GetStaffById(id);
+            if (staff == null)
+            {
+                TempData["Error"] = "Staff not found.";
+                return RedirectToAction("staff");
+            }
+            return View(staff);
+        }
+
+        [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddStaff(string firstName, string lastName,
                                string phone, string email,
                                int roleId, DateTime? doj,
                                string bankName, string accountNumber,
-                               string ifscCode, IFormFile profilePhoto,Decimal Salary,
+                               string ifscCode, IFormFile profilePhoto, Decimal Salary,
                                int? centerId, int? plantId)   // NEW
         {
             // Validate — cannot assign both
@@ -384,14 +422,12 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Staff");
         }
 
-        
-
-
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult ToggleStaffActive(int staffId, bool isActive)
+        public IActionResult ToggleStaffActive(int staffId, int isActive)
         {
-            _adminRepo.ToggleStaffActive(staffId, isActive);
+            _adminRepo.ToggleStaffActive(staffId, isActive == 1);
+            TempData["Success"] = isActive == 1 ? "Staff activated." : "Staff deactivated.";
             return RedirectToAction("Staff");
         }
 
@@ -463,7 +499,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════
-        
+
         [SessionAuthorize("Admin")]
         public IActionResult Products(string productType = null, bool? isActive = null)
         {
