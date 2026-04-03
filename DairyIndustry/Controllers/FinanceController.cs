@@ -1,12 +1,13 @@
-﻿using DairyIndustry.Models.Finance;
+﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Admin;
+using DairyIndustry.Models.Finance;
 using DairyIndustry.Repositories;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Stripe.Checkout;
 using System.Text;
-using DinkToPdf;
-using DinkToPdf.Contracts;
 
 namespace DairyIndustry.Controllers
 {
@@ -201,7 +202,7 @@ namespace DairyIndustry.Controllers
             string payDate = p.PaymentDate.ToString("dd MMM yyyy");
             string qty = p.TotalQty.ToString("N2");
             string amt = p.TotalAmount.ToString("N2");
-           // string amtInWords = ConvertToWords((long)p.TotalAmount) + " Rupees Only";
+            // string amtInWords = ConvertToWords((long)p.TotalAmount) + " Rupees Only";
 
             var sb = new StringBuilder();
             sb.Append("<!DOCTYPE html><html><head><meta charset='utf-8'/><style>");
@@ -274,7 +275,7 @@ namespace DairyIndustry.Controllers
             sb.Append("</table></div>");
 
             // AMOUNT IN WORDS
-          //  sb.Append($"<div class='words-box'><span>Amount in Words</span>{amtInWords}</div>");
+            //  sb.Append($"<div class='words-box'><span>Amount in Words</span>{amtInWords}</div>");
 
             // BOTTOM: BANK + SIGNATURE
             sb.Append("<div class='bottom-row'>");
@@ -339,7 +340,180 @@ namespace DairyIndustry.Controllers
             });
         }
 
+        //Recent
 
+        // ============================================================
+        // ADD THESE ACTIONS TO: FinanceController.cs
+        // ============================================================
+        // Already injected in constructor:
+        //   private readonly IFinanceRepository _financeRepo;
+        //   private readonly IConfiguration _config;
+        //   private readonly IConverter _pdfConverter;
+        // ============================================================
+
+        // ────────────────────────────────────────────────────────
+        // INDEX — list all center payments
+        // ────────────────────────────────────────────────────────
+        [SessionAuthorize("Admin")]
+        public IActionResult CenterPayments()
+        {
+            var payments = _financeRepo.GetAllCenterPayments();
+            return View(payments);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // CREATE GET — show the form with eligible transfer dropdown
+        // ────────────────────────────────────────────────────────
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult CreateCenterPayment()
+        {
+            var transfers = _financeRepo.GetEligibleTransfers();
+            ViewBag.Transfers = transfers;
+            return View();
+        }
+
+        // ────────────────────────────────────────────────────────
+        // AUTO-FILL AJAX — called when user selects a transfer
+        // Returns: CenterId, PlantId, ReceivedQty, Fat, CLR, Rate, Total
+        // ────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult GetTransferDetails(int transferId)
+        {
+            var transfers = _financeRepo.GetEligibleTransfers();
+            var t = transfers.FirstOrDefault(x => x.TransferId == transferId);
+            if (t == null)
+                return Json(new { success = false, message = "Transfer not found." });
+
+            decimal rate = 0m;
+            if (t.MilkTypeId.HasValue && t.TestedFat.HasValue && t.TestedCLR.HasValue)
+                rate = _financeRepo.GetActiveRate(t.MilkTypeId.Value, t.TestedFat.Value, t.TestedCLR.Value);
+
+            decimal total = t.ReceivedQty * rate;
+
+            return Json(new
+            {
+                success = true,
+                transferId = t.TransferId,
+                centerId = t.CenterId,
+                plantId = t.PlantId,
+                receivedQty = t.ReceivedQty,
+                testedFat = t.TestedFat,
+                testedCLR = t.TestedCLR,
+                ratePerLiter = rate,
+                totalAmount = total,
+                hasRate = rate > 0
+            });
+        }
+
+        // ────────────────────────────────────────────────────────
+        // CREATE POST — confirm & create Pending record
+        // ────────────────────────────────────────────────────────
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter)
+        {
+            try
+            {
+                int cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
+                TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
+                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CreateCenterPayment");
+            }
+        }
+
+        // ────────────────────────────────────────────────────────
+        // DETAIL — show payment summary + Pay button
+        // ────────────────────────────────────────────────────────
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        [Route("Finance/CenterPaymentDetail/{id}")]
+        public IActionResult CenterPaymentDetail(int id)
+        {
+            var payment = _financeRepo.GetCenterPaymentById(id);
+            if (payment == null) return NotFound();
+            ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
+            return View(payment);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // STRIPE CHECKOUT SESSION for Center Payment
+        // ────────────────────────────────────────────────────────
+        [HttpPost]
+        public IActionResult CreateCenterCheckoutSession(int centerPaymentId, decimal totalAmount, string centerName)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var domain = $"{Request.Scheme}://{Request.Host}";
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+        {
+            new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency   = "inr",
+                    UnitAmount = (long)(totalAmount * 100),
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name        = $"Center Payment - {centerName}",
+                        Description = $"Center Payment ID: {centerPaymentId}"
+                    }
+                },
+                Quantity = 1
+            }
+        },
+                Mode = "payment",
+                SuccessUrl = $"{domain}/Finance/CenterPaymentSuccess?centerPaymentId={centerPaymentId}&session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{domain}/Finance/CenterPaymentCancelled?centerPaymentId={centerPaymentId}",
+                Metadata = new Dictionary<string, string>
+        {
+            { "paymentId",   centerPaymentId.ToString() },
+            { "paymentType", "Center" }
+        }
+            };
+
+            var service = new SessionService();
+            Session session = service.Create(options);
+            return Redirect(session.Url);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // STRIPE SUCCESS for Center Payment
+        // ────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult CenterPaymentSuccess(int centerPaymentId, string session_id)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var service = new SessionService();
+            Session session = service.Get(session_id);
+            string bankStatus = session.PaymentStatus == "paid" ? "Success" : "Failed";
+
+            // Reuses the same SP — just passes PaymentType = 'Center'
+            _financeRepo.RecordPaymentTransaction("Center", centerPaymentId, bankStatus, session_id);
+
+            TempData["Success"] = bankStatus == "Success"
+                ? $"Center payment processed successfully! Transaction: {session_id}"
+                : $"Payment failed. Transaction: {session_id}";
+
+            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
+        }
+
+        // ────────────────────────────────────────────────────────
+        // STRIPE CANCELLED for Center Payment
+        // ────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult CenterPaymentCancelled(int centerPaymentId)
+        {
+            TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
+            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
+        }
 
     }
 }

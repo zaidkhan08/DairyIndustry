@@ -1,0 +1,262 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Finance Management</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            padding-top: 56px;
+        }
+
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            transition: all 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+            .sidebar.collapsed {
+                margin-left: -250px;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+            padding: 20px;
+        }
+
+            .main-content.full-width {
+                margin-left: 0;
+            }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            border-radius: 0;
+            padding: 12px 20px;
+        }
+
+            .nav-link:hover, .nav-link:focus {
+                color: white;
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-link.active {
+                color: white;
+                background-color: #0d6efd;
+            }
+
+        .section-header {
+            padding: 15px 20px 5px 20px;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #adb5bd;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 70px;
+            left: 260px;
+            z-index: 999;
+            transition: all 0.3s;
+        }
+
+            .toggle-btn.collapsed {
+                left: 10px;
+            }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+
+                .sidebar.show {
+                    margin-left: 0;
+                }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .toggle-btn {
+                left: 10px;
+            }
+
+                .toggle-btn.collapsed {
+                    left: 10px;
+                }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-rupee-sign me-2"></i>Dairy Finance
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="@Url.Action("Index", "Admin")">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="@Url.Action("Logout", "Admin")">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="financeSidebar">
+        <div class="p-3 border-bottom border-secondary">
+            <h5 class="mb-0">
+                <i class="fas fa-user-circle me-2"></i>Finance Panel
+            </h5>
+           
+        </div>
+
+        <div class="section-header">
+            <i class="fas fa-seedling me-2"></i>Farmer Payments
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Index" && ViewContext.RouteData.Values["controller"].ToString() == "Finance" ? "active" : "")"
+                   href="@Url.Action("Index", "Finance")">
+                    <i class="fas fa-list me-2"></i>All Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Create" && ViewContext.RouteData.Values["controller"].ToString() == "Finance" ? "active" : "")"
+                   href="@Url.Action("Create", "Finance")">
+                    <i class="fas fa-plus-circle me-2"></i>Create Payment
+                </a>
+            </li>
+        </ul>
+
+        <div class="section-header">
+            <i class="fas fa-building me-2"></i>Center Payments
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "CenterPayments" ? "active" : "")"
+                   href="@Url.Action("CenterPayments", "Finance")">
+                    <i class="fas fa-list me-2"></i>All Center Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "CreateCenterPayment" ? "active" : "")"
+                   href="@Url.Action("CreateCenterPayment", "Finance")">
+                    <i class="fas fa-plus-circle me-2"></i>Create Center Payment
+                </a>
+            </li>
+        </ul>
+
+        <div class="section-header">
+            <i class="fas fa-chart-bar me-2"></i>Reports
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Payment Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-chart-line me-2"></i>Financial Summary
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Toggle Button -->
+    <button class="btn btn-primary toggle-btn" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="container-fluid">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('financeSidebar');
+            const mainContent = document.getElementById('mainContent');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const toggleIcon = toggleBtn.querySelector('i');
+
+            // Check localStorage for sidebar state
+            const isSidebarCollapsed = localStorage.getItem('financeSidebarCollapsed') === 'true';
+
+            if (isSidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('full-width');
+                toggleIcon.classList.remove('fa-bars');
+                toggleIcon.classList.add('fa-arrow-right');
+            }
+
+            toggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('full-width');
+
+                if (sidebar.classList.contains('collapsed')) {
+                    toggleIcon.classList.remove('fa-bars');
+                    toggleIcon.classList.add('fa-arrow-right');
+                    localStorage.setItem('financeSidebarCollapsed', 'true');
+                } else {
+                    toggleIcon.classList.remove('fa-arrow-right');
+                    toggleIcon.classList.add('fa-bars');
+                    localStorage.setItem('financeSidebarCollapsed', 'false');
+                }
+            });
+
+            // Mobile menu toggle
+            const mobileToggle = document.querySelector('.navbar-toggler');
+            mobileToggle?.addEventListener('click', function() {
+                sidebar.classList.toggle('show');
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

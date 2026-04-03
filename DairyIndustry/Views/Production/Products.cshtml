@@ -1,172 +1,942 @@
 ﻿@model List<DairyIndustry.Models.Production.ProductModel>
+
 @{
     ViewData["Title"] = "Products";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
 }
 
-@if (TempData["Success"] != null)
-{
+<style>
+    .pp-page {
+        padding: 24px;
+        font-family: inherit;
+    }
 
+    .pp-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 18px;
+    }
 
+    .pp-alert-success {
+        background: #EAF3DE;
+        border: 1px solid #C0DD97;
+        color: #3B6D11;
+    }
 
-    @TempData["Success"]
+    .pp-alert-error {
+        background: #FCEBEB;
+        border: 1px solid #F7C1C1;
+        color: #A32D2D;
+    }
 
+    .pp-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        color: inherit;
+    }
 
+    .pp-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
 
-}
+    .pp-page-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
 
-@* LEFT: ADD FORM *@
-<div class="col-lg-4">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header bg-dark py-3">
-            <h6 class="card-title mb-0 text-white fw-bold">
-                <i class="bi bi-plus-lg me-2"></i>Add New Product
-            </h6>
+    .pp-page-sub {
+        font-size: 12px;
+        color: #888;
+        margin-top: 3px;
+    }
+
+    .btn-new-product {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #185FA5;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .15s;
+        white-space: nowrap;
+    }
+
+        .btn-new-product:hover {
+            background: #0C447C;
+        }
+
+    .pp-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .pp-stat {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 10px;
+        padding: 14px 16px;
+    }
+
+    .pp-stat-label {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .pp-stat-val {
+        font-size: 22px;
+        font-weight: 600;
+        color: #111;
+    }
+
+        .pp-stat-val.blue {
+            color: #185FA5;
+        }
+
+        .pp-stat-val.green {
+            color: #3B6D11;
+        }
+
+        .pp-stat-val.amber {
+            color: #854F0B;
+        }
+
+    @@media (max-width: 640px) {
+        .pp-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .pp-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .pp-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pp-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .pp-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+        .pp-filters select, .pp-filters input {
+            padding: 7px 11px;
+            font-size: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 7px;
+            background: #fafafa;
+            color: #333;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+            .pp-filters select:focus, .pp-filters input:focus {
+                border-color: #185FA5;
+            }
+
+        .pp-filters input {
+            width: 200px;
+        }
+
+    .pp-table-wrap {
+        overflow-x: auto;
+    }
+
+    .pp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .pp-table thead th {
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            white-space: nowrap;
+        }
+
+        .pp-table tbody tr {
+            border-bottom: 1px solid #f5f5f5;
+            transition: background .1s;
+        }
+
+            .pp-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .pp-table tbody tr:hover {
+                background: #f9fbff;
+            }
+
+        .pp-table tbody td {
+            padding: 11px 16px;
+            color: #222;
+            vertical-align: middle;
+        }
+
+    .pp-id {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        color: #aaa;
+        font-weight: 600;
+    }
+
+    .pp-product-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #111;
+    }
+
+    .pp-type-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+        background: #f0f0f0;
+        color: #555;
+    }
+
+    .pp-mrp {
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: #111;
+    }
+
+    .pp-shelf {
+        font-size: 12px;
+        color: #888;
+    }
+
+    .pp-action-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .btn-edit-row {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid #dde4f0;
+        border-radius: 6px;
+        background: #f0f4ff;
+        color: #185FA5;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .btn-edit-row:hover {
+            background: #dde4f0;
+        }
+
+    .btn-delete-row {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid #fdd;
+        border-radius: 6px;
+        background: #fff5f5;
+        color: #A32D2D;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .btn-delete-row:hover {
+            background: #fdd;
+        }
+
+    .pp-card-foot {
+        padding: 10px 18px;
+        border-top: 1px solid #f0f0f0;
+        font-size: 11px;
+        color: #bbb;
+    }
+
+    .pp-empty {
+        padding: 48px 20px;
+        text-align: center;
+        color: #ccc;
+        font-size: 13px;
+    }
+
+    /* ── Shared drawer shell ── */
+    .pp-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .28s ease;
+        z-index: 1040;
+    }
+
+        .pp-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .pp-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 400px;
+        max-width: 100vw;
+        height: 100vh;
+        background: #fff;
+        border-left: 1px solid #e8e8e8;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform .32s cubic-bezier(.4,0,.2,1);
+        z-index: 1050;
+    }
+
+        .pp-drawer.open {
+            transform: translateX(0);
+        }
+
+    .pp-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .pp-drawer-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
+
+    .pp-drawer-sub {
+        font-size: 12px;
+        color: #aaa;
+        margin-top: 3px;
+    }
+
+    .pp-drawer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        border: 1px solid #ebebeb;
+        background: #fafafa;
+        cursor: pointer;
+        font-size: 15px;
+        color: #888;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .pp-drawer-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+    .pp-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ── Fields inside drawer ── */
+    .pp-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .pp-field label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .pp-field input, .pp-field select {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 13px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+            color: #222;
+            outline: none;
+            transition: border-color .15s, background .15s;
+        }
+
+            .pp-field input:focus, .pp-field select:focus {
+                border-color: #185FA5;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(24,95,165,.1);
+            }
+
+    .pp-field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .pp-field-hint {
+        font-size: 10px;
+        color: #bbb;
+    }
+
+    .pp-field-opt {
+        font-size: 10px;
+        color: #bbb;
+        font-weight: 400;
+        margin-left: 2px;
+    }
+
+    .pp-divider {
+        height: 1px;
+        background: #f0f0f0;
+    }
+
+    .pp-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #bbb;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .pp-drawer-foot {
+        padding: 14px 22px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+
+    .btn-drawer-cancel {
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        color: #666;
+        cursor: pointer;
+        transition: background .12s;
+    }
+
+        .btn-drawer-cancel:hover {
+            background: #f5f5f5;
+        }
+
+    .btn-drawer-submit {
+        padding: 9px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: #185FA5;
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-drawer-submit:hover {
+            background: #0C447C;
+        }
+
+    /* ── Delete modal ── */
+    .pp-modal-wrap {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,.28);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s;
+        z-index: 1060;
+    }
+
+        .pp-modal-wrap.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .pp-modal {
+        background: #fff;
+        border-radius: 12px;
+        padding: 28px 28px 22px;
+        width: 340px;
+        max-width: 90vw;
+        transform: scale(.95);
+        transition: transform .2s;
+    }
+
+    .pp-modal-wrap.open .pp-modal {
+        transform: scale(1);
+    }
+
+    .pp-modal-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+        margin: 0 0 8px;
+    }
+
+    .pp-modal-body {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 22px;
+        line-height: 1.5;
+    }
+
+    .pp-modal-name {
+        font-weight: 600;
+        color: #111;
+    }
+
+    .pp-modal-foot {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn-modal-cancel {
+        padding: 8px 18px;
+        font-size: 13px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        color: #666;
+        cursor: pointer;
+    }
+
+    .btn-modal-delete {
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: #A32D2D;
+        color: #fff;
+        cursor: pointer;
+    }
+
+        .btn-modal-delete:hover {
+            background: #791F1F;
+        }
+</style>
+
+<div class="pp-overlay" id="ppOverlay"></div>
+
+@* ══════════════════════ ADD DRAWER ══════════════════════ *@
+<div class="pp-drawer" id="ppAddDrawer" role="dialog" aria-modal="true">
+    <div class="pp-drawer-head">
+        <div>
+            <p class="pp-drawer-title">Add new product</p>
+            <p class="pp-drawer-sub">Fill in details to add to the catalog</p>
         </div>
-        <div class="card-body p-4">
-            <form asp-action="AddProduct" method="post">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Product Name</label>
-                    <input type="text" name="productName" class="form-control form-control-lg fs-6 rounded-3 shadow-none border-light bg-light bg-opacity-50" placeholder="e.g. Full Cream Milk" required />
-                </div>
+        <button class="pp-drawer-close" id="ppAddClose">&times;</button>
+    </div>
+    <div class="pp-drawer-body">
+        <form asp-action="AddProduct" method="post" id="ppAddForm">
 
-                <div class="row g-2 mb-3">
-                    <div class="col-md-12">
-                        <label class="form-label fw-semibold small">Product Type</label>
-                        <select name="productType" class="form-select rounded-3 border-light bg-light bg-opacity-50" required>
-                            <option value="">-- Select Type --</option>
-                            <option value="Milk">🥛 Milk</option>
-                            <option value="Butter">🧈 Butter</option>
-                            <option value="Ghee">🍯 Ghee</option>
-                            <option value="Paneer">🧀 Paneer</option>
-                            <option value="Curd">🥣 Curd</option>
-                            <option value="Cheese">🍕 Cheese</option>
-                            <option value="Cream">🍦 Cream</option>
-                            <option value="IceCream">🍨 Ice Cream</option>
-                            <option value="Other">✨ Other</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="pp-section-label" style="margin-bottom:12px">Product details</div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label class="form-label fw-semibold small">MRP (₹)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-light text-muted">₹</span>
-                            <input type="number" name="mrp" class="form-control rounded-3 border-light bg-light bg-opacity-50" step="0.01" min="0" placeholder="0.00" required />
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label fw-semibold small">Unit</label>
-                        <select name="unit" class="form-select rounded-3 border-light bg-light bg-opacity-50" required>
-                            <option value="">Select Unit</option>
-                            <option value="Ltr">Ltr</option>
-                            <option value="Kg">Kg</option>
-                            <option value="Gm">Gm</option>
-                            <option value="Pcs">Pcs</option>
-                            <option value="Ml">Ml</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="pp-field" style="margin-bottom:14px">
+                <label>Product name</label>
+                <input type="text" name="productName" id="add-name" placeholder="e.g. Full Cream Milk" required />
+            </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-semibold small">Shelf Life (Days)</label>
-                    <input type="number" name="shelfLifeDays" class="form-control rounded-3 border-light bg-light bg-opacity-50" min="1" placeholder="Optional" />
-                </div>
+            <div class="pp-field" style="margin-bottom:0">
+                <label>Product type</label>
+                <select name="productType" required>
+                    <option value="">— Select type —</option>
+                    <option value="Milk">Milk</option>
+                    <option value="Butter">Butter</option>
+                    <option value="Ghee">Ghee</option>
+                    <option value="Paneer">Paneer</option>
+                    <option value="Curd">Curd</option>
+                    <option value="Cheese">Cheese</option>
+                    <option value="Cream">Cream</option>
+                    <option value="IceCream">Ice Cream</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
 
-                <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm transition-all hover-up">
-                    <i class="bi bi-cloud-arrow-up me-2"></i>Save Product
-                </button>
+            <div class="pp-divider" style="margin:18px 0"></div>
+            <div class="pp-section-label" style="margin-bottom:12px">Pricing &amp; packaging</div>
+
+            <div class="pp-field-row" style="margin-bottom:14px">
+                <div class="pp-field">
+                    <label>MRP (₹)</label>
+                    <input type="number" name="mrp" step="0.01" min="0" placeholder="0.00" required />
+                </div>
+                <div class="pp-field">
+                    <label>Unit</label>
+                    <select name="unit" required>
+                        <option value="">Select</option>
+                        <option value="Ltr">Ltr</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Gm">Gm</option>
+                        <option value="Pcs">Pcs</option>
+                        <option value="Ml">Ml</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pp-field">
+                <label>Shelf life (days) <span class="pp-field-opt">(optional)</span></label>
+                <input type="number" name="shelfLifeDays" min="1" placeholder="e.g. 7" />
+                <span class="pp-field-hint">Leave blank if not applicable</span>
+            </div>
+
+        </form>
+    </div>
+    <div class="pp-drawer-foot">
+        <button type="button" class="btn-drawer-cancel" id="ppAddCancel">Cancel</button>
+        <button type="submit" form="ppAddForm" class="btn-drawer-submit">Save product</button>
+    </div>
+</div>
+
+@* ══════════════════════ EDIT DRAWER ══════════════════════ *@
+<div class="pp-drawer" id="ppEditDrawer" role="dialog" aria-modal="true">
+    <div class="pp-drawer-head">
+        <div>
+            <p class="pp-drawer-title">Edit product</p>
+            <p class="pp-drawer-sub" id="ppEditSub">Update product details</p>
+        </div>
+        <button class="pp-drawer-close" id="ppEditClose">&times;</button>
+    </div>
+    <div class="pp-drawer-body">
+        <form asp-action="EditProduct" method="post" id="ppEditForm">
+            <input type="hidden" name="ProductId" id="edit-id" />
+
+            <div class="pp-section-label" style="margin-bottom:12px">Product details</div>
+
+            <div class="pp-field" style="margin-bottom:14px">
+                <label>Product name</label>
+                <input type="text" name="ProductName" id="edit-name" required />
+            </div>
+
+            <div class="pp-field" style="margin-bottom:0">
+                <label>Product type</label>
+                <select name="ProductType" id="edit-type" required>
+                    @foreach (var t in new[] { "Milk", "Butter", "Ghee", "Paneer", "Curd", "Cheese", "Cream", "IceCream", "Other" })
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+
+            <div class="pp-divider" style="margin:18px 0"></div>
+            <div class="pp-section-label" style="margin-bottom:12px">Pricing &amp; packaging</div>
+
+            <div class="pp-field-row" style="margin-bottom:14px">
+                <div class="pp-field">
+                    <label>MRP (₹)</label>
+                    <input type="number" name="MRP" id="edit-mrp" step="0.01" min="0" required />
+                </div>
+                <div class="pp-field">
+                    <label>Unit</label>
+                    <select name="Unit" id="edit-unit" required>
+                        @foreach (var u in new[] { "Ltr", "Kg", "Gm", "Pcs", "Ml" })
+                        {
+                            <option value="@u">@u</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="pp-field">
+                <label>Shelf life (days) <span class="pp-field-opt">(optional)</span></label>
+                <input type="number" name="ShelfLifeDays" id="edit-shelf" min="1" placeholder="e.g. 7" />
+                <span class="pp-field-hint">Leave blank if not applicable</span>
+            </div>
+
+        </form>
+    </div>
+    <div class="pp-drawer-foot">
+        <button type="button" class="btn-drawer-cancel" id="ppEditCancel">Cancel</button>
+        <button type="submit" form="ppEditForm" class="btn-drawer-submit">Save changes</button>
+    </div>
+</div>
+
+@* ══════════════════════ DELETE MODAL ══════════════════════ *@
+<div class="pp-modal-wrap" id="ppDeleteModal">
+    <div class="pp-modal">
+        <p class="pp-modal-title">Delete product?</p>
+        <p class="pp-modal-body">
+            Are you sure you want to delete <span class="pp-modal-name" id="ppDeleteName"></span>?
+            This action cannot be undone.
+        </p>
+        <div class="pp-modal-foot">
+            <button class="btn-modal-cancel" id="ppModalCancel">Cancel</button>
+            <form asp-action="DeleteProduct" method="post" id="ppDeleteForm" style="display:inline">
+                <input type="hidden" name="id" id="ppDeleteId" />
+                <button type="submit" class="btn-modal-delete">Yes, delete</button>
             </form>
         </div>
     </div>
 </div>
 
-@* RIGHT: PRODUCT LIST *@
-<div class="col-lg-8">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4 text-uppercase text-muted small fw-bold" style="width: 60px;">ID</th>
-                            <th class="text-uppercase text-muted small fw-bold">Product Details</th>
-                            <th class="text-uppercase text-muted small fw-bold text-center">Type</th>
-                            <th class="text-uppercase text-muted small fw-bold text-end">Price</th>
-                            <th class="text-uppercase text-muted small fw-bold text-center">Shelf Life</th>
-                            <th class="pe-4 text-uppercase text-muted small fw-bold text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <i class="bi bi-box-seam text-light" style="font-size: 3rem;"></i>
-                                    <p class="text-muted mt-3 mb-0">No products in the catalog yet.</p>
-                                </td>
-                            </tr>
-                        }
-                        @foreach (var p in Model)
-                        {
-                            <tr>
-                                <td class="ps-4 text-muted">#@p.ProductId</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-success bg-opacity-10 text-success rounded-3 p-2 me-3 d-none d-sm-block">
-                                            <i class="bi bi-box-fill"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold text-dark mb-0">@p.ProductName</div>
-                                            <div class="text-muted x-small" style="font-size: 0.75rem;">Base Unit: @p.Unit</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge rounded-pill bg-light text-dark border px-3">@p.ProductType</span>
-                                </td>
-                                <td class="text-end">
-                                    <div class="fw-bold text-dark">₹@p.MRP.ToString("N2")</div>
-                                </td>
-                                <td class="text-center">
-                                    <span class="text-muted">
-                                        <i class="bi bi-hourglass-split me-1 text-warning"></i>
-                                        @(p.ShelfLifeDays.HasValue? p.ShelfLifeDays + "d" : "—")
-                                    </span>
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <div class="btn-group shadow-sm rounded-3 overflow-hidden">
-                                        <a asp-action="EditProduct" asp-route-id="@p.ProductId"
-                                           class="btn btn-sm btn-white border-end" title="Edit">
-                                            <i class="bi bi-pencil-square text-primary"></i>
-                                        </a>
-                                        <form asp-action="DeleteProduct" method="post" class="d-inline"
-                                              onsubmit="return confirm('Delete @p.ProductName?')">
-                                            <input type="hidden" name="id" value="@p.ProductId" />
-                                            <button class="btn btn-sm btn-white" title="Delete">
-                                                <i class="bi bi-trash3 text-danger"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+@* ══════════════════════ MAIN PAGE ══════════════════════ *@
+<div class="pp-page">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="pp-alert pp-alert-success" id="ppAlertS">
+            ✅ @TempData["Success"]
+            <button class="pp-alert-close" onclick="document.getElementById('ppAlertS').remove()">×</button>
         </div>
-        <div class="card-footer bg-white py-3 px-4 border-0">
-            <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted font-monospace">DATA_SYNC_ID: @Guid.NewGuid().ToString().Substring(0, 8)</small>
-                <nav aria-label="Table navigation">
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled"><a class="page-link border-0" href="#"><i class="bi bi-chevron-left"></i></a></li>
-                        <li class="page-item active"><a class="page-link border-0 shadow-none" href="#">1</a></li>
-                        <li class="page-item disabled"><a class="page-link border-0" href="#"><i class="bi bi-chevron-right"></i></a></li>
-                    </ul>
-                </nav>
-            </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="pp-alert pp-alert-error" id="ppAlertE">
+            ⚠️ @TempData["Error"]
+            <button class="pp-alert-close" onclick="document.getElementById('ppAlertE').remove()">×</button>
+        </div>
+    }
+
+    <div class="pp-topbar">
+        <div>
+            <h1 class="pp-page-title">Products</h1>
+            <p class="pp-page-sub">Manufacturing › Product catalog</p>
+        </div>
+        <button class="btn-new-product" id="ppOpenAdd">+ Add product</button>
+    </div>
+
+    <div class="pp-stats">
+        <div class="pp-stat">
+            <div class="pp-stat-label">Total products</div>
+            <div class="pp-stat-val">@Model.Count</div>
+        </div>
+        <div class="pp-stat">
+            <div class="pp-stat-label">Avg MRP (₹)</div>
+            <div class="pp-stat-val blue">@(Model.Any() ? "₹" + Model.Average(p => p.MRP).ToString("N0") : "—")</div>
+        </div>
+        <div class="pp-stat">
+            <div class="pp-stat-label">Types</div>
+            <div class="pp-stat-val green">@Model.Select(p => p.ProductType).Distinct().Count()</div>
+        </div>
+        <div class="pp-stat">
+            <div class="pp-stat-label">With shelf life</div>
+            <div class="pp-stat-val amber">@Model.Count(p => p.ShelfLifeDays.HasValue)</div>
         </div>
     </div>
+
+    <div class="pp-card">
+        <div class="pp-card-head">
+            <span class="pp-card-title">All products</span>
+            <div class="pp-filters">
+                <select id="ppTypeFilter">
+                    <option value="">All types</option>
+                    @foreach (var t in Model.Select(p => p.ProductType).Distinct().OrderBy(x => x))
+                    {
+                        <option value="@t.ToLower()">@t</option>
+                    }
+                </select>
+                <input type="text" id="ppSearch" placeholder="Search products...">
+            </div>
+        </div>
+
+        <div class="pp-table-wrap">
+            <table class="pp-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px">ID</th>
+                        <th>Product</th>
+                        <th style="width:110px">Type</th>
+                        <th style="width:100px">MRP</th>
+                        <th style="width:80px">Unit</th>
+                        <th style="width:100px">Shelf life</th>
+                        <th style="width:140px;text-align:right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7"><div class="pp-empty">No products in the catalog yet.</div></td></tr>
+                    }
+                    @foreach (var p in Model)
+                    {
+                        <tr class="pp-row" data-name="@p.ProductName.ToLower()" data-type="@p.ProductType.ToLower()">
+                            <td><span class="pp-id">#@p.ProductId</span></td>
+                            <td><div class="pp-product-name">@p.ProductName</div></td>
+                            <td><span class="pp-type-pill">@p.ProductType</span></td>
+                            <td><span class="pp-mrp">₹@p.MRP.ToString("N2")</span></td>
+                            <td style="font-size:13px;color:#555">@p.Unit</td>
+                            <td><span class="pp-shelf">@(p.ShelfLifeDays.HasValue? p.ShelfLifeDays + " days" : "—")</span></td>
+                            <td>
+                                <div class="pp-action-group">
+                                    <button class="btn-edit-row"
+                                            onclick="openEdit(@p.ProductId,'@Html.Raw(p.ProductName.Replace("'", "\\'"))','@p.ProductType',@p.MRP,'@p.Unit',@(p.ShelfLifeDays.HasValue? p.ShelfLifeDays.ToString():"null"))">
+                                        Edit
+                                    </button>
+                                    <button class="btn-delete-row"
+                                            onclick="openDelete(@p.ProductId,'@Html.Raw(p.ProductName.Replace("'", "\\'"))')">
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="ppNoResults" style="display:none">
+                        <td colspan="7"><div class="pp-empty">No products match your filters.</div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pp-card-foot">
+            Showing <span id="ppCount">@Model.Count</span> product(s)
+        </div>
+    </div>
+
 </div>
+
+<script>
+    (function(){
+        var overlay     = document.getElementById('ppOverlay');
+        var addDrawer   = document.getElementById('ppAddDrawer');
+        var editDrawer  = document.getElementById('ppEditDrawer');
+        var deleteModal = document.getElementById('ppDeleteModal');
+
+        function closeAll(){
+            addDrawer.classList.remove('open');
+            editDrawer.classList.remove('open');
+            deleteModal.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function openDrawer(drawer){
+            closeAll();
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Open Add
+        document.getElementById('ppOpenAdd').addEventListener('click', function(){
+            document.getElementById('ppAddForm').reset();
+            openDrawer(addDrawer);
+            setTimeout(function(){ document.getElementById('add-name').focus(); }, 320);
+        });
+
+        // Close Add
+        document.getElementById('ppAddClose').addEventListener('click', closeAll);
+        document.getElementById('ppAddCancel').addEventListener('click', closeAll);
+
+        // Close Edit
+        document.getElementById('ppEditClose').addEventListener('click', closeAll);
+        document.getElementById('ppEditCancel').addEventListener('click', closeAll);
+
+        // Overlay + Escape
+        overlay.addEventListener('click', closeAll);
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAll(); });
+
+        // Open Edit and fill fields
+        window.openEdit = function(id, name, type, mrp, unit, shelf){
+            document.getElementById('edit-id').value    = id;
+            document.getElementById('edit-name').value  = name;
+            document.getElementById('edit-mrp').value   = mrp;
+            document.getElementById('edit-shelf').value = (shelf !== null && shelf !== 'null') ? shelf : '';
+            document.getElementById('ppEditSub').textContent = 'Editing: ' + name;
+
+            var ts = document.getElementById('edit-type');
+            for(var i=0;i<ts.options.length;i++) ts.options[i].selected = ts.options[i].value===type;
+
+            var us = document.getElementById('edit-unit');
+            for(var i=0;i<us.options.length;i++) us.options[i].selected = us.options[i].value===unit;
+
+            openDrawer(editDrawer);
+            setTimeout(function(){ document.getElementById('edit-name').focus(); }, 320);
+        };
+
+        // Open Delete modal
+        window.openDelete = function(id, name){
+            document.getElementById('ppDeleteId').value = id;
+            document.getElementById('ppDeleteName').textContent = name;
+            deleteModal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        };
+        document.getElementById('ppModalCancel').addEventListener('click', closeAll);
+
+        // Search + type filter
+        var rows     = document.querySelectorAll('.pp-row');
+        var noRes    = document.getElementById('ppNoResults');
+        var countEl  = document.getElementById('ppCount');
+
+        function filter(){
+            var term = document.getElementById('ppSearch').value.toLowerCase().trim();
+            var type = document.getElementById('ppTypeFilter').value;
+            var n = 0;
+            rows.forEach(function(r){
+                var show = (!term || r.dataset.name.includes(term)) && (!type || r.dataset.type===type);
+                r.style.display = show ? '' : 'none';
+                if(show) n++;
+            });
+            noRes.style.display  = (n===0 && rows.length>0) ? '' : 'none';
+            countEl.textContent  = n;
+        }
+
+        document.getElementById('ppSearch').addEventListener('input', filter);
+        document.getElementById('ppTypeFilter').addEventListener('change', filter);
+    })();
+</script>

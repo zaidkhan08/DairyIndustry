@@ -1,0 +1,145 @@
+﻿@model DairyIndustry.Models.Production.QualityTestModel
+@{
+    ViewData["Title"] = $"Quality Test Detail — Transfer #{Model.TransferId}";
+    var fatDiff = (Model.TestedFat.HasValue && Model.BatchAvgFat.HasValue)
+                    ? (Model.TestedFat.Value - Model.BatchAvgFat.Value) : (decimal?)null;
+    var clrDiff = (Model.TestedCLR.HasValue && Model.BatchAvgCLR.HasValue)
+                    ? (Model.TestedCLR.Value - Model.BatchAvgCLR.Value) : (decimal?)null;
+}
+
+<div class="container py-4" style="max-width:720px">
+
+    <!-- ── Page Header ─────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-clipboard2-check me-2 text-primary"></i>Quality Test Detail
+            </h4>
+            <small class="text-muted">Transfer #@Model.TransferId · Tested on @Model.TestDate.ToString("dd MMM yyyy")</small>
+        </div>
+        <a asp-action="QualityTests" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to List
+        </a>
+    </div>
+
+    <!-- ── Result Banner ───────────────────────────────────── -->
+    <div class="alert @(Model.QualityResult == "Normal" ? "alert-success" : "alert-danger") d-flex align-items-center mb-4" role="alert">
+        <i class="bi @(Model.QualityResult == "Normal" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") fs-4 me-3"></i>
+        <div>
+            <strong>Quality Result: @Model.QualityResult</strong><br />
+            @if (Model.QualityResult == "Normal")
+            {
+                <small>All readings are within acceptable range compared to batch averages.</small>
+            }
+            else
+            {
+                <small>
+                    One or more readings deviate significantly from the batch averages.
+                    @if (Model.IsFatDeviated)
+                    {
+                        <span>Fat is outside ±0.5% tolerance. </span>
+                    }
+                    @if (Model.IsCLRDeviated)
+                    {
+                        <span>CLR is outside ±2 tolerance.</span>
+                    }
+                </small>
+            }
+        </div>
+    </div>
+
+    <!-- ── Readings Comparison ─────────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header fw-semibold bg-light">
+            <i class="bi bi-graph-up me-1"></i>Quality Readings vs Batch Averages
+        </div>
+        <div class="card-body">
+            <div class="row g-4 text-center">
+                <!-- FAT -->
+                <div class="col-6">
+                    <div class="border rounded p-3 @(Model.IsFatDeviated ? "border-danger bg-danger bg-opacity-10" : "border-success bg-success bg-opacity-10")">
+                        <div class="text-muted small mb-1">Fat %</div>
+                        <div class="fs-2 fw-bold @(Model.IsFatDeviated ? "text-danger" : "text-success")">
+                            @(Model.TestedFat?.ToString("F2") ?? "—")
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Batch Avg: <strong>@(Model.BatchAvgFat?.ToString("F2") ?? "—")</strong>
+                        </div>
+                        @if (fatDiff.HasValue)
+                        {
+                            <div class="mt-1">
+                                <span class="badge @(Model.IsFatDeviated ? "bg-danger" : "bg-success")">
+                                    @(fatDiff.Value >= 0 ? "+" : "")@fatDiff.Value.ToString("F2") variance
+                                </span>
+                            </div>
+                        }
+                        @if (Model.IsFatDeviated)
+                        {
+                            <div class="mt-2 text-danger small"><i class="bi bi-exclamation-triangle-fill"></i> Deviated</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- CLR -->
+                <div class="col-6">
+                    <div class="border rounded p-3 @(Model.IsCLRDeviated ? "border-danger bg-danger bg-opacity-10" : "border-success bg-success bg-opacity-10")">
+                        <div class="text-muted small mb-1">CLR</div>
+                        <div class="fs-2 fw-bold @(Model.IsCLRDeviated ? "text-danger" : "text-success")">
+                            @(Model.TestedCLR?.ToString("F2") ?? "—")
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Batch Avg: <strong>@(Model.BatchAvgCLR?.ToString("F2") ?? "—")</strong>
+                        </div>
+                        @if (clrDiff.HasValue)
+                        {
+                            <div class="mt-1">
+                                <span class="badge @(Model.IsCLRDeviated ? "bg-danger" : "bg-success")">
+                                    @(clrDiff.Value >= 0 ? "+" : "")@clrDiff.Value.ToString("F2") variance
+                                </span>
+                            </div>
+                        }
+                        @if (Model.IsCLRDeviated)
+                        {
+                            <div class="mt-2 text-danger small"><i class="bi bi-exclamation-triangle-fill"></i> Deviated</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Transfer Info ───────────────────────────────────── -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold bg-light">
+            <i class="bi bi-truck me-1"></i>Transfer Information
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4 text-muted">Transfer #</dt>
+                <dd class="col-sm-8"><span class="badge bg-secondary">T-@Model.TransferId</span></dd>
+
+                <dt class="col-sm-4 text-muted">From (Center)</dt>
+                <dd class="col-sm-8">@Model.CenterName</dd>
+
+                <dt class="col-sm-4 text-muted">To (Plant)</dt>
+                <dd class="col-sm-8">@Model.PlantName</dd>
+
+                <dt class="col-sm-4 text-muted">Vehicle</dt>
+                <dd class="col-sm-8">@Model.VehicleNumber</dd>
+
+                <dt class="col-sm-4 text-muted">Driver</dt>
+                <dd class="col-sm-8">@Model.DriverName</dd>
+
+                <dt class="col-sm-4 text-muted">Dispatch Date</dt>
+                <dd class="col-sm-8">@Model.DispatchDate.ToString("dd MMM yyyy")</dd>
+
+                <dt class="col-sm-4 text-muted">Dispatched Qty</dt>
+                <dd class="col-sm-8">@Model.DispatchQty.ToString("F2") L</dd>
+
+                <dt class="col-sm-4 text-muted">Received Qty</dt>
+                <dd class="col-sm-8">@(Model.ReceivedQty?.ToString("F2") ?? "—") L</dd>
+            </dl>
+        </div>
+    </div>
+
+</div>

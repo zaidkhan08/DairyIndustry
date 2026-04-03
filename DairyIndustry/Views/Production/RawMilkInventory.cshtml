@@ -2,69 +2,292 @@
 @{
     ViewData["Title"] = "Raw Milk Inventory";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var plantName = Context.Session.GetString("PlantName");
+    var plantLabel = plantName ?? Model.FirstOrDefault()?.PlantName ?? "Plant";
+
+    // Grouping by Plant to ensure specific plant-wise cards
+    var groupedInventory = Model.GroupBy(x => x.PlantName);
+    var refreshTime = DateTime.Now;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">🥛 Raw Milk Inventory</h4>
-    <span class="text-muted small">Auto-updated when milk is received at plant</span>
-</div>
+<!-- Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-@* Summary Cards *@
-<div class="row g-3 mb-4">
-    @foreach (var plant in Model.GroupBy(x => x.PlantName))
-    {
+<div class="container-fluid py-4 rmi-light-container">
+    <div class="row g-3 mb-4 align-items-center">
         <div class="col-md-6">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white">
-                    <strong>🏭 @plant.Key</strong>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Milk Type</th>
-                                <th>Available (L)</th>
-                                <th>Stock</th>
-                                <th>Last Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in plant)
-                            {
-                                <tr>
-                                    <td><strong>@row.MilkTypeName</strong></td>
-                                    <td>@row.Quantity.ToString("N2")</td>
-                                    <td>
-                                        <span class="badge @row.StockBadgeClass">
-                                            @row.StockLabel
-                                        </span>
-                                    </td>
-                                    <td>@row.LastUpdated.ToString("dd-MMM-yyyy hh:mm tt")</td>
-                                </tr>
-                            }
-                            <tr class="table-secondary fw-bold">
-                                <td>Total</td>
-                                <td>@plant.Sum(x => x.Quantity).ToString("N2") L</td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <h2 class="inventory-title-light">Raw Milk Inventory</h2>
+            <div class="location-subtitle-light">@plantLabel</div>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="rmi-filter-bar-light d-inline-flex">
+                <span class="rmi-chip-light active">Plant Overview</span>
             </div>
         </div>
-    }
+    </div>
 
-    @if (!Model.Any())
-    {
-        <div class="col-12">
-            <div class="alert alert-info">
-                No raw milk inventory found. Receive a milk transfer first to populate inventory.
+    <div class="row g-4">
+        @foreach (var plantGroup in groupedInventory)
+        {
+            var plantTotal = plantGroup.Sum(x => x.Quantity);
+            var lastDataUpdate = plantGroup.Max(x => x.LastUpdated);
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <!-- Plant-Wise Widget Card -->
+                <div class="widget-card-light">
+                    <!-- Header: Icon & Main Title -->
+                    <div class="widget-header">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-circle-light">
+                                <i class="fa-solid fa-industry"></i>
+                            </div>
+                            <div class="ms-3">
+                                <div class="widget-title">@plantGroup.Key</div>
+                                <div class="widget-subtitle"><i class="fa-solid fa-circle-check me-1"></i>Operational</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Levels Section for specific milk types in this plant -->
+                    <div class="levels-container-multi">
+                        @foreach (var milk in plantGroup)
+                        {
+                            var maxCap = 100000m;
+                            var perc = (milk.Quantity / maxCap) * 100m;
+                            if (perc > 100m) perc = 100m;
+
+                            <div class="milk-level-item mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="milk-type-label">@milk.MilkTypeName</span>
+                                    <span class="milk-qty-label">@milk.Quantity.ToString("N0") L</span>
+                                </div>
+                                <div class="level-bar-bg-light">
+                                    <div class="level-bar-fill-light" style="width: @(perc)%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Plant Stats Section -->
+                    <div class="stats-main-light">
+                        <div class="stats-value-group">
+                            <span class="big-value-light">@plantTotal.ToString("N0")</span>
+                            <span class="value-label-light">Total Plant Inventory (L)</span>
+                        </div>
+                        <div class="chart-mini">
+                            <svg width="60" height="30" viewBox="0 0 60 30">
+                                <path d="M0 25 Q 15 5, 30 20 T 60 10" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Footer Bar: Combined Update & Refresh Info -->
+                    <div class="widget-footer-light">
+                        <div class="footer-item-light">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <div class="footer-label">LAST UPDATED</div>
+                            <div class="footer-val">@lastDataUpdate.ToString("h:mm tt")</div>
+                        </div>
+                        <div class="footer-divider-light"></div>
+                        <div class="footer-item-light">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <div class="footer-label">REFRESHED AT</div>
+                            <div class="footer-val">@refreshTime.ToString("h:mm tt")</div>
+                        </div>
+                        <div class="footer-divider-light"></div>
+                        <div class="footer-item-light">
+                            <i class="fa-solid fa-calendar-day"></i>
+                            <div class="footer-label">DATE</div>
+                            <div class="footer-val">@lastDataUpdate.ToString("dd MMM")</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>
 
-<small class="text-muted">
-    💡 Inventory is automatically increased when a transfer is received and decreased when a production batch is started.
-</small>
+<style>
+    /* White and Grey Palette */
+    .rmi-light-container {
+        background: #f8fafc;
+        min-height: 100vh;
+        padding: 2rem;
+        color: #1e293b;
+    }
+
+    .inventory-title-light {
+        font-weight: 800;
+        font-size: 1.6rem;
+        color: #0f172a;
+        margin-bottom: 2px;
+    }
+
+    .location-subtitle-light {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .rmi-filter-bar-light {
+        background: #ffffff;
+        padding: 5px 12px;
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+    }
+
+    .rmi-chip-light {
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* Widget Card Light */
+    .widget-card-light {
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f1f5f9;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .icon-circle-light {
+        background: #f1f5f9;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #334155;
+        font-size: 1.1rem;
+    }
+
+    .widget-title {
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: #0f172a;
+    }
+
+    .widget-subtitle {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+        .widget-subtitle i {
+            color: #10b981;
+        }
+
+    /* Progress Bars Section */
+    .levels-container-multi {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 20px;
+    }
+
+    .milk-type-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .milk-qty-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .level-bar-bg-light {
+        background: #e2e8f0;
+        height: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .level-bar-fill-light {
+        background: #334155;
+        height: 100%;
+        border-radius: 5px;
+    }
+
+    /* Main Quantity Stats */
+    .stats-main-light {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 24px;
+    }
+
+    .big-value-light {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .value-label-light {
+        display: block;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    /* Footer Info Bar Light */
+    .widget-footer-light {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #f1f5f9;
+        margin-top: auto;
+    }
+
+    .footer-item-light {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+        .footer-item-light i {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+    .footer-label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    .footer-val {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .footer-divider-light {
+        width: 1px;
+        height: 24px;
+        background: #e2e8f0;
+    }
+</style>

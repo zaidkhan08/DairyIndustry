@@ -360,5 +360,218 @@ namespace DairyIndustry.Repositories
 
             return null;
         }
+
+
+        // ============================================================
+        // ADD THESE METHODS TO: FinanceRepository.cs  (inside the class)
+        // ============================================================
+        // Already injected: private readonly DbHelper _db;
+        // Already using: Microsoft.Data.SqlClient, System.Data
+        // ============================================================
+
+        // ════════════════════════════════════════════════════════
+        // GET ELIGIBLE TRANSFERS — SP Finance.usp_Finance_GetEligibleTransfers
+        // ════════════════════════════════════════════════════════
+        public List<TransferForPaymentModel> GetEligibleTransfers()
+        {
+            var list = new List<TransferForPaymentModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_GetEligibleTransfers", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        list.Add(new TransferForPaymentModel
+                        {
+                            TransferId = Convert.ToInt32(r["TransferId"]),
+                            DisplayText = r["DisplayText"].ToString(),
+                            CenterId = Convert.ToInt32(r["CenterId"]),
+                            PlantId = Convert.ToInt32(r["PlantId"]),
+                            ReceivedQty = Convert.ToDecimal(r["ReceivedQty"]),
+                            TestedFat = r["TestedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedFat"]),
+                            TestedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]),
+                            MilkTypeId = r["MilkTypeId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["MilkTypeId"]),
+                            BatchId = Convert.ToInt32(r["BatchId"])
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET ACTIVE RATE — SP Finance.usp_Finance_GetActiveRate
+        // ════════════════════════════════════════════════════════
+        public decimal GetActiveRate(int milkTypeId, decimal fat, decimal clr)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_GetActiveRate", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
+                cmd.Parameters.AddWithValue("@Fat", fat);
+                cmd.Parameters.AddWithValue("@CLR", clr);
+
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                        return Convert.ToDecimal(r["RatePerLiter"]);
+                }
+            }
+            return 0m; // no matching rate found
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CREATE CENTER PAYMENT — SP Finance.usp_Finance_ProcessCenterPayment
+        // ════════════════════════════════════════════════════════
+        public int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessCenterPayment", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@TransferId", transferId);
+                cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
+                cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
+
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                        return Convert.ToInt32(r["NewCenterPaymentId"]);
+                }
+            }
+            return 0;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET ALL CENTER PAYMENTS
+        // ════════════════════════════════════════════════════════
+        public List<CenterPaymentModel> GetAllCenterPayments()
+        {
+            var list = new List<CenterPaymentModel>();
+
+            string query = @"
+        SELECT
+            cp.CenterPaymentId,
+            cp.BatchId,
+            cp.CenterId,
+            cp.PlantId,
+            cp.ReceivedQty,
+            cp.RatePerLiter,
+            cp.TestedFat,
+            cp.TestedCLR,
+            cp.TotalAmount,
+            cp.PaymentDate,
+            cp.PaymentStatus,
+            cc.CenterName,
+            pp.PlantName,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            pt.BankStatus,
+            pt.TransactionReference
+        FROM Finance.CenterPayments cp
+        INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
+        INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
+        INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
+        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
+                                                    AND mt.PlantId  = cp.PlantId
+        LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
+                                                    AND pt.PaymentType = 'Center'
+        ORDER BY cp.PaymentDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                        list.Add(MapCenterPayment(r));
+                }
+            }
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET SINGLE CENTER PAYMENT BY ID
+        // ════════════════════════════════════════════════════════
+        public CenterPaymentModel GetCenterPaymentById(int centerPaymentId)
+        {
+            string query = @"
+        SELECT
+            cp.CenterPaymentId,
+            cp.BatchId,
+            cp.CenterId,
+            cp.PlantId,
+            cp.ReceivedQty,
+            cp.RatePerLiter,
+            cp.TestedFat,
+            cp.TestedCLR,
+            cp.TotalAmount,
+            cp.PaymentDate,
+            cp.PaymentStatus,
+            cc.CenterName,
+            pp.PlantName,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            pt.BankStatus,
+            pt.TransactionReference
+        FROM Finance.CenterPayments cp
+        INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
+        INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
+        INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
+        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
+                                                    AND mt.PlantId  = cp.PlantId
+        LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
+                                                    AND pt.PaymentType = 'Center'
+        WHERE cp.CenterPaymentId = @CenterPaymentId";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterPaymentId", centerPaymentId);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read()) return MapCenterPayment(r);
+                }
+            }
+
+            return null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PRIVATE MAPPER
+        // ════════════════════════════════════════════════════════
+        private CenterPaymentModel MapCenterPayment(SqlDataReader r)
+        {
+            return new CenterPaymentModel
+            {
+                CenterPaymentId = Convert.ToInt32(r["CenterPaymentId"]),
+                BatchId = Convert.ToInt32(r["BatchId"]),
+                CenterId = Convert.ToInt32(r["CenterId"]),
+                PlantId = Convert.ToInt32(r["PlantId"]),
+                ReceivedQty = Convert.ToDecimal(r["ReceivedQty"]),
+                RatePerLiter = Convert.ToDecimal(r["RatePerLiter"]),
+                TestedFat = r["TestedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedFat"]),
+                TestedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]),
+                TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                PaymentStatus = r["PaymentStatus"].ToString(),
+                CenterName = r["CenterName"].ToString(),
+                PlantName = r["PlantName"].ToString(),
+                BatchRef = r["BatchRef"].ToString(),
+                BankStatus = r["BankStatus"] == DBNull.Value ? null : r["BankStatus"].ToString(),
+                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString()
+            };
+        }
     }
 }

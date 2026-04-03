@@ -1,0 +1,130 @@
+﻿@model List<DairyIndustry.Models.Production.QualityTestModel>
+@{
+    ViewData["Title"] = "Transfer Quality Tests";
+}
+
+<div class="container-fluid py-4">
+
+    <!-- ── Page Header ─────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Transfer Quality Tests
+            </h4>
+            <small class="text-muted">Fat &amp; CLR readings recorded at plant receiving</small>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Transfers
+        </a>
+    </div>
+
+    <!-- ── Alerts ──────────────────────────────────────────── -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ── Summary Cards ───────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-primary">@Model.Count</div>
+                <div class="text-muted small">Total Tests</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-success">@Model.Count(t => t.QualityResult == "Normal")</div>
+                <div class="text-muted small">Normal</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-danger">@Model.Count(t => t.QualityResult == "Deviated")</div>
+                <div class="text-muted small">Deviated</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Table ───────────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-clipboard2-x fs-1 d-block mb-2"></i>
+                    No quality tests recorded yet.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Transfer #</th>
+                                <th>Test Date</th>
+                                <th>Plant</th>
+                                <th>Center</th>
+                                <th>Vehicle</th>
+                                <th class="text-center">Tested Fat</th>
+                                <th class="text-center">Tested CLR</th>
+                                <th class="text-center">Batch Avg Fat</th>
+                                <th class="text-center">Batch Avg CLR</th>
+                                <th class="text-center">Result</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">T-@t.TransferId</span></td>
+                                    <td>@t.TestDate.ToString("dd MMM yyyy")</td>
+                                    <td>@t.PlantName</td>
+                                    <td>@t.CenterName</td>
+                                    <td>@t.VehicleNumber</td>
+                                    <td class="text-center @(t.IsFatDeviated ? "text-danger fw-bold" : "")">
+                                        @(t.TestedFat?.ToString("F2") ?? "-")
+                                        @if (t.IsFatDeviated)
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill ms-1" title="Fat deviated from batch avg"></i>
+                                        }
+                                    </td>
+                                    <td class="text-center @(t.IsCLRDeviated ? "text-danger fw-bold" : "")">
+                                        @(t.TestedCLR?.ToString("F2") ?? "-")
+                                        @if (t.IsCLRDeviated)
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill ms-1" title="CLR deviated from batch avg"></i>
+                                        }
+                                    </td>
+                                    <td class="text-center text-muted">@(t.BatchAvgFat?.ToString("F2") ?? "-")</td>
+                                    <td class="text-center text-muted">@(t.BatchAvgCLR?.ToString("F2") ?? "-")</td>
+                                    <td class="text-center">
+                                        <span class="badge @t.QualityBadgeClass">@t.QualityResult</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId"
+                                           class="btn btn-sm btn-outline-primary" title="View detail">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,7 +1,9 @@
 ﻿@{
     ViewData["Title"] = "Start Production Batch";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
-
+    var roleName = Context.Session.GetString("RoleName");
+    var sessionPlantId = Context.Session.GetInt32("PlantId");
+    var sessionPlantName = Context.Session.GetString("PlantName");
 }
 
 <h4 class="mb-4">🏭 Start Production Batch</h4>
@@ -13,14 +15,26 @@
 
             <div class="mb-3">
                 <label class="form-label">Processing Plant</label>
-                <select name="plantId" class="form-select" required>
-                    <option value="">-- Select Plant --</option>
-                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
-                    {
-                        <option value="@p.PlantId">@p.PlantName</option>
-                    }
-                </select>
+
+                @if (roleName == "Plant Manager" && sessionPlantId.HasValue)
+                {
+                    @* Plant Manager: show read-only field + hidden input *@
+                    <input type="text" class="form-control" value="@sessionPlantName" disabled />
+                    <input type="hidden" name="plantId" value="@sessionPlantId" />
+                }
+                else
+                {
+                    @* Admin / Collection Agent: show full dropdown *@
+                    <select name="plantId" class="form-select" required>
+                        <option value="">-- Select Plant --</option>
+                        @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
+                        {
+                            <option value="@p.PlantId">@p.PlantName</option>
+                        }
+                    </select>
+                }
             </div>
+
             <div class="mb-3">
                 <label class="form-label">Milk Type to Use</label>
                 <select name="milkTypeId" class="form-select" required>

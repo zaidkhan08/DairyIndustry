@@ -20,6 +20,7 @@ namespace DairyIndustry
             builder.Services.AddScoped<IProductionRepository,ProductionRepository>();
             builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+
         
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
