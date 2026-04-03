@@ -24,8 +24,7 @@ namespace DairyIndustry.Repositories
         //Added By Zaid
         int? GetPlantIdByUser(int userId);
         // ── AUDIT LOG ──────────────────────────────────────────
-        void WriteAuditLog(int userId, string action, string entityName);
-            List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
+       
 
         // ════════════════════════════════════════════════════════
         // LOCATION — STATE

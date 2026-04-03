@@ -1128,6 +1128,7 @@ namespace DairyIndustry.Repositories
                        ? null
                        : Convert.ToInt32(result);
             }
+        }
         public List<ProductModel> GetActiveProducts()
         {
             var list = new List<ProductModel>();

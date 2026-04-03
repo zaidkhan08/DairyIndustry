@@ -82,7 +82,6 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index", "Production");
 
                 case "Collection Agent":
-                case "Plant Manager":
                     return RedirectToAction("Index", "Production");
 
                 //case "Production Manager":
