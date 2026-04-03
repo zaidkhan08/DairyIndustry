@@ -1,0 +1,201 @@
+﻿@model DairyIndustry.Models.Admin.StaffModel
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Staff Detail";
+}
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Staff Detail</h3>
+                <p class="text-muted mb-0">@Model.FullName</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Staff" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Staff
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT: STAFF INFO -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-person me-1 text-primary"></i> Staff Information
+                </div>
+
+                <div class="card-body p-4">
+
+                    <!-- Profile Photo -->
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle border overflow-hidden mx-auto"
+                             style="width:100px; height:100px;">
+                            @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                            {
+                                <img src="@Model.ProfilePhoto"
+                                     class="w-100 h-100"
+                                     style="object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                    <i class="bi bi-person fs-1 text-secondary"></i>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted small fw-semibold">Staff ID</td>
+                                <td>#@Model.StaffId</td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Name</td>
+                                <td class="fw-semibold">@Model.FullName</td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Role</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">@Model.RoleName</span>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Phone</td>
+                                <td>@(Model.Phone ?? "—")</td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Email</td>
+                                <td>@(Model.Email ?? "—")</td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Salary</td>
+                                <td class="text-success fw-semibold">
+                                    ₹ @(Model.Salary.ToString("0.00") ?? "—")
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Date of Joining</td>
+                                <td>
+                                    @(Model.DOJ?.ToString("dd MMM yyyy") ?? "—")
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted small fw-semibold">Status</td>
+                                <td>
+                                    @if (Model.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: LOCATION + BANK -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-geo-alt me-1 text-success"></i> Location & Bank Details
+                </div>
+
+                <div class="card-body p-4">
+
+                    <table class="table table-borderless mb-0">
+
+                        <!-- Location -->
+                        <tr>
+                            <td class="text-muted small fw-semibold">Plant</td>
+                            <td>@(Model.PlantName ?? "—")</td>
+                        </tr>
+
+                        <tr>
+                            <td class="text-muted small fw-semibold">Collection Center</td>
+                            <td>@(Model.CenterName ?? "—")</td>
+                        </tr>
+
+                        <!-- Bank -->
+                        <tr>
+                            <td class="text-muted small fw-semibold">Bank Name</td>
+                            <td>@(Model.BankName ?? "—")</td>
+                        </tr>
+
+                        <tr>
+                            <td class="text-muted small fw-semibold">Account Number</td>
+                            <td>@(Model.AccountNumber ?? "—")</td>
+                        </tr>
+
+                        <tr>
+                            <td class="text-muted small fw-semibold">IFSC Code</td>
+                            <td>@(Model.IFSCCode ?? "—")</td>
+                        </tr>
+
+                    </table>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-lightning me-1 text-warning"></i> Quick Actions
+                </div>
+
+                <div class="card-body d-flex gap-2">
+
+                    <form method="post" asp-action="ToggleStaffActive">
+                        <input type="hidden" name="staffId" value="@Model.StaffId" />
+                        <input type="hidden" name="isActive" value="@(!Model.IsActive ? 1 : 0)" />
+
+                        @if (Model.IsActive)
+                        {
+                            <button class="btn btn-outline-danger"
+                                    onclick="return confirm('Deactivate this staff?')">
+                                Deactivate
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-success"
+                                    onclick="return confirm('Activate this staff?')">
+                                Activate
+                            </button>
+                        }
+                    </form>
+
+                    <a asp-action="Staff" class="btn btn-outline-secondary">
+                        Back
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

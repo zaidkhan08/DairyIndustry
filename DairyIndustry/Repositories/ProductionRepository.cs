@@ -247,31 +247,28 @@ namespace DairyIndustry.Repositories
             var list = new List<MilkTransferModel>();
 
             string query = @"
-    SELECT
-        mt.TransferId,
-        mt.BatchId,
-        mt.VehicleId,
-        mt.PlantId,
-        mt.DispatchQty,
-        mt.ReceivedQty,
-        mt.LossQty,
-        mt.DispatchDate,
-        mt.ReceivedDate,
-        'B-' + CAST(cb.BatchId AS VARCHAR) AS BatchRef,
-        cc.CenterName,
-        pp.PlantName,
-        v.VehicleNumber,
-        d.DriverName,
-        CASE WHEN tqt.TestId IS NOT NULL THEN 1 ELSE 0 END AS HasQualityTest
-    FROM Production.MilkTransfers mt
-    INNER JOIN Collection.CollectionBatches    cb  ON cb.BatchId  = mt.BatchId
-    INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId = cb.CenterId
-    INNER JOIN Production.ProcessingPlants     pp  ON pp.PlantId  = mt.PlantId
-    INNER JOIN Logistics.VehiclesNew           v   ON v.VehicleId = mt.VehicleId
-    LEFT  JOIN Logistics.DriversNew            d   ON d.DriverId  = v.DriverId
-    LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
-    WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
-    ORDER BY mt.DispatchDate DESC";
+                SELECT
+                    mt.TransferId,
+                    mt.BatchId,
+                    mt.VehicleId,
+                    mt.PlantId,
+                    mt.DispatchQty,
+                    mt.ReceivedQty,
+                    mt.LossQty,
+                    mt.DispatchDate,
+                    mt.ReceivedDate,
+                    'B-' + CAST(cb.BatchId AS VARCHAR) AS BatchRef,
+                    cc.CenterName,
+                    pp.PlantName,
+                    v.VehicleNumber,
+                    d.DriverName
+                FROM Production.MilkTransfers mt
+                INNER JOIN Collection.CollectionBatches    cb ON cb.BatchId  = mt.BatchId
+                INNER JOIN Collection.CollectionCenters    cc ON cc.CenterId = cb.CenterId
+                INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId  = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew               v  ON v.VehicleId = mt.VehicleId
+                LEFT  JOIN Logistics.DriversNew                d  ON d.DriverId  = v.DriverId
+                ORDER BY mt.DispatchDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
             {

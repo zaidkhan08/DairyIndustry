@@ -254,6 +254,97 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<MilkTransferModel> GetDriverTransfers(int driverId)
+        {
+            var list = new List<MilkTransferModel>();
+
+            string query = @"
+        SELECT
+            mt.TransferId,
+            mt.DispatchDate,
+            mt.ReceivedDate,
+            mt.DispatchQty,
+            mt.ReceivedQty,
+            mt.LossQty,
+            CASE
+                WHEN mt.DispatchQty > 0 AND mt.LossQty IS NOT NULL
+                THEN ROUND((mt.LossQty / mt.DispatchQty) * 100, 2)
+                ELSE 0
+            END AS LossPercent,
+            CASE
+                WHEN mt.ReceivedDate IS NULL THEN 'Pending'
+                ELSE 'Received'
+            END AS TransferStatus,
+            cc.CenterId,
+            cc.CenterName,
+            pp.PlantId,
+            pp.PlantName,
+            v.VehicleId,
+            v.VehicleNumber,
+            d.DriverId,
+            d.DriverName,
+            d.Phone AS DriverPhone,
+            tqt.TestedFat,
+            tqt.TestedCLR,
+            tqt.TestDate,
+            cb.BatchId,
+            cb.Shift,
+            cb.BatchDate,
+            cb.AvgFat AS BatchAvgFat,
+            cb.AvgCLR AS BatchAvgCLR
+        FROM Production.MilkTransfers mt
+        INNER JOIN Collection.CollectionBatches    cb  ON cb.BatchId  = mt.BatchId
+        INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId = cb.CenterId
+        INNER JOIN Production.ProcessingPlants     pp  ON pp.PlantId  = mt.PlantId
+        INNER JOIN Logistics.VehiclesNew           v   ON v.VehicleId = mt.VehicleId
+        INNER JOIN Logistics.DriversNew            d   ON d.DriverId  = v.DriverId
+        LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
+        WHERE d.DriverId = @DriverId
+        ORDER BY mt.DispatchDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@DriverId", driverId);
+                con.Open();
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new MilkTransferModel
+                        {
+                            TransferId = Convert.ToInt32(reader["TransferId"]),
+                            DispatchDate = Convert.ToDateTime(reader["DispatchDate"]),
+                            ReceivedDate = reader["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ReceivedDate"]),
+                            DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
+                            ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
+                            LossQty = reader["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["LossQty"]),
+                            LossPercent = Convert.ToDecimal(reader["LossPercent"]),
+                            TransferStatus = reader["TransferStatus"].ToString(),
+                            CenterId = Convert.ToInt32(reader["CenterId"]),
+                            CenterName = reader["CenterName"].ToString(),
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                            VehicleNumber = reader["VehicleNumber"].ToString(),
+                            DriverId = Convert.ToInt32(reader["DriverId"]),
+                            DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                            DriverPhone = reader["DriverPhone"] == DBNull.Value ? null : reader["DriverPhone"].ToString(),
+                            TestedFat = reader["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedFat"]),
+                            TestedCLR = reader["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedCLR"]),
+                            TestDate = reader["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["TestDate"]),
+                            BatchId = Convert.ToInt32(reader["BatchId"]),
+                            Shift = reader["Shift"].ToString(),
+                            BatchDate = Convert.ToDateTime(reader["BatchDate"]),
+                            BatchAvgFat = reader["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgFat"]),
+                            BatchAvgCLR = reader["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgCLR"])
+                        });
+                    }
+                }
+            }
+            return list;
+        }
 
     }
 }

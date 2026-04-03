@@ -74,6 +74,16 @@
                 <i class="bi bi-briefcase-fill"></i>
                 <span>Staff</span>
             </a>
+            <a asp-controller="Admin" asp-action="AssignUserToPlant"
+               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "AssignUserToPlant" || ViewContext.RouteData.Values["action"].ToString() == "AssignUserToPlant" ? "active" : "")">
+                <i class="bi bi-briefcase-fill"></i>
+                <span>Assign Plant</span>
+            </a>
+            <a asp-controller="Admin" asp-action="AssignUserToCenter"
+               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "AssignUserToCenter" || ViewContext.RouteData.Values["action"].ToString() == "AssignUserToCenter" ? "active" : "")">
+                <i class="bi bi-briefcase-fill"></i>
+                <span>Assign Center</span>
+            </a>
             <!-- ── Master Data ─────────────────── -->
             <div class="nav-label">Master Data</div>
 
@@ -187,6 +197,12 @@
                                        ViewContext.RouteData.Values["action"].ToString() == "ProductionBatches" ? "active" : "")">
                     <i class="bi bi-layers me-2"></i>
                     <span>Production Batches</span>
+                </a>
+                <a asp-controller="Admin" asp-action="WastageSummary"
+                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
+                                                                             ViewContext.RouteData.Values["action"].ToString() == "WastageSummary" ? "active" : "")">
+                    <i class="bi bi-layers me-2"></i>
+                    <span>Wastage</span>
                 </a>
 
                 <a asp-controller="Admin" asp-action="MilkTransfers"

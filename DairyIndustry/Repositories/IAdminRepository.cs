@@ -1,4 +1,5 @@
 ﻿using DairyIndustry.Models.Admin;
+using System;
 using System.Data;
 
 namespace DairyIndustry.Repositories
@@ -22,6 +23,9 @@ namespace DairyIndustry.Repositories
 
         //Added By Zaid
         int? GetPlantIdByUser(int userId);
+        // ── AUDIT LOG ──────────────────────────────────────────
+        void WriteAuditLog(int userId, string action, string entityName);
+            List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
 
         // ════════════════════════════════════════════════════════
         // LOCATION — STATE
@@ -60,16 +64,21 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
         int AddStaff(string firstName, string lastName, string phone, string email,
-                     int roleId, DateTime? doj,
-                     string bankName, string accountNumber, string ifscCode,
-                     string profilePhoto = null);
+             int roleId, DateTime? doj,
+             string bankName, string accountNumber, string ifscCode,
+             decimal salary,
+             string profilePhoto = null,
+             int? centerId = null,
+             int? plantId = null);
 
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
         List<StaffModel> GetUnlinkedStaff();
         StaffModel GetStaffById(int staffId);
+        void AssignUserToPlant(int userId, int plantId);
 
+        void AssignUserToCenter(int userId, int centerId);
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
@@ -98,6 +107,18 @@ namespace DairyIndustry.Repositories
                            string description, int modifiedBy);
 
         void ToggleProductStatus(int productId, bool isActive, int modifiedBy);
+
+        List<ProductModel> GetActiveProducts();
+
+        List<ProductionBatchModel> GetProductionBatches(int? plantId = null, int? productId = null,
+                                                         string batchStatus = null,
+                                                         DateTime? fromDate = null, DateTime? toDate = null);
+
+        List<MilkTransferModel> GetMilkTransfers(int? plantId = null, int? centerId = null,
+                                          DateTime? fromDate = null, DateTime? toDate = null);
+
+        //collection center
+        List<CollectionCenterModel> GetAllCenters();
 
     }
 
