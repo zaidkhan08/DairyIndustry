@@ -1,0 +1,68 @@
+﻿@* @model List<DairyIndustry.Models.FarmerModel.FarmerProfileModel>
+
+@{
+    var profile = ViewBag.Profile;
+  //  var milk = ViewBag.Milk as List<DairyIndustry.Models.FarmerModel.MilkHistoryModel>;
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4">
+
+    <h2>Welcome, @profile.FarmerName</h2>
+    <p>@profile.VillageName, @profile.CityName</p>
+
+    <hr />
+
+    <h4>Milk History</h4>
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Shift</th>
+                <th>Quantity</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in milk)
+        {
+            <tr>
+                <td>@item.CollectionDate.ToShortDateString()</td>
+                <td>@item.Shift</td>
+                <td>@item.Quantity</td>
+                <td>@item.Amount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <hr />
+
+    <h4>Receipts</h4>
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Receipt No</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.ReceiptNumber</td>
+                <td>@r.ReceiptDate.ToShortDateString()</td>
+                <td>@r.Amount</td>
+                <td>
+                    <a href="/Farmer/Receipt/@r.ReceiptNumber" class="btn btn-sm btn-primary">
+                        View
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+</div> *@

@@ -1,0 +1,92 @@
+﻿@using DairyIndustry.Models.Collection
+
+@model DateFilterViewModel
+
+
+@{
+    ViewData["Title"] = "Date Wise Entries";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <h4 class="mb-3">
+        Milk Entries - @Model.SelectedDate?.ToString("dd MMM yyyy")
+    </h4>
+
+    <!-- Date Filter -->
+    <form method="get" class="mb-3 d-flex gap-2 align-items-center">
+        <input type="date" name="date"
+               value="@Model.SelectedDate?.ToString("yyyy-MM-dd")"
+               class="form-control" style="width:200px;" />
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+
+    @if (!Model.Entries.Any())
+    {
+        <div class="alert alert-warning">
+            No entries found for selected date.
+        </div>
+    }
+    else
+    {
+        <!-- Table -->
+        <table class="table table-bordered table-striped shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Farmer</th>
+                    <th>Code</th>
+                    <th>Shift</th>
+                    <th>Qty (L)</th>
+                    <th>Fat</th>
+                    <th>CLR</th>
+                    <th>Rate</th>
+                    <th>Amount (₹)</th>
+                    <th>Receipt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Entries)
+                {
+                    <tr>
+                        <td>@item.FarmerName</td>
+                        <td>@item.FarmerCode</td>
+                        <td>
+                            <span class="badge @(item.Shift == "Morning" ? "bg-warning text-dark" : "bg-info")">
+                                @item.Shift
+                            </span>
+                        </td>
+                        <td>@item.Quantity</td>
+                        <td>@item.AppliedFat</td>
+                        <td>@item.AppliedCLR</td>
+                        <td>@item.RatePerLiter</td>
+                        <td>@item.Amount</td>
+                        <td>
+                            <a asp-action="EntryDetail"
+                               asp-route-id="@item.CollectionId"
+                               class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                        
+                    </tr>
+                }
+            </tbody>
+
+            <!-- Totals -->
+            <tfoot class="fw-bold">
+                <tr>
+                    <td colspan="3">Total</td>
+                    <td>@Model.Entries.Sum(x => x.Quantity)</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>₹ @Model.Entries.Sum(x => x.Amount)</td>
+                   
+                </tr>
+            </tfoot>
+        </table>
+    }
+</div>

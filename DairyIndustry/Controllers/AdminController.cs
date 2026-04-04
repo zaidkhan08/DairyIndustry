@@ -11,12 +11,14 @@ namespace DairyIndustry.Controllers
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly ICollectionCenterRepository _centerRepository;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _centerRepository = centerRepository;
         }
 
         // ════════════════════════════════════════════════════════
@@ -70,6 +72,9 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index", "Logistics");
 
                 case "Collection Agent":
+                    var centerId = _centerRepository.GetCenterIdByStaffId(user.StaffId ?? 0);
+
+                    HttpContext.Session.SetInt32("CenterId", centerId);
                     return RedirectToAction("Dashboard", "CollectionCenter");
 
                 //case "Production Manager":
@@ -248,14 +253,14 @@ namespace DairyIndustry.Controllers
         // MILK TYPES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         public IActionResult MilkTypes()
         {
             var milkTypes = _adminRepo.GetAllMilkTypes();
             return View(milkTypes);
         }
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddMilkType(string milkTypeName)
         {
@@ -267,7 +272,7 @@ namespace DairyIndustry.Controllers
         // RATE CHART
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         public IActionResult RateChart()
         {
             var rateCharts = _adminRepo.GetAllRateCharts();
@@ -275,7 +280,7 @@ namespace DairyIndustry.Controllers
             return View(rateCharts);
         }
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddRateChart(int milkTypeId, decimal fatFrom, decimal fatTo,
                                           decimal clrFrom, decimal clrTo,

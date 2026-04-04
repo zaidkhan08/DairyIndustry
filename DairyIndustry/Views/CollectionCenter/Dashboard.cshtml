@@ -1,180 +1,170 @@
-@model DairyIndustry.Models.Collection.DashboardViewModel
+@model DairyIndustry.Models.Collection.StaffDashboardViewModel
+
 @{
     ViewData["Title"] = "Dashboard";
     Layout = "_CollectionCenterLayout";
-    var now = DateTime.Now;
-
-    string shift = "No Active Shift";
-    if (now.Hour >= 6 && now.Hour < 10) { shift = "Morning"; }
-    else if (now.Hour >= 15 && now.Hour < 19) { shift = "Evening"; }
-    else if (now.Hour >= 21 || now.Hour < 1) { shift = "Night"; }
 }
 
-<div class="container mt-4">
+<div class="container py-4">
 
-    <!-- Alerts -->
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success">@TempData["Success"]</div>
-    }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger">@TempData["Error"]</div>
-    }
-
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4>Dashboard</h4>
-            <p class="text-muted mb-0">Welcome, @Model?.StaffName</p>
+        <div class="alert alert-danger border-0 shadow-sm mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
         </div>
-
-        <a asp-action="Create" class="btn btn-primary">
-            New Milk Entry
-        </a>
-    </div>
-
-    @if (Model == null)
-    {
-        <div class="alert alert-danger">@ViewBag.Error</div>
     }
-    else
-    {
-        <!-- Center Info -->
-        <div class="row mb-3">
-            <div class="col-md-3">
-                <div class="card p-2">
-                    <strong>Center</strong>
-                    <div>@Model.CenterName</div>
-                </div>
-            </div>
 
-            <div class="col-md-3">
-                <div class="card p-2">
-                    <strong>Center ID</strong>
-                    <div>#@Model.CenterId</div>
+    <!-- ================= STAFF PROFILE HEADER ================= -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-4">
+                <div class="position-relative">
+                    @if (!string.IsNullOrEmpty(Model.StaffPhoto))
+                    {
+                        <img src="@Model.StaffPhoto" alt="Photo"
+                             class="rounded-circle border border-4 border-light shadow-sm"
+                             style="width:80px;height:80px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center border border-4 border-light shadow-sm fw-bold fs-3"
+                             style="width:80px;height:80px;">
+                            @(Model.StaffName?.Length > 0 ? Model.StaffName[0].ToString().ToUpper() : "?")
+                        </div>
+                    }
+                    <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white p-2">
+                        <span class="visually-hidden">Online</span>
+                    </span>
                 </div>
-            </div>
 
-            <div class="col-md-3">
-                <div class="card p-2">
-                    <strong>Date</strong>
-                    <div>@now.ToString("dd MMM yyyy")</div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card p-2">
-                    <strong>Shift</strong>
-                    <div>
-                        @if (shift == "No Active Shift")
-                        {
-                            <span class="badge bg-secondary">No Active Shift</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success">@shift</span>
-                        }
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h4 class="mb-0 fw-bold text-dark">@Model.StaffName</h4>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary px-3">@Model.StaffType</span>
+                    </div>
+                    <div class="text-muted">
+                        <i class="bi bi-geo-alt-fill me-1"></i>
+                        @Model.CenterName <span class="mx-1 text-secondary">|</span> @Model.VillageName, @Model.CityName
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Quick Actions -->
-        <div class="card mb-3">
-            <div class="card-header">Quick Actions</div>
-            <div class="card-body">
-
-                <a asp-action="Create" class="btn btn-primary me-2 mb-2">
-                    Record Milk Entry
-                </a>
-
-                <a asp-action="BatchStatus" class="btn btn-outline-primary me-2 mb-2">
-                    Batch Status
-                </a>
-
-                <a asp-action="Inventory" class="btn btn-outline-primary mb-2">
-                    Inventory
-                </a>
-
+    <!-- ================= STATS SUMMARY ================= -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-body">
+                    <div class="text-primary mb-2"><i class="bi bi-droplet-fill fs-4"></i></div>
+                    <div class="text-muted small fw-medium">Milk Collected</div>
+                    <div class="fs-4 fw-bold">@Model.TotalMilkToday.ToString("F2") <small class="fs-6 fw-normal">L</small></div>
+                </div>
             </div>
         </div>
 
-        <!-- Shift Status -->
-        <div class="card">
-            <div class="card-header">Today's Shift Status</div>
-            <div class="card-body">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-body">
+                    <div class="text-success mb-2"><i class="bi bi-currency-rupee fs-4"></i></div>
+                    <div class="text-muted small fw-medium">Today's Revenue</div>
+                    <div class="fs-4 fw-bold text-success">@Model.TotalAmountToday.ToString("N2")</div>
+                </div>
+            </div>
+        </div>
 
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Shift</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-body">
+                    <div class="text-warning mb-2"><i class="bi bi-clipboard-data-fill fs-4"></i></div>
+                    <div class="text-muted small fw-medium">Daily Entries</div>
+                    <div class="fs-4 fw-bold text-dark">@Model.TotalEntriesToday</div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Morning -->
-                        <tr>
-                            <td>Morning</td>
-                            <td>06:00 - 10:00</td>
-                            <td>
-                                @if (now.Hour >= 6 && now.Hour < 10)
-                                {
-                                    <span class="badge bg-success">Open</span>
-                                }
-                                else if (now.Hour >= 10)
-                                {
-                                    <span class="badge bg-danger">Closed</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">Not Started</span>
-                                }
-                            </td>
-                        </tr>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-body">
+                    <div class="text-info mb-2"><i class="bi bi-people-fill fs-4"></i></div>
+                    <div class="text-muted small fw-medium">Active Farmers</div>
+                    <div class="fs-4 fw-bold text-dark">@Model.ActiveFarmerCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Evening -->
-                        <tr>
-                            <td>Evening</td>
-                            <td>15:00 - 19:00</td>
-                            <td>
-                                @if (now.Hour >= 15 && now.Hour < 19)
-                                {
-                                    <span class="badge bg-success">Open</span>
-                                }
-                                else if (now.Hour >= 19)
-                                {
-                                    <span class="badge bg-danger">Closed</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">Not Started</span>
-                                }
-                            </td>
-                        </tr>
+    <!-- ================= TANK STATUS (REPLACED PROGRESS BAR) ================= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 py-3">
+            <h6 class="mb-0 fw-bold text-uppercase small tracking-wider text-muted">Milk Tank Status</h6>
+        </div>
+        <div class="card-body pt-0 pb-4">
+            <div class="row g-0 text-center">
+                <div class="col-4 border-end">
+                    <div class="py-2">
+                        <div class="text-muted small mb-1">Total Capacity</div>
+                        <div class="fw-bold text-dark fs-5">@Model.Capacity.ToString("N0") L</div>
+                    </div>
+                </div>
+                <div class="col-4 border-end">
+                    <div class="py-2">
+                        <div class="text-muted small mb-1">Current Stock</div>
+                        @{
+                            var percent = Model.Capacity > 0 ? (Model.CurrentStock / Model.Capacity) * 100 : 0;
+                            var statusColor = percent > 85 ? "text-danger" : percent > 60 ? "text-warning" : "text-success";
+                        }
+                        <div class="fw-bold fs-5 @statusColor">@Model.CurrentStock.ToString("N2") L</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="py-2">
+                        <div class="text-muted small mb-1">Space Available</div>
+                        <div class="fw-bold text-info fs-5">@Model.AvailableSpace.ToString("N2") L</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Night -->
-                        <tr>
-                            <td>Night</td>
-                            <td>21:00 - 01:00</td>
-                            <td>
-                                @if (now.Hour >= 21 || now.Hour < 1)
-                                {
-                                    <span class="badge bg-success">Open</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger">Closed</span>
-                                }
-                            </td>
-                        </tr>
-
-                    </tbody>
-                </table>
-
+    <!-- ================= PENDING ACTIONS ================= -->
+    @if (Model.PendingPaymentAmount > 0)
+    {
+        <div class="alert bg-warning-subtle border-warning border-start border-4 shadow-sm d-flex align-items-center p-3">
+            <div class="bg-warning rounded-circle p-2 me-3">
+                <i class="bi bi-exclamation-circle text-white"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="text-warning-emphasis fw-bold">Pending Farmer Payments</div>
+                <div class="small text-muted">Action required for pending center payouts.</div>
+            </div>
+            <div class="text-end">
+                <h5 class="mb-0 fw-bold text-dark">? @Model.PendingPaymentAmount.ToString("N2")</h5>
             </div>
         </div>
     }
+
 </div>
+
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .bg-primary-subtle {
+        background-color: #e7f1ff;
+    }
+
+    .text-primary {
+        color: #0d6efd !important;
+    }
+
+    .tracking-wider {
+        letter-spacing: 0.05em;
+    }
+</style>

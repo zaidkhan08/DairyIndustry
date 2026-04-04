@@ -1,0 +1,128 @@
+﻿@model DairyIndustry.Models.Collection.MilkCollectionViewModel
+
+@{
+    ViewData["Title"] = "Entry Detail";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Entry Detail</h4>
+        <a asp-action="ViewCollectionBatch"
+           asp-route-shift="@Model.Shift"
+           asp-route-batchId="@Model.BatchId"
+           class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Batch
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="card shadow-sm">
+
+        @* Receipt Header *@
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold">Receipt</span>
+                <span class="ms-2 text-muted">@Model.ReceiptNumber</span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary">
+                    @Model.Shift &mdash; @Model.ShiftWindow
+                </span>
+
+                <a asp-controller="CollectionCenter"
+                   asp-action="DownloadReceipt"
+                   asp-route-id="@Model.CollectionId"
+                   class="btn btn-success btn-sm">
+                    Download PDF
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-4">
+
+                @* Farmer Info *@
+                <div class="col-md-6">
+                    <h6 class="text-muted text-uppercase small mb-2">Farmer</h6>
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width:120px">Code</td>
+                            <td><span class="badge bg-light text-dark border">@Model.FarmerCode</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Name</td>
+                            <td class="fw-semibold">@Model.FarmerName</td>
+                        </tr>
+                    </table>
+                </div>
+
+                @* Collection Info *@
+                <div class="col-md-6">
+                    <h6 class="text-muted text-uppercase small mb-2">Collection</h6>
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width:120px">Date</td>
+                            <td>@Model.CollectionDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Milk Type</td>
+                            <td>@Model.MilkTypeName</td>
+                        </tr>
+                    </table>
+                </div>
+
+            </div>
+
+            <hr />
+
+            @* Measurement & Rate *@
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold fs-5">@Model.Quantity.ToString("F2") L</div>
+                    <div class="text-muted small">Quantity</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold fs-5">
+                        @(Model.AppliedFat.HasValue? Model.AppliedFat.Value.ToString("F2") : "—")
+                    </div>
+                    <div class="text-muted small">Fat (%)</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold fs-5">
+                        @(Model.AppliedCLR.HasValue? Model.AppliedCLR.Value.ToString("F2") : "—")
+                    </div>
+                    <div class="text-muted small">CLR</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold fs-5">
+                        @(Model.RatePerLiter.HasValue ? "₹" + Model.RatePerLiter.Value.ToString("F2") : "—")
+                    </div>
+                    <div class="text-muted small">Rate / Litre</div>
+                </div>
+            </div>
+
+            <hr />
+
+            @* Total Amount *@
+            <div class="d-flex justify-content-between align-items-center px-2">
+                <span class="fw-semibold fs-6">Total Amount Payable</span>
+                <span class="fw-bold fs-4 text-success">
+                    &#8377; @(Model.Amount.HasValue? Model.Amount.Value.ToString("F2") : "0.00")
+                </span>
+            </div>
+        </div>
+
+        <div class="card-footer text-muted small">
+            Collection ID: @Model.CollectionId &nbsp;|&nbsp; Batch ID: @Model.BatchId
+        </div>
+
+    </div>
+
+</div>

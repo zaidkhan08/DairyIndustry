@@ -1,0 +1,170 @@
+﻿@model List<DairyIndustry.Models.Collection.MilkCollectionViewModel>
+
+
+@{
+    ViewData["Title"] = "Collection Entries";
+    Layout = "_CollectionCenterLayout";
+    var shift = ViewBag.Shift as string ?? "—";
+    var batchId = ViewBag.BatchId as int?;
+
+    var totalQty = Model?.Sum(e => e.Quantity) ?? 0;
+    var totalAmount = Model?.Sum(e => e.Amount ?? 0) ?? 0;
+    var avgFat = Model != null && Model.Any() ? Model.Average(e => e.AppliedFat ?? 0) : 0;
+    var avgClr = Model != null && Model.Any() ? Model.Average(e => e.AppliedCLR ?? 0) : 0;
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0">@shift Batch — Entries</h4>
+            <small class="text-muted">@DateTime.Today.ToString("dd MMM yyyy")</small>
+        </div>
+        <a asp-action="BatchStatus" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Batch Status
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info">@TempData["Info"]</div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    @* Summary Strip *@
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="fw-bold fs-5">@Model.Count</div>
+                        <div class="text-muted small">Entries</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="fw-bold fs-5">@totalQty.ToString("F2") L</div>
+                        <div class="text-muted small">Total Milk</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="fw-bold fs-5">&#8377; @totalAmount.ToString("F2")</div>
+                        <div class="text-muted small">Total Amount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="fw-bold fs-5">@avgFat.ToString("F2") / @avgClr.ToString("F2")</div>
+                        <div class="text-muted small">Avg Fat / CLR</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Entries Table *@
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-secondary">No entries found for this batch.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Collection Records
+                @if (batchId.HasValue)
+                {
+                    <span class="text-muted fw-normal"> — Batch #@batchId</span>
+                }
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Farmer Code</th>
+                            <th>Farmer Name</th>
+                            <th>Milk Type</th>
+                            <th class="text-end">Qty (L)</th>
+                            <th class="text-end">Fat</th>
+                            <th class="text-end">CLR</th>
+                            <th class="text-end">Rate/L</th>
+                            <th class="text-end">Amount</th>
+                            <th>Receipt No.</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int sr = 1;
+                        }
+                        @foreach (var entry in Model)
+                        {
+                            <tr>
+                                <td class="text-muted small">@sr</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">@entry.FarmerCode</span>
+                                </td>
+                                <td>@entry.FarmerName</td>
+                                <td>@entry.MilkTypeName</td>
+                                <td class="text-end fw-semibold">@entry.Quantity.ToString("F2")</td>
+                                <td class="text-end">
+                                    @(entry.AppliedFat.HasValue? entry.AppliedFat.Value.ToString("F2") : "—")
+                                </td>
+                                <td class="text-end">
+                                    @(entry.AppliedCLR.HasValue? entry.AppliedCLR.Value.ToString("F2") : "—")
+                                </td>
+                                <td class="text-end">
+                                    @(entry.RatePerLiter.HasValue ? "₹" + entry.RatePerLiter.Value.ToString("F2") : "—")
+                                </td>
+                                <td class="text-end fw-semibold text-success">
+                                    @(entry.Amount.HasValue ? "₹" + entry.Amount.Value.ToString("F2") : "—")
+                                </td>
+                                <td>
+                                    <span class="text-muted small">@entry.ReceiptNumber</span>
+                                </td>
+                                <td>
+                                    <a asp-action="EntryDetail"
+                                       asp-route-id="@entry.CollectionId"
+                                       class="btn btn-outline-secondary btn-sm">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            sr++;
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-semibold">
+                        <tr>
+                            <td colspan="4" class="text-end">Total</td>
+                            <td class="text-end">@totalQty.ToString("F2")</td>
+                            <td class="text-end">@avgFat.ToString("F2")</td>
+                            <td class="text-end">@avgClr.ToString("F2")</td>
+                            <td></td>
+                            <td class="text-end text-success">&#8377; @totalAmount.ToString("F2")</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
