@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DairyIndustry.Controllers
 {
-    //[ServiceFilter(typeof(ActionLogFilter))]
+    //    [ServiceFilter(typeof(ActionLogFilter))]
     public class AdminController : Controller
     {
         private readonly IAdminRepository _adminRepo;
