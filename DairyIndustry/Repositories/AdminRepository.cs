@@ -186,7 +186,7 @@ namespace DairyIndustry.Repositories
         {
             using (SqlConnection con = _db.GetConnection())
             {
-                using (SqlCommand cmd = new SqlCommand("Admin.usp_AssignUserToPlant", con))
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_AssignUserToPlant", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
@@ -202,7 +202,7 @@ namespace DairyIndustry.Repositories
         {
             using (SqlConnection con = _db.GetConnection())
             {
-                using (SqlCommand cmd = new SqlCommand("Admin.usp_AssignUserToCenter", con))
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_AssignUserToCenter", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
@@ -934,6 +934,108 @@ namespace DairyIndustry.Repositories
                         {
                             PlantId = Convert.ToInt32(reader["PlantId"]),
                             PlantName = reader["PlantName"].ToString(),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+        // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        public int AddCollection(string CenterName, int VillageID, decimal Capacity, string Location)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_AddCenter", con))
+                { 
+                    cmd.CommandType=CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@CenterName", CenterName);
+                    cmd.Parameters.AddWithValue("@VillageID", VillageID);
+                    cmd.Parameters.AddWithValue("@Capacity", Capacity);
+                    cmd.Parameters.AddWithValue("@Location", Location);
+                    con.Open();
+                    var result=cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
+        public List<CollectionCenterModel> GetAllCollection(bool? isActive = true)
+        {
+            var list = new List<CollectionCenterModel>();
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_GetCenters", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new CollectionCenterModel
+                        {
+                            CenterId = Convert.ToInt32(reader["CenterId"]),
+                            CenterName = reader["CenterName"].ToString(),
+                            VillageId = Convert.ToInt32(reader["VillageId"]),
+                            Capacity = Convert.ToInt32(reader["Capacity"]),
+                            Location = reader["Location"].ToString(),
+                            IsActive = Convert.ToBoolean(reader["IsActive"])
+                        });
+                    }
+                }
+            }
+            return list;
+        }
+        public void ToggleCollection(int id, bool isActive) 
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_ToggleCenter", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@CenterId", id);
+                cmd.Parameters.AddWithValue("@IsActive", isActive ? 1 : 0);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+        public void UpdateCollection(CollectionCenterModel collection)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_UpdateCenter", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@CenterId", collection.CenterId);
+                    cmd.Parameters.AddWithValue("@CenterName", collection.CenterName);
+                    cmd.Parameters.AddWithValue("@Capacity", collection.Capacity);
+                    cmd.Parameters.AddWithValue("@VillageId", collection.VillageId);
+                    cmd.Parameters.AddWithValue("@Location", collection.Location);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        public CollectionCenterModel getCollectionById(int id)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_GetCenterById", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@CenterId", id);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new CollectionCenterModel
+                        {
+                            CenterId = Convert.ToInt32(reader["CenterId"]),
+                            CenterName = reader["CenterName"].ToString(),
+                            VillageId = Convert.ToInt32(reader["VillageId"]),
+                            Capacity = Convert.ToInt32(reader["Capacity"]),
                             Location = reader["Location"].ToString(),
                             IsActive = Convert.ToBoolean(reader["IsActive"])
                         };

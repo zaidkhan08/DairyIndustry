@@ -90,6 +90,18 @@ namespace DairyIndustry.Repositories
         PlantModel getPlantById(int id);
 
         // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        int AddCollection(string CenterName, int VillageID,decimal Capacity,string Location);
+        List<CollectionCenterModel> GetAllCollection(bool? isActive = true);
+        
+        void ToggleCollection(int id, bool isActive);
+        void UpdateCollection(CollectionCenterModel collection);
+        CollectionCenterModel getCollectionById(int id);
+
+
+        // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════
 

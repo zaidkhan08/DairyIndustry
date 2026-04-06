@@ -2,6 +2,7 @@
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 
 namespace DairyIndustry.Controllers
 {
@@ -114,10 +115,18 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult Index()
         {
-            var users = _adminRepo.GetAllUsers();
-            return View(users);
+            var vm = new AdminDashboardViewModel
+            {
+                Users = _adminRepo.GetAllUsers(),
+                Staff = _adminRepo.GetAllStaff(),
+                Plants = _adminRepo.GetAllPlants(isActive: null),
+                Centers = _adminRepo.GetAllCollection(isActive: null),
+                Products = _adminRepo.GetAllProducts(isActive: null),
+                Batches = _adminRepo.GetProductionBatches(),
+                Transfers = _adminRepo.GetMilkTransfers()
+            };
+            return View(vm);
         }
-
         // ════════════════════════════════════════════════════════
         // ROLES
         // ════════════════════════════════════════════════════════
@@ -232,7 +241,7 @@ namespace DairyIndustry.Controllers
                 return View();
             }
 
-            _adminRepo.AssignUserToPlant(userId, centerId);
+            _adminRepo.AssignUserToCenter(userId, centerId);
 
             TempData["Success"] = "User assigned to center successfully.";
 
@@ -508,6 +517,63 @@ namespace DairyIndustry.Controllers
             return View("EditPlant", plant);
         }
 
+        // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public ActionResult AddCollection()
+        {
+            var village=_adminRepo.GetAllVillages();
+            return View(village);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult AddCollection(string CenterName, int VillageID, decimal Capacity, string Location)
+        {
+            _adminRepo.AddCollection(CenterName, VillageID, Capacity, Location);
+            return RedirectToAction("GetAllCollection");
+        }
+        [SessionAuthorize("Admin")]
+        public ActionResult GetAllCollection(bool? isActive = true )
+        { 
+            var collection = _adminRepo.GetAllCollection(isActive);
+            return View(collection);
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult ToggleCollection(int id, bool isActive)
+        {
+            _adminRepo.ToggleCollection(id, isActive);
+            return RedirectToAction("GetAllCollection");
+        }
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public ActionResult EditCollection(int id)
+        {
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+
+            var collection = _adminRepo.getCollectionById(id);
+            if (collection == null)
+                return NotFound();
+
+            return View(collection);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult UpdateCollection(CollectionCenterModel collection)
+        {
+           
+                _adminRepo.UpdateCollection(collection);
+                return RedirectToAction("GetAllCollection");
+            
+            // repopulate ViewBag before returning view
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+            return View("EditCollection", collection);
+        }
         // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════
