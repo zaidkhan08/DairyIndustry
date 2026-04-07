@@ -951,14 +951,14 @@ namespace DairyIndustry.Repositories
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_AddCenter", con))
-                { 
-                    cmd.CommandType=CommandType.StoredProcedure;
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@CenterName", CenterName);
                     cmd.Parameters.AddWithValue("@VillageID", VillageID);
                     cmd.Parameters.AddWithValue("@Capacity", Capacity);
                     cmd.Parameters.AddWithValue("@Location", Location);
                     con.Open();
-                    var result=cmd.ExecuteScalar();
+                    var result = cmd.ExecuteScalar();
                     return Convert.ToInt32(result);
                 }
             }
@@ -989,7 +989,7 @@ namespace DairyIndustry.Repositories
             }
             return list;
         }
-        public void ToggleCollection(int id, bool isActive) 
+        public void ToggleCollection(int id, bool isActive)
         {
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_ToggleCenter", con))
@@ -1384,6 +1384,63 @@ namespace DairyIndustry.Repositories
                 }
             }
             return list;
+        }
+
+
+        //Distributors
+
+        public List<Distributor> GetDistributors()
+        {
+            var list = new List<Distributor>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_GetDistributors", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new Distributor
+                            {
+                                DistributorId = Convert.ToInt32(reader["DistributorId"]),
+                                DistributorName = reader["DistributorName"].ToString(),
+                                Location = reader["Location"]?.ToString(),
+                                ContactNumber = reader["ContactNumber"]?.ToString(),
+                                Email = reader["Email"]?.ToString(),
+                                Address = reader["Address"]?.ToString(),
+                                GSTIN = reader["GSTIN"]?.ToString(),
+                                Status = reader["Status"]?.ToString() ?? "Pending"
+                            });
+                        }
+                    }
+                }
+                return list;
+            }
+        }
+        public int AddDistributor(Distributor distributor)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddDistributor", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    con.Open();
+
+                    cmd.Parameters.AddWithValue("@DistributorName", distributor.DistributorName);
+                    cmd.Parameters.AddWithValue("@Location", (object?)distributor.Location ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ContactNumber", (object?)distributor.ContactNumber ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", (object?)distributor.Email ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Address", (object?)distributor.Address ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@GSTIN", (object?)distributor.GSTIN ?? DBNull.Value);
+
+                    var result = cmd.ExecuteScalar();
+
+                    return Convert.ToInt32(result);
+                }
+            }
         }
     }
 }

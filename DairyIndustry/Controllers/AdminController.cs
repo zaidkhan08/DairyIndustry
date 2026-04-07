@@ -726,5 +726,32 @@ namespace DairyIndustry.Controllers
 
             return View(transfers);
         }
+
+        //DISTRIBUTOR   
+        [SessionAuthorize("Admin")]
+        public ActionResult Distributors()
+        { 
+            var distributors=_adminRepo.GetDistributors();
+            return View(distributors);
+        }
+        public IActionResult AddDistributor()
+        {
+            return View();
+        }
+
+        // POST: Add Distributor
+        [HttpPost]
+        public IActionResult AddDistributor(Distributor distributor)
+        {
+            if (ModelState.IsValid)
+            {
+                _adminRepo.AddDistributor(distributor);
+                TempData["success"] = "Distributor added successfully!";
+                return RedirectToAction("Distributors");
+            }
+
+            return View(distributor);
+        }
+
     }
 }

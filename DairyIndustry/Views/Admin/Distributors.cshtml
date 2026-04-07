@@ -1,0 +1,173 @@
+﻿@model List<DairyIndustry.Models.Admin.Distributor>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Distributors";
+}
+
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Distributors</h3>
+                <p class="text-muted mb-0">View and manage all distributors</p>
+            </div>
+            <a asp-controller="Admin" asp-action="AddDistributor" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Add New Distributor
+            </a>
+        </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="row mb-4 g-3">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <p class="mb-1 small">Total Distributors</p>
+                    <h4 class="fw-bold mb-0">@Model.Count</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <p class="mb-1 small">Active</p>
+                    <h4 class="fw-bold mb-0">
+                        @Model.Count(d => d.Status == "Active")
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body">
+                    <p class="mb-1 small">Pending</p>
+                    <h4 class="fw-bold mb-0">
+                        @Model.Count(d => d.Status == "Pending")
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between">
+            <span><i class="bi bi-truck me-1"></i> All Distributors</span>
+            <span class="badge bg-primary">Total: @Model.Count</span>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    No distributors found.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int sr = 1;
+
+                            foreach (var d in Model)
+                            {
+                                <tr>
+
+                                    <td>@sr</td>
+
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            #@d.DistributorId
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <div class="fw-semibold">@d.DistributorName</div>
+                                        <small class="text-muted">@d.Email</small>
+                                    </td>
+
+                                    <td>@d.ContactNumber</td>
+
+                                    <td>@(string.IsNullOrEmpty(d.Location) ? "-" : d.Location)</td>
+
+                                    <td>
+                                        @if (d.Status == "Active")
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else if (d.Status == "Pending")
+                                        {
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactive</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex gap-2">
+
+                                            <a asp-controller="Admin"
+                                               asp-action="EditDistributor"
+                                               asp-route-id="@d.DistributorId"
+                                               class="btn btn-sm btn-outline-warning">
+                                                Edit
+                                            </a>
+
+                                            <form asp-controller="Admin"
+                                                  asp-action="DeleteDistributor"
+                                                  method="post"
+                                                  onsubmit="return confirm('Delete this distributor?')">
+                                                <input type="hidden" name="id" value="@d.DistributorId" />
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+
+                                        </div>
+                                    </td>
+
+                                </tr>
+
+                                sr++;
+                            }
+                        }
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer bg-white text-muted small">
+            @Model.Count distributor(s) in system
+        </div>
+
+    </div>
+
+</div>

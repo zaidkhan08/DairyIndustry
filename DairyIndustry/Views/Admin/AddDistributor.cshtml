@@ -1,0 +1,55 @@
+﻿@model DairyIndustry.Models.Admin.Distributor
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Distributor";
+}
+
+<div class="container mt-4">
+
+    <h3 class="fw-bold mb-3">Add Distributor</h3>
+
+    <form asp-action="AddDistributor" method="post">
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <label>Name</label>
+                <input asp-for="DistributorName" class="form-control" required />
+            </div>
+
+            <div class="col-md-6">
+                <label>Contact Number</label>
+                <input asp-for="ContactNumber" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label>Email</label>
+                <input asp-for="Email" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label>Location</label>
+                <input asp-for="Location" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label>GSTIN</label>
+                <input asp-for="GSTIN" class="form-control" />
+            </div>
+
+            <div class="col-md-12">
+                <label>Address</label>
+                <textarea asp-for="Address" class="form-control"></textarea>
+            </div>
+
+        </div>
+
+        <div class="mt-4">
+            <button class="btn btn-success">Save</button>
+            <a asp-action="DistributorList" class="btn btn-secondary">Cancel</a>
+        </div>
+
+    </form>
+
+</div>

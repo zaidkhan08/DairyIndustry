@@ -131,6 +131,10 @@ namespace DairyIndustry.Repositories
         //collection center
         List<CollectionCenterModel> GetAllCenters();
 
+        //Distributers
+        List<Distributor> GetDistributors();
+        int AddDistributor(Distributor distributor);
+
     }
 
 }
