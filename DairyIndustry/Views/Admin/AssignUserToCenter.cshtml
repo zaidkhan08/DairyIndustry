@@ -1,23 +1,29 @@
 ﻿@{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Assign User to Center";
+
     var users = ViewBag.Users as List<DairyIndustry.Models.Admin.User>
-                ?? new List<DairyIndustry.Models.Admin.User>();
+                  ?? new List<DairyIndustry.Models.Admin.User>();
     var centers = ViewBag.Centers as List<DairyIndustry.Models.Admin.CollectionCenterModel>
                   ?? new List<DairyIndustry.Models.Admin.CollectionCenterModel>();
+    var assignments = ViewBag.Assignments
+                      as List<DairyIndustry.Models.Admin.UserAssignmentViewModel>
+                      ?? new List<DairyIndustry.Models.Admin.UserAssignmentViewModel>();
+
+    var assigned = assignments.Where(a => a.CenterId != null).ToList();
+    var unassigned = assignments.Where(a => a.CenterId == null).ToList();
 }
 
 <div class="container mt-4">
-    <!-- Header -->
+
+    @* {{-- Header --}} *@
     <div class="row mb-4">
         <div class="col d-flex justify-content-between align-items-center">
             <div>
                 <h3 class="fw-bold mb-0">Assign User to Center</h3>
-                <p class="text-muted mb-0">Map a user to a specific collection center</p>
+                <p class="text-muted mb-0">Map a user account to a collection center</p>
             </div>
-            <a asp-action="Users" class="btn btn-outline-secondary">
-                Back
-            </a>
+            <a asp-action="Users" class="btn btn-outline-secondary">Back</a>
         </div>
     </div>
 
@@ -30,60 +36,145 @@
         <div class="alert alert-success">@TempData["Success"]</div>
     }
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
+    <div class="row g-4">
+
+        @* {{-- Form --}} *@
+        <div class="col-md-4">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">
-                    Assign Details
-                </div>
+                <div class="card-header bg-white fw-semibold">New Assignment</div>
                 <div class="card-body p-4">
                     <form method="post" asp-action="AssignUserToCenter">
-
-                        <!-- User Dropdown -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Select User
-                            </label>
+                            <label class="form-label fw-semibold">User</label>
                             <select name="userId" class="form-select" required>
                                 <option value="">-- Select User --</option>
                                 @foreach (var user in users)
                                 {
-                                    <option value="@user.UserId">
-                                        @user.Username
-                                    </option>
+                                    <option value="@user.UserId">@user.Username</option>
                                 }
                             </select>
                         </div>
-
-                        <!-- Center Dropdown -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Select Center
-                            </label>
+                            <label class="form-label fw-semibold">Center</label>
                             <select name="centerId" class="form-select" required>
                                 <option value="">-- Select Center --</option>
                                 @foreach (var center in centers)
                                 {
-                                    <option value="@center.CenterId">
-                                        @center.CenterName
-                                    </option>
+                                    <option value="@center.CenterId">@center.CenterName</option>
                                 }
                             </select>
                         </div>
-
-                        <!-- Buttons -->
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4">
-                                Assign
-                            </button>
-                            <a asp-action="Users" class="btn btn-outline-secondary px-4">
-                                Cancel
-                            </a>
+                            <button type="submit" class="btn btn-primary px-4">Assign</button>
+                            <a asp-action="Users" class="btn btn-outline-secondary px-4">Cancel</a>
                         </div>
-
                     </form>
                 </div>
             </div>
         </div>
+
+        @* {{-- Tables --}} *@
+        <div class="col-md-8">
+
+            @* {{-- Assigned --}} *@
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    Assigned Users
+                    <span class="badge bg-success rounded-pill">@assigned.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (!assigned.Any())
+                    {
+                        <p class="text-muted text-center py-3 mb-0">No assignments yet.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        @* <th>#</th> *@
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Center</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int row = 1;
+                                    }
+                                    @foreach (var a in assigned)
+                                    {
+                                        <tr>
+                                            @* <td class="text-muted small">@row</td> *@
+                                            <td class="fw-semibold">@a.Username</td>
+                                            <td>
+                                                <span class="badge rounded-pill bg-light text-secondary border">
+                                                    @a.RoleName
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill"
+                                                      style="background:#e8f5e9;color:#2e7d32;font-weight:500;">
+                                                    @a.CenterName
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* {{-- Unassigned --}} *@
+        @*     <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Unassigned Users</span>
+                    <span class="badge bg-warning text-dark rounded-pill">@unassigned.Count</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (!unassigned.Any())
+                    {
+                        <p class="text-muted text-center py-3 mb-0">All users are assigned.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Center</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int urow = 1;
+                                    }
+                                    @foreach (var a in unassigned)
+                                    {
+                                        <tr>
+                                            <td class="text-muted small">@urow++</td>
+                                            <td class="fw-semibold">@a.Username</td>
+                                            <td>
+                                                <span class="badge rounded-pill bg-light text-secondary border">
+                                                    @a.RoleName
+                                                </span>
+                                            </td>
+                                            <td class="text-muted small">Not assigned</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>*@
+
+        </div> 
     </div>
 </div>

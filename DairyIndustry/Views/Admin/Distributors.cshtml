@@ -1,173 +1,115 @@
 ﻿@model List<DairyIndustry.Models.Admin.Distributor>
-
 @{
-    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Distributors";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="container mt-4">
-
-    <!-- HEADER -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Distributors</h3>
-                <p class="text-muted mb-0">View and manage all distributors</p>
-            </div>
-            <a asp-controller="Admin" asp-action="AddDistributor" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i> Add New Distributor
-            </a>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">All Distributors</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="PendingDistributors" class="btn btn-outline-warning btn-sm">
+            Pending Approvals
+        </a>
+        <a asp-action="AddDistributor" class="btn btn-primary btn-sm">
+            + Add Distributor
+        </a>
     </div>
+</div>
 
-    <!-- CARDS -->
-    <div class="row mb-4 g-3">
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body">
-                    <p class="mb-1 small">Total Distributors</p>
-                    <h4 class="fw-bold mb-0">@Model.Count</h4>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body">
-                    <p class="mb-1 small">Active</p>
-                    <h4 class="fw-bold mb-0">
-                        @Model.Count(d => d.Status == "Active")
-                    </h4>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-warning text-dark">
-                <div class="card-body">
-                    <p class="mb-1 small">Pending</p>
-                    <h4 class="fw-bold mb-0">
-                        @Model.Count(d => d.Status == "Pending")
-                    </h4>
-                </div>
-            </div>
-        </div>
-
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+}
+@if (TempData["error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-    <!-- TABLE -->
-    <div class="card shadow-sm border-0">
-
-        <div class="card-header bg-white fw-semibold d-flex justify-content-between">
-            <span><i class="bi bi-truck me-1"></i> All Distributors</span>
-            <span class="badge bg-primary">Total: @Model.Count</span>
-        </div>
-
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Contact</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    No distributors found.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            int sr = 1;
-
-                            foreach (var d in Model)
-                            {
-                                <tr>
-
-                                    <td>@sr</td>
-
-                                    <td>
-                                        <span class="badge bg-secondary">
-                                            #@d.DistributorId
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <div class="fw-semibold">@d.DistributorName</div>
-                                        <small class="text-muted">@d.Email</small>
-                                    </td>
-
-                                    <td>@d.ContactNumber</td>
-
-                                    <td>@(string.IsNullOrEmpty(d.Location) ? "-" : d.Location)</td>
-
-                                    <td>
-                                        @if (d.Status == "Active")
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else if (d.Status == "Pending")
-                                        {
-                                            <span class="badge bg-warning text-dark">Pending</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Inactive</span>
-                                        }
-                                    </td>
-
-                                    <td>
-                                        <div class="d-flex gap-2">
-
-                                            <a asp-controller="Admin"
-                                               asp-action="EditDistributor"
-                                               asp-route-id="@d.DistributorId"
-                                               class="btn btn-sm btn-outline-warning">
-                                                Edit
-                                            </a>
-
-                                            <form asp-controller="Admin"
-                                                  asp-action="DeleteDistributor"
-                                                  method="post"
-                                                  onsubmit="return confirm('Delete this distributor?')">
-                                                <input type="hidden" name="id" value="@d.DistributorId" />
-                                                <button class="btn btn-sm btn-outline-danger">
-                                                    Delete
-                                                </button>
-                                            </form>
-
-                                        </div>
-                                    </td>
-
-                                </tr>
-
-                                sr++;
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Location</th>
+                    <th>GSTIN</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model)
+                {
+                    <tr>
+                        <td>@d.DistributorId</td>
+                        <td>
+                            <div class="fw-semibold">@d.DistributorName</div>
+                            <small class="text-muted">@d.Email</small>
+                        </td>
+                        <td>@(d.ContactNumber ?? "—")</td>
+                        <td>@(d.Location ?? "—")</td>
+                        <td><code>@(d.GSTIN ?? "—")</code></td>
+                        <td>
+                            @{
+                                var badge = d.Status switch
+                                {
+                                    "Approved" => "success",
+                                    "Pending" => "warning",
+                                    "Rejected" => "danger",
+                                    "Suspended" => "secondary",
+                                    _ => "light"
+                                };
                             }
-                        }
-
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="card-footer bg-white text-muted small">
-            @Model.Count distributor(s) in system
-        </div>
-
+                            <span class="badge bg-@badge">@d.Status</span>
+                        </td>
+                        <td>@d.RegisteredOn.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (d.Status == "Approved")
+                            {
+                                <form asp-action="UpdateDistributorStatus" method="post"
+                                      onsubmit="return confirm('Suspend @d.DistributorName?')">
+                                    <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                    <input type="hidden" name="status" value="Suspended" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        Suspend
+                                    </button>
+                                </form>
+                            }
+                            else if (d.Status == "Suspended")
+                            {
+                                <form asp-action="UpdateDistributorStatus" method="post">
+                                    <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                    <input type="hidden" name="status" value="Approved" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        Re-activate
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            No distributors found.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-
 </div>

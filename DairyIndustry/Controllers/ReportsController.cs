@@ -1,4 +1,5 @@
 ﻿using DairyIndustry.Filters;
+using DairyIndustry.Models.Reports;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,22 +17,31 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         public IActionResult Index(
-            DateTime? fromDate, DateTime? toDate,
-            int? centerId, int? plantId, int? distributorId)
+            DateTime? fromDate,
+            DateTime? toDate,
+            int? plantId,
+            int? distributorId,
+            string? activeTab)
         {
-            fromDate ??= DateTime.Today.AddDays(-30);
-            toDate ??= DateTime.Today;
+            var model = new AdminReportViewModel
+            {
+                FromDate = fromDate ?? DateTime.Today.AddDays(-30),
+                ToDate = toDate ?? DateTime.Today,
+                PlantId = plantId,
+                DistributorId = distributorId,
+                ActiveTab = activeTab ?? "dashboard"
+            };
 
-            ViewBag.FromDate = fromDate.Value.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate.Value.ToString("yyyy-MM-dd");
+            model.Dashboard = _reportRepo.GetDashboardOverview();
+            model.Sales = _reportRepo.GetSalesReport(distributorId, model.FromDate, model.ToDate);
+            model.Production = _reportRepo.GetPlantProductionSummary(plantId, model.FromDate, model.ToDate);
+            model.Wastage = _reportRepo.GetWastageSummary(plantId, model.FromDate, model.ToDate);
+            model.Transfers = _reportRepo.GetMilkTransfers(plantId, model.FromDate, model.ToDate);
+            model.StaffPayments = _reportRepo.GetStaffPayments(model.FromDate, model.ToDate);
+            model.CenterPayments = _reportRepo.GetCenterPayments(model.FromDate, model.ToDate);
+            model.PendingPayments = _reportRepo.GetPendingPayments();
 
-            ViewBag.DailySummary = _reportRepo.GetDailySummaryByCenter(centerId, fromDate, toDate);
-            ViewBag.FarmerReport = _reportRepo.GetCollectionByFarmer(centerId, fromDate, toDate);
-            ViewBag.Production = _reportRepo.GetPlantProductionSummary(plantId, fromDate, toDate);
-            ViewBag.Wastage = _reportRepo.GetWastageSummary(plantId, fromDate, toDate);
-            ViewBag.Sales = _reportRepo.GetSalesReport(distributorId, fromDate, toDate);
-
-            return View();
+            return View(model);
         }
     }
 }

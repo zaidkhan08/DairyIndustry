@@ -199,9 +199,10 @@ namespace DairyIndustry.Controllers
         {
             ViewBag.Users = _adminRepo.GetAllUsers();
             ViewBag.Plants = _adminRepo.GetAllPlants();
-
+            ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
             return View();
         }
+
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AssignUserToPlant(int userId, int plantId)
@@ -211,41 +212,39 @@ namespace DairyIndustry.Controllers
                 ViewBag.Error = "Please select both user and plant.";
                 ViewBag.Users = _adminRepo.GetAllUsers();
                 ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
                 return View();
             }
-
             _adminRepo.AssignUserToPlant(userId, plantId);
-
             TempData["Success"] = "User assigned to plant successfully.";
-
-            return RedirectToAction("Users");
+            return RedirectToAction("AssignUserToPlant");
         }
+
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AssignUserToCenter()
         {
             ViewBag.Users = _adminRepo.GetAllUsers();
             ViewBag.Centers = _adminRepo.GetAllCenters();
-
+            ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
             return View();
         }
+
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AssignUserToCenter(int userId, int centerId)
         {
             if (userId == 0 || centerId == 0)
             {
-                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Error = "Please select both user and center.";
                 ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.center = _adminRepo.GetAllCenters();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
                 return View();
             }
-
             _adminRepo.AssignUserToCenter(userId, centerId);
-
             TempData["Success"] = "User assigned to center successfully.";
-
-            return RedirectToAction("Users");
+            return RedirectToAction("AssignUserToCenter");
         }
 
         // ════════════════════════════════════════════════════════
@@ -525,7 +524,7 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public ActionResult AddCollection()
         {
-            var village=_adminRepo.GetAllVillages();
+            var village = _adminRepo.GetAllVillages();
             return View(village);
         }
 
@@ -537,8 +536,8 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("GetAllCollection");
         }
         [SessionAuthorize("Admin")]
-        public ActionResult GetAllCollection(bool? isActive = true )
-        { 
+        public ActionResult GetAllCollection(bool? isActive = true)
+        {
             var collection = _adminRepo.GetAllCollection(isActive);
             return View(collection);
         }
@@ -566,10 +565,10 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public ActionResult UpdateCollection(CollectionCenterModel collection)
         {
-           
-                _adminRepo.UpdateCollection(collection);
-                return RedirectToAction("GetAllCollection");
-            
+
+            _adminRepo.UpdateCollection(collection);
+            return RedirectToAction("GetAllCollection");
+
             // repopulate ViewBag before returning view
             ViewBag.Villages = _adminRepo.GetAllVillages();
             return View("EditCollection", collection);
@@ -730,8 +729,8 @@ namespace DairyIndustry.Controllers
         //DISTRIBUTOR   
         [SessionAuthorize("Admin")]
         public ActionResult Distributors()
-        { 
-            var distributors=_adminRepo.GetDistributors();
+        {
+            var distributors = _adminRepo.GetDistributors();
             return View(distributors);
         }
         public IActionResult AddDistributor()
@@ -752,6 +751,111 @@ namespace DairyIndustry.Controllers
 
             return View(distributor);
         }
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult UpdateDistributorStatus(int distributorId, string status)
+        {
+            var allowed = new[] { "Approved", "Rejected", "Suspended" };
+            if (!allowed.Contains(status))
+            {
+                TempData["error"] = "Invalid status value.";
+                return RedirectToAction("PendingDistributors");
+            }
 
+            _adminRepo.UpdateDistributorStatus(distributorId, status);
+
+            TempData["success"] = status switch
+            {
+                "Approved" => "Distributor approved successfully.",
+                "Rejected" => "Distributor rejected.",
+                "Suspended" => "Distributor suspended.",
+                _ => "Status updated."
+            };
+
+            // After approving/rejecting, go back to pending queue.
+            // After suspending from main list, go back to full list.
+            return status == "Suspended"
+                ? RedirectToAction("Distributors")
+                : RedirectToAction("PendingDistributors");
+        }
+        [SessionAuthorize("Admin")]
+        public IActionResult PendingDistributors()
+        {
+            var pending = _adminRepo.GetPendingDistributors();
+            return View(pending);
+        }
+
+        public IActionResult AdminOrder()
+        {
+            var model = new AdminOrderModel();
+
+            model.DistributorList = _adminRepo.GetDistributors();
+
+            model.ProductList = _adminRepo.GetAllProducts(null, true);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrder(AdminOrderModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _adminRepo.CreateOrder(model);
+                    ViewBag.Message = "Order Created Successfully!";
+                    model = new AdminOrderModel(); // clear form on success
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", ex.Message);
+                }
+            }
+
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.ProductList = _adminRepo.GetAllProducts(null, true);
+            return View(model);
+        }
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrderList()
+        {
+            var model = new AdminOrderListModel();
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.Orders = _adminRepo.GetAllOrders(null, null, null, null);
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrderList(AdminOrderListModel model)
+        {
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.Orders = _adminRepo.GetAllOrders(
+                model.DistributorId,
+                model.OrderStatus,
+                model.FromDate,
+                model.ToDate
+            );
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult UpdateOrderStatus(int orderId, string status, int? distributorId, string? orderStatus, DateTime? fromDate, DateTime? toDate)
+        {
+            _adminRepo.UpdateOrderStatus(orderId, status);
+            TempData["Message"] = $"Order #{orderId} updated to {status}.";
+
+            return RedirectToAction("AdminOrderList", new
+            {
+                DistributorId = distributorId,
+                OrderStatus = orderStatus,
+                FromDate = fromDate?.ToString("yyyy-MM-dd"),
+                ToDate = toDate?.ToString("yyyy-MM-dd")
+            });
+        }
     }
 }

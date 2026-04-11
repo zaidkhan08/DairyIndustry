@@ -134,6 +134,19 @@ namespace DairyIndustry.Repositories
         //Distributers
         List<Distributor> GetDistributors();
         int AddDistributor(Distributor distributor);
+        bool UpdateDistributorStatus(int distributorId, string status);
+        Distributor? GetDistributorById(int distributorId);
+        List<Distributor> GetPendingDistributors();
+
+        //Assign plant and collection to user
+        List<UserAssignmentViewModel> GetAllUserPlantAssignments();
+        List<UserAssignmentViewModel> GetAllUserCenterAssignments();
+
+        //Order place behalf of distributor
+        int CreateOrder(AdminOrderModel model);
+        bool UpdateOrderStatus(int orderId, string status);
+        List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
+
 
     }
 

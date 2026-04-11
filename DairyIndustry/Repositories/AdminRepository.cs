@@ -1442,5 +1442,237 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public bool UpdateDistributorStatus(int distributorId, string status)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using var cmd = new SqlCommand("Sales.usp_Sales_UpdateDistributorStatus", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                cmd.Parameters.AddWithValue("@Status", status);
+                con.Open();
+                return cmd.ExecuteNonQuery() > 0;
+            }
+
+        }
+
+        public Distributor? GetDistributorById(int distributorId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+
+                using var cmd = new SqlCommand("Sales.usp_Sales_GetDistributorById", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                con.Open();
+                using var dr = cmd.ExecuteReader();
+                return dr.Read() ? MapDistributor(dr) : null;
+            }
+        }
+        public List<Distributor> GetPendingDistributors()
+        {
+            var list = new List<Distributor>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using var cmd = new SqlCommand("Sales.usp_Sales_GetPendingDistributors", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                using var dr = cmd.ExecuteReader();
+                while (dr.Read())
+                    list.Add(MapDistributor(dr));
+                return list;
+            }
+        }
+
+        // ── private helper — keeps all Read() calls in one place ──
+        private static Distributor MapDistributor(SqlDataReader dr) => new()
+        {
+            DistributorId = (int)dr["DistributorId"],
+            DistributorName = dr["DistributorName"].ToString()!,
+            Location = dr["Location"] as string,
+            ContactNumber = dr["ContactNumber"] as string,
+            Email = dr["Email"] as string,
+            Address = dr["Address"] as string,
+            GSTIN = dr["GSTIN"] as string,
+            Status = dr["Status"].ToString()!,
+            RegisteredOn = (DateTime)dr["RegisteredOn"]
+        };
+
+        //Assign plant and collection to user
+
+        public List<UserAssignmentViewModel> GetAllUserPlantAssignments()
+        {
+            var list = new List<UserAssignmentViewModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+                string query = @"
+            SELECT
+                u.UserId,
+                u.Username,
+                r.RoleName,
+                up.UserPlantId,
+                up.PlantId,
+                pp.PlantName
+            FROM Admin.Users u
+            INNER JOIN Admin.Roles r
+                ON r.RoleId = u.RoleId
+            LEFT JOIN Admin.UserPlants up
+                ON up.UserId = u.UserId
+            LEFT JOIN Production.ProcessingPlants pp
+                ON pp.PlantId = up.PlantId
+            ORDER BY u.Username";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            list.Add(new UserAssignmentViewModel
+                            {
+                                UserId = Convert.ToInt32(dr["UserId"]),
+                                Username = dr["Username"].ToString(),
+                                RoleName = dr["RoleName"].ToString(),
+                                UserPlantId = dr["UserPlantId"] == DBNull.Value ? null : Convert.ToInt32(dr["UserPlantId"]),
+                                PlantId = dr["PlantId"] == DBNull.Value ? null : Convert.ToInt32(dr["PlantId"]),
+                                PlantName = dr["PlantName"] == DBNull.Value ? null : dr["PlantName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        public List<UserAssignmentViewModel> GetAllUserCenterAssignments()
+        {
+            var list = new List<UserAssignmentViewModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+                string query = @"
+            SELECT
+                u.UserId,
+                u.Username,
+                r.RoleName,
+                uc.UserCenterId,
+                uc.CenterId,
+                cc.CenterName
+            FROM Admin.Users u
+            INNER JOIN Admin.Roles r
+                ON r.RoleId = u.RoleId
+            LEFT JOIN Admin.UserCenters uc
+                ON uc.UserId = u.UserId
+            LEFT JOIN Collection.CollectionCenters cc
+                ON cc.CenterId = uc.CenterId
+            ORDER BY u.Username";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            list.Add(new UserAssignmentViewModel
+                            {
+                                UserId = Convert.ToInt32(dr["UserId"]),
+                                Username = dr["Username"].ToString(),
+                                RoleName = dr["RoleName"].ToString(),
+                                UserCenterId = dr["UserCenterId"] == DBNull.Value ? null : Convert.ToInt32(dr["UserCenterId"]),
+                                CenterId = dr["CenterId"] == DBNull.Value ? null : Convert.ToInt32(dr["CenterId"]),
+                                CenterName = dr["CenterName"] == DBNull.Value ? null : dr["CenterName"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
+
+        public int CreateOrder(AdminOrderModel model)
+        {
+            int orderId = 0;
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+
+                // Step 1: Create the order header via SP (only works for Approved distributors)
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_CreateOrder", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@DistributorId", model.DistributorId);
+                    cmd.Parameters.AddWithValue("@OrderDate", model.OrderDate.Date);
+                    orderId = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+
+                // Step 2: Add the order line item via SP (also updates TotalAmount)
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.Parameters.AddWithValue("@ProductId", model.ProductId);
+                    cmd.Parameters.AddWithValue("@Quantity", model.Quantity);
+                    cmd.Parameters.AddWithValue("@UnitPrice", model.UnitPrice);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            return orderId;
+        }
+        public List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate)
+        {
+            var list = new List<OrderSummary>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_GetOrders", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@DistributorId", (object?)distributorId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrderStatus", (object?)status ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            list.Add(new OrderSummary
+                            {
+                                OrderId = Convert.ToInt32(dr["OrderId"]),
+                                OrderDate = Convert.ToDateTime(dr["OrderDate"]),
+                                OrderStatus = dr["OrderStatus"].ToString()!,
+                                TotalAmount = Convert.ToDecimal(dr["TotalAmount"]),
+                                DistributorName = dr["DistributorName"].ToString()!,
+                                Location = dr["Location"]?.ToString(),
+                                ContactNumber = dr["ContactNumber"]?.ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
+        }
+
+        public bool UpdateOrderStatus(int orderId, string status)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_UpdateOrderStatus", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.Parameters.AddWithValue("@OrderStatus", status);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            return true;
+        }
     }
 }

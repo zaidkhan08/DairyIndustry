@@ -39,11 +39,16 @@
         <!-- Nav -->
         <div class="sidebar-nav">
 
+            @{
+                var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+                var act = ViewContext.RouteData.Values["action"]?.ToString();
+            }
+
             <!-- ── Main ────────────────────────── -->
             <div class="nav-label">Main</div>
 
             <a asp-controller="Admin" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Index" && ViewContext.RouteData.Values["controller"].ToString() == "Admin" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "Index" ? "active" : "")">
                 <i class="bi bi-grid-fill"></i>
                 <span>Dashboard</span>
             </a>
@@ -52,195 +57,289 @@
             <div class="nav-label">User Management</div>
 
             <a asp-controller="Admin" asp-action="Users"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Users" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "Users" ? "active" : "")">
                 <i class="bi bi-people-fill"></i>
                 <span>All Users</span>
             </a>
 
             <a asp-controller="Admin" asp-action="RegisterUser"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "RegisterUser" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "RegisterUser" ? "active" : "")">
                 <i class="bi bi-person-plus-fill"></i>
                 <span>Register User</span>
             </a>
 
             <a asp-controller="Admin" asp-action="Roles"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Roles" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "Roles" ? "active" : "")">
                 <i class="bi bi-shield-fill"></i>
                 <span>Roles</span>
             </a>
 
             <a asp-controller="Admin" asp-action="Staff"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Staff" || ViewContext.RouteData.Values["action"].ToString() == "AddStaff" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && (act == "Staff" || act == "AddStaff" || act == "GetStaffById") ? "active" : "")">
                 <i class="bi bi-briefcase-fill"></i>
                 <span>Staff</span>
             </a>
+
             <a asp-controller="Admin" asp-action="AssignUserToPlant"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "AssignUserToPlant" || ViewContext.RouteData.Values["action"].ToString() == "AssignUserToPlant" ? "active" : "")">
-                <i class="bi bi-briefcase-fill"></i>
-                <span>Assign Plant</span>
+               class="nav-item-link @(ctrl == "Admin" && act == "AssignUserToPlant" ? "active" : "")">
+                <i class="bi bi-building-up"></i>
+                <span>Assign to Plant</span>
             </a>
+
             <a asp-controller="Admin" asp-action="AssignUserToCenter"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "AssignUserToCenter" || ViewContext.RouteData.Values["action"].ToString() == "AssignUserToCenter" ? "active" : "")">
-                <i class="bi bi-briefcase-fill"></i>
-                <span>Assign Center</span>
+               class="nav-item-link @(ctrl == "Admin" && act == "AssignUserToCenter" ? "active" : "")">
+                <i class="bi bi-house-check-fill"></i>
+                <span>Assign to Center</span>
             </a>
+
             <!-- ── Master Data ─────────────────── -->
             <div class="nav-label">Master Data</div>
 
             <a asp-controller="Admin" asp-action="Location"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "Location" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "Location" ? "active" : "")">
                 <i class="bi bi-geo-alt-fill"></i>
                 <span>Location</span>
             </a>
 
             <a asp-controller="Admin" asp-action="MilkTypes"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "MilkTypes" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "MilkTypes" ? "active" : "")">
                 <i class="bi bi-droplet-half"></i>
                 <span>Milk Types</span>
             </a>
 
             <a asp-controller="Admin" asp-action="RateChart"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "RateChart" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && act == "RateChart" ? "active" : "")">
                 <i class="bi bi-cash-stack"></i>
                 <span>Rate Chart</span>
             </a>
 
+            <!-- Processing Plants -->
             <a asp-controller="Admin" asp-action="GetAllPlants"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "GetAllPlants" || ViewContext.RouteData.Values["action"].ToString() == "AddPlant" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Admin" && (act == "GetAllPlants" || act == "AddPlant" || act == "EditPlant") ? "active" : "")">
                 <i class="bi bi-building-fill"></i>
                 <span>Processing Plants</span>
             </a>
-            <a asp-controller="Admin" asp-action="GetAllCollection"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "GetAllCollection" || ViewContext.RouteData.Values["action"].ToString() == "GetAllCollection" ? "active" : "")">
-                <i class="bi bi-building-fill"></i>
-                <span>Collection Centers</span>
-            </a>
-            <!-- ── System ──────────────────────── -->
-            <div class="nav-label">System</div>
 
-            <a asp-controller="Admin" asp-action="AuditLogs"
-               class="nav-item-link @(ViewContext.RouteData.Values["action"].ToString() == "AuditLogs" ? "active" : "")">
-                <i class="bi bi-clock-history"></i>
-                <span>Audit Logs</span>
+            <!-- Collection Centers -->
+            <a asp-controller="Admin" asp-action="GetAllCollection"
+               class="nav-item-link @(ctrl == "Admin" && (act == "GetAllCollection" || act == "AddCollection" || act == "EditCollection") ? "active" : "")">
+                <i class="bi bi-bucket-fill"></i>
+                <span>Collection Centers</span>
             </a>
 
             <!-- ── Modules ─────────────────────── -->
             <div class="nav-label">Modules</div>
 
-            <div class="nav-label">Logistics</div>
+            <!-- Farmers -->
+            <a asp-controller="Farmer" asp-action="Index"
+               class="nav-item-link @(ctrl == "Farmer" ? "active" : "")">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>Farmers</span>
+            </a>
 
+            <!-- Logistics submenu -->
+            @{
+                bool logisticsOpen = ctrl == "Logistics";
+            }
             <a class="nav-item-link d-flex align-items-center justify-content-between"
                data-bs-toggle="collapse"
                href="#logisticsMenu"
                role="button"
-               aria-expanded="@(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" ? "true" : "false")">
+               aria-expanded="@(logisticsOpen ? "true" : "false")">
                 <span>
                     <i class="bi bi-truck-front-fill me-2"></i>Logistics
                 </span>
                 <i class="bi bi-chevron-down small"></i>
             </a>
 
-            <div class="collapse @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" ? "show" : "")"
-                 id="logisticsMenu">
+            <div class="collapse @(logisticsOpen ? "show" : "")" id="logisticsMenu">
 
                 <a asp-controller="Logistics" asp-action="AllDrivers"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" &&
-                                (ViewContext.RouteData.Values["action"].ToString() == "AllDrivers" ||
-                                 ViewContext.RouteData.Values["action"].ToString() == "UpdateDriverStatus") ? "active" : "")">
+                   class="nav-item-link ps-4 @(ctrl == "Logistics" && (act == "AllDrivers" || act == "UpdateDriverStatus") ? "active" : "")">
                     <i class="bi bi-person-badge-fill me-2"></i>
                     <span>Drivers</span>
                 </a>
 
                 <a asp-controller="Logistics" asp-action="AllVehicles"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Logistics" &&
-                                (ViewContext.RouteData.Values["action"].ToString() == "AllVehicles" ||
-                                 ViewContext.RouteData.Values["action"].ToString() == "UpdateVehicleStatus") ? "active" : "")">
+                   class="nav-item-link ps-4 @(ctrl == "Logistics" && (act == "AllVehicles" || act == "UpdateVehicleStatus") ? "active" : "")">
                     <i class="bi bi-truck me-2"></i>
                     <span>Vehicles</span>
                 </a>
 
             </div>
 
-            <a asp-controller="Farmer" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Farmer" ? "active" : "")">
-                <i class="bi bi-person-badge-fill"></i>
-                <span>Farmers</span>
-            </a>
-
-            <a asp-controller="Collection" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Collection" ? "active" : "")">
-                <i class="bi bi-bucket-fill"></i>
-                <span>Collection</span>
-            </a>
-
+            <!-- Production submenu -->
+            @{
+                var productionActions = new[] {
+                        "Products", "AddProduct", "EditProduct", "ProductDetail",
+                        "ProductionBatches", "WastageSummary", "MilkTransfers"
+                        };
+                bool productionOpen = ctrl == "Admin" && productionActions.Contains(act);
+            }
             <a class="nav-item-link d-flex align-items-center justify-content-between"
                data-bs-toggle="collapse"
                href="#productionMenu"
                role="button"
-               aria-expanded="@(ViewContext.RouteData.Values["controller"].ToString() == "Admin" ? "true" : "false")">
+               aria-expanded="@(productionOpen ? "true" : "false")">
                 <span>
                     <i class="bi bi-gear-fill me-2"></i>Production
                 </span>
                 <i class="bi bi-chevron-down small"></i>
             </a>
 
-            <div class="collapse @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" ? "show" : "")"
-                 id="productionMenu">
+            <div class="collapse @(productionOpen ? "show" : "")" id="productionMenu">
 
                 <a asp-controller="Admin" asp-action="Products"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
-                                       ViewContext.RouteData.Values["action"].ToString() == "Products" ||
-                                       ViewContext.RouteData.Values["action"].ToString() == "AddProduct" ||
-                                       ViewContext.RouteData.Values["action"].ToString() == "EditProduct" ||
-                                       ViewContext.RouteData.Values["action"].ToString() == "ProductDetail" ? "active" : "")">
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "Products" || act == "AddProduct" || act == "EditProduct" || act == "ProductDetail") ? "active" : "")">
                     <i class="bi bi-box-seam me-2"></i>
                     <span>Products</span>
                 </a>
 
                 <a asp-controller="Admin" asp-action="ProductionBatches"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
-                                       ViewContext.RouteData.Values["action"].ToString() == "ProductionBatches" ? "active" : "")">
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "ProductionBatches" ? "active" : "")">
                     <i class="bi bi-layers me-2"></i>
                     <span>Production Batches</span>
                 </a>
+
                 <a asp-controller="Admin" asp-action="WastageSummary"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
-                                                                             ViewContext.RouteData.Values["action"].ToString() == "WastageSummary" ? "active" : "")">
-                    <i class="bi bi-layers me-2"></i>
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "WastageSummary" ? "active" : "")">
+                    <i class="bi bi-trash3-fill me-2"></i>
                     <span>Wastage</span>
                 </a>
 
                 <a asp-controller="Admin" asp-action="MilkTransfers"
-                   class="nav-item-link ps-4 @(ViewContext.RouteData.Values["controller"].ToString() == "Admin" &&
-                                       ViewContext.RouteData.Values["action"].ToString() == "MilkTransfers" ? "active" : "")">
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "MilkTransfers" ? "active" : "")">
                     <i class="bi bi-arrow-left-right me-2"></i>
                     <span>Milk Transfers</span>
                 </a>
 
             </div>
 
-            <a asp-controller="Sales" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Sales" ? "active" : "")">
-                <i class="bi bi-cart-fill"></i>
-                <span>Sales</span>
+            <!-- Distributors + Orders submenu -->
+            @{
+                var distributorActions = new[] {
+                        "Distributors", "AddDistributor",
+                        "PendingDistributors", "UpdateDistributorStatus",
+                        "AdminOrder", "AdminOrderList", "UpdateOrderStatus"
+                        };
+                bool distributorsOpen = ctrl == "Admin" && distributorActions.Contains(act);
+            }
+            <a class="nav-item-link d-flex align-items-center justify-content-between"
+               data-bs-toggle="collapse"
+               href="#distributorMenu"
+               role="button"
+               aria-expanded="@(distributorsOpen ? "true" : "false")">
+                <span>
+                    <i class="bi bi-diagram-3-fill me-2"></i>Distributors
+                </span>
+                <i class="bi bi-chevron-down small"></i>
             </a>
 
-            <a asp-controller="Finance" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Finance" ? "active" : "")">
-                <i class="bi bi-cash-stack"></i>
-                <span>Finance</span>
+            <div class="collapse @(distributorsOpen ? "show" : "")" id="distributorMenu">
+
+                <a asp-controller="Admin" asp-action="Distributors"
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "Distributors" ? "active" : "")">
+                    <i class="bi bi-people-fill me-2"></i>
+                    <span>All Distributors</span>
+                </a>
+
+                <a asp-controller="Admin" asp-action="PendingDistributors"
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "PendingDistributors" || act == "UpdateDistributorStatus") ? "active" : "")">
+                    <i class="bi bi-hourglass-split me-2"></i>
+                    <span>Pending Approvals</span>
+                </a>
+
+                <a asp-controller="Admin" asp-action="AddDistributor"
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "AddDistributor" ? "active" : "")">
+                    <i class="bi bi-person-plus-fill me-2"></i>
+                    <span>Add Distributor</span>
+                </a>
+
+                <!-- Orders nested under Distributors -->
+                <div class="nav-label ps-4 mt-1" style="font-size:10px; opacity:0.6; letter-spacing:.06em;">
+                    Orders
+                </div>
+
+                <a asp-controller="Admin" asp-action="AdminOrderList"
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "AdminOrderList" || act == "UpdateOrderStatus") ? "active" : "")">
+                    <i class="bi bi-list-check me-2"></i>
+                    <span>All Orders</span>
+                </a>
+
+                <a asp-controller="Admin" asp-action="AdminOrder"
+                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "AdminOrder" ? "active" : "")">
+                    <i class="bi bi-cart-plus-fill me-2"></i>
+                    <span>Place Order</span>
+                </a>
+
+            </div>
+
+            <!-- Collection / Center Payment -->
+            <a asp-controller="Finance" asp-action="CenterPayments"
+               class="nav-item-link @(ctrl == "Finance" && act == "CenterPayments" ? "active" : "")">
+                <i class="bi bi-bucket-fill"></i>
+                <span>Center Payment</span>
             </a>
 
+            <!-- Finance submenu -->
+            @{
+                var financeActions = new[] { "Index", "FarmerPayments", "StaffPayments" };
+                bool financeOpen = ctrl == "Finance" && financeActions.Contains(act);
+            }
+            <a class="nav-item-link d-flex align-items-center justify-content-between"
+               data-bs-toggle="collapse"
+               href="#financeMenu"
+               role="button"
+               aria-expanded="@(financeOpen ? "true" : "false")">
+                <span>
+                    <i class="bi bi-cash-stack me-2"></i>Finance
+                </span>
+                <i class="bi bi-chevron-down small"></i>
+            </a>
+
+            <div class="collapse @(financeOpen ? "show" : "")" id="financeMenu">
+
+                <a asp-controller="Finance" asp-action="Index"
+                   class="nav-item-link ps-4 @(ctrl == "Finance" && act == "Index" ? "active" : "")">
+                    <i class="bi bi-grid me-2"></i>
+                    <span>Overview</span>
+                </a>
+
+                <a asp-controller="Finance" asp-action="FarmerPayments"
+                   class="nav-item-link ps-4 @(ctrl == "Finance" && act == "FarmerPayments" ? "active" : "")">
+                    <i class="bi bi-person-check-fill me-2"></i>
+                    <span>Farmer Payments</span>
+                </a>
+
+                <a asp-controller="Finance" asp-action="StaffPayments"
+                   class="nav-item-link ps-4 @(ctrl == "Finance" && act == "StaffPayments" ? "active" : "")">
+                    <i class="bi bi-briefcase me-2"></i>
+                    <span>Staff Payments</span>
+                </a>
+
+            </div>
+
+            <!-- HR -->
             <a asp-controller="HR" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "HR" ? "active" : "")">
-                <i class="bi bi-briefcase-fill"></i>
+               class="nav-item-link @(ctrl == "HR" ? "active" : "")">
+                <i class="bi bi-people-fill"></i>
                 <span>HR</span>
             </a>
 
+            <!-- Reports -->
             <a asp-controller="Reports" asp-action="Index"
-               class="nav-item-link @(ViewContext.RouteData.Values["controller"].ToString() == "Reports" ? "active" : "")">
+               class="nav-item-link @(ctrl == "Reports" ? "active" : "")">
                 <i class="bi bi-bar-chart-fill"></i>
                 <span>Reports</span>
+            </a>
+
+            <!-- ── System ──────────────────────── -->
+            <div class="nav-label">System</div>
+
+            <a asp-controller="Admin" asp-action="AuditLogs"
+               class="nav-item-link @(ctrl == "Admin" && act == "AuditLogs" ? "active" : "")">
+                <i class="bi bi-clock-history"></i>
+                <span>Audit Logs</span>
             </a>
 
         </div>
@@ -249,7 +348,7 @@
         <div class="sidebar-footer d-flex align-items-center gap-2">
             <div class="user-avatar">A</div>
             <div class="user-info">
-                <span>@Context.Session.GetString("RoleName")</p></span>
+                <span>@Context.Session.GetString("RoleName")</span>
                 <small>@Context.Session.GetString("Username")</small>
             </div>
         </div>
