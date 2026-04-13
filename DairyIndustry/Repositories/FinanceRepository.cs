@@ -72,11 +72,11 @@ namespace DairyIndustry.Repositories
                 }
             }
 
-            return null;  // no unpaid collections found
+            return null;
         }
 
         // ════════════════════════════════════════════════════════
-        // CREATE FARMER PAYMENT — calls SP 8.4
+        // CREATE FARMER PAYMENT
         // ════════════════════════════════════════════════════════
 
         public int CreateFarmerPayment(int centerId, int farmerId,
@@ -209,7 +209,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // RECORD STRIPE TRANSACTION — calls SP 8.7
+        // RECORD STRIPE TRANSACTION
         // ════════════════════════════════════════════════════════
 
         public void RecordPaymentTransaction(string paymentType, int paymentId,
@@ -232,9 +232,8 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // PRIVATE HELPER
+        // FARMER HAS BANK ACCOUNT
         // ════════════════════════════════════════════════════════
-
 
         public bool FarmerHasBankAccount(int farmerId)
         {
@@ -307,29 +306,6 @@ namespace DairyIndustry.Repositories
             return list;
         }
 
-        private FarmerPaymentModel MapFarmerPayment(SqlDataReader reader)
-        {
-            return new FarmerPaymentModel
-            {
-                PaymentId = Convert.ToInt32(reader["PaymentId"]),
-                CenterId = Convert.ToInt32(reader["CenterId"]),
-                FarmerId = Convert.ToInt32(reader["FarmerId"]),
-                FromDate = Convert.ToDateTime(reader["FromDate"]),
-                ToDate = Convert.ToDateTime(reader["ToDate"]),
-                TotalQty = Convert.ToDecimal(reader["TotalQty"]),
-                TotalAmount = Convert.ToDecimal(reader["TotalAmount"]),
-                PaymentDate = Convert.ToDateTime(reader["PaymentDate"]),
-                PaymentStatus = reader["PaymentStatus"].ToString(),
-                FarmerName = reader["FarmerName"].ToString(),
-                CenterName = reader["CenterName"].ToString(),
-                BankStatus = reader["BankStatus"] == DBNull.Value ? null : reader["BankStatus"].ToString(),
-                TransactionReference = reader["TransactionReference"] == DBNull.Value ? null : reader["TransactionReference"].ToString(),
-                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
-            };
-        }
-
         public CenterDropdownModel GetFarmerDefaultCenter(int farmerId)
         {
             string query = @"
@@ -361,25 +337,65 @@ namespace DairyIndustry.Repositories
             return null;
         }
 
-
-        // ============================================================
-        // ADD THESE METHODS TO: FinanceRepository.cs  (inside the class)
-        // ============================================================
-        // Already injected: private readonly DbHelper _db;
-        // Already using: Microsoft.Data.SqlClient, System.Data
-        // ============================================================
-
         // ════════════════════════════════════════════════════════
-        // GET ELIGIBLE TRANSFERS — SP Finance.usp_Finance_GetEligibleTransfers
+        // GET ELIGIBLE TRANSFERS — scoped by PlantId for Plant Manager
+        // A transfer is eligible when it has NO active (Pending/Processed/Failed)
+        // center payment. Cancelled payments free the transfer for re-payment.
+        //
+        // Column sources (confirmed from schema):
+        //   TestedFat / TestedCLR  →  Production.TransferQualityTests  (on TransferId)
+        //   MilkTypeId             →  Collection.CenterMilkInventory   (on CenterId)
+        //   Fallback fat/clr       →  Collection.CollectionBatches.AvgFat / AvgCLR
         // ════════════════════════════════════════════════════════
-        public List<TransferForPaymentModel> GetEligibleTransfers()
+        public List<TransferForPaymentModel> GetEligibleTransfers(int? plantId = null)
         {
             var list = new List<TransferForPaymentModel>();
 
+            string query = @"
+                SELECT
+                    mt.TransferId,
+                    mt.BatchId,
+                    cb.CenterId,
+                    mt.PlantId,
+                    mt.ReceivedQty,
+                    COALESCE(tqt.TestedFat, cb.AvgFat)   AS TestedFat,
+                    COALESCE(tqt.TestedCLR, cb.AvgCLR)   AS TestedCLR,
+                    -- MilkTypeId: prefer CenterMilkInventory, fall back to batch's most recent collection
+                    COALESCE(
+                        cmi.MilkTypeId,
+                        (SELECT TOP 1 mc.MilkTypeId
+                         FROM Collection.MilkCollection mc
+                         WHERE mc.BatchId = cb.BatchId
+                         ORDER BY mc.CollectionId DESC)
+                    ) AS MilkTypeId,
+                    cc.CenterName,
+                    pp.PlantName,
+                    CONCAT('T-', mt.TransferId,
+                           ' | ', cc.CenterName,
+                           ' | ', mt.ReceivedQty, ' L',
+                           ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS DisplayText
+                FROM  Production.MilkTransfers              mt
+                INNER JOIN Collection.CollectionBatches     cb  ON cb.BatchId   = mt.BatchId
+                INNER JOIN Collection.CollectionCenters     cc  ON cc.CenterId  = cb.CenterId
+                INNER JOIN Production.ProcessingPlants      pp  ON pp.PlantId   = mt.PlantId
+                LEFT  JOIN Production.TransferQualityTests  tqt ON tqt.TransferId = mt.TransferId
+                LEFT  JOIN Collection.CenterMilkInventory   cmi ON cmi.CenterId  = cb.CenterId
+                WHERE mt.ReceivedQty IS NOT NULL
+                  AND (@PlantId IS NULL OR mt.PlantId = @PlantId)
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM   Finance.CenterPayments cp
+                        WHERE  cp.BatchId       = mt.BatchId
+                          AND  cp.PlantId       = mt.PlantId
+                          AND  cp.PaymentStatus IN ('Pending','Processed','Failed')
+                  )
+                ORDER BY mt.ReceivedDate DESC";
+
             using (SqlConnection con = _db.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_GetEligibleTransfers", con))
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                 con.Open();
                 using (SqlDataReader r = cmd.ExecuteReader())
                 {
@@ -395,7 +411,9 @@ namespace DairyIndustry.Repositories
                             TestedFat = r["TestedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedFat"]),
                             TestedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]),
                             MilkTypeId = r["MilkTypeId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["MilkTypeId"]),
-                            BatchId = Convert.ToInt32(r["BatchId"])
+                            BatchId = Convert.ToInt32(r["BatchId"]),
+                            CenterName = r["CenterName"].ToString(),
+                            PlantName = r["PlantName"].ToString()
                         });
                     }
                 }
@@ -405,7 +423,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ACTIVE RATE — SP Finance.usp_Finance_GetActiveRate
+        // GET ACTIVE RATE
         // ════════════════════════════════════════════════════════
         public decimal GetActiveRate(int milkTypeId, decimal fat, decimal clr)
         {
@@ -424,14 +442,59 @@ namespace DairyIndustry.Repositories
                         return Convert.ToDecimal(r["RatePerLiter"]);
                 }
             }
-            return 0m; // no matching rate found
+            return 0m;
         }
 
         // ════════════════════════════════════════════════════════
-        // CREATE CENTER PAYMENT — SP Finance.usp_Finance_ProcessCenterPayment
+        // CREATE CENTER PAYMENT
+        // Guards against duplicates at the C# level before hitting the SP.
+        // The SP also has its own duplicate check as a second safety net.
         // ════════════════════════════════════════════════════════
         public int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate)
         {
+            // ── Guard: resolve BatchId + PlantId for this transfer ──
+            string lookupSql = @"
+                SELECT mt.BatchId, mt.PlantId
+                FROM   Production.MilkTransfers mt
+                WHERE  mt.TransferId = @TransferId";
+
+            int batchId, plantId;
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(lookupSql, con))
+            {
+                cmd.Parameters.AddWithValue("@TransferId", transferId);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (!r.Read())
+                        throw new Exception($"Transfer T-{transferId} not found.");
+                    batchId = Convert.ToInt32(r["BatchId"]);
+                    plantId = Convert.ToInt32(r["PlantId"]);
+                }
+            }
+
+            // ── Guard: block if an active (non-cancelled) payment already exists ──
+            string dupCheckSql = @"
+                SELECT COUNT(*)
+                FROM   Finance.CenterPayments
+                WHERE  BatchId       = @BatchId
+                  AND  PlantId       = @PlantId
+                  AND  PaymentStatus IN ('Pending', 'Processed', 'Failed')";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(dupCheckSql, con))
+            {
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                cmd.Parameters.AddWithValue("@PlantId", plantId);
+                con.Open();
+                int existing = Convert.ToInt32(cmd.ExecuteScalar());
+                if (existing > 0)
+                    throw new Exception(
+                        $"A payment for Transfer T-{transferId} already exists and is active. " +
+                        "Cancel it first before creating a new one.");
+            }
+
+            // ── Safe to create ──
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessCenterPayment", con))
             {
@@ -451,9 +514,9 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ALL CENTER PAYMENTS
+        // GET ALL CENTER PAYMENTS — scoped by PlantId for Plant Manager
         // ════════════════════════════════════════════════════════
-        public List<CenterPaymentModel> GetAllCenterPayments()
+        public List<CenterPaymentModel> GetAllCenterPayments(int? plantId = null)
         {
             var list = new List<CenterPaymentModel>();
 
@@ -472,23 +535,38 @@ namespace DairyIndustry.Repositories
             cp.PaymentStatus,
             cc.CenterName,
             pp.PlantName,
-            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            ISNULL(
+                CONCAT('T-',
+                    (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
+                     WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+                     ORDER BY mt2.TransferId),
+                    ' | ',
+                    FORMAT(
+                        (SELECT TOP 1 mt2.ReceivedDate FROM Production.MilkTransfers mt2
+                         WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+                         ORDER BY mt2.TransferId),
+                    'dd-MMM-yyyy')),
+                CONCAT('Batch-', cp.BatchId)
+            ) AS BatchRef,
+            (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
+             WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+             ORDER BY mt2.TransferId) AS OriginalTransferId,
             pt.BankStatus,
             pt.TransactionReference
         FROM Finance.CenterPayments cp
         INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
         INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
         INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
-        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
-                                                    AND mt.PlantId  = cp.PlantId
         LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
                                                     AND pt.PaymentType = 'Center'
+        WHERE (@PlantId IS NULL OR cp.PlantId = @PlantId)
         ORDER BY cp.PaymentDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand(query, con))
             {
                 cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
                 con.Open();
                 using (SqlDataReader r = cmd.ExecuteReader())
                 {
@@ -520,15 +598,28 @@ namespace DairyIndustry.Repositories
             cp.PaymentStatus,
             cc.CenterName,
             pp.PlantName,
-            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            ISNULL(
+                CONCAT('T-',
+                    (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
+                     WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+                     ORDER BY mt2.TransferId),
+                    ' | ',
+                    FORMAT(
+                        (SELECT TOP 1 mt2.ReceivedDate FROM Production.MilkTransfers mt2
+                         WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+                         ORDER BY mt2.TransferId),
+                    'dd-MMM-yyyy')),
+                CONCAT('Batch-', cp.BatchId)
+            ) AS BatchRef,
+            (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
+             WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
+             ORDER BY mt2.TransferId) AS OriginalTransferId,
             pt.BankStatus,
             pt.TransactionReference
         FROM Finance.CenterPayments cp
         INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
         INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
         INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
-        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
-                                                    AND mt.PlantId  = cp.PlantId
         LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
                                                     AND pt.PaymentType = 'Center'
         WHERE cp.CenterPaymentId = @CenterPaymentId";
@@ -549,8 +640,32 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // PRIVATE MAPPER
+        // PRIVATE MAPPERS
         // ════════════════════════════════════════════════════════
+
+        private FarmerPaymentModel MapFarmerPayment(SqlDataReader reader)
+        {
+            return new FarmerPaymentModel
+            {
+                PaymentId = Convert.ToInt32(reader["PaymentId"]),
+                CenterId = Convert.ToInt32(reader["CenterId"]),
+                FarmerId = Convert.ToInt32(reader["FarmerId"]),
+                FromDate = Convert.ToDateTime(reader["FromDate"]),
+                ToDate = Convert.ToDateTime(reader["ToDate"]),
+                TotalQty = Convert.ToDecimal(reader["TotalQty"]),
+                TotalAmount = Convert.ToDecimal(reader["TotalAmount"]),
+                PaymentDate = Convert.ToDateTime(reader["PaymentDate"]),
+                PaymentStatus = reader["PaymentStatus"].ToString(),
+                FarmerName = reader["FarmerName"].ToString(),
+                CenterName = reader["CenterName"].ToString(),
+                BankStatus = reader["BankStatus"] == DBNull.Value ? null : reader["BankStatus"].ToString(),
+                TransactionReference = reader["TransactionReference"] == DBNull.Value ? null : reader["TransactionReference"].ToString(),
+                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
+                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+            };
+        }
+
         private CenterPaymentModel MapCenterPayment(SqlDataReader r)
         {
             return new CenterPaymentModel
@@ -570,8 +685,21 @@ namespace DairyIndustry.Repositories
                 PlantName = r["PlantName"].ToString(),
                 BatchRef = r["BatchRef"].ToString(),
                 BankStatus = r["BankStatus"] == DBNull.Value ? null : r["BankStatus"].ToString(),
-                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString()
+                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString(),
+                OriginalTransferId = r["OriginalTransferId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["OriginalTransferId"])
             };
+        }
+
+        public void CancelCenterPayment(int centerPaymentId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_CancelCenterPayment", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@CenterPaymentId", centerPaymentId);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

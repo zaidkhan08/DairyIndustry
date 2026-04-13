@@ -1,293 +1,427 @@
 ﻿@model List<DairyIndustry.Models.Production.RawMilkInventoryModel>
+@using DairyIndustry.Models.Production
 @{
-    ViewData["Title"] = "Raw Milk Inventory";
+    ViewData["Title"] = "Plant Inventory";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
     var plantName = Context.Session.GetString("PlantName");
-    var plantLabel = plantName ?? Model.FirstOrDefault()?.PlantName ?? "Plant";
-
-    // Grouping by Plant to ensure specific plant-wise cards
-    var groupedInventory = Model.GroupBy(x => x.PlantName);
-    var refreshTime = DateTime.Now;
+    var plantLabel = plantName ?? Model.FirstOrDefault()?.PlantName ?? "Unknown Plant";
+    var grouped = Model.GroupBy(x => x.PlantName);
+    var globalTotal = Model.Sum(x => x.Quantity);
+    var totalTypes = Model.Select(x => x.MilkTypeName).Distinct().Count();
+    var lastSync = Model.Any() ? Model.Max(x => x.LastUpdated) : DateTime.Now;
 }
 
-<!-- Font Awesome for Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<div class="container-fluid py-4 rmi-light-container">
-    <div class="row g-3 mb-4 align-items-center">
-        <div class="col-md-6">
-            <h2 class="inventory-title-light">Raw Milk Inventory</h2>
-            <div class="location-subtitle-light">@plantLabel</div>
-        </div>
-        <div class="col-md-6 text-md-end">
-            <div class="rmi-filter-bar-light d-inline-flex">
-                <span class="rmi-chip-light active">Plant Overview</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        @foreach (var plantGroup in groupedInventory)
-        {
-            var plantTotal = plantGroup.Sum(x => x.Quantity);
-            var lastDataUpdate = plantGroup.Max(x => x.LastUpdated);
-
-            <div class="col-12 col-md-6 col-lg-4">
-                <!-- Plant-Wise Widget Card -->
-                <div class="widget-card-light">
-                    <!-- Header: Icon & Main Title -->
-                    <div class="widget-header">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-circle-light">
-                                <i class="fa-solid fa-industry"></i>
-                            </div>
-                            <div class="ms-3">
-                                <div class="widget-title">@plantGroup.Key</div>
-                                <div class="widget-subtitle"><i class="fa-solid fa-circle-check me-1"></i>Operational</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Levels Section for specific milk types in this plant -->
-                    <div class="levels-container-multi">
-                        @foreach (var milk in plantGroup)
-                        {
-                            var maxCap = 100000m;
-                            var perc = (milk.Quantity / maxCap) * 100m;
-                            if (perc > 100m) perc = 100m;
-
-                            <div class="milk-level-item mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="milk-type-label">@milk.MilkTypeName</span>
-                                    <span class="milk-qty-label">@milk.Quantity.ToString("N0") L</span>
-                                </div>
-                                <div class="level-bar-bg-light">
-                                    <div class="level-bar-fill-light" style="width: @(perc)%"></div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-
-                    <!-- Plant Stats Section -->
-                    <div class="stats-main-light">
-                        <div class="stats-value-group">
-                            <span class="big-value-light">@plantTotal.ToString("N0")</span>
-                            <span class="value-label-light">Total Plant Inventory (L)</span>
-                        </div>
-                        <div class="chart-mini">
-                            <svg width="60" height="30" viewBox="0 0 60 30">
-                                <path d="M0 25 Q 15 5, 30 20 T 60 10" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    <!-- Footer Bar: Combined Update & Refresh Info -->
-                    <div class="widget-footer-light">
-                        <div class="footer-item-light">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                            <div class="footer-label">LAST UPDATED</div>
-                            <div class="footer-val">@lastDataUpdate.ToString("h:mm tt")</div>
-                        </div>
-                        <div class="footer-divider-light"></div>
-                        <div class="footer-item-light">
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                            <div class="footer-label">REFRESHED AT</div>
-                            <div class="footer-val">@refreshTime.ToString("h:mm tt")</div>
-                        </div>
-                        <div class="footer-divider-light"></div>
-                        <div class="footer-item-light">
-                            <i class="fa-solid fa-calendar-day"></i>
-                            <div class="footer-label">DATE</div>
-                            <div class="footer-val">@lastDataUpdate.ToString("dd MMM")</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-</div>
-
 <style>
-    /* White and Grey Palette */
-    .rmi-light-container {
-        background: #f8fafc;
-        min-height: 100vh;
-        padding: 2rem;
-        color: #1e293b;
+    .inv {
+        --c-bg: #f5f6f8;
+        --c-surface: #ffffff;
+        --c-border: #e2e5ea;
+        --c-text: #111827;
+        --c-text-2: #374151;
+        --c-text-3: #6b7280;
+        --c-accent: #2563eb;
+        --c-accent-bg: #eff6ff;
+        --c-accent-text: #1d4ed8;
+        --c-green: #16a34a;
+        --c-green-border: #bbf7d0;
+        --c-amber: #d97706;
+        --c-red: #dc2626;
+        --c-row-hover: #f9fafb;
+        --r: 6px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--c-text);
     }
 
-    .inventory-title-light {
-        font-weight: 800;
-        font-size: 1.6rem;
-        color: #0f172a;
-        margin-bottom: 2px;
-    }
-
-    .location-subtitle-light {
-        color: #64748b;
-        font-size: 0.9rem;
-        font-weight: 500;
-    }
-
-    .rmi-filter-bar-light {
-        background: #ffffff;
-        padding: 5px 12px;
-        border-radius: 10px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-    }
-
-    .rmi-chip-light {
-        color: #475569;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    /* Widget Card Light */
-    .widget-card-light {
-        background: #ffffff;
-        border-radius: 28px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-        border: 1px solid #f1f5f9;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .widget-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
-    }
-
-    .icon-circle-light {
-        background: #f1f5f9;
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
+    /* Toolbar row: plant info + last log on same line */
+    .inv-toolbar {
         display: flex;
         align-items: center;
-        justify-content: center;
-        color: #334155;
-        font-size: 1.1rem;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
-    .widget-title {
-        font-weight: 700;
-        font-size: 1.15rem;
-        color: #0f172a;
-    }
-
-    .widget-subtitle {
-        font-size: 0.8rem;
-        color: #64748b;
+    .inv-plant-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
         font-weight: 500;
+        color: var(--c-text-2);
     }
 
-        .widget-subtitle i {
-            color: #10b981;
+    .inv-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--c-green);
+        flex-shrink: 0;
+        animation: inv-blink 2.5s ease-in-out infinite;
+    }
+
+    @@keyframes inv-blink {
+        0%, 100% {
+            opacity: 1;
         }
 
-    /* Progress Bars Section */
-    .levels-container-multi {
-        margin-bottom: 24px;
-        padding: 16px;
-        background: #f8fafc;
-        border-radius: 20px;
+        50% {
+            opacity: .3;
+        }
     }
 
-    .milk-type-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #475569;
+    .inv-log-info {
+        font-size: 12px;
+        color: var(--c-text-3);
     }
 
-    .milk-qty-label {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .level-bar-bg-light {
-        background: #e2e8f0;
-        height: 10px;
-        border-radius: 5px;
+    /* Summary */
+    .inv-summary {
+        display: flex;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        margin-bottom: 16px;
         overflow: hidden;
     }
 
-    .level-bar-fill-light {
-        background: #334155;
-        height: 100%;
-        border-radius: 5px;
+    .inv-summary-cell {
+        flex: 1;
+        padding: 14px 20px;
+        border-right: 1px solid var(--c-border);
+        min-width: 0;
     }
 
-    /* Main Quantity Stats */
-    .stats-main-light {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 24px;
+        .inv-summary-cell:last-child {
+            border-right: none;
+        }
+
+    .inv-summary-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-text-3);
+        margin-bottom: 5px;
     }
 
-    .big-value-light {
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        color: #0f172a;
+    .inv-summary-value {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--c-text);
+        letter-spacing: -0.5px;
         line-height: 1;
     }
 
-    .value-label-light {
-        display: block;
-        font-size: 0.85rem;
-        color: #94a3b8;
-        font-weight: 600;
+        .inv-summary-value .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--c-text-3);
+            margin-left: 2px;
+        }
+
+    .inv-summary-sub {
+        font-size: 11px;
+        color: var(--c-text-3);
         margin-top: 4px;
     }
 
-    /* Footer Info Bar Light */
-    .widget-footer-light {
-        background: #f8fafc;
-        border-radius: 16px;
-        padding: 12px;
+    /* Plant section */
+    .inv-plant-section {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .inv-plant-header {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        border: 1px solid #f1f5f9;
-        margin-top: auto;
+        padding: 11px 16px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--c-border);
+        gap: 12px;
     }
 
-    .footer-item-light {
+    .inv-plant-name-row {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        flex: 1;
+        gap: 8px;
     }
 
-        .footer-item-light i {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-bottom: 4px;
+    .inv-plant-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+
+    .inv-badge {
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--c-accent-bg);
+        color: var(--c-accent-text);
+        border: 1px solid #bfdbfe;
+        border-radius: 4px;
+        padding: 1px 7px;
+        line-height: 1.6;
+    }
+
+    .inv-plant-total {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+
+        .inv-plant-total .unit {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--c-text-3);
+            margin-left: 2px;
         }
 
-    .footer-label {
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: #94a3b8;
-        text-transform: uppercase;
+    /* Table */
+    .inv-table {
+        width: 100%;
+        border-collapse: collapse;
     }
 
-    .footer-val {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #334155;
+        .inv-table th {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--c-text-3);
+            padding: 8px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--c-border);
+            background: #fafbfc;
+            white-space: nowrap;
+        }
+
+            .inv-table th.r {
+                text-align: right;
+            }
+
+        .inv-table td {
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--c-border);
+            color: var(--c-text-2);
+            vertical-align: middle;
+        }
+
+        .inv-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .inv-table tbody tr:hover td {
+            background: var(--c-row-hover);
+        }
+
+        .inv-table td.r {
+            text-align: right;
+        }
+
+    .inv-type-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
     }
 
-    .footer-divider-light {
-        width: 1px;
-        height: 24px;
-        background: #e2e8f0;
+    .inv-qty {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .inv-qty .unit {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--c-text-3);
+            margin-left: 2px;
+        }
+
+    .inv-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .inv-bar-track {
+        flex: 1;
+        height: 4px;
+        background: #e5e7eb;
+        border-radius: 2px;
+        overflow: hidden;
+        max-width: 200px;
+    }
+
+    .inv-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+
+        .inv-bar-fill.low {
+            background: var(--c-accent);
+        }
+
+        .inv-bar-fill.mid {
+            background: var(--c-amber);
+        }
+
+        .inv-bar-fill.high {
+            background: var(--c-red);
+        }
+
+    .inv-pct {
+        font-size: 11px;
+        color: var(--c-text-3);
+        min-width: 36px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .inv-time {
+        font-size: 12px;
+        color: var(--c-text-3);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .inv-total-row td {
+        background: #f0f7ff !important;
+        border-top: 1px solid #dbeafe;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--c-accent-text);
+    }
+
+    .inv-total-row:hover td {
+        background: #e8f3ff !important;
+    }
+
+    .inv-empty {
+        padding: 48px 24px;
+        text-align: center;
+        color: var(--c-text-3);
+        font-size: 13px;
+    }
+
+    @@media (max-width: 768px) {
+        .inv-summary {
+            flex-direction: column;
+        }
+
+        .inv-summary-cell {
+            border-right: none;
+            border-bottom: 1px solid var(--c-border);
+        }
+
+            .inv-summary-cell:last-child {
+                border-bottom: none;
+            }
     }
 </style>
+
+<div class="inv">
+
+    <!-- Single toolbar line: plant name left, last log right — no duplicate title/breadcrumb -->
+    <div class="inv-toolbar">
+        <span class="inv-plant-pill">
+            <span class="inv-live-dot"></span>
+            @plantLabel
+        </span>
+        <span class="inv-log-info">
+            Last log &nbsp;<strong>@lastSync.ToString("dd MMM yyyy")</strong>&nbsp; at &nbsp;<strong>@lastSync.ToString("h:mm tt")</strong>
+        </span>
+    </div>
+
+    <!-- Summary -->
+    <div class="inv-summary">
+        <div class="inv-summary-cell">
+            <div class="inv-summary-label">Total Inventory</div>
+            <div class="inv-summary-value">@globalTotal.ToString("N0") <span class="unit">L</span></div>
+            <div class="inv-summary-sub">@plantLabel</div>
+        </div>
+        <div class="inv-summary-cell">
+            <div class="inv-summary-label">Milk Types</div>
+            <div class="inv-summary-value">@totalTypes</div>
+            <div class="inv-summary-sub">Tracked in this plant</div>
+        </div>
+        <div class="inv-summary-cell">
+            <div class="inv-summary-label">Last Log Date</div>
+            <div class="inv-summary-value" style="font-size:17px;">@lastSync.ToString("dd MMM yyyy")</div>
+            <div class="inv-summary-sub">@lastSync.ToString("h:mm tt")</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="inv-plant-section">
+            <div class="inv-empty">No inventory records found for @plantLabel.</div>
+        </div>
+    }
+    else
+    {
+        @foreach (var plant in grouped)
+        {
+            var plantTotal = plant.Sum(x => x.Quantity);
+
+            <div class="inv-plant-section">
+                <div class="inv-plant-header">
+                    <div class="inv-plant-name-row">
+                        <span class="inv-plant-name">@plant.Key</span>
+                        <span class="inv-badge">@plant.Count() milk type(s)</span>
+                    </div>
+                    <span class="inv-plant-total">@plantTotal.ToString("N0") <span class="unit">L</span></span>
+                </div>
+
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30%;">Milk Type</th>
+                            <th class="r" style="width:18%;">Quantity</th>
+                            <th style="width:32%;">Capacity Usage</th>
+                            <th class="r" style="width:20%;">Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var milk in plant.OrderByDescending(x => x.Quantity))
+                        {
+                            decimal maxCap = 100000m;
+                            decimal pct = Math.Min((milk.Quantity / maxCap) * 100m, 100m);
+                            string barClass = pct > 80 ? "high" : pct > 50 ? "mid" : "low";
+
+                            <tr>
+                                <td><span class="inv-type-name">@milk.MilkTypeName</span></td>
+                                <td class="r">
+                                    <span class="inv-qty">@milk.Quantity.ToString("N0") <span class="unit">L</span></span>
+                                </td>
+                                <td>
+                                    <div class="inv-bar-wrap">
+                                        <div class="inv-bar-track">
+                                            <div class="inv-bar-fill @barClass" style="width:@pct%;"></div>
+                                        </div>
+                                        <span class="inv-pct">@pct.ToString("N1")%</span>
+                                    </div>
+                                </td>
+                                <td class="r">
+                                    <span class="inv-time">@milk.LastUpdated.ToString("dd MMM, h:mm tt")</span>
+                                </td>
+                            </tr>
+                        }
+                        <tr class="inv-total-row">
+                            <td>Net Total — @plant.Key</td>
+                            <td class="r">@plantTotal.ToString("N0") <span style="font-size:11px;font-weight:400;">L</span></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>

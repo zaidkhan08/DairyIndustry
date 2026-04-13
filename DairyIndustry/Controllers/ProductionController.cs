@@ -23,7 +23,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // INDEX — list transfers (scoped by plant for Plant Manager)
-        // GET /Production/Index
         // ════════════════════════════════════════════════════════
         public IActionResult Index()
         {
@@ -44,7 +43,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // CREATE — show dispatch form
-        // GET /Production/Create
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult Create()
@@ -64,7 +62,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // CREATE — submit dispatch form
-        // POST /Production/Create
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult Create(int batchId, int vehicleId, int plantId,
@@ -84,7 +81,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // RECEIVE — show receive form
-        // GET /Production/Receive/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
         [SessionAuthorize("Plant Manager")]
@@ -113,7 +109,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // RECEIVE — submit receive form
-        // POST /Production/Receive
         // ════════════════════════════════════════════════════════
         [HttpPost]
         [SessionAuthorize("Plant Manager")]
@@ -133,7 +128,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // DETAIL — view one transfer's full info
-        // GET /Production/Detail/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
         [SessionAuthorize("Plant Manager")]
@@ -156,7 +150,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // RAW MILK INVENTORY — VIEW ONLY
-        // GET /Production/RawMilkInventory
         // ════════════════════════════════════════════════════════
         public IActionResult RawMilkInventory()
         {
@@ -171,7 +164,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTS — LIST
-        // GET /Production/Products
         // ════════════════════════════════════════════════════════
         public IActionResult Products()
         {
@@ -181,7 +173,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTS — ADD
-        // POST /Production/AddProduct
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult AddProduct(string productName, string productType,
@@ -194,10 +185,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTS — EDIT GET
-        // GET /Production/EditProduct/5
-        // NOTE: No longer navigated to directly — the Edit drawer in
-        // Products.cshtml posts straight to EditProduct POST below.
-        // Kept as a fallback.
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult EditProduct(int id)
@@ -209,7 +196,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTS — EDIT POST
-        // POST /Production/EditProduct
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult EditProduct(ProductModel product)
@@ -221,7 +207,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTS — DELETE
-        // POST /Production/DeleteProduct
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult DeleteProduct(int id)
@@ -233,8 +218,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — LIST
-        // GET /Production/Batches
-        // ViewBag dropdowns required for the "Start New Batch" drawer.
         // ════════════════════════════════════════════════════════
         public IActionResult Batches()
         {
@@ -254,8 +237,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — START (GET)
-        // GET /Production/StartBatch
-        // Kept as fallback standalone page.
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult StartBatch()
@@ -268,9 +249,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — START (POST)
-        // POST /Production/StartBatch
-        // try/catch surfaces inventory errors as a red alert instead
-        // of an unhandled 500 exception.
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult StartBatch(int plantId, int productId,
@@ -299,32 +277,38 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — DETAIL
-        // GET /Production/BatchDetail/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult BatchDetail(int id)
         {
             var batch = _productionRepo.GetProductionBatchById(id);
             if (batch == null) return NotFound();
+
+            // Pass milk types for the manual process wastage drawer
+            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+
             return View(batch);
         }
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — UPDATE STATUS
-        // POST /Production/UpdateBatchStatus
+        // Auto-logs QCFailed wastage in the repository layer.
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult UpdateBatchStatus(int productionBatchId, string batchStatus)
         {
             _productionRepo.UpdateBatchStatus(productionBatchId, batchStatus);
-            TempData["Success"] = $"Batch status updated to {batchStatus}.";
+
+            string message = batchStatus == "QCFailed"
+                ? $"Batch marked as QC Failed. Milk wastage has been automatically recorded."
+                : $"Batch status updated to {batchStatus}.";
+
+            TempData["Success"] = message;
             return RedirectToAction("BatchDetail", new { id = productionBatchId });
         }
 
         // ════════════════════════════════════════════════════════
-        // PRODUCT WASTAGE — LIST
-        // GET /Production/ProductWastage
-        // ViewBag dropdowns required for the "Record Wastage" drawer.
+        // PRODUCT WASTAGE — LIST  (finished-goods wastage)
         // ════════════════════════════════════════════════════════
         public IActionResult ProductWastage()
         {
@@ -343,8 +327,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCT WASTAGE — ADD (GET)
-        // GET /Production/AddWastage
-        // Kept as fallback standalone page.
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult AddWastage()
@@ -356,8 +338,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCT WASTAGE — ADD (POST)
-        // POST /Production/AddWastage
-        // try/catch surfaces DB errors as a red alert.
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult AddWastage(int batchId, int productId,
@@ -378,7 +358,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCT WASTAGE — BY BATCH
-        // GET /Production/WastageByBatch/5
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult WastageByBatch(int id)
@@ -389,8 +368,61 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
+        // MILK PROCESS WASTAGE — LIST  (raw-milk wastage)
+        // Shows both QCFailed (auto) and ProcessWastage (manual) entries.
+        // GET /Production/MilkProcessWastage
+        // ════════════════════════════════════════════════════════
+        public IActionResult MilkProcessWastage()
+        {
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName != "Plant Manager")
+                return RedirectToAction("AccessDenied", "Home");
+
+            int? plantId = HttpContext.Session.GetInt32("PlantId");
+            var wastage = _productionRepo.GetAllMilkProcessWastage(plantId);
+
+            return View(wastage);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // MILK PROCESS WASTAGE — ADD MANUAL ENTRY (POST)
+        // Called from the drawer on BatchDetail page.
+        // GET /Production/AddMilkProcessWastage
+        // ════════════════════════════════════════════════════════
+        [HttpPost]
+        public IActionResult AddMilkProcessWastage(int productionBatchId, int milkTypeId,
+                                                    decimal wastageQuantity, string reason)
+        {
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName != "Plant Manager")
+                return RedirectToAction("AccessDenied", "Home");
+
+            int plantId = HttpContext.Session.GetInt32("PlantId") ?? 0;
+
+            if (plantId == 0)
+            {
+                TempData["Error"] = "Session expired. Please login again.";
+                return RedirectToAction("Login", "Admin");
+            }
+
+            try
+            {
+                _productionRepo.AddMilkProcessWastage(productionBatchId, plantId, milkTypeId,
+                                                       wastageQuantity, reason);
+                TempData["Success"] = $"Process wastage of {wastageQuantity} L recorded successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction("BatchDetail", new { id = productionBatchId });
+        }
+
+        // ════════════════════════════════════════════════════════
         // QUALITY TESTS — LIST
-        // GET /Production/QualityTests
         // ════════════════════════════════════════════════════════
         public IActionResult QualityTests()
         {
@@ -406,7 +438,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // QUALITY TESTS — ADD FORM (GET)
-        // GET /Production/AddQualityTest?id={transferId}
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult AddQualityTest(int id)
@@ -420,14 +451,12 @@ namespace DairyIndustry.Controllers
             if (transfer == null)
                 return NotFound();
 
-            // Must be received before QC
             if (!transfer.ReceivedDate.HasValue)
             {
                 TempData["Error"] = "Quality test can only be recorded after the transfer is received.";
                 return RedirectToAction("Index");
             }
 
-            // Already tested — go straight to detail
             var existing = _productionRepo.GetQualityTestByTransfer(id);
             if (existing != null)
             {
@@ -440,7 +469,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // QUALITY TESTS — SUBMIT (POST)
-        // POST /Production/AddQualityTest
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult AddQualityTest(int transferId, decimal testedFat,
@@ -466,7 +494,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // QUALITY TESTS — DETAIL
-        // GET /Production/QualityTestDetail?id={transferId}
         // ════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult QualityTestDetail(int id)
@@ -481,6 +508,27 @@ namespace DairyIndustry.Controllers
                 return NotFound();
 
             return View(test);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // TRANSFER LOSS LOG
+        // ════════════════════════════════════════════════════════
+        public IActionResult TransferLossLog()
+        {
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName != "Plant Manager" && roleName != "Collection Agent")
+                return RedirectToAction("AccessDenied", "Home");
+
+            int? plantId = null;
+            if (roleName == "Plant Manager")
+                plantId = HttpContext.Session.GetInt32("PlantId");
+
+            var logs = _productionRepo.GetTransferLossLog(plantId);
+            var summary = _productionRepo.GetLossSummary(plantId);
+
+            ViewBag.Summary = summary;
+            return View(logs);
         }
     }
 }

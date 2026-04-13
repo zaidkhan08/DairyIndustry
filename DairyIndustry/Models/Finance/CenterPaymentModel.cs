@@ -22,6 +22,9 @@
         public string BankStatus { get; set; }
         public string TransactionReference { get; set; }
 
+        // The original TransferId (resolved from BatchId+PlantId) — used for Re-pay link
+        public int? OriginalTransferId { get; set; }
+
         public string StatusBadgeClass => PaymentStatus switch
         {
             "Processed" => "cp-pill-processed",
@@ -45,5 +48,9 @@
         public decimal? TestedCLR { get; set; }
         public int? MilkTypeId { get; set; }
         public int BatchId { get; set; }
+        public string CenterName { get; set; }
+        public string PlantName { get; set; }
+        public int? OriginalTransferId { get; set; }
+
     }
 }

@@ -5,13 +5,21 @@ namespace DairyIndustry.Filters
 {
     public class SessionAuthorizeAttribute : Attribute, IActionFilter
     {
-        private readonly string _requiredRole;
+        private readonly string[] _requiredRoles;
 
-        // Use [SessionAuthorize] for any logged-in user
-        // Use [SessionAuthorize("Administrator")] for specific role
-        public SessionAuthorizeAttribute(string requiredRole = null)
+        // Use [SessionAuthorize] → any logged-in user
+        // Use [SessionAuthorize("Administrator")] → 1 role
+        // Use [SessionAuthorize("Administrator", "Manager")] → 2 roles
+        // Use [SessionAuthorize("Administrator", "Manager", "Supervisor")] → 3 roles
+        public SessionAuthorizeAttribute(
+            string role1 = null,
+            string role2 = null,
+            string role3 = null)
         {
-            _requiredRole = requiredRole;
+            // Filter out nulls/empty strings, store only provided roles
+            _requiredRoles = new[] { role1, role2, role3 }
+                .Where(r => !string.IsNullOrEmpty(r))
+                .ToArray();
         }
 
         public void OnActionExecuting(ActionExecutingContext context)
@@ -26,8 +34,8 @@ namespace DairyIndustry.Filters
                 return;
             }
 
-            // Logged in but wrong role
-            if (_requiredRole != null && roleName != _requiredRole)
+            // Logged in but role doesn't match any of the required roles
+            if (_requiredRoles.Length > 0 && !_requiredRoles.Contains(roleName))
             {
                 context.Result = new ViewResult
                 {
@@ -37,8 +45,6 @@ namespace DairyIndustry.Filters
             }
         }
 
-        public void OnActionExecuted(ActionExecutedContext context)
-        {
-        }
+        public void OnActionExecuted(ActionExecutedContext context) { }
     }
 }

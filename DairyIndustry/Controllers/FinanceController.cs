@@ -26,14 +26,26 @@ namespace DairyIndustry.Controllers
             _pdfConverter = pdfConverter;
         }
 
-        // INDEX
+        // ════════════════════════════════════════════════════════
+        // HELPER — returns PlantId from session only for Plant Manager
+        // Admin gets null → sees everything
+        // ════════════════════════════════════════════════════════
+        private int? GetSessionPlantId()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            return role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // FARMER PAYMENTS
+        // ════════════════════════════════════════════════════════
+
         public IActionResult Index()
         {
             var payments = _financeRepo.GetAllFarmerPayments();
             return View(payments);
         }
 
-        // CREATE GET
         [HttpGet]
         public IActionResult Create()
         {
@@ -42,7 +54,6 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        // PREVIEW AJAX
         [HttpPost]
         public IActionResult Preview(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
         {
@@ -65,7 +76,6 @@ namespace DairyIndustry.Controllers
             });
         }
 
-        // CREATE POST
         [HttpPost]
         public IActionResult Create(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
         {
@@ -82,7 +92,6 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        // DETAIL
         [HttpGet]
         [Route("Finance/Detail/{id}")]
         public IActionResult Detail(int id)
@@ -93,7 +102,6 @@ namespace DairyIndustry.Controllers
             return View(payment);
         }
 
-        // STRIPE CHECKOUT SESSION
         [HttpPost]
         public IActionResult CreateCheckoutSession(int paymentId, decimal totalAmount, string farmerName)
         {
@@ -135,7 +143,6 @@ namespace DairyIndustry.Controllers
             return Redirect(session.Url);
         }
 
-        // STRIPE SUCCESS
         [HttpGet]
         public IActionResult PaymentSuccess(int paymentId, string session_id)
         {
@@ -150,7 +157,6 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Detail", new { id = paymentId });
         }
 
-        // STRIPE CANCELLED
         [HttpGet]
         public IActionResult PaymentCancelled(int paymentId)
         {
@@ -158,7 +164,6 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Detail", new { id = paymentId });
         }
 
-        // VIEW RECEIPT — opens in browser
         [HttpGet]
         [Route("Finance/ViewReceipt/{id}")]
         public IActionResult ViewReceipt(int id)
@@ -169,7 +174,6 @@ namespace DairyIndustry.Controllers
             return Content(html, "text/html");
         }
 
-        // DOWNLOAD RECEIPT — downloads as PDF
         [HttpGet]
         [Route("Finance/DownloadReceipt/{id}")]
         public IActionResult DownloadReceipt(int id)
@@ -182,7 +186,202 @@ namespace DairyIndustry.Controllers
             return File(pdfBytes, "application/pdf", fileName);
         }
 
-        // BUILD RECEIPT HTML
+        [HttpGet]
+        public IActionResult GetFarmerCenter(int farmerId)
+        {
+            var center = _financeRepo.GetFarmerDefaultCenter(farmerId);
+            if (center == null)
+                return Json(new { success = false });
+
+            return Json(new
+            {
+                success = true,
+                centerId = center.CenterId,
+                centerName = center.CenterName
+            });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CENTER PAYMENTS
+        // ════════════════════════════════════════════════════════
+
+        // INDEX — Admin sees all, Plant Manager sees their plant only
+        public IActionResult CenterPayments()
+        {
+            var payments = _financeRepo.GetAllCenterPayments(GetSessionPlantId());
+            return View(payments);
+        }
+
+        // CREATE GET — dropdown filtered by plant for Plant Manager
+        [SessionAuthorize("Plant Manager", "Admin")]
+        [HttpGet]
+        public IActionResult CreateCenterPayment(int? preselect = null)
+        {
+            var transfers = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
+            ViewBag.Transfers = transfers;
+            ViewBag.PreselectTransferId = null;
+
+            if (preselect.HasValue)
+            {
+                // Only preselect if the transfer is actually still eligible
+                if (transfers.Any(t => t.TransferId == preselect.Value))
+                    ViewBag.PreselectTransferId = preselect.Value;
+                else
+                    TempData["Error"] = $"Transfer T-{preselect} is no longer available for payment — it may already have an active payment. Select a different transfer.";
+            }
+
+            return View();
+        }
+
+        // AUTO-FILL AJAX — scoped to session plant so no cross-plant spoofing
+        [HttpGet]
+        public IActionResult GetTransferDetails(int transferId)
+        {
+            var transfers = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
+            var t = transfers.FirstOrDefault(x => x.TransferId == transferId);
+            if (t == null)
+                return Json(new { success = false, message = "Transfer not found or already paid." });
+
+            decimal baseRate = 0m;
+            if (t.MilkTypeId.HasValue && t.TestedFat.HasValue && t.TestedCLR.HasValue)
+                baseRate = _financeRepo.GetActiveRate(t.MilkTypeId.Value, t.TestedFat.Value, t.TestedCLR.Value);
+
+            // +₹3/L center bonus applied on top of the base rate chart price
+            decimal suggestedRate = baseRate > 0 ? baseRate + 3m : 0m;
+            decimal total = t.ReceivedQty * suggestedRate;
+
+            return Json(new
+            {
+                success = true,
+                transferId = t.TransferId,
+                centerId = t.CenterId,
+                plantId = t.PlantId,
+                centerName = t.CenterName,   // real name now
+                plantName = t.PlantName,    // real name now
+                receivedQty = t.ReceivedQty,
+                testedFat = t.TestedFat,
+                testedCLR = t.TestedCLR,
+                milkTypeId = t.MilkTypeId,
+                hasMilkType = t.MilkTypeId.HasValue,
+                baseRate = baseRate,
+                ratePerLiter = suggestedRate,
+                totalAmount = total,
+                hasRate = suggestedRate > 0
+            });
+        }
+
+        // CREATE POST
+        [HttpPost]
+        public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter)
+        {
+            // ── Guard: rate must be positive ──
+            if (ratePerLiter <= 0)
+            {
+                TempData["Error"] = "Rate per liter must be greater than zero.";
+                return RedirectToAction("CreateCenterPayment", new { preselect = transferId });
+            }
+
+            // ── Guard: transfer must still be eligible (not already paid) ──
+            var eligible = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
+            if (!eligible.Any(t => t.TransferId == transferId))
+            {
+                TempData["Error"] = $"Transfer T-{transferId} is no longer eligible — it may have been paid by another session. Please select a different transfer.";
+                return RedirectToAction("CreateCenterPayment");
+            }
+
+            try
+            {
+                int cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
+                TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
+                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CreateCenterPayment", new { preselect = transferId });
+            }
+        }
+
+        // DETAIL
+        [HttpGet]
+        [Route("Finance/CenterPaymentDetail/{id}")]
+        public IActionResult CenterPaymentDetail(int id)
+        {
+            var payment = _financeRepo.GetCenterPaymentById(id);
+            if (payment == null) return NotFound();
+            ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
+            return View(payment);
+        }
+
+        // STRIPE CHECKOUT for Center Payment
+        [HttpPost]
+        public IActionResult CreateCenterCheckoutSession(int centerPaymentId, decimal totalAmount, string centerName)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var domain = $"{Request.Scheme}://{Request.Host}";
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+                {
+                    new SessionLineItemOptions
+                    {
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            Currency   = "inr",
+                            UnitAmount = (long)(totalAmount * 100),
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name        = $"Center Payment - {centerName}",
+                                Description = $"Center Payment ID: {centerPaymentId}"
+                            }
+                        },
+                        Quantity = 1
+                    }
+                },
+                Mode = "payment",
+                SuccessUrl = $"{domain}/Finance/CenterPaymentSuccess?centerPaymentId={centerPaymentId}&session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{domain}/Finance/CenterPaymentCancelled?centerPaymentId={centerPaymentId}",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "paymentId",   centerPaymentId.ToString() },
+                    { "paymentType", "Center" }
+                }
+            };
+
+            var service = new SessionService();
+            Session session = service.Create(options);
+            return Redirect(session.Url);
+        }
+
+        // STRIPE SUCCESS for Center Payment
+        [HttpGet]
+        public IActionResult CenterPaymentSuccess(int centerPaymentId, string session_id)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var service = new SessionService();
+            Session session = service.Get(session_id);
+            string bankStatus = session.PaymentStatus == "paid" ? "Success" : "Failed";
+            _financeRepo.RecordPaymentTransaction("Center", centerPaymentId, bankStatus, session_id);
+            TempData["Success"] = bankStatus == "Success"
+                ? $"Center payment processed successfully! Transaction: {session_id}"
+                : $"Payment failed. Transaction: {session_id}";
+            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
+        }
+
+        // STRIPE CANCELLED for Center Payment
+        [HttpGet]
+        public IActionResult CenterPaymentCancelled(int centerPaymentId)
+        {
+            TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
+            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // RECEIPT HELPERS
+        // ════════════════════════════════════════════════════════
+
         private string BuildReceiptHtml(FarmerPaymentModel p)
         {
             string statusColor = p.PaymentStatus == "Processed" ? "#dcfce7" : p.PaymentStatus == "Pending" ? "#fef9c3" : "#fee2e2";
@@ -202,7 +401,6 @@ namespace DairyIndustry.Controllers
             string payDate = p.PaymentDate.ToString("dd MMM yyyy");
             string qty = p.TotalQty.ToString("N2");
             string amt = p.TotalAmount.ToString("N2");
-            // string amtInWords = ConvertToWords((long)p.TotalAmount) + " Rupees Only";
 
             var sb = new StringBuilder();
             sb.Append("<!DOCTYPE html><html><head><meta charset='utf-8'/><style>");
@@ -229,8 +427,6 @@ namespace DairyIndustry.Controllers
             sb.Append(".totals-table{width:260px;font-size:11px;}");
             sb.Append(".totals-table td{padding:4px 8px;border-bottom:0.5px solid #e5e7eb;}");
             sb.Append(".grand td{background:#1e3a5f !important;color:#fff !important;font-weight:700;font-size:13px;-webkit-print-color-adjust:exact;}");
-            sb.Append(".words-box{background:#f9fafb;border:0.5px solid #e5e7eb;border-radius:3px;padding:6px 10px;font-size:11px;margin-bottom:10px;}");
-            sb.Append(".words-box span{font-size:9px;text-transform:uppercase;color:#777;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:2px;}");
             sb.Append(".bottom-row{display:flex;gap:12px;margin-top:10px;}");
             sb.Append(".bank-box{flex:1;border:0.5px solid #ccc;border-radius:4px;padding:8px 10px;}");
             sb.Append(".bank-box .lbl{font-size:9px;text-transform:uppercase;color:#777;letter-spacing:0.5px;font-weight:600;margin-bottom:5px;}");
@@ -240,7 +436,6 @@ namespace DairyIndustry.Controllers
             sb.Append(".footer{border-top:1px solid #ccc;margin-top:12px;padding-top:8px;text-align:center;font-size:9px;color:#888;}");
             sb.Append("</style></head><body><div class='page'>");
 
-            // HEADER
             sb.Append("<div class='top-header'>");
             sb.Append("<div><div class='co-name'>Dairy Management System</div>");
             sb.Append("<div class='co-sub'>Farmer Milk Payment Receipt</div>");
@@ -248,17 +443,14 @@ namespace DairyIndustry.Controllers
             sb.Append($"<div class='rt'><h2>PAYMENT RECEIPT</h2><p>Receipt No: FP-{pid}</p><p>Date: {today}</p></div>");
             sb.Append("</div>");
 
-            // STATUS BAR
             sb.Append($"<div class='status-bar'>PAYMENT STATUS: {p.PaymentStatus.ToUpper()}</div>");
 
-            // META ROW
             sb.Append("<div class='meta-row'>");
             sb.Append($"<div class='meta-box'><div class='lbl'>Farmer Details</div><div class='val'><strong>{p.FarmerName}</strong><br/>Bank: {bankDetails}<br/>A/C: {accountNo} | IFSC: {ifsc}</div></div>");
             sb.Append($"<div class='meta-box'><div class='lbl'>Collection Center</div><div class='val'><strong>{p.CenterName}</strong><br/>Collection Period:<br/>{fromDate} → {toDate}</div></div>");
             sb.Append($"<div class='meta-box'><div class='lbl'>Payment Info</div><div class='val'>Payment Date: <strong>{payDate}</strong><br/>Method: Stripe<br/>Currency: INR<br/>Bank Status: <strong style='color:{bankStColor}'>{bankSt}</strong></div></div>");
             sb.Append("</div>");
 
-            // ITEMS TABLE
             sb.Append("<table><thead><tr>");
             sb.Append("<th style='width:36px'>S.No</th><th>Description</th><th>Collection Period</th>");
             sb.Append("<th class='r'>Total Qty (L)</th><th class='r'>Amount (₹)</th>");
@@ -266,7 +458,6 @@ namespace DairyIndustry.Controllers
             sb.Append($"<tr><td>1</td><td>Milk Collection Payment</td><td>{fromDate} – {toDate}</td><td class='r'>{qty}</td><td class='r'>{amt}</td></tr>");
             sb.Append("</tbody></table>");
 
-            // TOTALS
             sb.Append("<div class='totals-section'><table class='totals-table'>");
             sb.Append($"<tr><td style='color:#777'>Total Quantity</td><td class='r'>{qty} L</td></tr>");
             sb.Append($"<tr><td style='color:#777'>Subtotal</td><td class='r'>₹ {amt}</td></tr>");
@@ -274,10 +465,6 @@ namespace DairyIndustry.Controllers
             sb.Append($"<tr class='grand'><td>Total Amount Paid</td><td class='r'>₹ {amt}</td></tr>");
             sb.Append("</table></div>");
 
-            // AMOUNT IN WORDS
-            //  sb.Append($"<div class='words-box'><span>Amount in Words</span>{amtInWords}</div>");
-
-            // BOTTOM: BANK + SIGNATURE
             sb.Append("<div class='bottom-row'>");
             sb.Append("<div class='bank-box'><div class='lbl'>Bank &amp; Transaction Details</div><table>");
             sb.Append($"<tr><td>Bank Name</td><td>{bankDetails}</td></tr>");
@@ -292,13 +479,11 @@ namespace DairyIndustry.Controllers
             sb.Append("<div style='font-size:9px;color:#777;margin-top:3px;'>Dairy Management System</div></div>");
             sb.Append("</div></div>");
 
-            // FOOTER
             sb.Append($"<div class='footer'>This is a computer-generated receipt and does not require a physical signature. | Receipt No: FP-{pid} | Generated: {generated} | Dairy Management System</div>");
             sb.Append("</div></body></html>");
             return sb.ToString();
         }
 
-        // GENERATE PDF FROM HTML using DinkToPdf
         private byte[] GeneratePdfFromHtml(string html)
         {
             var doc = new HtmlToPdfDocument
@@ -311,209 +496,33 @@ namespace DairyIndustry.Controllers
                     Margins = new MarginSettings { Top = 0, Bottom = 0, Left = 0, Right = 0 }
                 },
                 Objects =
-        {
-            new ObjectSettings
-            {
-                PagesCount  = true,
-                HtmlContent = html,
-                WebSettings = { DefaultEncoding = "utf-8" }
-            }
-        }
+                {
+                    new ObjectSettings
+                    {
+                        PagesCount  = true,
+                        HtmlContent = html,
+                        WebSettings = { DefaultEncoding = "utf-8" }
+                    }
+                }
             };
 
-            return _pdfConverter.Convert(doc);  // ← uses injected field, no DinkToPdf. prefix needed
+            return _pdfConverter.Convert(doc);
         }
 
-        [HttpGet]
-        public IActionResult GetFarmerCenter(int farmerId)
-        {
-            var center = _financeRepo.GetFarmerDefaultCenter(farmerId);
 
-            if (center == null)
-                return Json(new { success = false });
-
-            return Json(new
-            {
-                success = true,
-                centerId = center.CenterId,
-                centerName = center.CenterName
-            });
-        }
-
-        //Recent
-
-        // ============================================================
-        // ADD THESE ACTIONS TO: FinanceController.cs
-        // ============================================================
-        // Already injected in constructor:
-        //   private readonly IFinanceRepository _financeRepo;
-        //   private readonly IConfiguration _config;
-        //   private readonly IConverter _pdfConverter;
-        // ============================================================
-
-        // ────────────────────────────────────────────────────────
-        // INDEX — list all center payments
-        // ────────────────────────────────────────────────────────
-        [SessionAuthorize("Admin")]
-        public IActionResult CenterPayments()
-        {
-            var payments = _financeRepo.GetAllCenterPayments();
-            return View(payments);
-        }
-
-        // ────────────────────────────────────────────────────────
-        // CREATE GET — show the form with eligible transfer dropdown
-        // ────────────────────────────────────────────────────────
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult CreateCenterPayment()
-        {
-            var transfers = _financeRepo.GetEligibleTransfers();
-            ViewBag.Transfers = transfers;
-            return View();
-        }
-
-        // ────────────────────────────────────────────────────────
-        // AUTO-FILL AJAX — called when user selects a transfer
-        // Returns: CenterId, PlantId, ReceivedQty, Fat, CLR, Rate, Total
-        // ────────────────────────────────────────────────────────
-        [HttpGet]
-        public IActionResult GetTransferDetails(int transferId)
-        {
-            var transfers = _financeRepo.GetEligibleTransfers();
-            var t = transfers.FirstOrDefault(x => x.TransferId == transferId);
-            if (t == null)
-                return Json(new { success = false, message = "Transfer not found." });
-
-            decimal rate = 0m;
-            if (t.MilkTypeId.HasValue && t.TestedFat.HasValue && t.TestedCLR.HasValue)
-                rate = _financeRepo.GetActiveRate(t.MilkTypeId.Value, t.TestedFat.Value, t.TestedCLR.Value);
-
-            decimal total = t.ReceivedQty * rate;
-
-            return Json(new
-            {
-                success = true,
-                transferId = t.TransferId,
-                centerId = t.CenterId,
-                plantId = t.PlantId,
-                receivedQty = t.ReceivedQty,
-                testedFat = t.TestedFat,
-                testedCLR = t.TestedCLR,
-                ratePerLiter = rate,
-                totalAmount = total,
-                hasRate = rate > 0
-            });
-        }
-
-        // ────────────────────────────────────────────────────────
-        // CREATE POST — confirm & create Pending record
-        // ────────────────────────────────────────────────────────
-        [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter)
+        public IActionResult CancelCenterPayment(int centerPaymentId)
         {
             try
             {
-                int cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
-                TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
-                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+                _financeRepo.CancelCenterPayment(centerPaymentId);
+                TempData["Success"] = $"Payment CP-{centerPaymentId:D4} has been cancelled.";
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                return RedirectToAction("CreateCenterPayment");
             }
+            return RedirectToAction("CenterPayments");
         }
-
-        // ────────────────────────────────────────────────────────
-        // DETAIL — show payment summary + Pay button
-        // ────────────────────────────────────────────────────────
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        [Route("Finance/CenterPaymentDetail/{id}")]
-        public IActionResult CenterPaymentDetail(int id)
-        {
-            var payment = _financeRepo.GetCenterPaymentById(id);
-            if (payment == null) return NotFound();
-            ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
-            return View(payment);
-        }
-
-        // ────────────────────────────────────────────────────────
-        // STRIPE CHECKOUT SESSION for Center Payment
-        // ────────────────────────────────────────────────────────
-        [HttpPost]
-        public IActionResult CreateCenterCheckoutSession(int centerPaymentId, decimal totalAmount, string centerName)
-        {
-            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
-            var domain = $"{Request.Scheme}://{Request.Host}";
-
-            var options = new SessionCreateOptions
-            {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
-        {
-            new SessionLineItemOptions
-            {
-                PriceData = new SessionLineItemPriceDataOptions
-                {
-                    Currency   = "inr",
-                    UnitAmount = (long)(totalAmount * 100),
-                    ProductData = new SessionLineItemPriceDataProductDataOptions
-                    {
-                        Name        = $"Center Payment - {centerName}",
-                        Description = $"Center Payment ID: {centerPaymentId}"
-                    }
-                },
-                Quantity = 1
-            }
-        },
-                Mode = "payment",
-                SuccessUrl = $"{domain}/Finance/CenterPaymentSuccess?centerPaymentId={centerPaymentId}&session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = $"{domain}/Finance/CenterPaymentCancelled?centerPaymentId={centerPaymentId}",
-                Metadata = new Dictionary<string, string>
-        {
-            { "paymentId",   centerPaymentId.ToString() },
-            { "paymentType", "Center" }
-        }
-            };
-
-            var service = new SessionService();
-            Session session = service.Create(options);
-            return Redirect(session.Url);
-        }
-
-        // ────────────────────────────────────────────────────────
-        // STRIPE SUCCESS for Center Payment
-        // ────────────────────────────────────────────────────────
-        [HttpGet]
-        public IActionResult CenterPaymentSuccess(int centerPaymentId, string session_id)
-        {
-            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
-            var service = new SessionService();
-            Session session = service.Get(session_id);
-            string bankStatus = session.PaymentStatus == "paid" ? "Success" : "Failed";
-
-            // Reuses the same SP — just passes PaymentType = 'Center'
-            _financeRepo.RecordPaymentTransaction("Center", centerPaymentId, bankStatus, session_id);
-
-            TempData["Success"] = bankStatus == "Success"
-                ? $"Center payment processed successfully! Transaction: {session_id}"
-                : $"Payment failed. Transaction: {session_id}";
-
-            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
-        }
-
-        // ────────────────────────────────────────────────────────
-        // STRIPE CANCELLED for Center Payment
-        // ────────────────────────────────────────────────────────
-        [HttpGet]
-        public IActionResult CenterPaymentCancelled(int centerPaymentId)
-        {
-            TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
-            return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
-        }
-
     }
 }
