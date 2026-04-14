@@ -1,9 +1,7 @@
-﻿namespace DairyIndustry.Models
+﻿namespace DairyIndustry.Models.ChillingStorage
 {
     // Used for: Dashboard / module home page
-    // Filled by: DashboardSummary query and PlantCapacitySummary query
-
-    // ── Today's overall summary (top cards on dashboard) ──
+    // Today's overall summary top cards on dashboard
     public class ChillingDashboardSummaryModel
     {
         public int TotalEntries { get; set; }

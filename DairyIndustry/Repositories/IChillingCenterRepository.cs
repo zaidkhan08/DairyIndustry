@@ -1,26 +1,33 @@
-﻿using DairyIndustry.Models;
+﻿using DairyIndustry.Models.ChillingStorage;
 
 namespace DairyIndustry.Repositories
 {
     public interface IChillingCenterRepository
     {
-        // CRUD 
-        List<ChillingStorageModel> GetAll(DateTime? fromDate, DateTime? toDate);
-        ChillingStorageModel GetById(int storageId);
-        int StoreItem(ChillingStoreItemModel model);        // returns new StorageId
-        bool UpdateEntry(ChillingStoreItemModel model);
-        bool DeleteEntry(int storageId);
+        // ── PLANT LOOKUP FROM SESSION ──────────────────────────
+        // Called at start of every action using Session UserId
+        // Queries Admin.UserPlants via usp_GetPlantByUserId
+        PlantDropdownModel? GetPlantByUserId(int userId);
 
-        // FILTERS 
-        List<ChillingStorageModel> GetByPlant(int plantId, DateTime? fromDate, DateTime? toDate);
-        List<ChillingStorageModel> GetTemperatureAlerts(DateTime? fromDate, DateTime? toDate);
+        // ── STORAGE CRUD ───────────────────────────────────────
+        int StoreItem(ChillingStoreItemModel model);                            // SP 10.1
+        List<ChillingStorageModel> GetByPlant(int plantId,                      // SP 10.2
+                                              DateTime? fromDate,
+                                              DateTime? toDate);
+        List<ChillingStorageModel> GetAll(DateTime? fromDate, DateTime? toDate); // inline
+        ChillingStorageModel? GetById(int storageId);                            // inline
+        bool UpdateEntry(ChillingStoreItemModel model);                          // inline
+        bool DeleteEntry(int storageId);                                         // inline
 
-        // DASHBOARD 
-        ChillingDashboardSummaryModel GetDashboardSummary();
-        List<ChillingPlantCapacityModel> GetPlantCapacitySummary();
+        // ── ALERTS & MONITORING ────────────────────────────────
+        List<ChillingStorageModel> GetTemperatureAlerts(DateTime? fromDate,      // inline
+                                                        DateTime? toDate);
+        // ── DASHBOARD ──────────────────────────────────────────
+        ChillingDashboardSummaryModel GetDashboardSummary();                     // inline
+        List<ChillingPlantCapacityModel> GetPlantCapacitySummary();              // inline
 
-        // DROPDOWNS 
-        List<PlantDropdownModel> GetPlants();
-        List<ProductDropdownModel> GetProducts();
+        // ── DROPDOWNS ──────────────────────────────────────────
+        List<PlantDropdownModel> GetPlants();                                    // inline
+        List<ProductDropdownModel> GetProducts();                                // inline
     }
 }

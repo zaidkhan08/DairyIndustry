@@ -1,0 +1,183 @@
+﻿@model List<DairyIndustry.Models.StaffPaymentModel>
+@{
+    ViewData["Title"] = "Staff Payments";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-cash-stack me-2"></i>Staff Payments
+        </h2>
+        <small class="text-muted">@Model.Count payment record(s) found</small>
+    </div>
+    <a asp-action="Dashboard" class="btn btn-outline-primary">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Payments">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted small">PAYMENT STATUS</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (var item in ViewBag.StatusList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected>@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted small">STAFF ID</label>
+                    <input type="number" name="staffId" class="form-control"
+                           placeholder="Enter Staff ID"
+                           value="@ViewBag.SelectedStaffId" />
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-funnel-fill me-1"></i> Filter
+                    </button>
+                    <a asp-action="Payments" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+@if (Model.Any())
+{
+    var pending = Model.Count(p => p.PaymentStatus == "Pending");
+    var processed = Model.Count(p => p.PaymentStatus == "Processed");
+    var failed = Model.Count(p => p.PaymentStatus == "Failed");
+    var totalAmt = Model.Sum(p => p.TotalAmount);
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-warning">@pending</div>
+                <div class="small text-muted">Pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-success">@processed</div>
+                <div class="small text-muted">Processed</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-danger">@failed</div>
+                <div class="small text-muted">Failed</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-3 fw-bold text-primary">₹@totalAmt.ToString("N0")</div>
+                <div class="small text-muted">Total Amount</div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Payments Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th class="px-3">Payment ID</th>
+                            <th>Staff Name</th>
+                            <th>Type</th>
+                            <th>Plant</th>
+                            <th>Period</th>
+                            <th>Amount</th>
+                            <th>Payment Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td class="px-3 fw-semibold">#@p.PaymentId</td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@p.StaffId"
+                                       class="text-decoration-none fw-semibold">
+                                        @p.StaffName
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                        @p.StaffType
+                                    </span>
+                                </td>
+                                <td>@(p.PlantName ?? "—")</td>
+                                <td class="small text-muted">
+                                    @p.FromDate.ToString("dd MMM") – @p.ToDate.ToString("dd MMM yyyy")
+                                </td>
+                                <td class="fw-semibold">₹@p.TotalAmount.ToString("N2")</td>
+                                <td>@p.PaymentDate.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <span class="badge bg-@p.PaymentBadgeClass">@p.PaymentStatus</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top text-muted small">
+                Showing @Model.Count payment record(s)
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-cash-stack fs-1 d-block mb-2 opacity-25"></i>
+                No payment records found matching your filters.
+                <div class="mt-2">
+                    <a asp-action="Payments" class="btn btn-outline-primary btn-sm">Clear Filters</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="mt-3 d-flex gap-3 flex-wrap align-items-center">
+    <small class="text-muted fw-semibold">Legend:</small>
+    <span class="badge bg-warning text-dark">Pending</span>
+    <span class="badge bg-success">Processed</span>
+    <span class="badge bg-danger">Failed</span>
+    <span class="badge bg-secondary">Cancelled</span>
+</div>

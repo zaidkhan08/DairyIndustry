@@ -1,4 +1,4 @@
-﻿namespace DairyIndustry.Models
+﻿namespace DairyIndustry.Models.ChillingStorage
 {
     // Used for: populating dropdowns in Add and Edit forms
 

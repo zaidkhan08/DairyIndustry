@@ -1,0 +1,227 @@
+﻿@model DairyIndustry.Models.StaffFormModel
+@{
+    ViewData["Title"] = "Edit Staff";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-pencil-fill me-2"></i>Edit Staff
+        </h2>
+        <small class="text-muted">Update details for @Model.FirstName @Model.LastName</small>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.StaffId" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Details
+    </a>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="StaffId" />
+    <input type="hidden" asp-for="ProfilePhoto" />
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-md-8">
+
+            <!-- Personal Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-person-fill me-2"></i>Personal Information
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="form-label fw-semibold">
+                                First Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="form-label fw-semibold">
+                                Last Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="RoleId" class="form-label fw-semibold">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="RoleId" class="form-select" asp-items="ViewBag.Roles">
+                                <option value="0">-- Select Role --</option>
+                            </select>
+                            <span asp-validation-for="RoleId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-semibold">Phone Number</label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold">Email Address</label>
+                            <input asp-for="Email" class="form-control" type="email" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="DOJ" class="form-label fw-semibold">Date of Joining</label>
+                            <input asp-for="DOJ" class="form-control" type="date" />
+                            <span asp-validation-for="DOJ" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Salary" class="form-label fw-semibold">Salary (₹)</label>
+                            <input asp-for="Salary" class="form-control" type="number" step="0.01" />
+                            <span asp-validation-for="Salary" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-end pb-1">
+                            <div class="form-check form-switch ms-1">
+                                <input asp-for="IsActive" class="form-check-input"
+                                       type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">
+                                    Active Staff Member
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assigning Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-diagram-3-fill me-2"></i>Assigning
+                    <small class="fw-normal ms-2">(fill only one)</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="PlantId" class="form-label fw-semibold">Plant</label>
+                            <select asp-for="PlantId" class="form-select" asp-items="ViewBag.Plants">
+                                <option value="">— Select Plant —</option>
+                            </select>
+                            <span asp-validation-for="PlantId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="CenterId" class="form-label fw-semibold">
+                                Collection Center
+                            </label>
+                            <select asp-for="CenterId" class="form-select" asp-items="ViewBag.Centers">
+                                <option value="">— Select Collection Center —</option>
+                            </select>
+                            <span asp-validation-for="CenterId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Select either a Plant or a Collection Center — not both.
+                            </small>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Details -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-bank2 me-2"></i>Bank Account Details
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="BankName" class="form-label fw-semibold">Bank Name</label>
+                            <input asp-for="BankName" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="AccountNumber" class="form-label fw-semibold">
+                                Account Number
+                            </label>
+                            <input asp-for="AccountNumber" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="IFSCCode" class="form-label fw-semibold">IFSC Code</label>
+                            <input asp-for="IFSCCode" class="form-control" />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN — Photo -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-camera-fill me-2"></i>Profile Photo
+                </div>
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                    {
+                        <img id="photoPreview" src="@Model.ProfilePhoto"
+                             class="rounded-circle border border-2 border-primary mb-3"
+                             style="width:150px;height:150px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <img id="photoPreview"
+                             src="https://via.placeholder.com/150?text=No+Photo"
+                             class="rounded-circle border border-2 border-primary mb-3"
+                             style="width:150px;height:150px;object-fit:cover;" />
+                    }
+                    <label class="form-label fw-semibold d-block">Change Photo</label>
+                    <input asp-for="PhotoFile" class="form-control" type="file"
+                           accept="image/*" onchange="previewPhoto(this)" />
+                    <small class="text-muted d-block mt-2">Leave empty to keep existing photo</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a asp-action="Details" asp-route-id="@Model.StaffId"
+           class="btn btn-outline-secondary px-4">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
+        <button type="submit" class="btn btn-primary px-5">
+            <i class="bi bi-check-lg me-1"></i> Save Changes
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('photoPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

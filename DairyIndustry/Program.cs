@@ -1,8 +1,8 @@
 using DairyIndustry.Data;
-<<<<<<< Updated upstream
+//Updated upstream
 using DairyIndustry.Filters;
-=======
->>>>>>> Stashed changes
+
+//Stashed changes
 using DairyIndustry.Repositories;
 
 namespace DairyIndustry
@@ -13,11 +13,12 @@ namespace DairyIndustry
         {
             var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< Updated upstream
+        // Updated upstream
             builder.Services.AddSingleton<DbHelper>();
             builder.Services.AddScoped<ActionLogFilter>();       
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();
+
             builder.Services.AddControllersWithViews(options =>  
             {
                 options.Filters.Add<ExceptionHandlerFilter>();
@@ -30,12 +31,17 @@ namespace DairyIndustry
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
-=======
+
+            
+
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             builder.Services.AddSingleton<DbHelper>();
             builder.Services.AddScoped<IChillingCenterRepository, ChillingCenterRepository>();
->>>>>>> Stashed changes
+            builder.Services.AddScoped<IHRRepository, HRRepository>();
+            builder.Services.AddScoped<ISalesRepository, SalesRepository>();
+
+            // Stashed changes
 
             var app = builder.Build();
 
@@ -51,7 +57,7 @@ namespace DairyIndustry
             app.UseAuthorization();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Admin}/{action=Login}/{id?}");
+                pattern: "{controller=Sales}/{action=Index}/{id?}");
 
             app.Run();
         }

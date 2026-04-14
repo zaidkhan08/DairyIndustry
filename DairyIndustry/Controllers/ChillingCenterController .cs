@@ -1,4 +1,4 @@
-﻿using DairyIndustry.Models;
+﻿using DairyIndustry.Models.ChillingStorage;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,41 +16,91 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPER — gets PlantId + PlantName for the
+        //  logged-in user from Admin.UserPlants via session UserId.
+        //  Returns null if user has no plant assigned.
+        // ═══════════════════════════════════════════════════════════
+        private PlantDropdownModel? GetSessionPlant()
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return null;
+            return _repo.GetPlantByUserId(userId.Value);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPER — loads form data for Create / Edit
+        //  Sets ViewBag.PlantName and ViewBag.Products
+        //  No plant dropdown — plant is fixed from session
+        // ═══════════════════════════════════════════════════════════
+        private void LoadFormData(int plantId, int? selectedProductId = null)
+        {
+            var plants = _repo.GetPlants();
+            var plant = plants.FirstOrDefault(p => p.PlantId == plantId);
+            ViewBag.PlantName = plant?.DisplayText ?? "Unknown Plant";
+
+            ViewBag.Products = new SelectList(
+                _repo.GetProducts(), "ProductId", "DisplayText", selectedProductId);
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
         //  DASHBOARD — /ChillingCenter/Dashboard
-        //  Shows: summary cards + plant capacity table + recent entries
+        //  Shows summary for ALL plants (admin-level view)
         // ═══════════════════════════════════════════════════════════
         public IActionResult Dashboard()
         {
+            var plant = GetSessionPlant();
+
             var viewModel = new ChillingDashboardViewModel
             {
                 Summary = _repo.GetDashboardSummary(),
                 PlantCapacity = _repo.GetPlantCapacitySummary(),
-                RecentEntries = _repo.GetAll(null, null).Take(5).ToList(),
+                // Show only this plant's recent entries if plant manager
+                // Show all if no plant assigned (admin)
+                RecentEntries = plant != null
+                    ? _repo.GetByPlant(plant.PlantId, null, null).Take(5).ToList()
+                    : _repo.GetAll(null, null).Take(5).ToList(),
                 ActiveAlerts = _repo.GetTemperatureAlerts(DateTime.Today, DateTime.Today)
             };
+
+            ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
             return View(viewModel);
         }
 
 
         // ═══════════════════════════════════════════════════════════
         //  INDEX — /ChillingCenter/Index
-        //  Shows: all storage entries with optional date filter
+        //  Plant Manager sees ONLY their plant's entries
+        //  No plant filter shown — filtered automatically by session
         // ═══════════════════════════════════════════════════════════
-        public IActionResult Index(DateTime? fromDate, DateTime? toDate, int? plantId)
+        public IActionResult Index(DateTime? fromDate, DateTime? toDate)
         {
-            // If plantId filter is selected use GetByPlant, otherwise GetAll
+            var plant = GetSessionPlant();
+
             List<ChillingStorageModel> entries;
 
-            if (plantId.HasValue)
-                entries = _repo.GetByPlant(plantId.Value, fromDate, toDate);
+            if (plant != null)
+            {
+                // Plant Manager
+                entries = _repo.GetByPlant(plant.PlantId, fromDate, toDate);
+                ViewBag.PlantName = plant.DisplayText;
+            }
             else
+            {
+                // Admin
                 entries = _repo.GetAll(fromDate, toDate);
+                ViewBag.PlantName = "All Plants";
 
-            // Pass plants to view for the filter dropdown
-            ViewBag.Plants = new SelectList(_repo.GetPlants(), "PlantId", "DisplayText", plantId);
+                // ✅ FIX: populate dropdown
+                ViewBag.Plants = new SelectList(
+                    _repo.GetPlants(),
+                    "PlantId",
+                    "DisplayText"
+                );
+            }
+
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
-            ViewBag.PlantId = plantId;
 
             return View(entries);
         }
@@ -58,7 +108,6 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  DETAILS — /ChillingCenter/Details/5
-        //  Shows: single entry full detail
         // ═══════════════════════════════════════════════════════════
         public IActionResult Details(int id)
         {
@@ -74,22 +123,37 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  CREATE GET — /ChillingCenter/Create
-        //  Shows: empty Add form with dropdowns populated
+        //  PlantId comes from session — shown as label
         // ═══════════════════════════════════════════════════════════
         public IActionResult Create()
         {
-            LoadDropdowns();
-            return View(new ChillingStoreItemModel());
+            var plant = GetSessionPlant();
+
+            if (plant == null)
+            {
+                TempData["Error"] = "Your account is not assigned to any plant. Contact Admin.";
+                return RedirectToAction("Index");
+            }
+
+            LoadFormData(plant.PlantId);
+
+            var model = new ChillingStoreItemModel
+            {
+                PlantId = plant.PlantId,
+                StoredDate = DateTime.Today
+            };
+
+            return View(model);
         }
 
-        // CREATE POST — receives submitted form data
+        // CREATE POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(ChillingStoreItemModel model)
         {
             if (!ModelState.IsValid)
             {
-                LoadDropdowns();
+                LoadFormData(model.PlantId, model.ProductId);
                 return View(model);
             }
 
@@ -106,7 +170,7 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  EDIT GET — /ChillingCenter/Edit/5
-        //  Shows: pre-filled Edit form
+        //  PlantId comes from the existing record
         // ═══════════════════════════════════════════════════════════
         public IActionResult Edit(int id)
         {
@@ -117,7 +181,8 @@ namespace DairyIndustry.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Map ChillingStorageModel → ChillingStoreItemModel for the form
+            LoadFormData(entry.PlantId, entry.ProductId);
+
             var model = new ChillingStoreItemModel
             {
                 StorageId = entry.StorageId,
@@ -128,18 +193,17 @@ namespace DairyIndustry.Controllers
                 StoredDate = entry.StoredDate
             };
 
-            LoadDropdowns(model.PlantId, model.ProductId);
             return View(model);
         }
 
-        // EDIT POST — saves edited form data
+        // EDIT POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(ChillingStoreItemModel model)
         {
             if (!ModelState.IsValid)
             {
-                LoadDropdowns(model.PlantId, model.ProductId);
+                LoadFormData(model.PlantId, model.ProductId);
                 return View(model);
             }
 
@@ -156,7 +220,6 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  DELETE GET — /ChillingCenter/Delete/5
-        //  Shows: delete confirmation page
         // ═══════════════════════════════════════════════════════════
         public IActionResult Delete(int id)
         {
@@ -169,7 +232,7 @@ namespace DairyIndustry.Controllers
             return View(entry);
         }
 
-        // DELETE POST — confirmed delete
+        // DELETE POST
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
@@ -187,14 +250,21 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  TEMPERATURE ALERTS — /ChillingCenter/Alerts
-        //  Shows: all entries where temperature > 5°C
+        //  Plant Manager sees only their plant's alerts
         // ═══════════════════════════════════════════════════════════
         public IActionResult Alerts(DateTime? fromDate, DateTime? toDate)
         {
-            var alerts = _repo.GetTemperatureAlerts(fromDate, toDate);
+            var allAlerts = _repo.GetTemperatureAlerts(fromDate, toDate);
+            var plant = GetSessionPlant();
+
+            // Filter to plant manager's plant if assigned
+            var alerts = plant != null
+                ? allAlerts.Where(a => a.PlantId == plant.PlantId).ToList()
+                : allAlerts;
 
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
 
             return View(alerts);
         }
@@ -202,28 +272,18 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  CAPACITY — /ChillingCenter/Capacity
-        //  Shows: per-plant capacity monitoring table
         // ═══════════════════════════════════════════════════════════
         public IActionResult Capacity()
         {
             var data = _repo.GetPlantCapacitySummary();
+            var plant = GetSessionPlant();
+
+            // Plant Manager sees only their plant's capacity row
+            if (plant != null)
+                data = data.Where(d => d.PlantId == plant.PlantId).ToList();
+
+            ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
             return View(data);
-        }
-
-
-        // ═══════════════════════════════════════════════════════════
-        //  PRIVATE HELPER — loads Plant and Product dropdowns
-        //  Called before returning any Create or Edit view
-        // ═══════════════════════════════════════════════════════════
-        private void LoadDropdowns(int? selectedPlantId = null, int? selectedProductId = null)
-        {
-            ViewBag.Plants = new SelectList(
-                _repo.GetPlants(), "PlantId", "DisplayText", selectedPlantId);
-
-            // Add a "Raw Milk" option at the top of the product dropdown
-            var products = _repo.GetProducts();
-            ViewBag.Products = new SelectList(
-                products, "ProductId", "DisplayText", selectedProductId);
         }
     }
 }

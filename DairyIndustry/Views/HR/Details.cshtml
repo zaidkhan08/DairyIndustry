@@ -1,0 +1,219 @@
+﻿@model DairyIndustry.Models.StaffModel
+@{
+    ViewData["Title"] = "Staff Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-person-lines-fill me-2"></i>Staff Details
+        </h2>
+        <small class="text-muted">Full profile information</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to List
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+
+    <!-- LEFT — Profile Card -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body py-4">
+
+                @* FIX: Replaced external placeholder URL with inline SVG *@
+                @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                {
+                    <img src="@Model.ProfilePhoto"
+                         class="rounded-circle border border-3 border-primary mb-3"
+                         style="width:130px;height:130px;object-fit:cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22130%22 height=%22130%22 viewBox=%220 0 130 130%22%3E%3Crect width=%22130%22 height=%22130%22 fill=%22%23e9ecef%22 rx=%2265%22/%3E%3Ccircle cx=%2265%22 cy=%2252%22 r=%2224%22 fill=%22%23adb5bd%22/%3E%3Cellipse cx=%2265%22 cy=%22112%22 rx=%2238%22 ry=%2230%22 fill=%22%23adb5bd%22/%3E%3C/svg%3E'" />
+                }
+                else
+                {
+                    <div class="rounded-circle bg-primary bg-opacity-10
+                                        d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style="width:130px;height:130px;">
+                        <i class="bi bi-person-fill text-primary" style="font-size:3.5rem;"></i>
+                    </div>
+                }
+
+                <h4 class="fw-bold mb-1">@Model.FullName</h4>
+                <span class="badge bg-primary mb-2">@Model.RoleName</span>
+                <div class="mb-3">
+                    <span class="@Model.StatusBadgeClass fs-6">@Model.StatusLabel</span>
+                </div>
+
+                @* FIX: Salary displayed on profile card *@
+                @if (Model.Salary.HasValue)
+                {
+                    <div class="mb-3">
+                        <span class="text-muted small">Salary</span>
+                        <div class="fw-bold text-success fs-5">₹@Model.Salary.Value.ToString("N0")</div>
+                    </div>
+                }
+
+                <!-- Update Photo -->
+                <form asp-action="UpdatePhoto" method="post" enctype="multipart/form-data"
+                      class="border-top pt-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="staffId" value="@Model.StaffId" />
+                    <label class="form-label small fw-semibold text-muted">Update Photo</label>
+                    <input type="file" name="photo" class="form-control form-control-sm mb-2"
+                           accept="image/*" />
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-upload me-1"></i> Upload
+                    </button>
+                </form>
+
+            </div>
+
+            <!-- Toggle Active -->
+            <div class="card-footer bg-white border-top">
+                <form asp-action="ToggleActive" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.StaffId" />
+                    <input type="hidden" name="currentStatus"
+                           value="@Model.IsActive.ToString().ToLower()" />
+                    @if (Model.IsActive)
+                    {
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-person-dash-fill me-1"></i> Deactivate Staff
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                            <i class="bi bi-person-check-fill me-1"></i> Activate Staff
+                        </button>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT — Details -->
+    <div class="col-md-8">
+
+        <!-- Personal Info -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-person-fill me-2"></i>Personal Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Staff ID</dt>
+                    <dd class="col-sm-8">#@Model.StaffId</dd>
+
+                    <dt class="col-sm-4 text-muted">First Name</dt>
+                    <dd class="col-sm-8 fw-semibold">@(Model.FirstName ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">Last Name</dt>
+                    <dd class="col-sm-8 fw-semibold">@(Model.LastName ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">Role</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-primary bg-opacity-10 text-primary">
+                            @(Model.RoleName ?? "—")
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Phone</dt>
+                    <dd class="col-sm-8">@(Model.Phone ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">Email</dt>
+                    <dd class="col-sm-8">@(Model.Email ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">Date of Joining</dt>
+                    <dd class="col-sm-8">
+                        @(Model.DOJ.HasValue? Model.DOJ.Value.ToString("dd MMM yyyy") : "—")
+                    </dd>
+
+                    @* FIX: Salary added to details view *@
+                    <dt class="col-sm-4 text-muted">Salary</dt>
+                    <dd class="col-sm-8 fw-semibold text-success">
+                        @(Model.Salary.HasValue ? "₹" + Model.Salary.Value.ToString("N2") : "—")
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Status</dt>
+                    <dd class="col-sm-8">
+                        <span class="@Model.StatusBadgeClass">@Model.StatusLabel</span>
+                    </dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white border-top d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.StaffId" class="btn btn-primary btn-sm">
+                    <i class="bi bi-pencil-fill me-1"></i> Edit Details
+                </a>
+                <a asp-action="Payments" asp-route-staffId="@Model.StaffId"
+                   class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-cash-stack me-1"></i> View Payments
+                </a>
+            </div>
+        </div>
+
+        @* FIX: Assignment section added — was completely missing from Details *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-diagram-3-fill me-2"></i>Assignment
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Assigned To</dt>
+                    <dd class="col-sm-8 fw-semibold">
+                        @if (Model.PlantName != null)
+                        {
+                            <span class="badge bg-info text-dark me-1">Plant</span>
+                            @Model.PlantName
+                        }
+                        else if (Model.CenterName != null)
+                        {
+                            <span class="badge bg-success me-1">Center</span>
+                            @Model.CenterName
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not Assigned</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-bank2 me-2"></i>Bank Account Details
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Bank Name</dt>
+                    <dd class="col-sm-8 fw-semibold">@(Model.BankName ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">Account Number</dt>
+                    <dd class="col-sm-8">@(Model.AccountNumber ?? "—")</dd>
+
+                    <dt class="col-sm-4 text-muted">IFSC Code</dt>
+                    <dd class="col-sm-8">@(Model.IFSCCode ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+
+    </div>
+</div>

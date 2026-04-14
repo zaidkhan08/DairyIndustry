@@ -1,0 +1,153 @@
+﻿@model List<DairyIndustry.Models.DistributorModel>
+@{
+    ViewData["Title"] = "Distributors";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    var sales = ViewBag.DistributorSales as List<DairyIndustry.Models.DistributorSalesModel> ?? new();
+    var statusFilter = ViewBag.StatusFilter as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Distributors</h4>
+        <small class="text-muted">Manage and approve registered distributors</small>
+    </div>
+    <a asp-action="AddDistributor" class="btn btn-primary btn-sm">➕ Add Distributor</a>
+</div>
+
+<!-- Status Filter Tabs -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == null ? "active" : "")"
+           asp-action="Distributors">All</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Pending" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Pending">⏳ Pending</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Approved" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Approved">✅ Approved</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Rejected" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Rejected">❌ Rejected</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Suspended" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Suspended">🚫 Suspended</a>
+    </li>
+</ul>
+
+@if (Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background:#1a2e4a; color:#fff;">
+                        <tr>
+                            <th>Distributor</th>
+                            <th>GSTIN</th>
+                            <th>Contact</th>
+                            <th>Registered</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@d.DistributorName</div>
+                                    @if (!string.IsNullOrEmpty(d.Location))
+                                    {
+                                        <small class="text-muted">📍 @d.Location</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(d.Email))
+                                    {
+                                        <br />
+                            
+                                        <small class="text-muted">✉️ @d.Email</small>
+                                    }
+                                </td>
+                                <td><small class="font-monospace text-muted">@(d.GSTIN ?? "—")</small></td>
+                                <td>@(d.ContactNumber ?? "—")</td>
+                                <td>
+                                    @if (d.RegisteredOn.HasValue)
+                                    {
+                                        <small>@d.RegisteredOn.Value.ToString("dd MMM yyyy")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-@d.StatusBadgeClass">@d.Status</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                        <a asp-action="DistributorDetails" asp-route-id="@d.DistributorId"
+                                           class="btn btn-sm btn-outline-primary">View</a>
+
+                                        @if (d.Status == "Pending")
+                                        {
+                                            <form asp-action="ApproveDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <input type="hidden" name="action" value="Approve" />
+                                                <button class="btn btn-sm btn-success">Approve</button>
+                                            </form>
+                                            <form asp-action="ApproveDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <input type="hidden" name="action" value="Reject" />
+                                                <button class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('Reject this distributor?')">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        }
+                                        @if (d.Status == "Approved")
+                                        {
+                                            <form asp-action="SuspendDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <button class="btn btn-sm btn-outline-warning"
+                                                        onclick="return confirm('Suspend this distributor?')">
+                                                    Suspend
+                                                </button>
+                                            </form>
+                                        }
+                                        @if (d.Status == "Suspended" || d.Status == "Rejected")
+                                        {
+                                            <form asp-action="ReinstateDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <button class="btn btn-sm btn-success">Reinstate</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top bg-light text-muted small">
+                Showing <strong>@Model.Count</strong> distributor(s)
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="text-center text-muted py-5">
+            <div style="font-size:3rem;">🏪</div>
+            <div class="fs-5 mt-2">No distributors found.</div>
+            <a asp-action="AddDistributor" class="btn btn-primary btn-sm mt-3">Add First Distributor</a>
+        </div>
+    </div>
+}

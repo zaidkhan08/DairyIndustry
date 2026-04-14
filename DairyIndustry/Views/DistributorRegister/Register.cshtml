@@ -1,0 +1,144 @@
+﻿@model DairyIndustry.Models.DistributorRegisterModel
+@{
+    ViewData["Title"] = "Distributor Registration";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5"
+     style="background: linear-gradient(135deg, #1a2e4a 0%, #2d5a8e 100%);">
+
+    <div class="w-100" style="max-width:640px; padding:0 1rem;">
+
+        <div class="text-center mb-4">
+            <div style="font-size:3rem;">🥛</div>
+            <h3 class="text-white fw-bold mb-1">Distributor Registration</h3>
+            <p class="text-white-50 small">
+                Register your business to become an authorized distributor.<br />
+                Your application will be reviewed and approved by our team.<br />
+                Once approved, use the <strong class="text-white">common login page</strong> with your credentials.
+            </p>
+        </div>
+
+        <div class="card border-0 shadow-lg">
+            <div class="card-body p-4 p-md-5">
+
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                {
+                    <div class="alert alert-danger mb-3">
+                        <ul class="mb-0 ps-3">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <form asp-controller="DistributorRegister" asp-action="Index" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <h6 class="fw-bold text-muted mb-3"
+                        style="font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;">
+                        Business Information
+                    </h6>
+
+                    <div class="mb-3">
+                        <label asp-for="DistributorName" class="form-label fw-semibold"></label>
+                        <input asp-for="DistributorName" class="form-control"
+                               placeholder="Your business / distributor name" />
+                        <span asp-validation-for="DistributorName" class="text-danger small"></span>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Location" class="form-label fw-semibold"></label>
+                            <input asp-for="Location" class="form-control" placeholder="City / Area" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GSTIN" class="form-label fw-semibold"></label>
+                            <input asp-for="GSTIN" class="form-control" placeholder="15-char GSTIN" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Address" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Address" class="form-control" rows="2"
+                                  placeholder="Business address"></textarea>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <h6 class="fw-bold text-muted mb-3"
+                        style="font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;">
+                        Contact Information
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="ContactNumber" class="form-label fw-semibold"></label>
+                            <input asp-for="ContactNumber" class="form-control"
+                                   placeholder="10-digit mobile" />
+                            <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold"></label>
+                            <input asp-for="Email" class="form-control"
+                                   placeholder="name@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <h6 class="fw-bold text-muted mb-2"
+                        style="font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;">
+                        Login Credentials
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        Choose a username and password. Once approved, use these on the
+                        <strong>common login page</strong> to access your portal.
+                    </p>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label fw-semibold"></label>
+                        <input asp-for="Username" class="form-control"
+                               placeholder="Choose a unique username"
+                               autocomplete="username" />
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label fw-semibold"></label>
+                            <input asp-for="Password" class="form-control" type="password"
+                                   placeholder="Min. 6 characters"
+                                   autocomplete="new-password" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmPassword" class="form-label fw-semibold"></label>
+                            <input asp-for="ConfirmPassword" class="form-control" type="password"
+                                   placeholder="Re-enter password"
+                                   autocomplete="new-password" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning small py-2 mb-4">
+                        ⚠️ Your account will be <strong>inactive</strong> until approved by our admin team.
+                        You can log in and view your orders only after approval.
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Submit Registration →
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

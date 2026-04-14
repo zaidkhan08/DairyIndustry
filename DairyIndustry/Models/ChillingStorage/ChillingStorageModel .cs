@@ -1,4 +1,4 @@
-﻿namespace DairyIndustry.Models
+﻿namespace DairyIndustry.Models.ChillingStorage
 {
     // Used for: Index page, Details page, Temperature Alerts page
     // Filled by: GetAll query, GetById query, GetStorageByPlant SP, GetTemperatureAlerts query

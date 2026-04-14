@@ -1,0 +1,139 @@
+﻿@{
+    string action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string roleName = Context.Session.GetString("RoleName") ?? "";
+    bool isAdmin = roleName == "Administrator";
+    bool isStaff = roleName == "Staff";
+    bool isDist = roleName == "Distributor";
+    bool isAdminOrStaff = isAdmin || isStaff;
+
+    bool Active(string a) => string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
+}
+
+<div id="sales-sidebar"
+     style="background:#1a2e4a; display:flex; flex-direction:column;">
+
+    <!-- Module header -->
+    <div style="background:#16263e; padding:14px 16px; border-bottom:1px solid #2a4060; flex-shrink:0;">
+        <div style="font-size:.65rem; color:#8fa8c8; text-transform:uppercase; letter-spacing:.1em;">
+            Sales Module
+        </div>
+        @{
+            var distName = Context.Session.GetString("DistributorName");
+            var username = Context.Session.GetString("Username");
+        }
+        <div style="font-size:.82rem; color:#fff; font-weight:600; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            @(distName ?? username ?? "")
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav style="flex:1; padding:8px 0; overflow-y:auto;">
+
+        @if (isAdminOrStaff)
+        {
+            <div class="sb-section-label">Overview</div>
+
+            <a asp-controller="Sales" asp-action="Dashboard"
+               class="sb-link @(Active("Dashboard") ? "active" : "")">
+                <span class="sb-icon">📊</span> Dashboard
+            </a>
+            <a asp-controller="Sales" asp-action="Reports"
+               class="sb-link @(Active("Reports") ? "active" : "")">
+                <span class="sb-icon">📈</span> Reports
+            </a>
+
+            <div class="sb-section-label">Orders</div>
+
+            <a asp-controller="Sales" asp-action="Index"
+               class="sb-link @(Active("Index") ? "active" : "")">
+                <span class="sb-icon">📋</span> All Orders
+            </a>
+            <a asp-controller="Sales" asp-action="Create"
+               class="sb-link @(Active("Create") ? "active" : "")">
+                <span class="sb-icon">➕</span> New Order
+            </a>
+
+            <div class="sb-section-label">Distributors</div>
+
+            <a asp-controller="Sales" asp-action="Distributors"
+               class="sb-link @(Active("Distributors") ? "active" : "")">
+                <span class="sb-icon">🏪</span> All Distributors
+            </a>
+
+            @if (isAdmin)
+            {
+                <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
+                   class="sb-link">
+                    <span class="sb-icon">⏳</span> Pending Approvals
+                </a>
+                <a asp-controller="Sales" asp-action="AddDistributor"
+                   class="sb-link @(Active("AddDistributor") ? "active" : "")">
+                    <span class="sb-icon">➕</span> Add Distributor
+                </a>
+            }
+        }
+
+        @if (isDist)
+        {
+            <div class="sb-section-label">My Account</div>
+
+            <a asp-controller="Sales" asp-action="MyOrders"
+               class="sb-link @(Active("MyOrders") ? "active" : "")">
+                <span class="sb-icon">📋</span> My Orders
+            </a>
+        }
+
+    </nav>
+
+    <!-- Footer link -->
+    <div style="padding:12px 16px; border-top:1px solid #2a4060; font-size:.75rem; flex-shrink:0;">
+        <a asp-controller="DistributorRegister" asp-action="Index"
+           style="color:#8fa8c8; text-decoration:none; display:flex; align-items:center; gap:8px;">
+            <span>🔗</span> Distributor Register Page
+        </a>
+    </div>
+</div>
+
+<style>
+    .sb-section-label {
+        font-size: .62rem;
+        color: #6a8aaa;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        padding: 10px 18px 3px;
+        margin-top: 2px;
+    }
+
+    .sb-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 18px;
+        color: #b8cfe8;
+        text-decoration: none;
+        font-size: .83rem;
+        border-left: 3px solid transparent;
+        transition: background .13s, color .13s, border-left-color .13s;
+        white-space: nowrap;
+    }
+
+        .sb-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #e8f2ff;
+            border-left-color: #4a9eda;
+        }
+
+        .sb-link.active {
+            background: rgba(74, 158, 218, .18);
+            color: #ffffff;
+            border-left-color: #4a9eda;
+            font-weight: 600;
+        }
+
+    .sb-icon {
+        width: 18px;
+        text-align: center;
+        font-size: .88rem;
+        flex-shrink: 0;
+    }
+</style>

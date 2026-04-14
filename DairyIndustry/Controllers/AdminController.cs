@@ -10,12 +10,15 @@ namespace DairyIndustry.Controllers
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly ISalesRepository _salesRepo;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo)
+
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ISalesRepository salesRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _salesRepo = salesRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -76,11 +79,24 @@ namespace DairyIndustry.Controllers
                 //case "Finance Manager":
                 //    return RedirectToAction("Index", "Finance");
 
-                //case "Sales Manager":
-                //    return RedirectToAction("Index", "Sales");
+                case "Distributor":
+                    var distResult = _salesRepo.GetDistributorForLogin(user.Username);
+                    if (distResult != null)
+                    {
+                        HttpContext.Session.SetInt32("DistributorId", distResult.DistributorId);
+                        HttpContext.Session.SetString("DistributorName", distResult.DistributorName!);
+                        HttpContext.Session.SetString("DistributorStatus", distResult.Status!);
+                    }
+                    if (distResult?.IsActive == true &&
+                        (distResult.Status ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                        return RedirectToAction("MyOrders", "Sales");
+                    else
+                        return RedirectToAction("NotApproved", "Sales");
 
                 //case "HR Manager":
                 //    return RedirectToAction("Index", "HR");
+
+
 
                 default:
                     return RedirectToAction("Index", "Admin");
@@ -108,14 +124,14 @@ namespace DairyIndustry.Controllers
         // ROLES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Roles()
         {
             var roles = _adminRepo.GetAllRoles();
             return View(roles);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult CreateRole(string roleName)
         {
@@ -134,14 +150,14 @@ namespace DairyIndustry.Controllers
             return View(users);
         }
 
-        [SessionAuthorize("Admin")]
+       [SessionAuthorize("Admin")]
         public IActionResult RegisterUser()
         {
             ViewBag.Roles = _adminRepo.GetAllRoles();
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult RegisterUser(string username, string password, int roleId, int? staffId)
         {

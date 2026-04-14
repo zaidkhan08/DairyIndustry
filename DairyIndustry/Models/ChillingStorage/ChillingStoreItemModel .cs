@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DairyIndustry.Models
+namespace DairyIndustry.Models.ChillingStorage
 {
     // Used for: Add new entry form (Create page) and Edit page
     // Filled by: user input in the form
