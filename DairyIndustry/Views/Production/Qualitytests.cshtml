@@ -1,0 +1,652 @@
+﻿@model List<DairyIndustry.Models.Production.QualityTestModel>
+@using DairyIndustry.Models.Production
+@{
+    ViewData["Title"] = "Transfer Quality Tests";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
+    var totalTests = Model.Count;
+    var normalCount = Model.Count(t => t.QualityResult == "Normal");
+    var deviatedCount = Model.Count(t => t.QualityResult == "Deviated");
+    var deviationRate = totalTests > 0 ? Math.Round((decimal)deviatedCount / totalTests * 100, 1) : 0;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+    .qt {
+        --c-surface: #fff;
+        --c-bg: #f5f6f8;
+        --c-border: #e2e5ea;
+        --c-text: #111827;
+        --c-text-2: #374151;
+        --c-text-3: #6b7280;
+        --c-text-4: #9ca3af;
+        --c-accent: #2563eb;
+        --c-accent-bg: #eff6ff;
+        --c-accent-text: #1d4ed8;
+        --c-green: #16a34a;
+        --c-green-bg: #f0fdf4;
+        --c-green-border: #86efac;
+        --c-red: #dc2626;
+        --c-red-bg: #fef2f2;
+        --c-red-border: #fca5a5;
+        --c-amber: #d97706;
+        --c-amber-bg: #fffbeb;
+        --c-row-hover: #f8faff;
+        --r: 6px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--c-text);
+    }
+
+    /* Summary strip */
+    .qt-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+    .qt-kpi {
+        padding: 16px 20px;
+        border-right: 1px solid var(--c-border);
+        position: relative;
+    }
+
+        .qt-kpi:last-child {
+            border-right: none;
+        }
+
+    .qt-kpi-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-text-3);
+        margin-bottom: 6px;
+    }
+
+    .qt-kpi-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--c-text);
+        letter-spacing: -1px;
+        line-height: 1;
+    }
+
+        .qt-kpi-value .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--c-text-3);
+            margin-left: 2px;
+            letter-spacing: 0;
+        }
+
+    .qt-kpi-sub {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 4px;
+    }
+
+    .qt-kpi-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+    }
+
+    /* Toolbar */
+    .qt-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 16px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--c-border);
+        flex-wrap: wrap;
+    }
+
+    .qt-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .qt-toolbar-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+
+    .qt-page-badge {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--c-text-3);
+        background: #f1f3f5;
+        border: 1px solid var(--c-border);
+        border-radius: 4px;
+        padding: 2px 8px;
+    }
+
+    .qt-legend {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 11px;
+        color: var(--c-text-3);
+    }
+
+    .qt-legend-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    /* Table wrapper */
+    .qt-table-wrap {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+    }
+
+    .qt-scroll {
+        overflow-x: auto;
+        max-height: 62vh;
+        overflow-y: auto;
+    }
+
+        .qt-scroll::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        .qt-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .qt-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+    .qt-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+    }
+
+        .qt-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--c-text-3);
+            padding: 9px 16px;
+            text-align: left;
+            background: #fafbfc;
+            border-bottom: 1px solid var(--c-border);
+            white-space: nowrap;
+        }
+
+            .qt-table thead th.c {
+                text-align: center;
+            }
+
+            .qt-table thead th.r {
+                text-align: right;
+            }
+
+        .qt-table tbody td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            color: var(--c-text-2);
+        }
+
+        .qt-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .qt-table tbody tr:hover td {
+            background: var(--c-row-hover);
+        }
+
+        .qt-table td.c {
+            text-align: center;
+        }
+
+        .qt-table td.r {
+            text-align: right;
+        }
+
+    /* Transfer ID */
+    .qt-tid {
+        font-family: 'SF Mono', 'Consolas', monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--c-accent);
+    }
+
+    .qt-tdate {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 2px;
+    }
+
+    /* Origin cell */
+    .qt-center {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
+    }
+
+    .qt-meta {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Metric pair */
+    .qt-metric-pair {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+
+    .qt-metric-half {
+        flex: 1;
+        text-align: center;
+        padding: 0 12px;
+    }
+
+        .qt-metric-half + .qt-metric-half {
+            border-left: 1px solid var(--c-border);
+        }
+
+    .qt-metric-sub {
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--c-text-4);
+        margin-bottom: 3px;
+    }
+
+    .qt-metric-val {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--c-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .qt-metric-val.avg {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--c-text-3);
+        }
+
+        .qt-metric-val.deviated {
+            color: var(--c-red);
+        }
+
+    .qt-deviation-flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        color: var(--c-red);
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    /* Result badge */
+    .qt-result {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+        .qt-result.normal {
+            background: var(--c-green-bg);
+            color: var(--c-green);
+            border: 1px solid var(--c-green-border);
+        }
+
+        .qt-result.deviated {
+            background: var(--c-red-bg);
+            color: var(--c-red);
+            border: 1px solid var(--c-red-border);
+        }
+
+    .qt-result-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+    }
+
+    /* Action */
+    .qt-action-btn {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        border: 1px solid var(--c-border);
+        color: var(--c-text-3);
+        background: var(--c-surface);
+        text-decoration: none;
+        transition: all .15s;
+        font-size: 13px;
+    }
+
+        .qt-action-btn:hover {
+            background: var(--c-accent-bg);
+            border-color: #bfdbfe;
+            color: var(--c-accent);
+        }
+
+    /* Empty */
+    .qt-empty {
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--c-text-3);
+        font-size: 13px;
+    }
+
+    /* Footer / Pagination */
+    .qt-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-top: 1px solid var(--c-border);
+        background: #fafbfc;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .qt-footer-info {
+        font-size: 12px;
+        color: var(--c-text-3);
+    }
+
+        .qt-footer-info strong {
+            color: var(--c-text-2);
+        }
+
+    .qt-pagination {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .qt-pg-btn {
+        min-width: 28px;
+        height: 28px;
+        padding: 0 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        border: 1px solid var(--c-border);
+        background: var(--c-surface);
+        color: var(--c-text-2);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .qt-pg-btn:hover:not(:disabled) {
+            background: var(--c-accent-bg);
+            border-color: #bfdbfe;
+            color: var(--c-accent);
+        }
+
+        .qt-pg-btn.active {
+            background: var(--c-accent);
+            border-color: var(--c-accent);
+            color: #fff;
+        }
+
+        .qt-pg-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+    @@media (max-width: 768px) {
+        .qt-summary {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .qt-kpi:nth-child(2) {
+            border-right: none;
+        }
+
+        .qt-kpi:nth-child(3) {
+            border-top: 1px solid var(--c-border);
+        }
+    }
+</style>
+
+<div class="qt">
+
+    <!-- Summary KPIs -->
+    <div class="qt-summary">
+        <div class="qt-kpi">
+            <div class="qt-kpi-label">Total Samples</div>
+            <div class="qt-kpi-value">@totalTests</div>
+            <div class="qt-kpi-sub">Analysed</div>
+            <div class="qt-kpi-bar" style="background:#e5e7eb;"></div>
+        </div>
+        <div class="qt-kpi">
+            <div class="qt-kpi-label">Compliant</div>
+            <div class="qt-kpi-value" style="color:var(--c-green);">@normalCount</div>
+            <div class="qt-kpi-sub">Passed quality check</div>
+            <div class="qt-kpi-bar" style="background:var(--c-green);"></div>
+        </div>
+        <div class="qt-kpi">
+            <div class="qt-kpi-label">Deviations</div>
+            <div class="qt-kpi-value" style="color:var(--c-red);">@deviatedCount</div>
+            <div class="qt-kpi-sub">Flagged alerts</div>
+            <div class="qt-kpi-bar" style="background:var(--c-red);"></div>
+        </div>
+        <div class="qt-kpi">
+            <div class="qt-kpi-label">Deviation Rate</div>
+            <div class="qt-kpi-value" style="color:@(deviationRate >= 10 ? "var(--c-red)" : deviationRate >= 5 ? "var(--c-amber)" : "var(--c-green)");">
+                @deviationRate<span class="unit">%</span>
+            </div>
+            <div class="qt-kpi-sub">Of total samples</div>
+            <div class="qt-kpi-bar" style="background:@(deviationRate >= 10 ? "var(--c-red)" : deviationRate >= 5 ? "var(--c-amber)" : "var(--c-green)");"></div>
+        </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="qt-table-wrap">
+        <div class="qt-toolbar">
+            <div class="qt-toolbar-left">
+                <span class="qt-toolbar-title">Receiving Audit Log</span>
+                <span class="qt-page-badge" id="pageIndicator">Page 1</span>
+            </div>
+            <div class="qt-legend">
+                <span><span class="qt-legend-dot" style="background:var(--c-green);"></span>Normal</span>
+                <span><span class="qt-legend-dot" style="background:var(--c-red);"></span>Deviated</span>
+            </div>
+        </div>
+
+        <div class="qt-scroll">
+            <table class="qt-table" id="qualityTable">
+                <thead>
+                    <tr>
+                        <th style="width:110px;">Transfer</th>
+                        <th>Origin / Logistics</th>
+                        <th style="width:200px;" class="c">Fat Content (%)</th>
+                        <th style="width:200px;" class="c">CLR Analysis</th>
+                        <th style="width:130px;" class="c">Result</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="qt-empty">No test records found.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var t in Model)
+                        {
+                            <tr class="quality-row">
+                                <td>
+                                    <div class="qt-tid">T-@t.TransferId</div>
+                                    <div class="qt-tdate">@t.TestDate.ToString("dd MMM yy")</div>
+                                </td>
+                                <td>
+                                    <div class="qt-center">@t.CenterName</div>
+                                    <div class="qt-meta">
+                                        <i class="bi bi-truck" style="font-size:10px;"></i>
+                                        @t.VehicleNumber
+                                        <span style="color:#d1d5db;">·</span>
+                                        @t.PlantName
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="qt-metric-pair">
+                                        <div class="qt-metric-half">
+                                            <div class="qt-metric-sub">Batch Avg</div>
+                                            <div class="qt-metric-val avg">@t.BatchAvgFat?.ToString("F2")</div>
+                                        </div>
+                                        <div class="qt-metric-half">
+                                            <div class="qt-metric-sub">Tested</div>
+                                            <div class="qt-metric-val @(t.IsFatDeviated ? "deviated" : "")">
+                                                @t.TestedFat?.ToString("F2")
+                                            </div>
+                                            @if (t.IsFatDeviated)
+                                            {
+                                                <div class="qt-deviation-flag"><i class="bi bi-arrow-down-short"></i> Low</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="qt-metric-pair">
+                                        <div class="qt-metric-half">
+                                            <div class="qt-metric-sub">Batch Avg</div>
+                                            <div class="qt-metric-val avg">@t.BatchAvgCLR?.ToString("F2")</div>
+                                        </div>
+                                        <div class="qt-metric-half">
+                                            <div class="qt-metric-sub">Tested</div>
+                                            <div class="qt-metric-val @(t.IsCLRDeviated ? "deviated" : "")">
+                                                @t.TestedCLR?.ToString("F2")
+                                            </div>
+                                            @if (t.IsCLRDeviated)
+                                            {
+                                                <div class="qt-deviation-flag"><i class="bi bi-arrow-down-short"></i> Low</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="c">
+                                    <span class="qt-result @(t.QualityResult == "Normal" ? "normal" : "deviated")">
+                                        <span class="qt-result-dot"></span>
+                                        @t.QualityResult
+                                    </span>
+                                </td>
+                                <td class="c">
+                                    <a href="@Url.Action("QualityTestDetail", new { id = t.TransferId })" class="qt-action-btn">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="qt-footer">
+            <div class="qt-footer-info" id="paginationInfo">
+                Showing <strong>1–15</strong> of <strong>@totalTests</strong>
+            </div>
+            <div class="qt-pagination">
+                <button class="qt-pg-btn" id="prevBtn" onclick="changePage(-1)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div id="pageNumbers" style="display:flex;gap:4px;"></div>
+                <button class="qt-pg-btn" id="nextBtn" onclick="changePage(1)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    const pageSize = 15;
+    const rows = Array.from(document.querySelectorAll('.quality-row'));
+    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+
+    function updateTable() {
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        rows.forEach((r, i) => r.style.display = (i >= start && i < end) ? '' : 'none');
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('paginationInfo').innerHTML =
+            `Showing <strong>${start + 1}–${Math.min(end, rows.length)}</strong> of <strong>${rows.length}</strong>`;
+        renderPageNumbers();
+    }
+
+    function changePage(dir) {
+        currentPage = Math.max(1, Math.min(totalPages, currentPage + dir));
+        updateTable();
+        document.querySelector('.qt-scroll').scrollTop = 0;
+    }
+
+    function setPage(n) { currentPage = n; updateTable(); }
+
+    function renderPageNumbers() {
+        const c = document.getElementById('pageNumbers');
+        c.innerHTML = '';
+        let s = Math.max(1, currentPage - 2);
+        let e = Math.min(totalPages, s + 4);
+        if (e - s < 4) s = Math.max(1, e - 4);
+        for (let i = s; i <= e; i++) {
+            const b = document.createElement('button');
+            b.textContent = i;
+            b.onclick = () => setPage(i);
+            b.className = 'qt-pg-btn' + (i === currentPage ? ' active' : '');
+            c.appendChild(b);
+        }
+    }
+
+    if (rows.length > 0) updateTable();
+</script>

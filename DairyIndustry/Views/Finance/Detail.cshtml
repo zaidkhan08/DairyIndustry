@@ -1,0 +1,950 @@
+﻿@model DairyIndustry.Models.Finance.FarmerPaymentModel
+@{
+    ViewData["Title"] = "Payment Detail";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --ink: #0d1117;
+        --ink-2: #3d4451;
+        --ink-3: #6e7787;
+        --ink-4: #a8b3c0;
+        --surface-0: #ffffff;
+        --surface-1: #f6f8fa;
+        --surface-2: #edf0f4;
+        --border: #dde1e8;
+        --border-strong: #c8cdd7;
+        --accent: #1e6feb;
+        --accent-dark: #1558c9;
+        --accent-bg: #dbeafe;
+        --green: #1a7f4e;
+        --green-bg: #d1fae5;
+        --green-dark: #15803d;
+        --green-border: #a7f3d0;
+        --red: #b91c1c;
+        --red-bg: #fee2e2;
+        --red-border: #fca5a5;
+        --amber: #9a5c0a;
+        --amber-bg: #fef3c7;
+        --amber-border: #fde68a;
+        --font: 'DM Sans', sans-serif;
+        --mono: 'DM Mono', monospace;
+        --radius: 10px;
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .pd-wrap {
+        font-family: var(--font);
+        background: var(--surface-1);
+        min-height: 100vh;
+        padding: 2rem 2.5rem 4rem;
+        color: var(--ink);
+    }
+
+    /* ── Topbar ── */
+    .pd-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .pd-breadcrumb {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-4);
+        margin-bottom: 0.4rem;
+    }
+
+        .pd-breadcrumb span {
+            color: var(--ink-3);
+        }
+
+    .pd-title {
+        font-size: 1.55rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+        .pd-title .ref-pill {
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            color: var(--ink-3);
+            padding: 0.15rem 0.55rem;
+            border-radius: 5px;
+            letter-spacing: 0.04em;
+        }
+
+    .pd-subtitle {
+        font-size: 0.82rem;
+        color: var(--ink-3);
+        margin-top: 0.25rem;
+    }
+
+    .pd-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        padding-top: 0.2rem;
+    }
+
+    .btn-ghost {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: var(--surface-0);
+        border: 1px solid var(--border-strong);
+        border-radius: 6px;
+        font-family: var(--font);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--ink-2);
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+        .btn-ghost:hover {
+            background: var(--surface-2);
+            color: var(--ink);
+        }
+
+    .btn-outline-blue {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: var(--surface-0);
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        font-family: var(--font);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--accent);
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+    }
+
+        .btn-outline-blue:hover {
+            background: var(--accent-bg);
+            color: var(--accent-dark);
+        }
+
+    .btn-solid-green {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: var(--green-dark);
+        border: 1px solid #166534;
+        border-radius: 6px;
+        font-family: var(--font);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #fff;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+        .btn-solid-green:hover {
+            background: #14532d;
+            color: #fff;
+        }
+
+    /* ── Alert ── */
+    .pd-alert {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        border: 1px solid transparent;
+    }
+
+        .pd-alert.success {
+            background: var(--green-bg);
+            color: var(--green);
+            border-color: var(--green-border);
+        }
+
+        .pd-alert.error {
+            background: var(--red-bg);
+            color: var(--red);
+            border-color: var(--red-border);
+        }
+
+    .pd-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.6;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 1;
+    }
+
+    /* ── Status Banner ── */
+    .status-banner {
+        border-radius: var(--radius);
+        padding: 1rem 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid transparent;
+    }
+
+        .status-banner.processed {
+            background: var(--green-bg);
+            border-color: var(--green-border);
+        }
+
+        .status-banner.pending {
+            background: var(--amber-bg);
+            border-color: var(--amber-border);
+        }
+
+        .status-banner.failed {
+            background: var(--red-bg);
+            border-color: var(--red-border);
+        }
+
+    .status-banner-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .processed .status-banner-icon {
+        background: var(--green-dark);
+        color: #fff;
+    }
+
+    .pending .status-banner-icon {
+        background: #d97706;
+        color: #fff;
+    }
+
+    .failed .status-banner-icon {
+        background: var(--red);
+        color: #fff;
+    }
+
+    .status-banner-text .title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .status-banner-text .sub {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        margin-top: 0.1rem;
+    }
+
+    .status-banner-ref {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        background: rgba(255,255,255,0.6);
+        border: 1px solid rgba(0,0,0,0.06);
+        padding: 0.25rem 0.65rem;
+        border-radius: 5px;
+    }
+
+    /* ── Grid ── */
+    .pd-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .pd-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-card {
+        background: var(--surface-0);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.15rem 1.4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .kpi-card.blue::after {
+            background: var(--accent);
+        }
+
+        .kpi-card.green::after {
+            background: #22c55e;
+        }
+
+        .kpi-card.amber::after {
+            background: #f59e0b;
+        }
+
+        .kpi-card.dark::after {
+            background: var(--ink);
+        }
+
+    .kpi-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-4);
+        margin-bottom: 0.5rem;
+    }
+
+    .kpi-value {
+        font-size: 1.7rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-meta {
+        font-size: 0.72rem;
+        color: var(--ink-4);
+        margin-top: 0.35rem;
+    }
+
+    /* ── Info Card ── */
+    .info-card {
+        background: var(--surface-0);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    .info-card-header {
+        padding: 0.85rem 1.4rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-1);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .info-card-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .icon-blue {
+        background: var(--accent-bg);
+        color: var(--accent);
+    }
+
+    .icon-green {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .icon-amber {
+        background: var(--amber-bg);
+        color: var(--amber);
+    }
+
+    .icon-dark {
+        background: var(--surface-2);
+        color: var(--ink-2);
+    }
+
+    .info-card-title {
+        font-size: 0.83rem;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    /* ── DL Rows ── */
+    .dl-body {
+        padding: 0.25rem 0;
+    }
+
+    .dl-row {
+        display: flex;
+        align-items: center;
+        padding: 0.7rem 1.4rem;
+        border-bottom: 1px solid var(--surface-2);
+        gap: 1rem;
+    }
+
+        .dl-row:last-child {
+            border-bottom: none;
+        }
+
+    .dl-label {
+        width: 145px;
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+    }
+
+    .dl-value {
+        font-size: 0.83rem;
+        font-weight: 500;
+        color: var(--ink);
+    }
+
+        .dl-value.mono {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+        }
+
+        .dl-value.large {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .dl-value.green {
+            color: var(--green);
+        }
+
+        .dl-value.amber {
+            color: var(--amber);
+        }
+
+        .dl-value.red {
+            color: var(--red);
+        }
+
+    /* ── Status Badge ── */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25em 0.75em;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+
+        .status-pill::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+    .pill-processed {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .pill-pending {
+        background: var(--amber-bg);
+        color: var(--amber);
+    }
+
+    .pill-failed {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+
+    /* ── Payment Action Card ── */
+    .pay-card {
+        background: var(--surface-0);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    .pay-card-body {
+        padding: 1.5rem;
+    }
+
+    .pay-amount-display {
+        text-align: center;
+        padding: 1.5rem 1rem;
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 1.25rem;
+    }
+
+        .pay-amount-display .amount {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pay-amount-display .farmer-tag {
+            font-size: 0.78rem;
+            color: var(--ink-4);
+            margin-top: 0.35rem;
+        }
+
+            .pay-amount-display .farmer-tag strong {
+                color: var(--ink-3);
+            }
+
+    .btn-pay {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: var(--green-dark);
+        border: 1px solid #166534;
+        border-radius: 8px;
+        font-family: var(--font);
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+
+        .btn-pay:hover {
+            background: #14532d;
+        }
+
+    .btn-retry {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: #d97706;
+        border: 1px solid #b45309;
+        border-radius: 8px;
+        font-family: var(--font);
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        transition: background 0.15s;
+    }
+
+        .btn-retry:hover {
+            background: #b45309;
+        }
+
+    .stripe-note {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        font-size: 0.72rem;
+        color: var(--ink-4);
+        margin-top: 0.75rem;
+    }
+
+    /* ── Transaction success box ── */
+    .txn-box {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .txn-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.65rem 1rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.8rem;
+    }
+
+        .txn-row:last-child {
+            border-bottom: none;
+        }
+
+    .txn-key {
+        color: var(--ink-3);
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .txn-val {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--ink-2);
+    }
+
+        .txn-val.success {
+            color: var(--green);
+            font-weight: 600;
+            font-family: var(--font);
+        }
+
+        .txn-val.failed {
+            color: var(--red);
+            font-weight: 600;
+            font-family: var(--font);
+        }
+
+    .pd-grid-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    }
+
+
+    .pd-grid-3 {
+        grid-template-columns: 1fr;
+    }
+
+    }
+</style>
+
+<div class="pd-wrap">
+
+    <!-- Topbar -->
+    <div class="pd-topbar">
+        <div>
+            <div class="pd-breadcrumb">Finance <span>/ Farmer Disbursements <span>/ Detail</span></span></div>
+            <h1 class="pd-title">
+                Payment Detail
+                <span class="ref-pill">FP-@Model.PaymentId.ToString("D6")</span>
+            </h1>
+            <p class="pd-subtitle">Milk procurement disbursement record</p>
+        </div>
+        <div class="pd-actions">
+            @if (Model.PaymentStatus == "Processed")
+            {
+                <a asp-action="ViewReceipt" asp-route-id="@Model.PaymentId" target="_blank" class="btn-outline-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                    View Receipt
+                </a>
+                <a asp-action="DownloadReceipt" asp-route-id="@Model.PaymentId" class="btn-solid-green">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                    Download Receipt
+                </a>
+            }
+            <a asp-action="Index" class="btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="pd-alert success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            @TempData["Success"]
+            <button class="pd-alert-close" onclick="this.closest('.pd-alert').remove()">&#x2715;</button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="pd-alert error">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            @TempData["Error"]
+            <button class="pd-alert-close" onclick="this.closest('.pd-alert').remove()">&#x2715;</button>
+        </div>
+    }
+
+    <!-- Status Banner -->
+    @{
+        var bannerClass = Model.PaymentStatus?.ToLower() switch
+        {
+            "processed" => "processed",
+            "failed" => "failed",
+            _ => "pending"
+        };
+
+        var bannerTitle = Model.PaymentStatus switch
+        {
+            "Processed" => "Payment Successfully Processed",
+            "Failed" => "Payment Failed",
+            _ => "Payment Awaiting Processing"
+        };
+
+        var bannerSub = Model.PaymentStatus switch
+        {
+            "Processed" => $"Disbursed on {Model.PaymentDate.ToString("dd MMM yyyy")} · Transaction recorded",
+            "Failed" => "The payment could not be processed. Please retry via Stripe.",
+            _ => "This payment is pending. Use the Stripe button below to process it."
+        };
+    }
+    <div class="status-banner @bannerClass">
+        <div class="status-banner-icon">
+            @if (Model.PaymentStatus == "Processed")
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            }
+            else if (Model.PaymentStatus == "Failed")
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            }
+            else
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            }
+        </div>
+        <div class="status-banner-text">
+            <div class="title">@bannerTitle</div>
+            <div class="sub">@bannerSub</div>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.TransactionReference))
+        {
+            <div class="status-banner-ref">@Model.TransactionReference</div>
+        }
+    </div>
+
+    <!-- KPI Row -->
+    <div class="pd-grid-3">
+        <div class="kpi-card blue">
+            <div class="kpi-label">Total Quantity</div>
+            <div class="kpi-value">@Model.TotalQty.ToString("N2")</div>
+            <div class="kpi-meta">Litres collected</div>
+        </div>
+        <div class="kpi-card green">
+            <div class="kpi-label">Total Amount</div>
+            <div class="kpi-value">₹@((Model.TotalAmount / 1000).ToString("N1"))K</div>
+            <div class="kpi-meta">₹@Model.TotalAmount.ToString("N2") disbursed</div>
+        </div>
+        <div class="kpi-card @(Model.PaymentStatus == "Processed" ? "dark" : (Model.PaymentStatus == "Failed" ? "amber" : "amber"))">
+            <div class="kpi-label">Status</div>
+            <div class="kpi-value" style="font-size:1.3rem;">
+                @{
+                    var pillClass = Model.PaymentStatus?.ToLower() switch
+                    {
+                        "processed" => "pill-processed",
+                        "failed" => "pill-failed",
+                        _ => "pill-pending"
+                    };
+                }
+                <span class="status-pill @pillClass">@Model.PaymentStatus</span>
+            </div>
+            <div class="kpi-meta">Payment Date: @Model.PaymentDate.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+
+    <!-- Detail + Action Grid -->
+    <div class="pd-grid">
+
+        <!-- LEFT: Payment Info -->
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon icon-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                </div>
+                <span class="info-card-title">Payment Information</span>
+            </div>
+            <div class="dl-body">
+                <div class="dl-row">
+                    <span class="dl-label">Reference</span>
+                    <span class="dl-value mono">FP-@Model.PaymentId.ToString("D6")</span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Farmer</span>
+                    <span class="dl-value" style="font-weight:600;">@Model.FarmerName</span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Center</span>
+                    <span class="dl-value">
+                        <span style="display:flex;align-items:center;gap:0.35rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-4)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                            @Model.CenterName
+                        </span>
+                    </span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Period</span>
+                    <span class="dl-value">
+                        @Model.FromDate.ToString("dd MMM yyyy")
+                        <span style="color:var(--ink-4);margin:0 0.3rem;">→</span>
+                        @Model.ToDate.ToString("dd MMM yyyy")
+                    </span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Quantity</span>
+                    <span class="dl-value">@Model.TotalQty.ToString("N2") <span style="color:var(--ink-4);font-size:0.75rem;">L</span></span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Amount</span>
+                    <span class="dl-value large green">₹@Model.TotalAmount.ToString("N2")</span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Payment Date</span>
+                    <span class="dl-value">@Model.PaymentDate.ToString("dd MMM yyyy")</span>
+                </div>
+                <div class="dl-row">
+                    <span class="dl-label">Status</span>
+                    <span class="dl-value">
+                        <span class="status-pill @pillClass">@Model.PaymentStatus</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Transaction / Payment Action -->
+        <div>
+            @if (Model.PaymentStatus == "Processed")
+            {
+                <!-- Transaction Details -->
+                <div class="info-card" style="margin-bottom:1.25rem;">
+                    <div class="info-card-header">
+                        <div class="info-card-icon icon-green">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                        </div>
+                        <span class="info-card-title">Transaction Details</span>
+                    </div>
+                    <div class="txn-box" style="margin:1rem 1.4rem 1.4rem;">
+                        <div class="txn-row">
+                            <span class="txn-key">Bank</span>
+                            <span class="txn-val">@(Model.BankName ?? "—")</span>
+                        </div>
+                        <div class="txn-row">
+                            <span class="txn-key">Account</span>
+                            <span class="txn-val">@(Model.AccountNumber ?? "—")</span>
+                        </div>
+                        <div class="txn-row">
+                            <span class="txn-key">IFSC</span>
+                            <span class="txn-val">@(Model.IFSCCode ?? "—")</span>
+                        </div>
+                        <div class="txn-row">
+                            <span class="txn-key">Bank Status</span>
+                            <span class="txn-val success">@(Model.BankStatus ?? "—")</span>
+                        </div>
+                        <div class="txn-row">
+                            <span class="txn-key">Transaction Ref</span>
+                            <span class="txn-val">@(Model.TransactionReference ?? "—")</span>
+                        </div>
+                        <div class="txn-row">
+                            <span class="txn-key">Gateway</span>
+                            <span class="txn-val">Stripe</span>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Payment Action Card -->
+                <div class="pay-card">
+                    <div class="info-card-header">
+                        <div class="info-card-icon @(Model.PaymentStatus == "Failed" ? "icon-amber" : "icon-blue")">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                        </div>
+                        <span class="info-card-title">
+                            @(Model.PaymentStatus == "Failed" ? "Retry Payment" : "Process Payment")
+                        </span>
+                    </div>
+                    <div class="pay-card-body">
+                        <div class="pay-amount-display">
+                            <div class="amount">₹@Model.TotalAmount.ToString("N2")</div>
+                            <div class="farmer-tag">
+                                Payable to <strong>@Model.FarmerName</strong> · @Model.CenterName
+                            </div>
+                        </div>
+
+                        @if (Model.PaymentStatus == "Failed" && !string.IsNullOrEmpty(Model.TransactionReference))
+                        {
+                            <div class="txn-box" style="margin-bottom:1rem;">
+                                <div class="txn-row">
+                                    <span class="txn-key">Previous Ref</span>
+                                    <span class="txn-val">@Model.TransactionReference</span>
+                                </div>
+                                <div class="txn-row">
+                                    <span class="txn-key">Bank Status</span>
+                                    <span class="txn-val failed">@(Model.BankStatus ?? "Failed")</span>
+                                </div>
+                            </div>
+                        }
+
+                        <form asp-action="CreateCheckoutSession" method="post">
+                            <input type="hidden" name="paymentId" value="@Model.PaymentId" />
+                            <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+                            <input type="hidden" name="farmerName" value="@Model.FarmerName" />
+                            <button type="submit" class="@(Model.PaymentStatus == "Failed" ? "btn-retry" : "btn-pay")">
+                                @if (Model.PaymentStatus == "Failed")
+                                {
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.81" /></svg>
+                                    <span>Retry Payment via Stripe</span>
+                                }
+                                else
+                                {
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                                    <span>Pay ₹@Model.TotalAmount.ToString("N2") via Stripe</span>
+                                }
+                            </button>
+                        </form>
+
+                        <div class="stripe-note">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                            Secured by Stripe — PCI DSS compliant payment processing
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

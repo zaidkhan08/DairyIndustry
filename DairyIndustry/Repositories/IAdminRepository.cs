@@ -1,24 +1,30 @@
 ﻿using DairyIndustry.Models.Admin;
+using System;
 using System.Data;
 
 namespace DairyIndustry.Repositories
 {
-    
-        public interface IAdminRepository
-        {
-            // ── ROLES ──────────────────────────────────────────────
-            int CreateRole(string roleName);
-            List<RoleModel> GetAllRoles();
 
-            // ── USERS ──────────────────────────────────────────────
-            int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
-            User GetUserByUsername(string username);
-            List<User> GetAllUsers();
-            void UpdateUserStatus(int userId, bool isActive);
+    public interface IAdminRepository
+    {
+        // ── ROLES ──────────────────────────────────────────────
+        int CreateRole(string roleName);
+        List<RoleModel> GetAllRoles();
 
-            // ── AUDIT LOG ──────────────────────────────────────────
-            void WriteAuditLog(int userId, string action, string entityName);
-            List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
+        // ── USERS ──────────────────────────────────────────────
+        int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
+        User GetUserByUsername(string username);
+        List<User> GetAllUsers();
+        void UpdateUserStatus(int userId, bool isActive);
+
+        // ── AUDIT LOG ──────────────────────────────────────────
+        void WriteAuditLog(int userId, string action, string entityName);
+        List<AuditLogModel> GetAuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate);
+
+        //Added By Zaid
+        int? GetPlantIdByUser(int userId);
+        // ── AUDIT LOG ──────────────────────────────────────────
+       
 
         // ════════════════════════════════════════════════════════
         // LOCATION — STATE
@@ -57,24 +63,101 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
         int AddStaff(string firstName, string lastName, string phone, string email,
-             string staffType, DateTime? doj,
+             int roleId, DateTime? doj,
              string bankName, string accountNumber, string ifscCode,
-             string profilePhoto = null);
-
-        List<StaffModel> GetAllStaff(string staffType = null, bool? isActive = null);
+             decimal salary,
+             string profilePhoto = null,
+             int? centerId = null,
+             int? plantId = null);
+        void UpdateStaff(int staffId, string firstName, string lastName,
+                        string phone, string email, int roleId, DateTime? doj,
+                        string bankName, string accountNumber, string ifscCode,
+                        decimal salary, string profilePhoto,
+                        int? centerId, int? plantId);
+        List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
+        List<StaffModel> GetUnlinkedStaff();
+        StaffModel GetStaffById(int staffId);
+        void AssignUserToPlant(int userId, int plantId);
 
+        void AssignUserToCenter(int userId, int centerId);
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
 
-        int AddPlant(string PlantName,string Location);
+        int AddPlant(string PlantName, string Location);
 
-        List<PlantModel> GetAllPlants();
-        void DeletePlant(int id);
+        List<PlantModel> GetAllPlants(bool? isActive = true);
+        void TogglePlant(int id, bool isActive);
         void UpdatePlant(PlantModel plant);
         PlantModel getPlantById(int id);
+
+        // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        int AddCollection(string CenterName, int VillageID,decimal Capacity,string Location);
+        List<CollectionCenterModel> GetAllCollection(bool? isActive = true);
+        
+        void ToggleCollection(int id, bool isActive);
+        void UpdateCollection(CollectionCenterModel collection);
+        CollectionCenterModel getCollectionById(int id);
+
+
+        // ════════════════════════════════════════════════════════
+        // Production
+        // ════════════════════════════════════════════════════════
+
+        int AddProduct(string productName, string productType, decimal mrp,
+                                    string unit, int? shelfLifeDays, string description,
+                                    int createdBy);
+
+        List<ProductModel> GetAllProducts(string productType = null, bool? isActive = true);
+        ProductModel GetProductById(int productId);
+        List<string> GetProductTypes();
+
+        void UpdateProduct(int productId, string productName, string productType,
+                           decimal mrp, string unit, int? shelfLifeDays,
+                           string description, int modifiedBy);
+
+        void ToggleProductStatus(int productId, bool isActive, int modifiedBy);
+
+        List<ProductModel> GetActiveProducts();
+
+        List<ProductionBatchModel> GetProductionBatches(int? plantId = null, int? productId = null,
+                                                         string batchStatus = null,
+                                                         DateTime? fromDate = null, DateTime? toDate = null);
+
+        List<MilkTransferModel> GetMilkTransfers(int? plantId = null, int? centerId = null,
+                                          DateTime? fromDate = null, DateTime? toDate = null);
+
+        //collection center
+        List<CollectionCenterModel> GetAllCenters();
+
+        //Distributers
+        List<Distributor> GetDistributors();
+        int AddDistributor(Distributor distributor);
+        bool UpdateDistributorStatus(int distributorId, string status);
+        Distributor? GetDistributorById(int distributorId);
+        List<Distributor> GetPendingDistributors();
+
+        //Assign plant and collection to user
+        List<UserAssignmentViewModel> GetAllUserPlantAssignments();
+        List<UserAssignmentViewModel> GetAllUserCenterAssignments();
+
+        //Order place behalf of distributor
+        int CreateOrder(AdminOrderModel model);
+        bool UpdateOrderStatus(int orderId, string status);
+        List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
+
+        List<PlantModel> GetActivePlants();
+        //Notification
+        List<NotificationModel> GetNotifications();
+        int GetNotificationCount();
+        bool MarkNotificationRead(int notificationId);
+        bool MarkAllNotificationsRead();
+
     }
 
 }

@@ -1,0 +1,261 @@
+﻿@model List<DairyIndustry.Models.Admin.ProductModel>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Products";
+    var productTypes = ViewBag.ProductTypes as List<string> ?? new List<string>();
+}
+
+<div class="container mt-4">
+
+    <!-- Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Products</h3>
+                <p class="text-muted mb-0">Manage all dairy products</p>
+            </div>
+            <a asp-controller="Admin" asp-action="AddProduct" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Add Product
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
+        </div>
+    }
+
+    <!-- Stats -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Total Products</p>
+                        <h4 class="fw-bold mb-0">@Model.Count</h4>
+                    </div>
+                    <i class="bi bi-box-seam-fill fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Active</p>
+                        <h4 class="fw-bold mb-0">@Model.Count(p => p.IsActive)</h4>
+                    </div>
+                    <i class="bi bi-check-circle-fill fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-1 small">Inactive</p>
+                        <h4 class="fw-bold mb-0">@Model.Count(p => !p.IsActive)</h4>
+                    </div>
+                    <i class="bi bi-x-circle-fill fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="Admin" asp-action="Products" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Product Type</label>
+                    <select name="productType" class="form-select">
+                        <option value="">-- All Types --</option>
+                        @foreach (var type in productTypes)
+                        {
+                            <option value="@type"
+                                    selected="@(ViewBag.CurrentType == type ? "selected" : null)">
+                                @type
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="isActive" class="form-select">
+                        <option value="" selected="@(ViewBag.CurrentActive == null ? "selected" : null)">All</option>
+                        <option value="true" selected="@(ViewBag.CurrentActive?.ToString() == "True" ? "selected" : null)">Active</option>
+                        <option value="false" selected="@(ViewBag.CurrentActive?.ToString() == "False" ? "selected" : null)">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                    <a asp-controller="Admin" asp-action="Products" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-box-seam me-1"></i> All Products</span>
+            <span class="badge bg-primary">Total : @Model.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Product Name</th>
+                            <th>Type</th>
+                            <th>MRP</th>
+                            <th>Unit</th>
+                            <th>Shelf Life</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                    No products found.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int sr = 1;
+                            foreach (var p in Model)
+                            {
+                                string formId = $"toggleForm_{p.ProductId}";
+                                <tr>
+                                    <td>@sr</td>
+                                    <td>
+                                        <div class="fw-semibold small">@p.ProductName</div>
+                                        @if (!string.IsNullOrEmpty(p.Description))
+                                        {
+                                            <div class="text-muted" style="font-size:11px;">@p.Description</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            string typeBadge = p.ProductType?.ToLower() switch
+                                            {
+                                                "milk" => "bg-info text-dark",
+                                                "dairy" => "bg-warning text-dark",
+                                                "beverage" => "bg-success",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @typeBadge">@p.ProductType</span>
+                                    </td>
+                                    <td><small>₹ @p.MRP.ToString("0.00")</small></td>
+                                    <td><small>@p.Unit</small></td>
+                                    <td>
+                                        @if (p.ShelfLifeDays.HasValue)
+                                        {
+                                            <small>@p.ShelfLifeDays days</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (p.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a asp-controller="Admin"
+                                               asp-action="ProductDetail"
+                                               asp-route-id="@p.ProductId"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-controller="Admin"
+                                               asp-action="EditProduct"
+                                               asp-route-id="@p.ProductId"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (p.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        form="@formId"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Deactivate @p.ProductName?')">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        form="@formId"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        onclick="return confirm('Activate @p.ProductName?')">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                                sr++;
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+            <span>Total: @Model.Count | Active: @Model.Count(p => p.IsActive) | Inactive: @Model.Count(p => !p.IsActive)</span>
+            <span>Types: @Model.Select(p => p.ProductType).Distinct().Count()</span>
+        </div>
+    </div>
+
+    @*
+        ── Toggle forms rendered OUTSIDE the table ──
+        FIX: value="@(p.IsActive ? "false" : "true")"
+        The original code used @(!p.IsActive).ToString().ToLower() which Razor
+        parsed as @(!p.IsActive) + literal text ".ToString().ToLower()", so the
+        hidden input always received the string "True.ToString().ToLower()" or
+        "False.ToString().ToLower()" instead of a plain bool. Model binding
+        could coerce "false" → false (deactivate worked) but could NOT coerce
+        "False.ToString().ToLower()" → true (activate never worked).
+    *@
+    @foreach (var p in Model)
+    {
+        <form id="toggleForm_@p.ProductId"
+              method="post"
+              asp-controller="Admin"
+              asp-action="ToggleProductStatus">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="productId" value="@p.ProductId" />
+            <input type="hidden" name="isActive" value="@(p.IsActive ? "false" : "true")" />
+        </form>
+    }
+
+</div>

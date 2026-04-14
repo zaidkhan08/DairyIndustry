@@ -1,0 +1,183 @@
+﻿@model DairyIndustry.Models.Production.MilkTransferModel
+
+@{
+    ViewData["Title"] = "Transfer Detail";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
+}
+
+<style>
+    .glass-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-header-custom {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #495057;
+        padding: 1rem;
+        border-radius: 12px 12px 0 0 !important;
+    }
+
+    .id-pill {
+        background: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.9rem;
+    }
+
+    .numeric-val {
+        font-weight: 600;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .detail-label {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .detail-value {
+        color: #212529;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .status-banner {
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pt-2">
+    <h3 class="fw-bold mb-0">Transfer Details <span class="id-pill ms-2">TR-@Model.TransferId</span></h3>
+    <a asp-action="Index" class="btn btn-outline-secondary px-3 btn-sm shadow-sm" style="border-radius: 8px;">
+        <i class="bi bi-arrow-left me-1"></i> Back to List
+    </a>
+</div>
+
+@if (Model.Status == "Received")
+{
+    <div class="status-banner bg-success-subtle text-success border border-success-subtle">
+        <i class="bi bi-check-circle-fill fs-4"></i>
+        <div>
+            <div class="fw-bold">Successfully Received</div>
+            <div class="small">This batch has been verified and logged at @Model.PlantName.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="status-banner bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+        <i class="bi bi-truck fs-4"></i>
+        <div>
+            <div class="fw-bold">Currently in Transit</div>
+            <div class="small">This transfer was dispatched from @Model.CenterName and is awaiting receipt.</div>
+        </div>
+    </div>
+}
+
+<div class="row g-4">
+    @* Left Side - Logistics *@
+    <div class="col-md-6">
+        <div class="card glass-card h-100">
+            <div class="card-header-custom">
+                <i class="bi bi-info-circle me-2"></i>Logistics Information
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Batch Ref</div>
+                        <div class="detail-value text-primary fw-bold">#@Model.BatchRef</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Vehicle No</div>
+                        <div class="detail-value">@Model.VehicleNumber</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-label text-uppercase">From Center</div>
+                        <div class="detail-value">@Model.CenterName</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-label text-uppercase">To Processing Plant</div>
+                        <div class="detail-value">@Model.PlantName</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-label text-uppercase">Driver Name</div>
+                        <div class="detail-value">@(Model.DriverName ?? "No Driver Assigned")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Right Side - Quantity & Audit *@
+    <div class="col-md-6">
+        <div class="card glass-card h-100">
+            <div class="card-header-custom">
+                <i class="bi bi-calculator me-2"></i>Quantity & Timeline
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Dispatched Qty</div>
+                        <div class="detail-value numeric-val fs-5">@Model.DispatchQty.ToString("N2") L</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Dispatch Date</div>
+                        <div class="detail-value">@Model.DispatchDate.ToString("dd MMM yyyy")</div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Received Qty</div>
+                        <div class="detail-value numeric-val fs-5">
+                            @(Model.ReceivedQty.HasValue? Model.ReceivedQty.Value.ToString("N2") + " L" : "—")
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-label text-uppercase">Received Date</div>
+                        <div class="detail-value">
+                            @(Model.ReceivedDate.HasValue? Model.ReceivedDate.Value.ToString("dd MMM yyyy") : "Pending")
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                            <span class="text-uppercase small fw-bold text-muted">Total Loss During Transit</span>
+                            @if (Model.LossQty.HasValue)
+                            {
+                                <span class="numeric-val fs-5 @(Model.LossQty > 0 ? "text-danger" : "text-success")">
+                                    @(Model.LossQty > 0 ? "-" : "")@Math.Abs(Model.LossQty.Value).ToString("N2") L
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Calculating...</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Status == "Dispatched")
+                {
+                    <div class="mt-4">
+                        <a asp-action="Receive" asp-route-id="@Model.TransferId" class="btn btn-success w-100 py-2 shadow-sm" style="border-radius: 8px;">
+                            <i class="bi bi-download me-2"></i>Confirm Receipt & Log Quantities
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

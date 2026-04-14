@@ -1,0 +1,187 @@
+﻿@model IEnumerable<DairyIndustry.Models.Admin.VillageModel>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Collection Center";
+}
+
+<div class="container mt-4">
+
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Add Collection Center</h3>
+                <p class="text-muted mb-0">Register a new milk collection center</p>
+            </div>
+            <a asp-controller="Admin" asp-action="GetAllCollection" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Collection
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-building me-1 text-primary"></i> Collection Center Details
+                </div>
+                <div class="card-body p-4">
+
+                    <form method="post"
+                          asp-controller="Admin"
+                          asp-action="AddCollection"
+                          id="frmAddCollection"
+                          novalidate>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Center Name <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                       name="CenterName"
+                                       id="CenterName"
+                                       class="form-control"
+                                       placeholder="e.g. Bardoli Milk Center"
+                                       maxlength="100"
+                                       autocomplete="off" />
+                            </div>
+                            <div class="invalid-feedback d-block" id="err-CenterName"></div>
+                            <div class="form-text">Enter a unique name for this collection center</div>
+                        </div>
+
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Location</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-geo-alt"></i>
+                                </span>
+                                <input type="text"
+                                       name="Location"
+                                       id="Location"
+                                       class="form-control"
+                                       placeholder="e.g. Near Main Road, Bardoli"
+                                       maxlength="100"
+                                       autocomplete="off" />
+                            </div>
+                            <div class="form-text">Enter the physical address or landmark (optional)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Capacity (Litres) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-droplet"></i>
+                                </span>
+                                <input type="number"
+                                       name="Capacity"
+                                       id="Capacity"
+                                       class="form-control"
+                                       placeholder="e.g. 5000"
+                                       min="1"
+                                       step="0.01" />
+                            </div>
+                            <div class="invalid-feedback d-block" id="err-Capacity"></div>
+                            <div class="form-text">Maximum milk intake capacity per day in litres</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Village / Taluka <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-pin-map"></i>
+                                </span>
+                                <select class="form-select" id="VillageID" name="VillageID">
+                                    <option value="">— Select Village —</option>
+                                    @foreach (var v in Model)
+                                    {
+                                        <option value="@v.VillageId">@v.VillageName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="invalid-feedback d-block" id="err-VillageID"></div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4" id="btnSubmit">
+                                <i class="bi bi-plus-circle me-1"></i> Add Center
+                            </button>
+                            <a asp-controller="Admin"
+                               asp-action="GetAllCollection"
+                               class="btn btn-outline-secondary px-4">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+
+            function showErr(id, msg) {
+                var errEl   = document.getElementById('err-' + id);
+                var inputEl = document.getElementById(id);
+                if (errEl)   { errEl.textContent = msg; errEl.style.display = 'block'; }
+                if (inputEl) { inputEl.classList.add('is-invalid'); }
+            }
+
+            function clearErr(id) {
+                var errEl   = document.getElementById('err-' + id);
+                var inputEl = document.getElementById(id);
+                if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
+                if (inputEl) { inputEl.classList.remove('is-invalid'); }
+            }
+
+            ['CenterName', 'Capacity'].forEach(function (id) {
+                document.getElementById(id).addEventListener('input', function () { clearErr(id); });
+            });
+            document.getElementById('VillageID').addEventListener('change', function () { clearErr('VillageID'); });
+
+            document.getElementById('frmAddCollection').addEventListener('submit', function (e) {
+                var ok = true;
+
+                if (!document.getElementById('CenterName').value.trim()) {
+                    showErr('CenterName', 'Center name is required.');
+                    ok = false;
+                }
+
+                var cap = parseFloat(document.getElementById('Capacity').value);
+                if (!cap || cap <= 0) {
+                    showErr('Capacity', 'Please enter a valid capacity greater than 0.');
+                    ok = false;
+                }
+
+                if (!document.getElementById('VillageID').value) {
+                    showErr('VillageID', 'Please select a village.');
+                    ok = false;
+                }
+
+                if (!ok) {
+                    e.preventDefault();
+                    var first = document.querySelector('.is-invalid');
+                    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                var btn = document.getElementById('btnSubmit');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Saving…';
+            });
+
+        }());
+    </script>
+}

@@ -1,0 +1,927 @@
+﻿@model List<DairyIndustry.Models.Production.ProductionBatchModel>
+
+@{
+    ViewData["Title"] = "Production Batches";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var roleName = Context.Session.GetString("RoleName");
+    var plantName = Context.Session.GetString("PlantName");
+    var sessionPlantId = Context.Session.GetInt32("PlantId");
+    var sessionPlantName = Context.Session.GetString("PlantName");
+}
+
+@* ─────────────────────────────────────────────
+   PAGE STYLES
+───────────────────────────────────────────── *@
+<style>
+    /* ── Layout ── */
+    .pb-page {
+        padding: 24px;
+        font-family: inherit;
+    }
+
+    /* ── Top bar ── */
+    .pb-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .pb-page-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
+
+    .pb-breadcrumb {
+        font-size: 12px;
+        color: #888;
+        margin-top: 3px;
+    }
+
+        .pb-breadcrumb span {
+            color: #bbb;
+            margin: 0 4px;
+        }
+
+    /* ── New batch button ── */
+    .btn-new-batch {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #185FA5;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+
+        .btn-new-batch:hover {
+            background: #0C447C;
+        }
+
+        .btn-new-batch .icon-plus {
+            font-size: 17px;
+            line-height: 1;
+        }
+
+    /* ── Stats row ── */
+    .pb-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .pb-stat {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 10px;
+        padding: 14px 16px;
+    }
+
+    .pb-stat-label {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .pb-stat-val {
+        font-size: 22px;
+        font-weight: 600;
+        color: #111;
+    }
+
+        .pb-stat-val.blue {
+            color: #185FA5;
+        }
+
+        .pb-stat-val.green {
+            color: #3B6D11;
+        }
+
+        .pb-stat-val.amber {
+            color: #854F0B;
+        }
+
+        .pb-stat-val.red {
+            color: #A32D2D;
+        }
+
+    /* ── Card ── */
+    .pb-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .pb-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pb-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .pb-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+        .pb-filters select, .pb-filters input {
+            padding: 7px 11px;
+            font-size: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 7px;
+            background: #fafafa;
+            color: #333;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+            .pb-filters select:focus, .pb-filters input:focus {
+                border-color: #185FA5;
+                background: #fff;
+            }
+
+        .pb-filters input {
+            width: 200px;
+        }
+
+    /* ── Table ── */
+    .pb-table-wrap {
+        overflow-x: auto;
+    }
+
+    .pb-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .pb-table thead th {
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            white-space: nowrap;
+        }
+
+        .pb-table tbody tr {
+            border-bottom: 1px solid #f5f5f5;
+            transition: background .1s;
+        }
+
+            .pb-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .pb-table tbody tr:hover {
+                background: #f9fbff;
+            }
+
+        .pb-table tbody td {
+            padding: 11px 16px;
+            color: #222;
+            vertical-align: middle;
+        }
+
+    .pb-batch-id {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        color: #666;
+        font-weight: 600;
+    }
+
+    .pb-product-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #111;
+    }
+
+    .pb-product-type {
+        font-size: 10px;
+        color: #aaa;
+        margin-top: 2px;
+    }
+
+    .pb-qty {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+
+    /* ── Status pills ── */
+    .pb-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .pb-pill-pending {
+        background: #FAEEDA;
+        color: #854F0B;
+    }
+
+    .pb-pill-processing {
+        background: #E6F1FB;
+        color: #185FA5;
+    }
+
+    .pb-pill-completed {
+        background: #EAF3DE;
+        color: #3B6D11;
+    }
+
+    .pb-pill-cancelled {
+        background: #FCEBEB;
+        color: #A32D2D;
+    }
+
+    /* ── View detail button ── */
+    .btn-view-detail {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        background: #fff;
+        color: #555;
+        text-decoration: none;
+        transition: all .15s;
+        display: inline-block;
+    }
+
+        .btn-view-detail:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+            color: #111;
+        }
+
+    /* ── Card footer ── */
+    .pb-card-foot {
+        padding: 10px 18px;
+        border-top: 1px solid #f0f0f0;
+        font-size: 11px;
+        color: #bbb;
+    }
+
+    /* ── Empty state ── */
+    .pb-empty {
+        padding: 48px 20px;
+        text-align: center;
+        color: #ccc;
+        font-size: 13px;
+    }
+
+    .pb-empty-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+        opacity: .35;
+    }
+
+    /* ── Alert ── */
+    .pb-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #EAF3DE;
+        border: 1px solid #C0DD97;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #3B6D11;
+        margin-bottom: 16px;
+    }
+
+    .pb-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #3B6D11;
+        font-size: 16px;
+    }
+
+    .pb-alert-error {
+        background: #FCEBEB;
+        border-color: #F7C1C1;
+        color: #A32D2D;
+    }
+
+        .pb-alert-error .pb-alert-close {
+            color: #A32D2D;
+        }
+
+    /* ════════════════════════════════════════
+           DRAWER
+        ════════════════════════════════════════ */
+    .pb-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .28s ease;
+        z-index: 1040;
+    }
+
+        .pb-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .pb-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 400px;
+        max-width: 100vw;
+        height: 100vh;
+        background: #fff;
+        border-left: 1px solid #e8e8e8;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform .32s cubic-bezier(.4,0,.2,1);
+        z-index: 1050;
+    }
+
+        .pb-drawer.open {
+            transform: translateX(0);
+        }
+
+    .pb-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .pb-drawer-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+        margin: 0;
+    }
+
+    .pb-drawer-sub {
+        font-size: 12px;
+        color: #aaa;
+        margin-top: 3px;
+    }
+
+    .pb-drawer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        border: 1px solid #ebebeb;
+        background: #fafafa;
+        cursor: pointer;
+        font-size: 15px;
+        color: #888;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .pb-drawer-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+    .pb-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ── Form fields inside drawer ── */
+    .pb-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .pb-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .pb-field input, .pb-field select, .pb-field textarea {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 13px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+            color: #222;
+            outline: none;
+            transition: border-color .15s, background .15s;
+        }
+
+            .pb-field input:focus, .pb-field select:focus, .pb-field textarea:focus {
+                border-color: #185FA5;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(24,95,165,.1);
+            }
+
+            .pb-field input.is-invalid, .pb-field select.is-invalid {
+                border-color: #E24B4A !important;
+            }
+
+        .pb-field textarea {
+            resize: none;
+        }
+
+    .pb-field-hint {
+        font-size: 11px;
+        color: #bbb;
+    }
+
+    .pb-field-opt {
+        font-size: 11px;
+        color: #bbb;
+        font-weight: 400;
+        margin-left: 3px;
+    }
+
+    .pb-field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .pb-divider {
+        height: 1px;
+        background: #f0f0f0;
+    }
+
+    /* ── Drawer section label ── */
+    .pb-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #bbb;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .pb-drawer-foot {
+        padding: 14px 22px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+
+    .btn-drawer-cancel {
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        color: #666;
+        cursor: pointer;
+        transition: background .12s;
+    }
+
+        .btn-drawer-cancel:hover {
+            background: #f5f5f5;
+        }
+
+    .btn-drawer-submit {
+        padding: 9px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: #185FA5;
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-drawer-submit:hover {
+            background: #0C447C;
+        }
+
+        .btn-drawer-submit:disabled {
+            background: #9ab8d8;
+            cursor: not-allowed;
+        }
+
+    /* ── Spinner inside submit button ── */
+    .pb-spinner {
+        display: none;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: pbspin .7s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+
+    @@keyframes pbspin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 768px) {
+        .pb-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .pb-drawer {
+            width: 100vw;
+        }
+
+        .pb-filters input {
+            width: 140px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .pb-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+@* ─────────────────────────────────────────────
+   OVERLAY  (outside container so it covers full screen)
+───────────────────────────────────────────── *@
+<div class="pb-overlay" id="pbOverlay"></div>
+
+@* ─────────────────────────────────────────────
+   SLIDE-IN DRAWER
+───────────────────────────────────────────── *@
+<div class="pb-drawer" id="pbDrawer" role="dialog" aria-modal="true" aria-label="Start new batch">
+    <div class="pb-drawer-head">
+        <div>
+            <p class="pb-drawer-title">Start new batch</p>
+            <p class="pb-drawer-sub">Fill in the details below to create a production batch</p>
+        </div>
+        <button class="pb-drawer-close" id="pbDrawerClose" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="pb-drawer-body">
+        <form asp-action="StartBatch" method="post" id="pbBatchForm">
+
+            <div class="pb-section-label" style="margin-bottom:10px">Plant &amp; materials</div>
+
+            <div class="pb-field" style="margin-bottom:14px">
+                <label>Processing plant</label>
+                @if (roleName == "Plant Manager" && sessionPlantId.HasValue)
+                {
+                    <input type="text" value="@sessionPlantName" disabled />
+                    <input type="hidden" name="plantId" value="@sessionPlantId" />
+                }
+                else
+                {
+                    <select name="plantId" id="f-plant" required>
+                        <option value="">— Select plant —</option>
+                        @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
+                        {
+                            <option value="@p.PlantId">@p.PlantName</option>
+                        }
+                    </select>
+                }
+            </div>
+
+            <div class="pb-field" style="margin-bottom:14px">
+                <label>Milk type</label>
+                <select name="milkTypeId" id="f-milk" required>
+                    <option value="">— Select milk type —</option>
+                    @foreach (var m in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
+                    {
+                        <option value="@m.MilkTypeId">@m.MilkTypeName</option>
+                    }
+                </select>
+            </div>
+
+            <div class="pb-field" style="margin-bottom:0">
+                <label>Product</label>
+                <select name="productId" id="f-product" required>
+                    <option value="">— Select product —</option>
+                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
+                    {
+                        <option value="@p.ProductId">@p.ProductName (@p.ProductType — @p.Unit)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="pb-divider" style="margin:18px 0"></div>
+            <div class="pb-section-label" style="margin-bottom:10px">Quantity &amp; schedule</div>
+
+            <div class="pb-field-row" style="margin-bottom:14px">
+                <div class="pb-field">
+                    <label>Milk used (litres)</label>
+                    <input type="number" name="milkUsedQuantity" id="f-qty"
+                           step="0.01" min="1" placeholder="e.g. 200.00" required />
+                    <span class="pb-field-hint">Must not exceed available inventory</span>
+                </div>
+                <div class="pb-field">
+                    <label>Production date</label>
+                    <input type="date" name="productionDate" id="f-date"
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                </div>
+            </div>
+
+            <div class="pb-field">
+                <label>Notes <span class="pb-field-opt">(optional)</span></label>
+                <textarea name="notes" rows="3" placeholder="Any special instructions or observations..."></textarea>
+            </div>
+
+        </form>
+    </div>
+
+    <div class="pb-drawer-foot">
+        <button type="button" class="btn-drawer-cancel" id="pbDrawerCancel">Cancel</button>
+        <button type="submit" form="pbBatchForm" class="btn-drawer-submit" id="pbSubmitBtn">
+            <span class="pb-spinner" id="pbSpinner"></span>
+            Start batch
+        </button>
+    </div>
+</div>
+
+@* ─────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────── *@
+<div class="pb-page">
+
+    @* Top bar *@
+    <div class="pb-topbar">
+        <div>
+            <h1 class="pb-page-title">Production batches</h1>
+            <p class="pb-breadcrumb">
+                Manufacturing <span>›</span>
+                @(roleName == "Plant Manager" && plantName != null ? plantName : "All plants")
+            </p>
+        </div>
+        <button class="btn-new-batch" id="pbOpenDrawer">
+            <span class="icon-plus">+</span> Start new batch
+        </button>
+    </div>
+
+    @* Success alert *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="pb-alert" id="pbSuccessAlert">
+            ✅ @TempData["Success"]
+            <button class="pb-alert-close" onclick="document.getElementById('pbSuccessAlert').remove()">×</button>
+        </div>
+    }
+
+    @* Error alert (e.g. insufficient milk inventory) *@
+    @if (TempData["Error"] != null)
+    {
+        <div class="pb-alert pb-alert-error" id="pbErrorAlert">
+            ⚠️ @TempData["Error"]
+            <button class="pb-alert-close" onclick="document.getElementById('pbErrorAlert').remove()">×</button>
+        </div>
+    }
+
+    @* Stats *@
+    <div class="pb-stats">
+        <div class="pb-stat">
+            <div class="pb-stat-label">Total batches</div>
+            <div class="pb-stat-val" id="statTotal">@Model.Count</div>
+        </div>
+        <div class="pb-stat">
+            <div class="pb-stat-label">Processing</div>
+            <div class="pb-stat-val blue" id="statProcessing">@Model.Count(b => b.BatchStatus == "Processing")</div>
+        </div>
+        <div class="pb-stat">
+            <div class="pb-stat-label">Completed</div>
+            <div class="pb-stat-val green" id="statCompleted">@Model.Count(b => b.BatchStatus == "Completed")</div>
+        </div>
+        <div class="pb-stat">
+            <div class="pb-stat-label">Pending</div>
+            <div class="pb-stat-val amber" id="statPending">@Model.Count(b => b.BatchStatus == "Pending")</div>
+        </div>
+    </div>
+
+    @* Table card *@
+    <div class="pb-card">
+        <div class="pb-card-head">
+            <span class="pb-card-title">Recent batch activity</span>
+            <div class="pb-filters">
+                <select id="pbStatusFilter">
+                    <option value="">All statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+                <input type="text" id="pbSearch" placeholder="Search batch or product...">
+            </div>
+        </div>
+
+        <div class="pb-table-wrap">
+            <table class="pb-table" id="pbTable">
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Location</th>
+                        <th>Product</th>
+                        <th>Qty (L)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th style="text-align:center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="pbTableBody">
+                    @if (!Model.Any())
+                    {
+                        <tr id="pbEmptyRow">
+                            <td colspan="7">
+                                <div class="pb-empty">
+                                    <div class="pb-empty-icon">📋</div>
+                                    No production batches found.
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var b in Model)
+                    {
+                        <tr class="pb-row"
+                            data-id="@b.ProductionBatchId.ToString().ToLower()"
+                            data-product="@b.ProductName.ToLower()"
+                            data-status="@b.BatchStatus">
+                            <td>
+                                <span class="pb-batch-id">@b.ProductionBatchId</span>
+                            </td>
+                            <td>@b.PlantName</td>
+                            <td>
+                                <div class="pb-product-name">@b.ProductName</div>
+                                <div class="pb-product-type">@b.ProductType</div>
+                            </td>
+                            <td>
+                                <span class="pb-qty">@b.MilkUsedQuantity.ToString("N0")</span>
+                                <small style="color:#bbb;font-size:10px"> L</small>
+                            </td>
+                            <td>
+                                <div style="font-size:13px">@b.ProductionDate.ToString("dd MMM yyyy")</div>
+                                <div style="font-size:10px;color:#bbb">@b.ProductionDate.ToString("HH:mm")</div>
+                            </td>
+                            <td>
+                                <span class="pb-pill pb-pill-@b.BatchStatus.ToLower()">@b.BatchStatus</span>
+                            </td>
+                            <td style="text-align:center">
+                                <a asp-action="BatchDetail" asp-route-id="@b.ProductionBatchId"
+                                   class="btn-view-detail">View detail</a>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="pbNoResults" style="display:none">
+                        <td colspan="7">
+                            <div class="pb-empty">
+                                <div class="pb-empty-icon">🔍</div>
+                                No batches match your filters.
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pb-card-foot">
+            Showing <span id="pbCount">@Model.Count</span> result(s)
+        </div>
+    </div>
+
+</div>
+
+@* ─────────────────────────────────────────────
+   SCRIPTS
+───────────────────────────────────────────── *@
+<script>
+    (function () {
+
+        /* ── Drawer open/close ── */
+        const overlay   = document.getElementById('pbOverlay');
+        const drawer    = document.getElementById('pbDrawer');
+        const openBtn   = document.getElementById('pbOpenDrawer');
+        const closeBtn  = document.getElementById('pbDrawerClose');
+        const cancelBtn = document.getElementById('pbDrawerCancel');
+
+        function openDrawer() {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer() {
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        openBtn.addEventListener('click', openDrawer);
+        closeBtn.addEventListener('click', closeDrawer);
+        cancelBtn.addEventListener('click', closeDrawer);
+        overlay.addEventListener('click', closeDrawer);
+
+        /* Close on Escape key */
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeDrawer();
+        });
+
+        /* ── Show spinner on form submit ── */
+        const form      = document.getElementById('pbBatchForm');
+        const submitBtn = document.getElementById('pbSubmitBtn');
+        const spinner   = document.getElementById('pbSpinner');
+
+        if (form) {
+            form.addEventListener('submit', function () {
+                submitBtn.disabled = true;
+                spinner.style.display = 'inline-block';
+                submitBtn.childNodes[submitBtn.childNodes.length - 1].textContent = ' Starting...';
+            });
+        }
+
+        /* ── Client-side table filtering ── */
+        const searchInput  = document.getElementById('pbSearch');
+        const statusFilter = document.getElementById('pbStatusFilter');
+        const rows         = document.querySelectorAll('.pb-row');
+        const noResultsRow = document.getElementById('pbNoResults');
+        const countDisplay = document.getElementById('pbCount');
+        const statTotal    = document.getElementById('statTotal');
+        const statProc     = document.getElementById('statProcessing');
+        const statComp     = document.getElementById('statCompleted');
+        const statPend     = document.getElementById('statPending');
+
+        function filterTable() {
+            const term   = searchInput.value.toLowerCase().trim();
+            const status = statusFilter.value;
+            let visible  = 0, proc = 0, comp = 0, pend = 0;
+
+            rows.forEach(function (row) {
+                const matchSearch = !term ||
+                    row.dataset.id.includes(term) ||
+                    row.dataset.product.includes(term);
+                const matchStatus = !status || row.dataset.status === status;
+
+                if (matchSearch && matchStatus) {
+                    row.style.display = '';
+                    visible++;
+                    if (row.dataset.status === 'Processing') proc++;
+                    if (row.dataset.status === 'Completed')  comp++;
+                    if (row.dataset.status === 'Pending')    pend++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            noResultsRow.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
+            countDisplay.textContent = visible;
+            statTotal.textContent    = visible;
+            statProc.textContent     = proc;
+            statComp.textContent     = comp;
+            statPend.textContent     = pend;
+        }
+
+        searchInput.addEventListener('input', filterTable);
+        statusFilter.addEventListener('change', filterTable);
+
+    })();
+</script>

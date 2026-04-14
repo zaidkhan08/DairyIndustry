@@ -1,77 +1,325 @@
-﻿@model List<DairyIndustry.Models.Admin.User>
+﻿@model DairyIndustry.Models.Admin.AdminDashboardViewModel
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-}
-@{
     ViewData["Title"] = "Admin Dashboard";
+
+    var username = Context.Session.GetString("Username") ?? "Admin";
+
+    int totalUsers = Model.Users.Count;
+    int activeUsers = Model.Users.Count(u => u.IsActive);
+    int totalStaff = Model.Staff.Count;
+    int activeStaff = Model.Staff.Count(s => s.IsActive);
+    int totalPlants = Model.Plants.Count;
+    int activePlants = Model.Plants.Count(p => p.IsActive);
+    int totalCenters = Model.Centers.Count;
+    int activeCenters = Model.Centers.Count(c => c.IsActive);
+    int totalProducts = Model.Products.Count;
+    int activeProducts = Model.Products.Count(p => p.IsActive);
+
+    int inProgressBatches = Model.Batches.Count(b => b.BatchStatus == "InProgress");
+    int completedBatches = Model.Batches.Count(b => b.BatchStatus == "Completed");
+
+    int pendingTransfers = Model.Transfers.Count(t => t.TransferStatus == "Pending");
+    int receivedTransfers = Model.Transfers.Count(t => t.TransferStatus == "Received");
+    decimal totalDispatch = Model.Transfers.Sum(t => t.DispatchQty);
+    decimal totalLoss = Model.Transfers.Sum(t => t.LossQty ?? 0);
+
+    var recentUsers = Model.Users.OrderByDescending(u => u.CreatedDate).Take(5).ToList();
+    var recentBatches = Model.Batches.OrderByDescending(b => b.ProductionDate).Take(5).ToList();
+    var recentTransfer = Model.Transfers.OrderByDescending(t => t.DispatchDate).Take(5).ToList();
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-3 px-4">
 
-    <!-- Page Title -->
-    <div class="row mb-4">
+    <div class="row mb-4 align-items-center">
         <div class="col">
-            <h3 class="fw-bold">Admin Dashboard</h3>
-            <p class="text-muted">Welcome to Dairy Management System</p>
+            <h4 class="fw-bold mb-0">Admin Dashboard</h4>
+            <p class="text-muted mb-0 small">
+                Welcome back, <strong>@username</strong> &mdash;
+                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+            </p>
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary">
+                <i class="bi bi-person-plus me-1"></i> New User
+            </a>
+            <a asp-controller="Admin" asp-action="AddStaff" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-plus-circle me-1"></i> Add Staff
+            </a>
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Total Users</p>
-                            <h4 class="fw-bold mb-0">@Model.Count</h4>
-                        </div>
-                        <i class="bi bi-people-fill fs-2 opacity-75"></i>
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-primary-subtle text-primary rounded-2 p-2">
+                            <i class="bi bi-people-fill fs-5"></i>
+                        </span>
+                        <span class="badge bg-success">@activeUsers Active</span>
                     </div>
+                    <h5 class="fw-bold mb-0">@totalUsers</h5>
+                    <p class="text-muted small mb-0">Total Users</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="Users"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Active Users</p>
-                            <h4 class="fw-bold mb-0">@Model.Count(u => u.IsActive)</h4>
-                        </div>
-                        <i class="bi bi-person-check-fill fs-2 opacity-75"></i>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-success-subtle text-success rounded-2 p-2">
+                            <i class="bi bi-person-badge-fill fs-5"></i>
+                        </span>
+                        <span class="badge bg-success">@activeStaff Active</span>
                     </div>
+                    <h5 class="fw-bold mb-0">@totalStaff</h5>
+                    <p class="text-muted small mb-0">Total Staff</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="Staff"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-danger text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Inactive Users</p>
-                            <h4 class="fw-bold mb-0">@Model.Count(u => !u.IsActive)</h4>
-                        </div>
-                        <i class="bi bi-person-x-fill fs-2 opacity-75"></i>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-warning-subtle text-warning rounded-2 p-2">
+                            <i class="bi bi-building-fill-gear fs-5"></i>
+                        </span>
+                        <span class="badge bg-success">@activePlants Active</span>
                     </div>
+                    <h5 class="fw-bold mb-0">@totalPlants</h5>
+                    <p class="text-muted small mb-0">Processing Plants</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="GetAllPlants"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Total Roles</p>
-                            <h4 class="fw-bold mb-0">
-                                @Model.Select(u => u.RoleId).Distinct().Count()
-                            </h4>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-info-subtle text-info rounded-2 p-2">
+                            <i class="bi bi-house-door-fill fs-5"></i>
+                        </span>
+                        <span class="badge bg-success">@activeCenters Active</span>
+                    </div>
+                    <h5 class="fw-bold mb-0">@totalCenters</h5>
+                    <p class="text-muted small mb-0">Collection Centers</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="GetAllCollection"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-danger-subtle text-danger rounded-2 p-2">
+                            <i class="bi bi-box-seam-fill fs-5"></i>
+                        </span>
+                        <span class="badge bg-success">@activeProducts Active</span>
+                    </div>
+                    <h5 class="fw-bold mb-0">@totalProducts</h5>
+                    <p class="text-muted small mb-0">Products</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="Products"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-secondary-subtle text-secondary rounded-2 p-2">
+                            <i class="bi bi-truck fs-5"></i>
+                        </span>
+                        <span class="badge bg-warning text-dark">@pendingTransfers Pending</span>
+                    </div>
+                    <h5 class="fw-bold mb-0">@Model.Transfers.Count</h5>
+                    <p class="text-muted small mb-0">Milk Transfers</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0 pb-2 px-3">
+                    <a asp-controller="Admin" asp-action="MilkTransfers"
+                       class="text-primary text-decoration-none small">View all &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold border-0 pb-0">
+                    <i class="bi bi-gear-fill text-warning me-1"></i> Production Batches
+                </div>
+                <div class="card-body pt-2">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="bg-warning-subtle rounded-3 p-3">
+                                <h4 class="fw-bold text-warning mb-0">@inProgressBatches</h4>
+                                <small class="text-muted">In Progress</small>
+                            </div>
                         </div>
-                        <i class="bi bi-shield-fill fs-2 opacity-75"></i>
+                        <div class="col-6">
+                            <div class="bg-success-subtle rounded-3 p-3">
+                                <h4 class="fw-bold text-success mb-0">@completedBatches</h4>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-danger-subtle rounded-3 p-3">
+                                <h4 class="fw-bold text-danger mb-0">
+                                    @Model.Batches.Count(b => b.BatchStatus == "QCFailed")
+                                </h4>
+                                <small class="text-muted">QC Failed</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-secondary-subtle rounded-3 p-3">
+                                <h4 class="fw-bold text-secondary mb-0">
+                                    @Model.Batches.Count(b => b.BatchStatus == "Cancelled")
+                                </h4>
+                                <small class="text-muted">Cancelled</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a asp-controller="Admin" asp-action="ProductionBatches"
+                       class="btn btn-sm btn-outline-warning w-100">
+                        <i class="bi bi-list-ul me-1"></i> View All Batches
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold border-0 pb-0">
+                    <i class="bi bi-truck text-primary me-1"></i> Transfer Overview
+                </div>
+                <div class="card-body pt-2">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Total Dispatched</span>
+                            <strong>@totalDispatch.ToString("N0") L</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Total Loss</span>
+                            <strong class="text-danger">@totalLoss.ToString("N2") L</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Loss %</span>
+                            <strong class="text-danger">
+                                @(totalDispatch > 0 ? ((totalLoss / totalDispatch) * 100).ToString("F2") : "0.00")%
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Pending Receipt</span>
+                            <span class="badge bg-warning text-dark">@pendingTransfers</span>
+                        </div>
+                    </div>
+                    <div class="progress" style="height:6px;">
+                        @{
+                            var receivedPct = Model.Transfers.Count > 0
+                            ? (receivedTransfers * 100 / Model.Transfers.Count)
+                            : 0;
+                        }
+                        <div class="progress-bar bg-success"
+                             style="width:@receivedPct%"
+                             title="Received: @receivedPct%">
+                        </div>
+                    </div>
+                    <small class="text-muted">@receivedPct% transfers received</small>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a asp-controller="Admin" asp-action="MilkTransfers"
+                       class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-list-ul me-1"></i> View All Transfers
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold border-0 pb-0">
+                    <i class="bi bi-lightning-fill text-warning me-1"></i> Quick Actions
+                </div>
+                <div class="card-body pt-2">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="AddStaff"
+                               class="btn btn-outline-success w-100 btn-sm py-2">
+                                <i class="bi bi-person-plus d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Add Staff</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="AddPlant"
+                               class="btn btn-outline-warning w-100 btn-sm py-2">
+                                <i class="bi bi-building-add d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Add Plant</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="AddCollection"
+                               class="btn btn-outline-info w-100 btn-sm py-2">
+                                <i class="bi bi-house-add d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Add Center</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="AddProduct"
+                               class="btn btn-outline-danger w-100 btn-sm py-2">
+                                <i class="bi bi-box-seam d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Add Product</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="RateChart"
+                               class="btn btn-outline-secondary w-100 btn-sm py-2">
+                                <i class="bi bi-currency-rupee d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Rate Chart</span>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a asp-controller="Admin" asp-action="AuditLogs"
+                               class="btn btn-outline-primary w-100 btn-sm py-2">
+                                <i class="bi bi-clock-history d-block fs-5 mb-1"></i>
+                                <span style="font-size:11px;">Audit Logs</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -79,63 +327,43 @@
 
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">
-                    Quick Actions
-                </div>
-                <div class="card-body">
-                    <a href="/Admin/Users" class="btn btn-outline-primary me-2">
-                        <i class="bi bi-people me-1"></i> Manage Users
-                    </a>
-                    <a href="/Admin/RegisterUser" class="btn btn-outline-success me-2">
-                        <i class="bi bi-person-plus me-1"></i> Register User
-                    </a>
-                    <a href="/Admin/Roles" class="btn btn-outline-warning me-2">
-                        <i class="bi bi-shield me-1"></i> Manage Roles
-                    </a>
-                    <a href="/Admin/AuditLogs" class="btn btn-outline-secondary">
-                        <i class="bi bi-clock-history me-1"></i> Audit Logs
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Users Table -->
-    <div class="row">
-        <div class="col">
-            <div class="card shadow-sm border-0">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    <span>Recent Users</span>
-                    <a href="/Admin/Users" class="btn btn-sm btn-primary">View All</a>
+                    <span><i class="bi bi-people me-1 text-primary"></i> Recent Users</span>
+                    <a asp-controller="Admin" asp-action="Users"
+                       class="btn btn-sm btn-primary">View All</a>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                    <table class="table table-hover mb-0 align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Username</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!recentUsers.Any())
+                            {
                                 <tr>
-                                    <th>#</th>
-                                    <th>Username</th>
-                                    <th>Role</th>
-                                    <th>Created Date</th>
-                                    <th>Status</th>
+                                    <td colspan="4" class="text-center text-muted py-3">No users found.</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var user in Model.Take(5))
+                            }
+                            else
+                            {
+                                foreach (var u in recentUsers)
                                 {
                                     <tr>
-                                        <td>@user.UserId</td>
-                                        <td>@user.Username</td>
+                                        <td class="ps-3 fw-semibold">@u.Username</td>
                                         <td>
-                                            <span class="badge bg-primary">@user.RoleName</span>
+                                            <span class="badge bg-primary">@u.RoleName</span>
                                         </td>
-                                        <td>@user.CreatedDate.ToString("dd MMM yyyy")</td>
-                                        <td>
-                                            @if (user.IsActive)
+                                        <td class="text-muted">@u.CreatedDate.ToString("dd MMM yy")</td>
+                                        <td class="text-center">
+                                            @if (u.IsActive)
                                             {
                                                 <span class="badge bg-success">Active</span>
                                             }
@@ -146,12 +374,142 @@
                                         </td>
                                     </tr>
                                 }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-gear me-1 text-warning"></i> Recent Batches</span>
+                    <a asp-controller="Admin" asp-action="ProductionBatches"
+                       class="btn btn-sm btn-warning text-white">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Product</th>
+                                <th>Plant</th>
+                                <th>Date</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!recentBatches.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No batches found.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var b in recentBatches)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@b.ProductName</td>
+                                        <td class="text-muted">@b.PlantName</td>
+                                        <td class="text-muted">@b.ProductionDate.ToString("dd MMM yy")</td>
+                                        <td class="text-center">
+                                            @{
+                                                var badgeClass = b.BatchStatus switch
+                                                {
+                                                    "Completed" => "bg-success",
+                                                    "InProgress" => "bg-warning text-dark",
+                                                    "QCFailed" => "bg-danger",
+                                                    "Cancelled" => "bg-secondary",
+                                                    _ => "bg-light text-dark"
+                                                };
+                                            }
+                                            <span class="badge @badgeClass">@b.BatchStatus</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-truck me-1 text-primary"></i> Recent Milk Transfers</span>
+                    <a asp-controller="Admin" asp-action="MilkTransfers"
+                       class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">#</th>
+                                    <th>Center → Plant</th>
+                                    <th>Driver</th>
+                                    <th>Vehicle</th>
+                                    <th class="text-center">Dispatch (L)</th>
+                                    <th class="text-center">Received (L)</th>
+                                    <th class="text-center">Loss (L)</th>
+                                    <th>Date</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!recentTransfer.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted py-3">No transfers found.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    int sr = 1;
+                                    foreach (var t in recentTransfer)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 text-muted">@sr</td>
+                                            <td>
+                                                <span class="fw-semibold">@t.CenterName</span>
+                                                <i class="bi bi-arrow-right text-muted mx-1"></i>
+                                                <span class="text-muted">@t.PlantName</span>
+                                            </td>
+                                            <td>@(t.DriverName ?? "—")</td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">@t.VehicleNumber</span>
+                                            </td>
+                                            <td class="text-center">@t.DispatchQty.ToString("N0")</td>
+                                            <td class="text-center">
+                                                @(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N0") : "—")
+                                            </td>
+                                            <td class="text-center text-danger">
+                                                @(t.LossQty.HasValue? t.LossQty.Value.ToString("N2") : "—")
+                                            </td>
+                                            <td class="text-muted">@t.DispatchDate.ToString("dd MMM yy")</td>
+                                            <td class="text-center">
+                                                @if (t.TransferStatus == "Received")
+                                                {
+                                                    <span class="badge bg-success">Received</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark">Pending</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        sr++;
+                                    }
+                                }
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
 </div>
