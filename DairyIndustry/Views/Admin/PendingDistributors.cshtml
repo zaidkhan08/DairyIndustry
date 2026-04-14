@@ -1,0 +1,93 @@
+﻿@model List<DairyIndustry.Models.Admin.Distributor>
+@{
+    ViewData["Title"] = "Pending Approvals";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Pending Distributor Approvals</h4>
+        <small class="text-muted">@Model.Count distributor(s) waiting for review</small>
+    </div>
+    <a asp-action="Distributors" class="btn btn-outline-secondary btn-sm">
+        ← All Distributors
+    </a>
+</div>
+
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No pending distributors. All caught up!
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var d in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-warning border-opacity-50">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0 fw-bold">@d.DistributorName</h6>
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        </div>
+
+                        <ul class="list-unstyled small text-muted mb-3">
+                            @if (d.Email != null)
+                            {
+                                <li><i class="bi bi-envelope me-1"></i>@d.Email</li>
+                            }
+                            @if (d.ContactNumber != null)
+                            {
+                                <li><i class="bi bi-telephone me-1"></i>@d.ContactNumber</li>
+                            }
+                            @if (d.Location != null)
+                            {
+                                <li><i class="bi bi-geo-alt me-1"></i>@d.Location</li>
+                            }
+                            @if (d.GSTIN != null)
+                            {
+                                <li><i class="bi bi-card-text me-1"></i>GSTIN: <code>@d.GSTIN</code></li>
+                            }
+                            @if (d.Address != null)
+                            {
+                                <li><i class="bi bi-house me-1"></i>@d.Address</li>
+                            }
+                            <li class="mt-1">
+                                <i class="bi bi-clock me-1"></i>
+                                Registered: @d.RegisteredOn.ToString("dd MMM yyyy, hh:mm tt")
+                            </li>
+                        </ul>
+
+                        <div class="d-flex gap-2">
+                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1">
+                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                <input type="hidden" name="status" value="Approved" />
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    ✓ Approve
+                                </button>
+                            </form>
+                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1"
+                                  onsubmit="return confirm('Reject @d.DistributorName? This cannot be undone easily.')">
+                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                <input type="hidden" name="status" value="Rejected" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                    ✗ Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

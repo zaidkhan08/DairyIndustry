@@ -1,553 +1,1365 @@
 ﻿@using DairyIndustry.Models.Reports
+@model AdminReportViewModel
 @{
-    ViewData["Title"] = "Reports & Analytics";
+    ViewData["Title"] = "Reports";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    var daily = ViewBag.DailySummary as List<DailySummaryModel> ?? new();
-    var farmers = ViewBag.FarmerReport as List<FarmerCollectionModel> ?? new();
-    var production = ViewBag.Production as List<ProductionSummaryModel> ?? new();
-    var wastage = ViewBag.Wastage as List<WastageModel> ?? new();
-    var sales = ViewBag.Sales as List<SalesReportModel> ?? new();
+    string tab = Model.ActiveTab ?? "dashboard";
+
+    string TabClass(string name) => tab == name
+        ? "nav-link active fw-semibold"
+        : "nav-link text-secondary";
+
+    string PaneClass(string name) => tab == name
+        ? "tab-pane fade show active"
+        : "tab-pane fade";
+
+    string BadgeStatus(string? s) => s switch
+    {
+        "Processed" => "bg-success",
+        "Pending"   => "bg-warning text-dark",
+        "Failed"    => "bg-danger",
+        "Cancelled" => "bg-secondary",
+        _           => "bg-secondary"
+    };
+
+    string BadgeOrder(string? s) => s switch
+    {
+        "Delivered"  => "bg-success",
+        "Dispatched" => "bg-primary",
+        "Confirmed"  => "bg-info text-dark",
+        "Pending"    => "bg-warning text-dark",
+        "Cancelled"  => "bg-danger",
+        _            => "bg-secondary"
+    };
+
+    string BadgeBatch(string? s) => s switch
+    {
+        "Completed"  => "bg-success",
+        "InProgress" => "bg-info text-dark",
+        "QCFailed"   => "bg-danger",
+        "Cancelled"  => "bg-secondary",
+        _            => "bg-secondary"
+    };
+
+    // ── pre-compute chart data server-side ──────────────────────
+
+    // Sales: revenue by distributor
+    var salesByDist = Model.Sales
+        .GroupBy(s => s.DistributorName)
+        .Select(g => new { Name = g.Key, Total = g.Sum(x => x.LineTotal) })
+        .OrderByDescending(x => x.Total)
+        .Take(8)
+        .ToList();
+
+    // Sales: revenue by product
+    var salesByProduct = Model.Sales
+        .GroupBy(s => s.ProductName)
+        .Select(g => new { Name = g.Key, Total = g.Sum(x => x.LineTotal) })
+        .OrderByDescending(x => x.Total)
+        .Take(8)
+        .ToList();
+
+    // Sales: order status distribution
+    var salesByStatus = Model.Sales
+        .GroupBy(s => s.OrderStatus)
+        .Select(g => new { Status = g.Key, Count = g.Count() })
+        .ToList();
+
+    // Production: milk used by product
+    var prodByProduct = Model.Production
+        .GroupBy(p => p.ProductName)
+        .Select(g => new { Name = g.Key, Milk = g.Sum(x => x.TotalMilkUsedLtr) })
+        .OrderByDescending(x => x.Milk)
+        .Take(8)
+        .ToList();
+
+    // Production: batches by status
+    var prodByStatus = Model.Production
+        .GroupBy(p => p.BatchStatus)
+        .Select(g => new { Status = g.Key, Count = g.Sum(x => x.TotalBatches) })
+        .ToList();
+
+    // Wastage: by category
+    var wastageByCategory = Model.Wastage
+        .GroupBy(w => w.WastageCategory)
+        .Select(g => new { Cat = g.Key, Total = g.Sum(x => x.TotalWastage) })
+        .ToList();
+
+    // Wastage: top items
+    var wastageTopItems = Model.Wastage
+        .OrderByDescending(w => w.TotalWastage)
+        .Take(8)
+        .ToList();
+
+    // Transfers: dispatch vs received by transfer id
+    var transfersTop = Model.Transfers
+        .OrderByDescending(t => t.DispatchDate)
+        .Take(10)
+        .ToList();
+
+    // Staff payments: by status
+    var staffPayByStatus = Model.StaffPayments
+        .GroupBy(s => s.PaymentStatus)
+        .Select(g => new { Status = g.Key, Total = g.Sum(x => x.TotalAmount) })
+        .ToList();
+
+    // Staff payments: by staff member
+    var staffPayByPerson = Model.StaffPayments
+        .GroupBy(s => s.FirstName + " " + s.LastName)
+        .Select(g => new { Name = g.Key, Total = g.Sum(x => x.TotalAmount) })
+        .OrderByDescending(x => x.Total)
+        .Take(8)
+        .ToList();
+
+    // Center payments: by center
+    var centerPayByCtr = Model.CenterPayments
+        .GroupBy(c => c.CenterName)
+        .Select(g => new { Name = g.Key, Total = g.Sum(x => x.TotalAmount) })
+        .OrderByDescending(x => x.Total)
+        .ToList();
+
+    // Pending payments: by type
+    var pendingByType = Model.PendingPayments
+        .GroupBy(p => p.PaymentType)
+        .Select(g => new { Type = g.Key, Total = g.Sum(x => x.TotalAmount) })
+        .ToList();
+
+    // Dashboard metrics dict
+    var metricsDict = Model.Dashboard.ToDictionary(m => m.MetricName ?? "", m => m.Value);
 }
 
-<div class="bg-dark text-white py-4 px-4 mb-4 shadow-sm">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-            <h4 class="mb-1 fw-bold">
-                <i class="bi bi-bar-chart-fill me-2"></i>Reports & Analytics
-            </h4>
-            <p class="mb-0 opacity-75 small">
-                Live insights across collection, production, sales and wastage.
-            </p>
-        </div>
-        <form method="get" action="/Reports/Index" class="d-flex gap-2 align-items-center flex-wrap">
-            <input type="date" name="fromDate" value="@ViewBag.FromDate"
-                   class="form-control form-control-sm" style="width:150px;" />
-            <span class="text-white small">to</span>
-            <input type="date" name="toDate" value="@ViewBag.ToDate"
-                   class="form-control form-control-sm" style="width:150px;" />
-            <button type="submit" class="btn btn-light btn-sm fw-semibold">
-                <i class="bi bi-funnel me-1"></i>Filter
-            </button>
-        </form>
-    </div>
-</div>
+<div class="container-fluid px-4 mt-4">
 
-<div class="container-fluid px-4 pb-5">
+    @* ── Filter bar ──────────────────────────────────────────────── *@
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-2">
+            <form method="get" asp-action="Index" asp-controller="Reports"
+                  class="row g-2 align-items-end">
 
-    <!-- KPI Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 border-start border-4 border-primary">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-muted small fw-semibold">Total Collection</div>
-                            <div class="fw-bold fs-4">@daily.Sum(d => d.TotalQuantityLtr).ToString("N0") Ltr</div>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center
-                                    justify-content-center" style="width:48px; height:48px;">
-                            <i class="bi bi-bucket-fill text-primary fs-5"></i>
-                        </div>
-                    </div>
+                <input type="hidden" name="activeTab" value="@tab" />
+
+                <div class="col-auto">
+                    <label class="form-label small text-muted mb-1">From</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm"
+                           value="@Model.FromDate.ToString("yyyy-MM-dd")" />
                 </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 border-start border-4 border-success">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-muted small fw-semibold">Total Sales</div>
-                            <div class="fw-bold fs-4">₹@sales.Sum(s => s.LineTotal).ToString("N0")</div>
-                        </div>
-                        <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center
-                                    justify-content-center" style="width:48px; height:48px;">
-                            <i class="bi bi-cart-fill text-success fs-5"></i>
-                        </div>
-                    </div>
+
+                <div class="col-auto">
+                    <label class="form-label small text-muted mb-1">To</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm"
+                           value="@Model.ToDate.ToString("yyyy-MM-dd")" />
                 </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 border-start border-4 border-warning">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-muted small fw-semibold">Farmer Payable</div>
-                            <div class="fw-bold fs-4">₹@farmers.Sum(f => f.TotalPayable).ToString("N0")</div>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 rounded-3 d-flex align-items-center
-                                    justify-content-center" style="width:48px; height:48px;">
-                            <i class="bi bi-people-fill text-warning fs-5"></i>
-                        </div>
-                    </div>
+
+                <div class="col-auto">
+                    <label class="form-label small text-muted mb-1">Plant ID</label>
+                    <input type="number" name="plantId" class="form-control form-control-sm"
+                           placeholder="All" style="width:90px;" value="@Model.PlantId" />
                 </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 border-start border-4 border-danger">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-muted small fw-semibold">Total Wastage</div>
-                            <div class="fw-bold fs-4">@wastage.Sum(w => w.TotalWastage).ToString("N1") Ltr</div>
-                        </div>
-                        <div class="bg-danger bg-opacity-10 rounded-3 d-flex align-items-center
-                                    justify-content-center" style="width:48px; height:48px;">
-                            <i class="bi bi-trash-fill text-danger fs-5"></i>
-                        </div>
-                    </div>
+
+                <div class="col-auto">
+                    <label class="form-label small text-muted mb-1">Distributor ID</label>
+                    <input type="number" name="distributorId" class="form-control form-control-sm"
+                           placeholder="All" style="width:110px;" value="@Model.DistributorId" />
                 </div>
-            </div>
+
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-dark btn-sm">Apply</button>
+                    <a asp-action="Index" asp-controller="Reports"
+                       class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+
+            </form>
         </div>
     </div>
 
-    <!-- Charts Row 1 -->
-    <div class="row g-4 mb-4">
+    @* ── Tabs ───────────────────────────────────────────────────── *@
+    <ul class="nav nav-tabs mb-0" role="tablist"
+        style="border-bottom: 2px solid #dee2e6; flex-wrap:nowrap; overflow-x:auto;">
+        @foreach (var t in new[] {
+            ("dashboard",  "bi-grid-fill",         "Dashboard"),
+            ("sales",      "bi-cart-fill",          "Sales"),
+            ("production", "bi-gear-fill",          "Production"),
+            ("wastage",    "bi-trash3-fill",        "Wastage"),
+            ("transfers",  "bi-arrow-left-right",   "Milk Transfers"),
+            ("staffpay",   "bi-briefcase-fill",     "Staff Payments"),
+            ("centerpay",  "bi-bucket-fill",        "Center Payments"),
+            ("pending",    "bi-hourglass-split",    "Pending Payments")
+        })
+        {
+            <li class="nav-item" role="presentation" style="white-space:nowrap;">
+                <a class="@TabClass(t.Item1)"
+                   href="@Url.Action("Index","Reports", new {
+                       activeTab     = t.Item1,
+                       fromDate      = Model.FromDate.ToString("yyyy-MM-dd"),
+                       toDate        = Model.ToDate.ToString("yyyy-MM-dd"),
+                       plantId       = Model.PlantId,
+                       distributorId = Model.DistributorId
+                   })"
+                   style="font-size:13px;">
+                    <i class="bi @t.Item2 me-1"></i>@t.Item3
+                </a>
+            </li>
+        }
+    </ul>
 
-        <!-- Collection by Center Bar Chart -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-bar-chart-fill text-primary"></i>
-                    <span class="fw-semibold">Collection by Center</span>
-                </div>
-                <div class="card-body p-4">
-                    <canvas id="collectionChart" height="120"></canvas>
-                </div>
-            </div>
-        </div>
+    <div class="tab-content bg-white border border-top-0 rounded-bottom shadow-sm p-4">
 
-        <!-- Milk Type Pie Chart -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-pie-chart-fill text-success"></i>
-                    <span class="fw-semibold">Milk Type Split</span>
-                </div>
-                <div class="card-body p-4">
-                    <canvas id="milkTypeChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
 
-    </div>
+        @* ══════════════════════════════════════════════════════════
+           TAB 1 — DASHBOARD
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("dashboard")">
 
-    <!-- Charts Row 2 -->
-    <div class="row g-4 mb-4">
+            @* Metric cards *@
+            <div class="row g-3 mb-4">
+                @{
+                    var cards = new[] {
+                        ("TodayCollection",        "bi-droplet-fill",    "#185FA5", "Today's Collection",       "L"),
+                        ("OpenBatches",            "bi-layers",          "#0F6E56", "Open Batches",             ""),
+                        ("TodayProductionBatches", "bi-gear-fill",       "#854F0B", "Today's Production",       ""),
+                        ("PendingSalesOrders",     "bi-cart-fill",       "#A32D2D", "Pending Sales Orders",     ""),
+                        ("PendingFarmerPayments",  "bi-cash-stack",      "#534AB7", "Pending Payments (₹)",     ""),
+                        ("ActiveFarmers",          "bi-person-check",    "#3B6D11", "Active Farmers",           "")
+                    };
+                }
+                @foreach (var (key, icon, color, label, unit) in cards)
+                {
+                    decimal val = metricsDict.ContainsKey(key) ? metricsDict[key] : 0;
+                    string display = unit == "L"
+                        ? val.ToString("N0") + " L"
+                        : key.Contains("Payment")
+                            ? "₹" + val.ToString("N0")
+                            : val.ToString("N0");
 
-        <!-- Production Bar Chart -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-gear-fill text-warning"></i>
-                    <span class="fw-semibold">Production — Milk Used per Product</span>
-                </div>
-                <div class="card-body p-4">
-                    <canvas id="productionChart" height="160"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Wastage Bar Chart -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-trash-fill text-danger"></i>
-                    <span class="fw-semibold">Wastage Summary</span>
-                </div>
-                <div class="card-body p-4">
-                    <canvas id="wastageChart" height="160"></canvas>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Charts Row 3 -->
-    <div class="row g-4 mb-4">
-
-        <!-- Sales Line Chart -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-graph-up text-success"></i>
-                    <span class="fw-semibold">Sales Revenue by Product</span>
-                </div>
-                <div class="card-body p-4">
-                    <canvas id="salesChart" height="120"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Top Farmers -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                    <i class="bi bi-trophy-fill text-warning"></i>
-                    <span class="fw-semibold">Top 5 Farmers</span>
-                </div>
-                <div class="card-body p-3">
-                    @{
-                        var top5 = farmers.OrderByDescending(f => f.TotalQtyLtr).Take(5).ToList();
-                        int rank = 1;
-                    }
-                    @foreach (var f in top5)
-                    {
-                        string color = rank switch
-                        {
-                            1 => "warning",
-                            2 => "secondary",
-                            3 => "danger",
-                            _ => "primary"
-                        };
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="bg-@color bg-opacity-10 text-@color rounded-circle d-flex
-                                            align-items-center justify-content-center fw-bold flex-shrink-0"
-                                 style="width:36px; height:36px; font-size:.85rem;">
-                                @rank
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small">@f.FarmerName</div>
-                                <div class="progress mt-1" style="height:5px;">
-                                    @{
-                                        decimal max = top5.Max(x => x.TotalQtyLtr);
-                                        decimal pct = max > 0 ? (f.TotalQtyLtr / max) * 100 : 0;
-                                    }
-                                    <div class="progress-bar bg-@color" style="width:@pct%"></div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card border-0 h-100" style="background:#f8f9fa;">
+                            <div class="card-body text-center py-3 px-2">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                                     style="width:42px;height:42px;background:@color + "22";">
+                                    <i class="bi @icon" style="font-size:18px;color:@color;"></i>
                                 </div>
-                            </div>
-                            <div class="text-muted small fw-semibold">
-                                @f.TotalQtyLtr.ToString("N0") L
+                                <p class="mb-0 fw-semibold" style="font-size:20px;">@display</p>
+                                <p class="mb-0 text-muted" style="font-size:11px;">@label</p>
                             </div>
                         </div>
-                        rank++;
-                    }
-                    @if (!top5.Any())
-                    {
-                        <div class="text-center text-muted py-4 small">No data available.</div>
-                    }
+                    </div>
+                }
+            </div>
+
+            @* Dashboard charts row *@
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="card border shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Revenue by distributor</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:260px;">
+                                <canvas id="dash_distRevenue"
+                                        role="img"
+                                        aria-label="Bar chart showing revenue per distributor">
+                                    Revenue by distributor.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card border shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Order status split</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div style="position:relative;height:220px;">
+                                <canvas id="dash_orderStatus"
+                                        role="img"
+                                        aria-label="Donut chart of order status distribution">
+                                    Order status distribution.
+                                </canvas>
+                            </div>
+                            <div id="dash_orderStatusLegend"
+                                 class="d-flex flex-wrap gap-2 justify-content-center mt-2"
+                                 style="font-size:11px;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
 
-    </div>
 
-    <!-- Farmer Collection Table -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-table text-primary"></i>
-                <span class="fw-semibold">Farmer Collection Detail</span>
+        @* ══════════════════════════════════════════════════════════
+           TAB 2 — SALES
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("sales")">
+
+            @* Summary strip *@
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Revenue</p>
+                        <p class="mb-0 fw-semibold fs-5">₹@Model.Sales.Sum(s => s.LineTotal).ToString("N0")</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Orders</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Sales.Select(s => s.OrderDate.Date.ToString() + s.DistributorName).Distinct().Count()</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Quantity</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Sales.Sum(s => s.Quantity).ToString("N0")</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Distributors</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Sales.Select(s => s.DistributorName).Distinct().Count()</p>
+                    </div>
+                </div>
             </div>
-            <span class="badge bg-primary px-3">@farmers.Count records</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                            <th class="py-3 text-muted fw-semibold small">Farmer</th>
-                            <th class="py-3 text-muted fw-semibold small">Center</th>
-                            <th class="py-3 text-muted fw-semibold small">Milk Type</th>
-                            <th class="py-3 text-muted fw-semibold small">Qty (Ltr)</th>
-                            <th class="py-3 text-muted fw-semibold small">Avg Fat</th>
-                            <th class="py-3 text-muted fw-semibold small">Avg CLR</th>
-                            <th class="py-3 text-muted fw-semibold small">Payable (₹)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!farmers.Any())
-                        {
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Revenue by distributor</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(salesByDist.Count * 42 + 60, 180))px;">
+                                <canvas id="sales_distBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of revenue by distributor">
+                                    Revenue by distributor.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Revenue by product</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(salesByProduct.Count * 42 + 60, 180))px;">
+                                <canvas id="sales_prodBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of revenue by product">
+                                    Revenue by product.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Detailed table *@
+            @if (Model.Sales.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                    No data for selected period.
-                                </td>
+                                @* <th>#</th> *@
+                                <th>Distributor</th>
+                                <th>Order Date</th>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Line Total</th>
+                                <th>Status</th>
                             </tr>
-                        }
-                        else
-                        {
-                            int sr = 1;
-                            foreach (var f in farmers)
+                        </thead>
+                        <tbody>
+                            @* @{ int sr = 1; } *@
+                            @foreach (var s in Model.Sales)
                             {
                                 <tr>
-                                    <td class="px-4 text-muted small">@sr</td>
-                                    <td class="fw-semibold small">@f.FarmerName</td>
-                                    <td class="small text-muted">@f.CenterName</td>
+                                    @* <td class="text-muted small">@sr</td> *@
+                                    <td>@s.DistributorName</td>
+                                    <td class="small">@s.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td>@s.ProductName</td>
+                                    <td><span class="badge bg-light text-dark border">@s.ProductType</span></td>
+                                    <td class="text-end">@s.Quantity.ToString("N0")</td>
+                                    <td class="text-end">₹@s.UnitPrice.ToString("N2")</td>
+                                    <td class="text-end fw-semibold">₹@s.LineTotal.ToString("N2")</td>
+                                    <td><span class="badge @BadgeOrder(s.OrderStatus)">@s.OrderStatus</span></td>
+                                </tr>
+                                @* sr++; *@
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="7" class="text-end fw-semibold">Grand Total</td>
+                                <td class="text-end fw-semibold">₹@Model.Sales.Sum(s => s.LineTotal).ToString("N2")</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-center text-muted py-4">No sales data for the selected period.</p>
+            }
+        </div>
+
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 3 — PRODUCTION
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("production")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Batches</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Production.Sum(p => p.TotalBatches)</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Milk Used</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Production.Sum(p => p.TotalMilkUsedLtr).ToString("N0") L</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Completed</p>
+                        <p class="mb-0 fw-semibold fs-5 text-success">
+                            @Model.Production.Where(p => p.BatchStatus == "Completed").Sum(p => p.TotalBatches)
+                        </p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">In Progress</p>
+                        <p class="mb-0 fw-semibold fs-5 text-info">
+                            @Model.Production.Where(p => p.BatchStatus == "InProgress").Sum(p => p.TotalBatches)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-7">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Milk used per product (L)</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(prodByProduct.Count * 42 + 60, 180))px;">
+                                <canvas id="prod_milkBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of milk used per product">
+                                    Milk used per product.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Batch status breakdown</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div style="position:relative;height:220px;">
+                                <canvas id="prod_statusDonut"
+                                        role="img"
+                                        aria-label="Donut chart showing batch status breakdown">
+                                    Batch status breakdown.
+                                </canvas>
+                            </div>
+                            <div id="prod_statusLegend"
+                                 class="d-flex flex-wrap gap-2 justify-content-center mt-2"
+                                 style="font-size:11px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Production.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                @* <th>#</th> *@
+                                <th>Plant</th><th>Product</th><th>Type</th>
+                                <th class="text-end">Batches</th>
+                                <th class="text-end">Milk Used (L)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* @{ sr = 1; } *@
+                            @foreach (var p in Model.Production)
+                            {
+                                <tr>
+                                    @* <td class="text-muted small">@sr</td> *@
+                                    <td>@p.PlantName</td><td>@p.ProductName</td>
+                                    <td><span class="badge bg-light text-dark border">@p.ProductType</span></td>
+                                    <td class="text-end">@p.TotalBatches</td>
+                                    <td class="text-end">@p.TotalMilkUsedLtr.ToString("N2")</td>
+                                    <td><span class="badge @BadgeBatch(p.BatchStatus)">@p.BatchStatus</span></td>
+                                </tr>
+                                @* sr++; *@
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else { <p class="text-center text-muted py-4">No production data for the selected period.</p> }
+        </div>
+
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 4 — WASTAGE
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("wastage")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Wastage by category</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div style="position:relative;height:220px;">
+                                <canvas id="waste_catDonut"
+                                        role="img"
+                                        aria-label="Donut chart of wastage by category">
+                                    Wastage by category.
+                                </canvas>
+                            </div>
+                            <div id="waste_catLegend"
+                                 class="d-flex flex-wrap gap-2 justify-content-center mt-2"
+                                 style="font-size:11px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Top wastage items</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(wastageTopItems.Count * 42 + 60, 180))px;">
+                                <canvas id="waste_itemBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of top wastage items">
+                                    Top wastage items.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Wastage.Any())
+            {
+                @foreach (var grp in Model.Wastage.GroupBy(w => w.WastageCategory))
+                {
+                    <h6 class="mt-3 mb-2 small fw-semibold"
+                        style="border-left:3px solid #0d6efd;padding-left:8px;border-radius:0;">
+                        @(grp.Key == "ProductWastage" ? "Product Wastage" : "Milk Process Wastage")
+                    </h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    @* <th>#</th> *@
+                                    <th>Plant</th><th>Item</th>
+                                    @if (grp.Key == "MilkWastage") { <th>Wastage Type</th> }
+                                    <th class="text-end">Total Wastage</th><th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @* @{ sr = 1; } *@
+                                @foreach (var w in grp)
+                                {
+                                    <tr>
+                                        @* <td class="text-muted small">@sr</td> *@
+                                        <td>@w.PlantName</td><td>@w.Item</td>
+                                        @if (grp.Key == "MilkWastage")
+                                        { <td><span class="badge bg-light text-dark border">@w.WastageType</span></td> }
+                                        <td class="text-end text-danger fw-semibold">@w.TotalWastage.ToString("N2")</td>
+                                        <td class="text-muted small">@w.Unit</td>
+                                    </tr>
+                                    @* sr++; *@
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+            else { <p class="text-center text-muted py-4">No wastage data for the selected period.</p> }
+        </div>
+
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 5 — MILK TRANSFERS
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("transfers")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Dispatched</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Transfers.Sum(t => t.DispatchQty).ToString("N0") L</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Received</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.Transfers.Sum(t => t.ReceivedQty ?? 0).ToString("N0") L</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Loss</p>
+                        <p class="mb-0 fw-semibold fs-5 text-danger">@Model.Transfers.Sum(t => t.LossQty ?? 0).ToString("N0") L</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Avg Loss %</p>
+                        @{
+                            decimal avgLoss = Model.Transfers.Any()
+                                ? Math.Round(Model.Transfers.Average(t => t.LossPercent), 2) : 0;
+                        }
+                        <p class="mb-0 fw-semibold fs-5 @(avgLoss > 2 ? "text-danger" : "text-success")">
+                            @avgLoss%
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Dispatch vs received vs loss (last 10 transfers)</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:280px;">
+                                <canvas id="transfer_grouped"
+                                        role="img"
+                                        aria-label="Grouped bar chart comparing dispatched, received and loss quantities per transfer">
+                                    Dispatch vs received vs loss per transfer.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Transfers.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                @* <th>#</th> *@
+                                <th>ID</th><th>Center</th><th>Plant</th>
+                                <th>Vehicle</th><th>Driver</th><th>Dispatch Date</th>
+                                <th class="text-end">Dispatch (L)</th>
+                                <th class="text-end">Received (L)</th>
+                                <th class="text-end">Loss (L)</th>
+                                <th class="text-end">Loss %</th>
+                                <th>Fat</th><th>CLR</th><th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* @{ sr = 1; } *@
+                            @foreach (var t in Model.Transfers)
+                            {
+                                string lc = t.LossPercent > 2 ? "text-danger fw-semibold" : "text-muted";
+                                <tr>
+                                    @* <td class="text-muted small">@sr</td> *@
+                                    <td class="fw-semibold">#@t.TransferId</td>
+                                    <td>@t.CenterName</td><td>@t.PlantName</td>
+                                    <td class="small">@t.VehicleNumber</td>
+                                    <td class="small">@t.DriverName</td>
+                                    <td class="small">@t.DispatchDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end">@t.DispatchQty.ToString("N0")</td>
+                                    <td class="text-end">@(t.ReceivedQty.HasValue ? t.ReceivedQty.Value.ToString("N0") : "—")</td>
+                                    <td class="text-end @lc">@(t.LossQty.HasValue ? t.LossQty.Value.ToString("N0") : "—")</td>
+                                    <td class="text-end @lc">@t.LossPercent.ToString("N1")%</td>
+                                    <td class="small">@(t.TestedFat.HasValue ? t.TestedFat.Value.ToString("N2") : "—")</td>
+                                    <td class="small">@(t.TestedCLR.HasValue ? t.TestedCLR.Value.ToString("N2") : "—")</td>
                                     <td>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
-                                            @f.MilkTypeName
+                                        <span class="badge @(t.TransferStatus == "Received" ? "bg-success" : "bg-warning text-dark")">
+                                            @t.TransferStatus
                                         </span>
                                     </td>
-                                    <td class="fw-semibold small">@f.TotalQtyLtr.ToString("N1")</td>
-                                    <td class="small">@f.AvgFat.ToString("F2")</td>
-                                    <td class="small">@f.AvgCLR.ToString("F2")</td>
-                                    <td class="fw-bold text-success small">₹@f.TotalPayable.ToString("N2")</td>
                                 </tr>
-                                sr++;
+                                @* sr++; *@
                             }
-                        }
-                    </tbody>
-                    @if (farmers.Any())
-                    {
-                        <tfoot class="table-light">
-                            <tr>
-                                <td colspan="4" class="px-4 fw-bold text-end">Total</td>
-                                <td class="fw-bold">@farmers.Sum(f => f.TotalQtyLtr).ToString("N1")</td>
-                                <td></td>
-                                <td></td>
-                                <td class="fw-bold text-success">₹@farmers.Sum(f => f.TotalPayable).ToString("N2")</td>
-                            </tr>
-                        </tfoot>
-                    }
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else { <p class="text-center text-muted py-4">No transfer data for the selected period.</p> }
         </div>
-    </div>
 
-    <!-- Sales Table -->
-    <div class="card border-0 shadow-sm rounded-3">
-        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-table text-success"></i>
-                <span class="fw-semibold">Sales Detail</span>
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 6 — STAFF PAYMENTS
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("staffpay")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Paid</p>
+                        <p class="mb-0 fw-semibold fs-5">₹@Model.StaffPayments.Sum(s => s.TotalAmount).ToString("N0")</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Processed</p>
+                        <p class="mb-0 fw-semibold fs-5 text-success">
+                            ₹@Model.StaffPayments.Where(s => s.PaymentStatus == "Processed").Sum(s => s.TotalAmount).ToString("N0")
+                        </p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Pending</p>
+                        <p class="mb-0 fw-semibold fs-5 text-warning">
+                            ₹@Model.StaffPayments.Where(s => s.PaymentStatus == "Pending").Sum(s => s.TotalAmount).ToString("N0")
+                        </p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Staff Count</p>
+                        <p class="mb-0 fw-semibold fs-5">
+                            @Model.StaffPayments.Select(s => s.FirstName + s.LastName).Distinct().Count()
+                        </p>
+                    </div>
+                </div>
             </div>
-            <span class="badge bg-success px-3">@sales.Count records</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                            <th class="py-3 text-muted fw-semibold small">Distributor</th>
-                            <th class="py-3 text-muted fw-semibold small">Order Date</th>
-                            <th class="py-3 text-muted fw-semibold small">Product</th>
-                            <th class="py-3 text-muted fw-semibold small">Qty</th>
-                            <th class="py-3 text-muted fw-semibold small">Unit Price</th>
-                            <th class="py-3 text-muted fw-semibold small">Line Total</th>
-                            <th class="py-3 text-muted fw-semibold small">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!sales.Any())
-                        {
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Payment amount by staff member</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(staffPayByPerson.Count * 42 + 60, 180))px;">
+                                <canvas id="staff_payBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of payment amount by staff">
+                                    Staff payment amounts.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Payment status split</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div style="position:relative;height:200px;">
+                                <canvas id="staff_statusDonut"
+                                        role="img"
+                                        aria-label="Donut chart of staff payment status">
+                                    Staff payment status split.
+                                </canvas>
+                            </div>
+                            <div id="staff_statusLegend"
+                                 class="d-flex flex-wrap gap-2 justify-content-center mt-2"
+                                 style="font-size:11px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.StaffPayments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                    No sales data for selected period.
-                                </td>
+                                @* <th>#</th> *@
+                                <th>Staff Name</th><th>Role</th><th>Plant</th>
+                                <th>Period</th><th class="text-end">Amount</th>
+                                <th>Payment Date</th><th>Status</th>
                             </tr>
-                        }
-                        else
-                        {
-                            int sr = 1;
-                            foreach (var s in sales)
+                        </thead>
+                        <tbody>
+                            @* @{ sr = 1; } *@
+                            @foreach (var s in Model.StaffPayments)
                             {
-                                string statusColor = s.OrderStatus switch
-                                {
-                                    "Delivered" => "success",
-                                    "Dispatched" => "primary",
-                                    "Confirmed" => "info",
-                                    "Pending" => "warning",
-                                    "Cancelled" => "danger",
-                                    _ => "secondary"
-                                };
                                 <tr>
-                                    <td class="px-4 text-muted small">@sr</td>
-                                    <td class="fw-semibold small">@s.DistributorName</td>
-                                    <td class="small text-muted">@s.OrderDate.ToString("dd MMM yyyy")</td>
-                                    <td class="small">@s.ProductName</td>
-                                    <td class="small">@s.Quantity.ToString("N0")</td>
-                                    <td class="small">₹@s.UnitPrice.ToString("N2")</td>
-                                    <td class="fw-bold text-success small">₹@s.LineTotal.ToString("N2")</td>
-                                    <td>
-                                        <span class="badge bg-@statusColor">@s.OrderStatus</span>
-                                    </td>
+                                    @* <td class="text-muted small">@sr</td> *@
+                                    <td>@s.FirstName @s.LastName</td>
+                                    <td class="small"><span class="badge bg-light text-dark border">@s.RoleName</span></td>
+                                    <td class="small">@s.PlantName</td>
+                                    <td class="small text-muted">@s.FromDate.ToString("dd MMM") – @s.ToDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end fw-semibold">₹@s.TotalAmount.ToString("N2")</td>
+                                    <td class="small">@s.PaymentDate.ToString("dd MMM yyyy")</td>
+                                    <td><span class="badge @BadgeStatus(s.PaymentStatus)">@s.PaymentStatus</span></td>
                                 </tr>
-                                sr++;
+                                @* sr++; *@
                             }
-                        }
-                    </tbody>
-                    @if (sales.Any())
-                    {
+                        </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <td colspan="6" class="px-4 fw-bold text-end">Total Revenue</td>
-                                <td class="fw-bold text-success">₹@sales.Sum(s => s.LineTotal).ToString("N2")</td>
-                                <td></td>
+                                <td colspan="5" class="text-end fw-semibold">Total</td>
+                                <td class="text-end fw-semibold">₹@Model.StaffPayments.Sum(s => s.TotalAmount).ToString("N2")</td>
+                                <td colspan="2"></td>
                             </tr>
                         </tfoot>
-                    }
-                </table>
-            </div>
+                    </table>
+                </div>
+            }
+            else { <p class="text-center text-muted py-4">No staff payment data for the selected period.</p> }
         </div>
-    </div>
 
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 7 — CENTER PAYMENTS
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("centerpay")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Amount</p>
+                        <p class="mb-0 fw-semibold fs-5">₹@Model.CenterPayments.Sum(c => c.TotalAmount).ToString("N0")</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Total Received (L)</p>
+                        <p class="mb-0 fw-semibold fs-5">@Model.CenterPayments.Sum(c => c.ReceivedQty).ToString("N0")</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <p class="mb-0 text-muted small">Pending</p>
+                        <p class="mb-0 fw-semibold fs-5 text-warning">
+                            ₹@Model.CenterPayments.Where(c => c.PaymentStatus == "Pending").Sum(c => c.TotalAmount).ToString("N0")
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Payment amount by center</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position:relative;height:@(Math.Max(centerPayByCtr.Count * 42 + 60, 180))px;">
+                                <canvas id="center_payBar"
+                                        role="img"
+                                        aria-label="Horizontal bar chart of payment by center">
+                                    Payment amount by center.
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.CenterPayments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                @* <th>#</th> *@
+                                <th>Center</th><th>Plant</th>
+                                <th class="text-end">Received (L)</th>
+                                <th class="text-end">Rate/L</th>
+                                <th>Fat</th><th>CLR</th>
+                                <th class="text-end">Total Amount</th>
+                                <th>Payment Date</th><th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* @{ sr = 1; } *@
+                            @foreach (var c in Model.CenterPayments)
+                            {
+                                <tr>
+                                    @* <td class="text-muted small">@sr</td> *@
+                                    <td>@c.CenterName</td><td class="small">@c.PlantName</td>
+                                    <td class="text-end">@c.ReceivedQty.ToString("N0")</td>
+                                    <td class="text-end">₹@c.RatePerLiter.ToString("N2")</td>
+                                    <td class="small">@(c.TestedFat.HasValue ? c.TestedFat.Value.ToString("N2") : "—")</td>
+                                    <td class="small">@(c.TestedCLR.HasValue ? c.TestedCLR.Value.ToString("N2") : "—")</td>
+                                    <td class="text-end fw-semibold">₹@c.TotalAmount.ToString("N2")</td>
+                                    <td class="small">@c.PaymentDate.ToString("dd MMM yyyy")</td>
+                                    <td><span class="badge @BadgeStatus(c.PaymentStatus)">@c.PaymentStatus</span></td>
+                                </tr>
+                                @* sr++; *@
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="7" class="text-end fw-semibold">Total</td>
+                                <td class="text-end fw-semibold">₹@Model.CenterPayments.Sum(c => c.TotalAmount).ToString("N2")</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else { <p class="text-center text-muted py-4">No center payment data for the selected period.</p> }
+        </div>
+
+
+        @* ══════════════════════════════════════════════════════════
+           TAB 8 — PENDING PAYMENTS
+        ══════════════════════════════════════════════════════════ *@
+        <div class="@PaneClass("pending")">
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-5">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="small fw-semibold">Pending amount by type</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div style="position:relative;height:220px;">
+                                <canvas id="pending_donut"
+                                        role="img"
+                                        aria-label="Donut chart of pending payments by type">
+                                    Pending payments by type.
+                                </canvas>
+                            </div>
+                            <div id="pending_donutLegend"
+                                 class="d-flex flex-wrap gap-2 justify-content-center mt-2"
+                                 style="font-size:11px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card border-0 bg-danger bg-opacity-10 h-100 d-flex align-items-center justify-content-center p-4 text-center">
+                        <p class="text-muted small mb-1">Total Outstanding</p>
+                        <p class="fw-semibold mb-1" style="font-size:36px;color:#A32D2D;">
+                            ₹@Model.PendingPayments.Sum(p => p.TotalAmount).ToString("N0")
+                        </p>
+                        <p class="text-muted small mb-0">
+                            @Model.PendingPayments.Count() pending item(s) across
+                            @Model.PendingPayments.Select(p => p.PaymentType).Distinct().Count() type(s)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.PendingPayments.Any())
+            {
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    All payments are cleared. No pending items.
+                </div>
+            }
+            else
+            {
+                @foreach (var grp in Model.PendingPayments.GroupBy(p => p.PaymentType))
+                {
+                    string tc = grp.Key switch {
+                        "Staff"  => "#185FA5",
+                        "Center" => "#0F6E56",
+                        _        => "#854F0B"
+                    };
+                    <h6 class="mt-3 mb-2 small fw-semibold"
+                        style="border-left:3px solid @tc;padding-left:8px;border-radius:0;">
+                        @grp.Key Payments
+                        <span class="ms-2 badge bg-danger">@grp.Count() pending</span>
+                    </h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    @* <th>#</th> *@
+                                    <th>Payment ID</th><th>Payee</th>
+                                    <th class="text-end">Amount</th><th>Due Date</th><th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @* @{ sr = 1; } *@
+                                @foreach (var p in grp)
+                                {
+                                    bool overdue = p.PaymentDate < DateTime.Today;
+                                    <tr class="@(overdue ? "table-warning" : "")">
+                                        @* <td class="text-muted small">@sr</td> *@
+                                        <td class="fw-semibold">#@p.PaymentId</td>
+                                        <td>@p.Payee</td>
+                                        <td class="text-end fw-semibold">₹@p.TotalAmount.ToString("N2")</td>
+                                        <td class="small @(overdue ? "text-danger fw-semibold" : "")">
+                                            @p.PaymentDate.ToString("dd MMM yyyy")
+                                            @if (overdue) { <span class="badge bg-danger ms-1">Overdue</span> }
+                                        </td>
+                                        <td><span class="badge @BadgeStatus(p.PaymentStatus)">@p.PaymentStatus</span></td>
+                                    </tr>
+                                    @* sr++; *@
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+
+
+    </div>
 </div>
 
+
+@* ── Chart.js + all chart initialisation ─────────────────────── *@
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
 
-        // ── Data from server ────────────────────────────────
+    // ── helpers ──────────────────────────────────────────────────
 
-        const dailyData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                    daily.GroupBy(d => d.CenterName)
-                              .Select(g => new { center = g.Key, qty = g.Sum(x => x.TotalQuantityLtr) })
-                              .ToList()
-            ));
+    function makeLegend(containerId, labels, colors) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = labels.map(function(l, i) {
+            return '<span style="display:flex;align-items:center;gap:4px;">' +
+                '<span style="width:10px;height:10px;border-radius:2px;background:' + colors[i] + ';flex-shrink:0;"></span>' +
+                '<span style="color:#555;">' + l + '</span></span>';
+        }).join('');
+    }
 
-    const milkTypeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                daily.GroupBy(d => d.MilkTypeName)
-                          .Select(g => new { type = g.Key, qty = g.Sum(x => x.TotalQuantityLtr) })
-                          .ToList()
-        ));
-
-    const productionData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                production.GroupBy(p => p.ProductName)
-                                    .Select(g => new { product = g.Key, milk = g.Sum(x => x.TotalMilkUsedLtr) })
-                                    .ToList()
-        ));
-
-    const wastageData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                wastage.Select(w => new { item = w.Item, qty = w.TotalWastage, category = w.WastageCategory })
-                              .ToList()
-        ));
-
-    const salesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                sales.GroupBy(s => s.ProductName)
-                          .Select(g => new { product = g.Key, total = g.Sum(x => x.LineTotal) })
-                          .ToList()
-        ));
-
-    // ── Chart defaults ───────────────────────────────────
-
-        Chart.defaults.font.family = "'Segoe UI', sans-serif";
-        Chart.defaults.font.size   = 12;
-        Chart.defaults.color       = '#6c757d';
-
-        // ── 1. Collection by Center (Bar) ───────────────────
-
-        new Chart(document.getElementById('collectionChart'), {
+    function hBar(id, labels, data, color) {
+        var ctx = document.getElementById(id);
+        if (!ctx) return;
+        new Chart(ctx, {
             type: 'bar',
             data: {
-                labels:   dailyData.map(d => d.center),
+                labels: labels,
                 datasets: [{
-                    label:           'Total Quantity (Ltr)',
-                    data:            dailyData.map(d => d.qty),
-                    backgroundColor: 'rgba(13, 110, 253, 0.15)',
-                    borderColor:     'rgba(13, 110, 253, 0.8)',
-                    borderWidth:     2,
-                    borderRadius:    6
+                    data: data,
+                    backgroundColor: color,
+                    borderColor: color,
+                    borderWidth: 0,
+                    borderRadius: 4
                 }]
             },
             options: {
+                indexAxis: 'y',
                 responsive: true,
-                plugins: { legend: { display: false } },
-                scales:  { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                           x: { grid: { display: false } } }
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ' ₹' + ctx.parsed.x.toLocaleString('en-IN', {maximumFractionDigits: 0});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(v) { return '₹' + (v/1000).toFixed(0) + 'k'; }
+                        }
+                    },
+                    y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
             }
         });
+    }
 
-        // ── 2. Milk Type Pie ─────────────────────────────────
+    function hBarPlain(id, labels, data, color) {
+        var ctx = document.getElementById(id);
+        if (!ctx) return;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: color,
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ' ' + ctx.parsed.x.toLocaleString('en-IN', {maximumFractionDigits: 0});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
 
-        new Chart(document.getElementById('milkTypeChart'), {
+    function donut(id, legendId, labels, data, colors) {
+        var ctx = document.getElementById(id);
+        if (!ctx) return;
+        var total = data.reduce(function(a, b) { return a + b; }, 0);
+        new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels:   milkTypeData.map(m => m.type),
+                labels: labels,
                 datasets: [{
-                    data:            milkTypeData.map(m => m.qty),
-                    backgroundColor: ['rgba(13,110,253,0.7)', 'rgba(25,135,84,0.7)', 'rgba(255,193,7,0.7)'],
-                    borderWidth:     2,
-                    borderColor:     '#fff'
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 6
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16 } }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var pct = total > 0
+                                    ? Math.round(ctx.parsed / total * 100) : 0;
+                                return ' ' + ctx.label + ': ' + pct + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        if (legendId) {
+            var lgLabels = labels.map(function(l, i) {
+                var pct = total > 0 ? Math.round(data[i] / total * 100) : 0;
+                return l + ' ' + pct + '%';
+            });
+            makeLegend(legendId, lgLabels, colors);
+        }
+    }
+
+    // ── colour palettes ──────────────────────────────────────────
+
+    var BLUE    = '#378ADD';
+    var TEAL    = '#1D9E75';
+    var AMBER   = '#BA7517';
+    var RED     = '#E24B4A';
+    var PURPLE  = '#7F77DD';
+    var CORAL   = '#D85A30';
+    var GREEN   = '#639922';
+    var GRAY    = '#888780';
+
+    var PALETTE = [BLUE, TEAL, AMBER, RED, PURPLE, CORAL, GREEN, GRAY];
+
+    var STATUS_COLORS = {
+        'Processed' : TEAL,
+        'Pending'   : AMBER,
+        'Failed'    : RED,
+        'Cancelled' : GRAY,
+        'Completed' : TEAL,
+        'InProgress': BLUE,
+        'QCFailed'  : RED,
+        'Delivered' : TEAL,
+        'Dispatched': BLUE,
+        'Confirmed' : PURPLE,
+        'Staff'     : BLUE,
+        'Center'    : TEAL,
+        'Farmer'    : AMBER
+    };
+
+    function colorForStatus(s) { return STATUS_COLORS[s] || GRAY; }
+
+    // ── data from Razor ──────────────────────────────────────────
+
+    // Dashboard
+    var distLabels   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByDist.Select(x => x.Name)));
+    var distRevenue  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByDist.Select(x => x.Total)));
+    var osLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByStatus.Select(x => x.Status)));
+    var osCount      = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByStatus.Select(x => x.Count)));
+
+    // Sales
+    var spLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByProduct.Select(x => x.Name)));
+    var spRevenue    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(salesByProduct.Select(x => x.Total)));
+
+    // Production
+    var ppLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(prodByProduct.Select(x => x.Name)));
+    var ppMilk       = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(prodByProduct.Select(x => x.Milk)));
+    var psLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(prodByStatus.Select(x => x.Status)));
+    var psCount      = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(prodByStatus.Select(x => x.Count)));
+
+    // Wastage
+    var wcLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(wastageByCategory.Select(x => x.Cat == "ProductWastage" ? "Product" : "Milk")));
+    var wcTotals     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(wastageByCategory.Select(x => x.Total)));
+    var wiLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(wastageTopItems.Select(x => x.Item)));
+    var wiTotals     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(wastageTopItems.Select(x => x.TotalWastage)));
+
+    // Transfers
+    var trLabels     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(transfersTop.Select(x => "#" + x.TransferId)));
+    var trDispatch   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(transfersTop.Select(x => x.DispatchQty)));
+    var trReceived   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(transfersTop.Select(x => x.ReceivedQty ?? 0)));
+    var trLoss       = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(transfersTop.Select(x => x.LossQty ?? 0)));
+
+    // Staff payments
+    var spersLabels  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(staffPayByPerson.Select(x => x.Name)));
+    var spersAmounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(staffPayByPerson.Select(x => x.Total)));
+    var sstatLabels  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(staffPayByStatus.Select(x => x.Status)));
+    var sstatTotals  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(staffPayByStatus.Select(x => x.Total)));
+
+    // Center payments
+    var ctrLabels    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(centerPayByCtr.Select(x => x.Name)));
+    var ctrTotals    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(centerPayByCtr.Select(x => x.Total)));
+
+    // Pending
+    var pendLabels   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(pendingByType.Select(x => x.Type)));
+    var pendTotals   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(pendingByType.Select(x => x.Total)));
+
+
+    // ── dashboard charts ─────────────────────────────────────────
+
+    // vertical bar – revenue by distributor
+    (function() {
+        var ctx = document.getElementById('dash_distRevenue');
+        if (!ctx) return;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: distLabels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: distRevenue,
+                    backgroundColor: BLUE,
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(c) { return ' ₹' + c.parsed.y.toLocaleString('en-IN', {maximumFractionDigits:0}); } } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 30 } },
+                    y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font:{ size:11 }, callback: function(v){ return '₹' + (v/1000).toFixed(0)+'k'; } } }
+                }
+            }
+        });
+    })();
+
+    donut('dash_orderStatus', 'dash_orderStatusLegend',
+        osLabels, osCount,
+        osLabels.map(colorForStatus));
+
+    // ── sales charts ─────────────────────────────────────────────
+
+    hBar('sales_distBar', distLabels, distRevenue, BLUE);
+    hBar('sales_prodBar', spLabels,   spRevenue,   TEAL);
+
+    // ── production charts ─────────────────────────────────────────
+
+    hBarPlain('prod_milkBar', ppLabels, ppMilk, TEAL);
+
+    donut('prod_statusDonut', 'prod_statusLegend',
+        psLabels, psCount,
+        psLabels.map(colorForStatus));
+
+    // ── wastage charts ────────────────────────────────────────────
+
+    donut('waste_catDonut', 'waste_catLegend',
+        wcLabels, wcTotals,
+        [CORAL, AMBER]);
+
+    hBarPlain('waste_itemBar', wiLabels, wiTotals, CORAL);
+
+    // ── transfer grouped bar ──────────────────────────────────────
+
+    (function() {
+        var ctx = document.getElementById('transfer_grouped');
+        if (!ctx) return;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: trLabels,
+                datasets: [
+                    { label: 'Dispatched', data: trDispatch, backgroundColor: BLUE,   borderWidth: 0, borderRadius: 3 },
+                    { label: 'Received',   data: trReceived, backgroundColor: TEAL,   borderWidth: 0, borderRadius: 3 },
+                    { label: 'Loss',       data: trLoss,     backgroundColor: CORAL,  borderWidth: 0, borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + c.parsed.y.toLocaleString('en-IN', {maximumFractionDigits:0}) + ' L'; } } }
+                },
+                scales: {
+                    x: { grid:{ display:false }, ticks:{ font:{ size:11 } } },
+                    y: { grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ font:{ size:11 } } }
                 }
             }
         });
 
-        // ── 3. Production Bar ────────────────────────────────
-
-        new Chart(document.getElementById('productionChart'), {
-            type: 'bar',
-            data: {
-                labels:   productionData.map(p => p.product),
-                datasets: [{
-                    label:           'Milk Used (Ltr)',
-                    data:            productionData.map(p => p.milk),
-                    backgroundColor: 'rgba(255, 193, 7, 0.15)',
-                    borderColor:     'rgba(255, 193, 7, 0.8)',
-                    borderWidth:     2,
-                    borderRadius:    6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales:  { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                           x: { grid: { display: false } } }
-            }
+        // custom legend
+        var leg = [['Dispatched', BLUE], ['Received', TEAL], ['Loss', CORAL]];
+        var lc  = document.createElement('div');
+        lc.style.cssText = 'display:flex;gap:16px;font-size:12px;color:#555;margin-top:8px;justify-content:center;';
+        leg.forEach(function(item) {
+            lc.innerHTML += '<span style="display:flex;align-items:center;gap:4px;">' +
+                '<span style="width:10px;height:10px;border-radius:2px;background:' + item[1] + ';"></span>' + item[0] + '</span>';
         });
+        ctx.parentElement.parentElement.appendChild(lc);
+    })();
 
-        // ── 4. Wastage Bar ───────────────────────────────────
+    // ── staff payment charts ──────────────────────────────────────
 
-        new Chart(document.getElementById('wastageChart'), {
-            type: 'bar',
-            data: {
-                labels:   wastageData.map(w => w.item),
-                datasets: [{
-                    label:           'Wastage',
-                    data:            wastageData.map(w => w.qty),
-                    backgroundColor: wastageData.map(w =>
-                        w.category === 'ProductWastage'
-                            ? 'rgba(220, 53, 69, 0.15)'
-                            : 'rgba(253, 126, 20, 0.15)'),
-                    borderColor:     wastageData.map(w =>
-                        w.category === 'ProductWastage'
-                            ? 'rgba(220, 53, 69, 0.8)'
-                            : 'rgba(253, 126, 20, 0.8)'),
-                    borderWidth:     2,
-                    borderRadius:    6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales:  { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                           x: { grid: { display: false } } }
-            }
-        });
+    hBar('staff_payBar', spersLabels, spersAmounts, PURPLE);
 
-        // ── 5. Sales Bar ─────────────────────────────────────
+    donut('staff_statusDonut', 'staff_statusLegend',
+        sstatLabels, sstatTotals,
+        sstatLabels.map(colorForStatus));
 
-        new Chart(document.getElementById('salesChart'), {
-            type: 'bar',
-            data: {
-                labels:   salesData.map(s => s.product),
-                datasets: [{
-                    label:           'Revenue (₹)',
-                    data:            salesData.map(s => s.total),
-                    backgroundColor: 'rgba(25, 135, 84, 0.15)',
-                    borderColor:     'rgba(25, 135, 84, 0.8)',
-                    borderWidth:     2,
-                    borderRadius:    6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales:  { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                           x: { grid: { display: false } } }
-            }
-        });
+    // ── center payment chart ──────────────────────────────────────
 
-    </script>
+    hBar('center_payBar', ctrLabels, ctrTotals, TEAL);
+
+    // ── pending donut ─────────────────────────────────────────────
+
+    donut('pending_donut', 'pending_donutLegend',
+        pendLabels, pendTotals,
+        pendLabels.map(colorForStatus));
+
+</script>
 }

@@ -69,7 +69,11 @@ namespace DairyIndustry.Repositories
              string profilePhoto = null,
              int? centerId = null,
              int? plantId = null);
-
+        void UpdateStaff(int staffId, string firstName, string lastName,
+                        string phone, string email, int roleId, DateTime? doj,
+                        string bankName, string accountNumber, string ifscCode,
+                        decimal salary, string profilePhoto,
+                        int? centerId, int? plantId);
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
@@ -88,6 +92,18 @@ namespace DairyIndustry.Repositories
         void TogglePlant(int id, bool isActive);
         void UpdatePlant(PlantModel plant);
         PlantModel getPlantById(int id);
+
+        // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        int AddCollection(string CenterName, int VillageID,decimal Capacity,string Location);
+        List<CollectionCenterModel> GetAllCollection(bool? isActive = true);
+        
+        void ToggleCollection(int id, bool isActive);
+        void UpdateCollection(CollectionCenterModel collection);
+        CollectionCenterModel getCollectionById(int id);
+
 
         // ════════════════════════════════════════════════════════
         // Production
@@ -118,6 +134,29 @@ namespace DairyIndustry.Repositories
 
         //collection center
         List<CollectionCenterModel> GetAllCenters();
+
+        //Distributers
+        List<Distributor> GetDistributors();
+        int AddDistributor(Distributor distributor);
+        bool UpdateDistributorStatus(int distributorId, string status);
+        Distributor? GetDistributorById(int distributorId);
+        List<Distributor> GetPendingDistributors();
+
+        //Assign plant and collection to user
+        List<UserAssignmentViewModel> GetAllUserPlantAssignments();
+        List<UserAssignmentViewModel> GetAllUserCenterAssignments();
+
+        //Order place behalf of distributor
+        int CreateOrder(AdminOrderModel model);
+        bool UpdateOrderStatus(int orderId, string status);
+        List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
+
+        List<PlantModel> GetActivePlants();
+        //Notification
+        List<NotificationModel> GetNotifications();
+        int GetNotificationCount();
+        bool MarkNotificationRead(int notificationId);
+        bool MarkAllNotificationsRead();
 
     }
 

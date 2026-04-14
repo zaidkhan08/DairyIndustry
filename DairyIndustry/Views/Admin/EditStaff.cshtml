@@ -1,0 +1,346 @@
+﻿@model DairyIndustry.Models.Admin.StaffModel
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Edit Staff";
+
+    string currentAssign = "none";
+    if (Model.CenterId.HasValue) currentAssign = "center";
+    else if (Model.PlantId.HasValue) currentAssign = "plant";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0">Edit Staff</h3>
+                <p class="text-muted mb-0">Update details for @Model.FirstName @Model.LastName</p>
+            </div>
+            <a asp-controller="Admin" asp-action="Staff" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Staff
+            </a>
+        </div>
+    </div>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-circle me-1"></i> @ViewBag.Error
+        </div>
+    }
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-check-circle me-1"></i> @TempData["Message"]
+        </div>
+    }
+
+    <form method="post" asp-controller="Admin" asp-action="EditStaff" enctype="multipart/form-data">
+
+        <input type="hidden" name="staffId" value="@Model.StaffId" />
+        <input type="hidden" name="profilePhoto" value="@Model.ProfilePhoto" />
+
+        <div class="row g-4">
+
+            <!-- ── Personal Details ─────────────────────────── -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-person me-1 text-primary"></i> Personal Details
+                    </div>
+                    <div class="card-body p-4">
+
+                        <!-- Photo Preview -->
+                        <div class="mb-4 text-center">
+                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2 overflow-hidden"
+                                 style="width:100px; height:100px;">
+                                @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                                {
+                                    <img id="photoPreview" src="@Model.ProfilePhoto" alt="Preview"
+                                         class="w-100 h-100" style="object-fit:cover;" />
+                                    <i id="photoPlaceholder" class="bi bi-person-fill text-secondary fs-1" style="display:none;"></i>
+                                }
+                                else
+                                {
+                                    <img id="photoPreview" src="#" alt="Preview"
+                                         class="w-100 h-100" style="object-fit:cover; display:none;" />
+                                    <i id="photoPlaceholder" class="bi bi-person-fill text-secondary fs-1"></i>
+                                }
+                            </div>
+                            <label class="form-label fw-semibold d-block">
+                                Profile Photo <span class="text-muted fw-normal small">(Optional)</span>
+                            </label>
+                            <input type="file" name="photoFile" id="profilePhotoInput"
+                                   class="form-control" accept=".jpg,.jpeg,.png"
+                                   onchange="previewPhoto(this)" />
+                            <div class="form-text">JPG or PNG — Max 2MB</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="firstName" class="form-control"
+                                   value="@Model.FirstName" placeholder="Enter first name" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="lastName" class="form-control"
+                                   value="@Model.LastName" placeholder="Enter last name" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Phone</label>
+                            <input type="text" name="phone" class="form-control"
+                                   value="@Model.Phone" placeholder="Enter phone number" maxlength="15" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="@Model.Email" placeholder="Enter email address" />
+                        </div>
+
+                        <!-- ✅ ROLE dropdown — uses ViewBag.Roles -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                            <select name="roleId" class="form-select" required>
+                                <option value="">-- Select Role --</option>
+                                @foreach (var role in (ViewBag.Roles as List<DairyIndustry.Models.Admin.RoleModel>)!)
+                                {
+                                    if (role.RoleId == Model.RoleId)
+                                    {
+                                        <option value="@role.RoleId" selected>@role.RoleName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@role.RoleId">@role.RoleName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Date of Joining</label>
+                            <input type="date" name="doj" class="form-control"
+                                   value="@Model.DOJ?.ToString("yyyy-MM-dd")" />
+                            <div class="form-text">Leave blank if not confirmed yet</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Bank Details ─────────────────────────────── -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-bank me-1 text-success"></i> Bank Details
+                        <span class="text-muted fw-normal small ms-1">(Optional)</span>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div class="alert alert-info small mb-4">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Bank details are required for salary payments. You can update them later.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Bank Name</label>
+                            <input type="text" name="bankName" class="form-control"
+                                   value="@Model.BankName" placeholder="e.g. SBI, HDFC, ICICI" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Account Number</label>
+                            <input type="text" name="accountNumber" class="form-control"
+                                   value="@Model.AccountNumber" placeholder="Enter account number" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">IFSC Code</label>
+                            <input type="text" name="ifscCode" class="form-control"
+                                   value="@Model.IFSCCode" placeholder="e.g. SBIN0001001" maxlength="20" />
+                            <div class="form-text">11 character code found on your cheque book</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Salary (₹)</label>
+                                <input type="number" name="salary" class="form-control"
+                                       value="@Model.Salary" step="0.01" min="0" required />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── Work Assignment ──────────────────────────────── -->
+        <div class="row g-4 mt-0">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-geo-alt me-1 text-warning"></i> Work Assignment
+                        <span class="text-muted fw-normal small ms-1">(Optional — assign to a center or plant)</span>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Assign To</label>
+                            <div class="d-flex gap-4">
+
+                                <!-- ✅ radio checked using if/else, no ternary in attribute -->
+                                <div class="form-check">
+                                    @if (currentAssign == "none")
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignNone" value="none" checked
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    else
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignNone" value="none"
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    <label class="form-check-label" for="assignNone">Not Assigned</label>
+                                </div>
+
+                                <div class="form-check">
+                                    @if (currentAssign == "center")
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignCenter" value="center" checked
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    else
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignCenter" value="center"
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    <label class="form-check-label" for="assignCenter">Collection Center</label>
+                                </div>
+
+                                <div class="form-check">
+                                    @if (currentAssign == "plant")
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignPlant" value="plant" checked
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    else
+                                    {
+                                        <input class="form-check-input" type="radio" name="assignType"
+                                               id="assignPlant" value="plant"
+                                               onchange="toggleAssignment(this.value)" />
+                                    }
+                                    <label class="form-check-label" for="assignPlant">Plant</label>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ✅ CENTER dropdown -->
+                        <div id="centerSection" style="display:@(currentAssign == "center" ? "block" : "none");">
+                            <label class="form-label fw-semibold">Select Collection Center</label>
+                            <select name="centerId" id="centerSelect" class="form-select">
+                                <option value="">-- Select Center --</option>
+                                @foreach (var c in (ViewBag.Centers as List<DairyIndustry.Models.Admin.CollectionCenterModel>)!)
+                                {
+                                    if (Model.CenterId == c.CenterId)
+                                    {
+                                        <option value="@c.CenterId" selected>@c.CenterName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@c.CenterId">@c.CenterName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- ✅ PLANT dropdown -->
+                        <div id="plantSection" style="display:@(currentAssign == "plant" ? "block" : "none");">
+                            <label class="form-label fw-semibold">Select Plant</label>
+                            <select name="plantId" id="plantSelect" class="form-select">
+                                <option value="">-- Select Plant --</option>
+                                @foreach (var p in (ViewBag.Plants as List<DairyIndustry.Models.Admin.PlantModel>)!)
+                                {
+                                    if (Model.PlantId == p.PlantId)
+                                    {
+                                        <option value="@p.PlantId" selected>@p.PlantName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@p.PlantId">@p.PlantName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Submit ───────────────────────────────────────── -->
+        <div class="row mt-4">
+            <div class="col">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Save Changes
+                        </button>
+                        <a asp-controller="Admin" asp-action="Staff" class="btn btn-outline-secondary px-4">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <script>
+        function previewPhoto(input) {
+            const preview     = document.getElementById('photoPreview');
+            const placeholder = document.getElementById('photoPlaceholder');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.src               = e.target.result;
+                    preview.style.display     = 'block';
+                    placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.style.display     = 'none';
+                placeholder.style.display = 'block';
+            }
+        }
+
+        function toggleAssignment(value) {
+            const centerSection = document.getElementById('centerSection');
+            const plantSection  = document.getElementById('plantSection');
+            const centerSelect  = document.getElementById('centerSelect');
+            const plantSelect   = document.getElementById('plantSelect');
+
+            centerSection.style.display = 'none';
+            plantSection.style.display  = 'none';
+            centerSelect.value = '';
+            plantSelect.value  = '';
+
+            if (value === 'center') centerSection.style.display = 'block';
+            if (value === 'plant')  plantSection.style.display  = 'block';
+        }
+    </script>
+}

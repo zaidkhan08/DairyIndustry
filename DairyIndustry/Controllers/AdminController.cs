@@ -2,6 +2,7 @@
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 
 namespace DairyIndustry.Controllers
 {
@@ -114,10 +115,18 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult Index()
         {
-            var users = _adminRepo.GetAllUsers();
-            return View(users);
+            var vm = new AdminDashboardViewModel
+            {
+                Users = _adminRepo.GetAllUsers(),
+                Staff = _adminRepo.GetAllStaff(),
+                Plants = _adminRepo.GetAllPlants(isActive: null),
+                Centers = _adminRepo.GetAllCollection(isActive: null),
+                Products = _adminRepo.GetAllProducts(isActive: null),
+                Batches = _adminRepo.GetProductionBatches(),
+                Transfers = _adminRepo.GetMilkTransfers()
+            };
+            return View(vm);
         }
-
         // ════════════════════════════════════════════════════════
         // ROLES
         // ════════════════════════════════════════════════════════
@@ -190,9 +199,10 @@ namespace DairyIndustry.Controllers
         {
             ViewBag.Users = _adminRepo.GetAllUsers();
             ViewBag.Plants = _adminRepo.GetAllPlants();
-
+            ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
             return View();
         }
+
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AssignUserToPlant(int userId, int plantId)
@@ -202,41 +212,39 @@ namespace DairyIndustry.Controllers
                 ViewBag.Error = "Please select both user and plant.";
                 ViewBag.Users = _adminRepo.GetAllUsers();
                 ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
                 return View();
             }
-
             _adminRepo.AssignUserToPlant(userId, plantId);
-
             TempData["Success"] = "User assigned to plant successfully.";
-
-            return RedirectToAction("Users");
+            return RedirectToAction("AssignUserToPlant");
         }
+
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AssignUserToCenter()
         {
             ViewBag.Users = _adminRepo.GetAllUsers();
             ViewBag.Centers = _adminRepo.GetAllCenters();
-
+            ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
             return View();
         }
+
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AssignUserToCenter(int userId, int centerId)
         {
             if (userId == 0 || centerId == 0)
             {
-                ViewBag.Error = "Please select both user and plant.";
+                ViewBag.Error = "Please select both user and center.";
                 ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.center = _adminRepo.GetAllCenters();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
                 return View();
             }
-
-            _adminRepo.AssignUserToPlant(userId, centerId);
-
+            _adminRepo.AssignUserToCenter(userId, centerId);
             TempData["Success"] = "User assigned to center successfully.";
-
-            return RedirectToAction("Users");
+            return RedirectToAction("AssignUserToCenter");
         }
 
         // ════════════════════════════════════════════════════════
@@ -379,6 +387,7 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         [HttpPost]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public IActionResult AddStaff(string firstName, string lastName,
                                string phone, string email,
                                int roleId, DateTime? doj,
@@ -442,6 +451,129 @@ namespace DairyIndustry.Controllers
             TempData["Success"] = isActive == 1 ? "Staff activated." : "Staff deactivated.";
             return RedirectToAction("Staff");
         }
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult EditStaff(int id)
+        {
+            var staff = _adminRepo.GetStaffById(id);
+            if (staff == null) return NotFound();
+
+            ViewBag.Roles = _adminRepo.GetAllRoles();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+
+            return View(staff);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        [RequestSizeLimit(5 * 1024 * 1024)] // 2MB limit
+        public IActionResult EditStaff(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,   
+    IFormFile photoFile,   
+    int? centerId,
+    int? plantId)
+        {
+            if (centerId.HasValue && plantId.HasValue)
+            {
+                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
+                ViewBag.Roles = _adminRepo.GetAllRoles();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                return View(_adminRepo.GetStaffById(staffId));
+            }
+
+            string finalPhoto = profilePhoto; 
+
+            if (photoFile != null && photoFile.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(photoFile.FileName).ToLower();
+
+                if (!allowedExtensions.Contains(extension))
+                {
+                    ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                if (photoFile.Length > 2 * 1024 * 1024)
+                {
+                    ViewBag.Error = "Photo size must be less than 2MB.";
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                string uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                string fileName = Guid.NewGuid().ToString() + extension;
+                string filePath = Path.Combine(uploadsFolder, fileName);
+
+                try
+                {
+                    using (var stream = new FileStream(
+                        filePath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        4096,
+                        FileOptions.SequentialScan))
+                    {
+                        photoFile.CopyTo(stream);
+                    }
+
+                    finalPhoto = $"/uploads/staff/{fileName}";
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.Error = "Error uploading file: " + ex.Message;
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+            }
+
+            _adminRepo.UpdateStaff(
+                staffId,
+                firstName,
+                lastName,
+                phone,
+                email,
+                roleId,
+                doj,
+                bankName,
+                accountNumber,
+                ifscCode,
+                salary,
+                finalPhoto,
+                centerId,
+                plantId
+            );
+
+            TempData["Message"] = "Staff updated successfully.";
+            return RedirectToAction("Staff");
+        }
+
 
         // ════════════════════════════════════════════════════════
         // PLANT
@@ -508,6 +640,63 @@ namespace DairyIndustry.Controllers
             return View("EditPlant", plant);
         }
 
+        // ════════════════════════════════════════════════════════
+        // COLLECTION
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public ActionResult AddCollection()
+        {
+            var village = _adminRepo.GetAllVillages();
+            return View(village);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult AddCollection(string CenterName, int VillageID, decimal Capacity, string Location)
+        {
+            _adminRepo.AddCollection(CenterName, VillageID, Capacity, Location);
+            return RedirectToAction("GetAllCollection");
+        }
+        [SessionAuthorize("Admin")]
+        public ActionResult GetAllCollection(bool? isActive = true)
+        {
+            var collection = _adminRepo.GetAllCollection(isActive);
+            return View(collection);
+        }
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult ToggleCollection(int id, bool isActive)
+        {
+            _adminRepo.ToggleCollection(id, isActive);
+            return RedirectToAction("GetAllCollection");
+        }
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public ActionResult EditCollection(int id)
+        {
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+
+            var collection = _adminRepo.getCollectionById(id);
+            if (collection == null)
+                return NotFound();
+
+            return View(collection);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public ActionResult UpdateCollection(CollectionCenterModel collection)
+        {
+
+            _adminRepo.UpdateCollection(collection);
+            return RedirectToAction("GetAllCollection");
+
+            // repopulate ViewBag before returning view
+            ViewBag.Villages = _adminRepo.GetAllVillages();
+            return View("EditCollection", collection);
+        }
         // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════
@@ -660,5 +849,188 @@ namespace DairyIndustry.Controllers
 
             return View(transfers);
         }
+
+        //DISTRIBUTOR   
+        [SessionAuthorize("Admin")]
+        public ActionResult Distributors()
+        {
+            var distributors = _adminRepo.GetDistributors();
+            return View(distributors);
+        }
+        public IActionResult AddDistributor()
+        {
+            return View();
+        }
+
+        // POST: Add Distributor
+        [HttpPost]
+        public IActionResult AddDistributor(Distributor distributor)
+        {
+            if (ModelState.IsValid)
+            {
+                _adminRepo.AddDistributor(distributor);
+                TempData["success"] = "Distributor added successfully!";
+                return RedirectToAction("Distributors");
+            }
+
+            return View(distributor);
+        }
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult UpdateDistributorStatus(int distributorId, string status)
+        {
+            var allowed = new[] { "Approved", "Rejected", "Suspended" };
+            if (!allowed.Contains(status))
+            {
+                TempData["error"] = "Invalid status value.";
+                return RedirectToAction("PendingDistributors");
+            }
+
+            _adminRepo.UpdateDistributorStatus(distributorId, status);
+
+            TempData["success"] = status switch
+            {
+                "Approved" => "Distributor approved successfully.",
+                "Rejected" => "Distributor rejected.",
+                "Suspended" => "Distributor suspended.",
+                _ => "Status updated."
+            };
+
+            // After approving/rejecting, go back to pending queue.
+            // After suspending from main list, go back to full list.
+            return status == "Suspended"
+                ? RedirectToAction("Distributors")
+                : RedirectToAction("PendingDistributors");
+        }
+        [SessionAuthorize("Admin")]
+        public IActionResult PendingDistributors()
+        {
+            var pending = _adminRepo.GetPendingDistributors();
+            return View(pending);
+        }
+
+        public IActionResult AdminOrder()
+        {
+            var model = new AdminOrderModel();
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.ProductList = _adminRepo.GetAllProducts(null, true);
+            model.PlantList = _adminRepo.GetActivePlants();   // added
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrder(AdminOrderModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _adminRepo.CreateOrder(model);
+                    ViewBag.Message = "Order Created Successfully!";
+                    model = new AdminOrderModel();
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", ex.Message);
+                }
+            }
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.ProductList = _adminRepo.GetAllProducts(null, true);
+            model.PlantList = _adminRepo.GetActivePlants();   // added
+            return View(model);
+        }
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrderList()
+        {
+            var model = new AdminOrderListModel();
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.Orders = _adminRepo.GetAllOrders(null, null, null, null);
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult AdminOrderList(AdminOrderListModel model)
+        {
+            model.DistributorList = _adminRepo.GetDistributors();
+            model.Orders = _adminRepo.GetAllOrders(
+                model.DistributorId,
+                model.OrderStatus,
+                model.FromDate,
+                model.ToDate
+            );
+            return View(model);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult UpdateOrderStatus(int orderId, string status, int? distributorId, string? orderStatus, DateTime? fromDate, DateTime? toDate)
+        {
+            _adminRepo.UpdateOrderStatus(orderId, status);
+            TempData["Message"] = $"Order #{orderId} updated to {status}.";
+
+            return RedirectToAction("AdminOrderList", new
+            {
+                DistributorId = distributorId,
+                OrderStatus = orderStatus,
+                FromDate = fromDate?.ToString("yyyy-MM-dd"),
+                ToDate = toDate?.ToString("yyyy-MM-dd")
+            });
+        }
+
+        //Notification
+
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult GetNotifications()
+        {
+            try
+            {
+                var list = _adminRepo.GetNotifications();
+                return Json(list);
+            }
+            catch
+            {
+                return Json(new List<NotificationModel>());
+            }
+        }
+
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult GetNotificationCount()
+        {
+            try
+            {
+                var count = _adminRepo.GetNotificationCount();
+                return Json(new { count });
+            }
+            catch
+            {
+                return Json(new { count = 0 });
+            }
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult MarkNotificationRead(int notificationId)
+        {
+            if (notificationId <= 0)
+                return Json(new { success = false, message = "Invalid notification." });
+
+            var result = _adminRepo.MarkNotificationRead(notificationId);
+            return Json(new { success = result });
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult MarkAllNotificationsRead()
+        {
+            var result = _adminRepo.MarkAllNotificationsRead();
+            return Json(new { success = result });
+        }
+
+
     }
 }
