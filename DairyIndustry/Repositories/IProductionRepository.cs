@@ -39,33 +39,53 @@ namespace DairyIndustry.Repositories
         // PRODUCTION BATCHES
         // ════════════════════════════════════════════════════════
         int StartProductionBatch(int plantId, int productId,
-                                  decimal milkUsedQuantity, DateTime productionDate, int MilkTypeId);
+                                  decimal milkUsedQuantity, DateTime productionDate, int milkTypeId);
+
+        /// <summary>
+        /// Updates batch status. If newStatus == "QCFailed", automatically logs the
+        /// full MilkUsedQuantity into Production.MilkProcessWastage with WastageType = 'QCFailed'.
+        /// </summary>
         void UpdateBatchStatus(int productionBatchId, string batchStatus);
+
         List<ProductionBatchModel> GetAllProductionBatches(int? plantId = null);
         ProductionBatchModel GetProductionBatchById(int productionBatchId);
 
         // ════════════════════════════════════════════════════════
-        // PRODUCT WASTAGE
+        // PRODUCT WASTAGE  (finished-goods wastage)
         // ════════════════════════════════════════════════════════
-        List<BatchForWastageModel> GetBatchesForWastage();   // InProgress + Completed
+        List<BatchForWastageModel> GetBatchesForWastage();
         int AddProductWastage(int batchId, int productId, decimal quantity, string reason);
         List<ProductWastageModel> GetAllProductWastage(int? plantId = null);
         List<ProductWastageModel> GetWastageByBatch(int batchId);
 
         // ════════════════════════════════════════════════════════
-        // TRANSFER QUALITY TESTS
+        // MILK PROCESS WASTAGE  (raw-milk lost during production)
         // ════════════════════════════════════════════════════════
 
-        /// <summary>Returns all quality tests, optionally filtered by plant.</summary>
-        List<QualityTestModel> GetAllQualityTests(int? plantId = null);
-
-        /// <summary>Returns the quality test for a single transfer (null if not yet tested).</summary>
-        QualityTestModel GetQualityTestByTransfer(int transferId);
+        /// <summary>
+        /// Manually records a partial raw-milk process wastage for an InProgress batch.
+        /// WastageType is always stored as 'ProcessWastage'.
+        /// </summary>
+        int AddMilkProcessWastage(int productionBatchId, int plantId, int milkTypeId,
+                                   decimal wastageQuantity, string reason);
 
         /// <summary>
-        /// Inserts a new quality test record.
-        /// Returns the newly created TestId.
+        /// Returns all milk process wastage records, optionally scoped to a plant.
+        /// Includes both QCFailed (auto) and ProcessWastage (manual) entries.
         /// </summary>
+        List<MilkProcessWastageModel> GetAllMilkProcessWastage(int? plantId = null);
+
+        // ════════════════════════════════════════════════════════
+        // TRANSFER QUALITY TESTS
+        // ════════════════════════════════════════════════════════
+        List<QualityTestModel> GetAllQualityTests(int? plantId = null);
+        QualityTestModel GetQualityTestByTransfer(int transferId);
         int AddQualityTest(int transferId, decimal testedFat, decimal testedCLR, DateTime testDate);
+
+        // ════════════════════════════════════════════════════════
+        // TRANSFER LOSS LOG
+        // ════════════════════════════════════════════════════════
+        List<TransferLossLogModel> GetTransferLossLog(int? plantId = null);
+        List<LossSummaryModel> GetLossSummary(int? plantId = null);
     }
 }

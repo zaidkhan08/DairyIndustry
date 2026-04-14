@@ -22,6 +22,7 @@ namespace DairyIndustry.Repositories
         List<FarmerPaymentModel> GetAllFarmerPayments();
         FarmerPaymentModel GetFarmerPaymentById(int paymentId);
         CenterDropdownModel GetFarmerDefaultCenter(int farmerId);
+        void CancelCenterPayment(int centerPaymentId);
         bool FarmerHasBankAccount(int farmerId);
         void RecordPaymentTransaction(string paymentType, int paymentId,
                                       string bankStatus, string transactionReference);
@@ -30,19 +31,16 @@ namespace DairyIndustry.Repositories
         // CENTER PAYMENTS
         // ════════════════════════════════════════════════════════
 
-        // Get eligible transfers: ReceivedDate IS NOT NULL, no existing CenterPayment
-        List<TransferForPaymentModel> GetEligibleTransfers();
+        List<TransferForPaymentModel> GetEligibleTransfers(int? plantId = null);
 
-        // Look up rate from Finance.RateCharts via SP
         decimal GetActiveRate(int milkTypeId, decimal fat, decimal clr);
 
-        // Create center payment record (status = Pending)
         int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate);
 
-        // List all center payments (for index page)
-        List<CenterPaymentModel> GetAllCenterPayments();
+        int ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter, DateTime paymentDate);
 
-        // Get single center payment by ID (for detail/pay page)
+        List<CenterPaymentModel> GetAllCenterPayments(int? plantId = null);
+
         CenterPaymentModel GetCenterPaymentById(int centerPaymentId);
     }
 }
