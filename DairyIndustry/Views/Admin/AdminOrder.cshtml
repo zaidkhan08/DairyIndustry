@@ -29,7 +29,17 @@
                     </select>
                     <span asp-validation-for="DistributorId" class="text-danger small"></span>
                 </div>
-
+                <div class="mb-3">
+                    <label class="form-label">Select Plant</label>
+                    <select asp-for="PlantId" class="form-select">
+                        <option value="">-- Select Plant --</option>
+                        @foreach (var p in Model.PlantList)
+                        {
+                            <option value="@p.PlantId">@p.PlantName — @p.Location</option>
+                        }
+                    </select>
+                    <span asp-validation-for="PlantId" class="text-danger small"></span>
+                </div>
                 <div class="mb-3">
                     <label class="form-label">Select Product</label>
                     <select asp-for="ProductId" class="form-select" id="productDropdown">

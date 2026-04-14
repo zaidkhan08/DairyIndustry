@@ -69,7 +69,11 @@ namespace DairyIndustry.Repositories
              string profilePhoto = null,
              int? centerId = null,
              int? plantId = null);
-
+        void UpdateStaff(int staffId, string firstName, string lastName,
+                        string phone, string email, int roleId, DateTime? doj,
+                        string bankName, string accountNumber, string ifscCode,
+                        decimal salary, string profilePhoto,
+                        int? centerId, int? plantId);
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
@@ -147,6 +151,12 @@ namespace DairyIndustry.Repositories
         bool UpdateOrderStatus(int orderId, string status);
         List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
 
+        List<PlantModel> GetActivePlants();
+        //Notification
+        List<NotificationModel> GetNotifications();
+        int GetNotificationCount();
+        bool MarkNotificationRead(int notificationId);
+        bool MarkAllNotificationsRead();
 
     }
 

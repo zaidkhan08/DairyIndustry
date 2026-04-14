@@ -19,6 +19,7 @@
         public string BankName { get; set; }
         public string AccountNumber { get; set; }
         public string IFSCCode { get; set; }
+
         // Location — NEW
         public int? CenterId { get; set; }
         public string CenterName { get; set; }

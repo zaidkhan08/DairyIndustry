@@ -387,6 +387,7 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         [HttpPost]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public IActionResult AddStaff(string firstName, string lastName,
                                string phone, string email,
                                int roleId, DateTime? doj,
@@ -450,6 +451,129 @@ namespace DairyIndustry.Controllers
             TempData["Success"] = isActive == 1 ? "Staff activated." : "Staff deactivated.";
             return RedirectToAction("Staff");
         }
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult EditStaff(int id)
+        {
+            var staff = _adminRepo.GetStaffById(id);
+            if (staff == null) return NotFound();
+
+            ViewBag.Roles = _adminRepo.GetAllRoles();
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            ViewBag.Plants = _adminRepo.GetAllPlants();
+
+            return View(staff);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        [RequestSizeLimit(5 * 1024 * 1024)] // 2MB limit
+        public IActionResult EditStaff(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,   
+    IFormFile photoFile,   
+    int? centerId,
+    int? plantId)
+        {
+            if (centerId.HasValue && plantId.HasValue)
+            {
+                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
+                ViewBag.Roles = _adminRepo.GetAllRoles();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                return View(_adminRepo.GetStaffById(staffId));
+            }
+
+            string finalPhoto = profilePhoto; 
+
+            if (photoFile != null && photoFile.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(photoFile.FileName).ToLower();
+
+                if (!allowedExtensions.Contains(extension))
+                {
+                    ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                if (photoFile.Length > 2 * 1024 * 1024)
+                {
+                    ViewBag.Error = "Photo size must be less than 2MB.";
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                string uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                string fileName = Guid.NewGuid().ToString() + extension;
+                string filePath = Path.Combine(uploadsFolder, fileName);
+
+                try
+                {
+                    using (var stream = new FileStream(
+                        filePath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        4096,
+                        FileOptions.SequentialScan))
+                    {
+                        photoFile.CopyTo(stream);
+                    }
+
+                    finalPhoto = $"/uploads/staff/{fileName}";
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.Error = "Error uploading file: " + ex.Message;
+                    ViewBag.Roles = _adminRepo.GetAllRoles();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+            }
+
+            _adminRepo.UpdateStaff(
+                staffId,
+                firstName,
+                lastName,
+                phone,
+                email,
+                roleId,
+                doj,
+                bankName,
+                accountNumber,
+                ifscCode,
+                salary,
+                finalPhoto,
+                centerId,
+                plantId
+            );
+
+            TempData["Message"] = "Staff updated successfully.";
+            return RedirectToAction("Staff");
+        }
+
 
         // ════════════════════════════════════════════════════════
         // PLANT
@@ -788,11 +912,9 @@ namespace DairyIndustry.Controllers
         public IActionResult AdminOrder()
         {
             var model = new AdminOrderModel();
-
             model.DistributorList = _adminRepo.GetDistributors();
-
             model.ProductList = _adminRepo.GetAllProducts(null, true);
-
+            model.PlantList = _adminRepo.GetActivePlants();   // added
             return View(model);
         }
 
@@ -806,16 +928,16 @@ namespace DairyIndustry.Controllers
                 {
                     _adminRepo.CreateOrder(model);
                     ViewBag.Message = "Order Created Successfully!";
-                    model = new AdminOrderModel(); // clear form on success
+                    model = new AdminOrderModel();
                 }
                 catch (Exception ex)
                 {
                     ModelState.AddModelError("", ex.Message);
                 }
             }
-
             model.DistributorList = _adminRepo.GetDistributors();
             model.ProductList = _adminRepo.GetAllProducts(null, true);
+            model.PlantList = _adminRepo.GetActivePlants();   // added
             return View(model);
         }
         [HttpGet]
@@ -857,5 +979,58 @@ namespace DairyIndustry.Controllers
                 ToDate = toDate?.ToString("yyyy-MM-dd")
             });
         }
+
+        //Notification
+
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult GetNotifications()
+        {
+            try
+            {
+                var list = _adminRepo.GetNotifications();
+                return Json(list);
+            }
+            catch
+            {
+                return Json(new List<NotificationModel>());
+            }
+        }
+
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult GetNotificationCount()
+        {
+            try
+            {
+                var count = _adminRepo.GetNotificationCount();
+                return Json(new { count });
+            }
+            catch
+            {
+                return Json(new { count = 0 });
+            }
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult MarkNotificationRead(int notificationId)
+        {
+            if (notificationId <= 0)
+                return Json(new { success = false, message = "Invalid notification." });
+
+            var result = _adminRepo.MarkNotificationRead(notificationId);
+            return Json(new { success = result });
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Admin")]
+        public IActionResult MarkAllNotificationsRead()
+        {
+            var result = _adminRepo.MarkAllNotificationsRead();
+            return Json(new { success = result });
+        }
+
+
     }
 }

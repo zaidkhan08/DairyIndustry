@@ -7,6 +7,9 @@ namespace DairyIndustry.Models.Admin
         [Required(ErrorMessage = "Please select a distributor")]
         public int DistributorId { get; set; }
 
+        [Required(ErrorMessage = "Please select a plant")]
+        public int PlantId { get; set; }
+
         [Required(ErrorMessage = "Please select a product")]
         public int ProductId { get; set; }
 
@@ -22,5 +25,6 @@ namespace DairyIndustry.Models.Admin
 
         public List<Distributor> DistributorList { get; set; } = new();
         public List<ProductModel> ProductList { get; set; } = new();
+        public List<PlantModel> PlantList { get; set; } = new();  
     }
 }

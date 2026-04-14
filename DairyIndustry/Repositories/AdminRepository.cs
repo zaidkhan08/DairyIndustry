@@ -725,6 +725,7 @@ namespace DairyIndustry.Repositories
                                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString(),
                                 CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
                                 CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
                                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
@@ -821,6 +822,7 @@ namespace DairyIndustry.Repositories
                                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
                                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString(),
                                 CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
                                 CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
                                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
@@ -832,6 +834,101 @@ namespace DairyIndustry.Repositories
             }
 
             return staff;
+        }
+        public void UpdateStaff(int staffId, string firstName, string lastName,
+                        string phone, string email, int roleId, DateTime? doj,
+                        string bankName, string accountNumber, string ifscCode,
+                        decimal salary, string profilePhoto,
+                        int? centerId, int? plantId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+
+                // ── Step 1: Get existing BankAccountId for this staff ──
+                int? bankAccountId = null;
+                using (SqlCommand getBank = new SqlCommand(
+                    "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId", con))
+                {
+                    getBank.Parameters.AddWithValue("@StaffId", staffId);
+                    var result = getBank.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        bankAccountId = Convert.ToInt32(result);
+                }
+
+                // ── Step 2: Update or Insert bank account ──
+                if (!string.IsNullOrEmpty(bankName) &&
+                    !string.IsNullOrEmpty(accountNumber) &&
+                    !string.IsNullOrEmpty(ifscCode))
+                {
+                    if (bankAccountId.HasValue)
+                    {
+                        // Update existing bank account
+                        using (SqlCommand bankCmd = new SqlCommand(@"
+                    UPDATE Finance.BankAccounts
+                    SET BankName      = @BankName,
+                        AccountNumber = @AccountNumber,
+                        IFSCCode      = @IFSCCode
+                    WHERE BankAccountId = @BankAccountId", con))
+                        {
+                            bankCmd.Parameters.AddWithValue("@BankName", bankName);
+                            bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
+                            bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
+                            bankCmd.Parameters.AddWithValue("@BankAccountId", bankAccountId.Value);
+                            bankCmd.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        // Insert new bank account and get new ID
+                        using (SqlCommand bankCmd = new SqlCommand(@"
+                    INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
+                    VALUES (@BankName, @AccountNumber, @IFSCCode);
+                    SELECT SCOPE_IDENTITY();", con))
+                        {
+                            bankCmd.Parameters.AddWithValue("@BankName", bankName);
+                            bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
+                            bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
+                            bankAccountId = Convert.ToInt32(bankCmd.ExecuteScalar());
+                        }
+                    }
+                }
+
+                // ── Step 3: Update HR.Staffs — all fields ──
+                using (SqlCommand cmd = new SqlCommand(@"
+            UPDATE HR.Staffs
+            SET FirstName    = @FirstName,
+                LastName     = @LastName,
+                Phone        = @Phone,
+                Email        = @Email,
+                RoleId       = @RoleId,
+                DOJ          = @DOJ,
+                Salary       = @Salary,
+                ProfilePhoto = CASE WHEN @ProfilePhoto IS NOT NULL
+                                    THEN @ProfilePhoto
+                                    ELSE ProfilePhoto END,
+                BankAccountId = CASE WHEN @BankAccountId IS NOT NULL
+                                     THEN @BankAccountId
+                                     ELSE BankAccountId END,
+                CenterId     = @CenterId,
+                PlantId      = @PlantId
+            WHERE StaffId = @StaffId", con))
+                {
+                    cmd.Parameters.AddWithValue("@StaffId", staffId);
+                    cmd.Parameters.AddWithValue("@FirstName", firstName);
+                    cmd.Parameters.AddWithValue("@LastName", lastName);
+                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
+                    cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Salary", salary);
+                    cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@BankAccountId", (object?)bankAccountId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
         // ════════════════════════════════════════════════════════
         // PLANT
@@ -1601,17 +1698,14 @@ namespace DairyIndustry.Repositories
             using (SqlConnection con = _db.GetConnection())
             {
                 con.Open();
-
-                // Step 1: Create the order header via SP (only works for Approved distributors)
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_CreateOrder", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@DistributorId", model.DistributorId);
+                    cmd.Parameters.AddWithValue("@PlantId", model.PlantId);   // added
                     cmd.Parameters.AddWithValue("@OrderDate", model.OrderDate.Date);
                     orderId = Convert.ToInt32(cmd.ExecuteScalar());
                 }
-
-                // Step 2: Add the order line item via SP (also updates TotalAmount)
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -1623,6 +1717,33 @@ namespace DairyIndustry.Repositories
                 }
             }
             return orderId;
+        }
+
+        public List<PlantModel> GetActivePlants()
+        {
+            var list = new List<PlantModel>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_GetPlants", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@IsActive", 1);
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            list.Add(new PlantModel
+                            {
+                                PlantId = Convert.ToInt32(dr["PlantId"]),
+                                PlantName = dr["PlantName"].ToString()!,
+                                Location = dr["Location"]?.ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return list;
         }
         public List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate)
         {
@@ -1674,5 +1795,80 @@ namespace DairyIndustry.Repositories
             }
             return true;
         }
+
+        //Notification
+
+        public List<NotificationModel> GetNotifications()
+        {
+            var list = new List<NotificationModel>();
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Admin.usp_Notifications_GetUnread", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                using var dr = cmd.ExecuteReader();
+                while (dr.Read())
+                    list.Add(new NotificationModel
+                    {
+                        NotificationId = Convert.ToInt32(dr["NotificationId"]),
+                        Category = dr["Category"].ToString(),
+                        Title = dr["Title"].ToString(),
+                        Message = dr["Message"].ToString(),
+                        EntityId = dr["EntityId"] == DBNull.Value ? 0 : Convert.ToInt32(dr["EntityId"]),
+                        EntityType = dr["EntityType"] == DBNull.Value ? "" : dr["EntityType"].ToString(),
+                        CreatedAt = Convert.ToDateTime(dr["CreatedAt"]),
+                        Severity = dr["Severity"].ToString(),
+                        ActionUrl = dr["ActionUrl"] == DBNull.Value ? "#" : dr["ActionUrl"].ToString(),
+                        IsRead = false
+                    });
+            }
+            return list;
+        }
+
+        public int GetNotificationCount()
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Admin.usp_Notifications_GetUnreadCount", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                var result = cmd.ExecuteScalar();
+                return result == DBNull.Value ? 0 : Convert.ToInt32(result);
+            }
+        }
+
+        public bool MarkNotificationRead(int notificationId)
+        {
+            try
+            {
+                using (SqlConnection con = _db.GetConnection())
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Notifications_MarkRead", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@NotificationId", notificationId);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                return true;
+            }
+            catch { return false; }
+        }
+
+        public bool MarkAllNotificationsRead()
+        {
+            try
+            {
+                using (SqlConnection con = _db.GetConnection())
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Notifications_MarkAllRead", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                return true;
+            }
+            catch { return false; }
+        }
+
     }
 }
