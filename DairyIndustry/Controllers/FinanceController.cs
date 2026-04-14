@@ -215,21 +215,10 @@ namespace DairyIndustry.Controllers
         // CREATE GET — dropdown filtered by plant for Plant Manager
         [SessionAuthorize("Plant Manager", "Admin")]
         [HttpGet]
-        public IActionResult CreateCenterPayment(int? preselect = null)
+        public IActionResult CreateCenterPayment()
         {
             var transfers = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
             ViewBag.Transfers = transfers;
-            ViewBag.PreselectTransferId = null;
-
-            if (preselect.HasValue)
-            {
-                // Only preselect if the transfer is actually still eligible
-                if (transfers.Any(t => t.TransferId == preselect.Value))
-                    ViewBag.PreselectTransferId = preselect.Value;
-                else
-                    TempData["Error"] = $"Transfer T-{preselect} is no longer available for payment — it may already have an active payment. Select a different transfer.";
-            }
-
             return View();
         }
 
@@ -240,7 +229,7 @@ namespace DairyIndustry.Controllers
             var transfers = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
             var t = transfers.FirstOrDefault(x => x.TransferId == transferId);
             if (t == null)
-                return Json(new { success = false, message = "Transfer not found or already paid." });
+                return Json(new { success = false, message = "Transfer not found." });
 
             decimal baseRate = 0m;
             if (t.MilkTypeId.HasValue && t.TestedFat.HasValue && t.TestedCLR.HasValue)
@@ -256,49 +245,43 @@ namespace DairyIndustry.Controllers
                 transferId = t.TransferId,
                 centerId = t.CenterId,
                 plantId = t.PlantId,
-                centerName = t.CenterName,   // real name now
-                plantName = t.PlantName,    // real name now
                 receivedQty = t.ReceivedQty,
                 testedFat = t.TestedFat,
                 testedCLR = t.TestedCLR,
-                milkTypeId = t.MilkTypeId,
-                hasMilkType = t.MilkTypeId.HasValue,
                 baseRate = baseRate,
                 ratePerLiter = suggestedRate,
                 totalAmount = total,
-                hasRate = suggestedRate > 0
+                hasRate = suggestedRate > 0,
+                hasCancelledPayment = t.HasCancelledPayment,
+                cancelledPaymentId = t.CancelledPaymentId
             });
         }
 
         // CREATE POST
         [HttpPost]
-        public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter)
+        public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter, bool hasCancelledPayment, int? cancelledPaymentId)
         {
-            // ── Guard: rate must be positive ──
-            if (ratePerLiter <= 0)
-            {
-                TempData["Error"] = "Rate per liter must be greater than zero.";
-                return RedirectToAction("CreateCenterPayment", new { preselect = transferId });
-            }
-
-            // ── Guard: transfer must still be eligible (not already paid) ──
-            var eligible = _financeRepo.GetEligibleTransfers(GetSessionPlantId());
-            if (!eligible.Any(t => t.TransferId == transferId))
-            {
-                TempData["Error"] = $"Transfer T-{transferId} is no longer eligible — it may have been paid by another session. Please select a different transfer.";
-                return RedirectToAction("CreateCenterPayment");
-            }
-
             try
             {
-                int cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
-                TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
+                int cpId;
+                if (hasCancelledPayment && cancelledPaymentId.HasValue)
+                {
+                    // Cancelled row already exists — UPDATE it back to Pending (no duplicate insert)
+                    cpId = _financeRepo.ReactivateCenterPayment(cancelledPaymentId.Value, ratePerLiter, DateTime.Today);
+                    TempData["Success"] = $"Payment CP-{cpId:D4} reactivated. Proceed to pay via Stripe.";
+                }
+                else
+                {
+                    // Brand new — INSERT
+                    cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
+                    TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
+                }
                 return RedirectToAction("CenterPaymentDetail", new { id = cpId });
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                return RedirectToAction("CreateCenterPayment", new { preselect = transferId });
+                return RedirectToAction("CreateCenterPayment");
             }
         }
 
@@ -509,6 +492,23 @@ namespace DairyIndustry.Controllers
             return _pdfConverter.Convert(doc);
         }
 
+
+        // REACTIVATE — Re-pay a cancelled payment (updates existing row, no duplicate)
+        [HttpPost]
+        public IActionResult ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter)
+        {
+            try
+            {
+                int cpId = _financeRepo.ReactivateCenterPayment(centerPaymentId, ratePerLiter, DateTime.Today);
+                TempData["Success"] = $"Payment CP-{cpId:D4} reactivated. Proceed to pay via Stripe.";
+                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CenterPayments");
+            }
+        }
 
         [HttpPost]
         public IActionResult CancelCenterPayment(int centerPaymentId)

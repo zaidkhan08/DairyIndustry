@@ -4,218 +4,753 @@
     bool isPending = Model.PaymentStatus == "Pending";
     bool isProcessed = Model.PaymentStatus == "Processed";
     bool isFailed = Model.PaymentStatus == "Failed";
+    bool isCancelled = Model.PaymentStatus == "Cancelled";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
-
-
 }
 
-<div class="page-header mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
-    <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a asp-action="CenterPayments">Center Payments</a></li>
-                <li class="breadcrumb-item active">CP-@Model.CenterPaymentId.ToString("D4")</li>
-            </ol>
-        </nav>
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-building-check me-2 text-primary"></i>
-            Center Payment — CP-@Model.CenterPaymentId.ToString("D4")
-        </h4>
-    </div>
-    <span class="badge @Model.StatusBadgeClass fs-6 px-3 py-2 align-self-center">
-        @Model.PaymentStatus
-    </span>
-</div>
+<style>
+    .cpd-root {
+        font-family: 'DM Sans', sans-serif;
+        --ink: #0f172a;
+        --ink-muted: #64748b;
+        --ink-faint: #94a3b8;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --surface-3: #f1f5f9;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --accent: #2563eb;
+        --accent-light: #eff6ff;
+        --accent-mid: #bfdbfe;
+        --success: #16a34a;
+        --success-light: #f0fdf4;
+        --success-mid: #bbf7d0;
+        --warning: #d97706;
+        --warning-light: #fffbeb;
+        --warning-mid: #fde68a;
+        --danger: #dc2626;
+        --danger-light: #fef2f2;
+        --danger-mid: #fecaca;
+        --cancelled: #64748b;
+        --cancelled-light: #f1f5f9;
+        --cancelled-mid: #cbd5e1;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+        --shadow-md: 0 4px 12px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.04);
+    }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-x-circle me-2"></i>@TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+    .cpd-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--ink-faint);
+        margin-bottom: 6px;
+    }
 
-<div class="row g-4">
+        .cpd-breadcrumb a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
 
-    <!-- LEFT: Payment details -->
-    <div class="col-lg-7">
+            .cpd-breadcrumb a:hover {
+                text-decoration: underline;
+            }
 
-        <!-- Center & Plant -->
-        <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light fw-semibold">
-                <i class="bi bi-info-circle me-2 text-primary"></i>Transfer & Center Details
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="text-muted small">Transfer Reference</div>
-                        <div class="fw-semibold">@Model.BatchRef</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-muted small">Payment Date</div>
-                        <div class="fw-semibold">@Model.PaymentDate.ToString("dd-MMM-yyyy")</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-muted small">Collection Center</div>
-                        <div class="fw-semibold">@Model.CenterName</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-muted small">Processing Plant</div>
-                        <div class="fw-semibold">@Model.PlantName</div>
-                    </div>
-                </div>
-            </div>
+    .cpd-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+
+    .cpd-page-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -.4px;
+        margin: 0 0 2px;
+    }
+
+    .cpd-page-sub {
+        font-size: 13px;
+        color: var(--ink-muted);
+        margin: 0;
+    }
+
+    .cpd-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .3px;
+        border: 1px solid;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+        .cpd-status-pill .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+    .pill-pending {
+        background: var(--warning-light);
+        color: var(--warning);
+        border-color: var(--warning-mid);
+    }
+
+    .pill-processed {
+        background: var(--success-light);
+        color: var(--success);
+        border-color: var(--success-mid);
+    }
+
+    .pill-failed {
+        background: var(--danger-light);
+        color: var(--danger);
+        border-color: var(--danger-mid);
+    }
+
+    .pill-cancelled {
+        background: var(--cancelled-light);
+        color: var(--cancelled);
+        border-color: var(--cancelled-mid);
+    }
+
+    .cpd-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 13px 16px;
+        border-radius: var(--r-md);
+        font-size: 13.5px;
+        font-weight: 500;
+        margin-bottom: 18px;
+        border: 1px solid;
+        position: relative;
+    }
+
+    .cpd-alert-success {
+        background: var(--success-light);
+        border-color: var(--success-mid);
+        color: var(--success);
+    }
+
+    .cpd-alert-danger {
+        background: var(--danger-light);
+        border-color: var(--danger-mid);
+        color: var(--danger);
+    }
+
+    .cpd-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        opacity: .6;
+        font-size: 16px;
+        padding: 0;
+    }
+
+        .cpd-alert-close:hover {
+            opacity: 1;
+        }
+
+    .cpd-layout {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    @@media(max-width:960px) {
+        .cpd-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .cpd-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+        .cpd-card:last-child {
+            margin-bottom: 0;
+        }
+
+    .cpd-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
+    }
+
+    .cpd-card-header-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .icon-blue {
+        background: var(--accent-light);
+        color: var(--accent);
+    }
+
+    .icon-green {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .icon-purple {
+        background: #f5f3ff;
+        color: #7c3aed;
+    }
+
+    .cpd-card-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .cpd-card-body {
+        padding: 20px;
+    }
+
+    .cpd-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .cpd-detail-grid-4 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 12px;
+    }
+
+    .cpd-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .cpd-detail-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--ink-faint);
+    }
+
+    .cpd-detail-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+        .cpd-detail-value.mono {
+            font-family: 'JetBrains Mono',monospace;
+            font-size: 13px;
+        }
+
+    .cpd-metric {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 14px;
+        text-align: center;
+        transition: border-color .15s;
+    }
+
+        .cpd-metric.highlight {
+            border-color: var(--accent-mid);
+            background: var(--accent-light);
+        }
+
+    .cpd-metric-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--ink-faint);
+        margin-bottom: 6px;
+    }
+
+    .cpd-metric-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono',monospace;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    .cpd-metric-unit {
+        font-size: 11px;
+        color: var(--ink-faint);
+        margin-top: 3px;
+    }
+
+    .cpd-total-bar {
+        background: linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);
+        border-radius: var(--r-md);
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .cpd-total-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255,255,255,.75);
+        text-transform: uppercase;
+        letter-spacing: .6px;
+    }
+
+    .cpd-total-calc {
+        font-size: 12px;
+        color: rgba(255,255,255,.55);
+        margin-top: 2px;
+    }
+
+    .cpd-total-value {
+        font-size: 28px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono',monospace;
+        color: #fff;
+        letter-spacing: -.5px;
+    }
+
+    .cpd-txn-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+    }
+
+        .cpd-txn-row:last-child {
+            border-bottom: none;
+        }
+
+    .cpd-txn-key {
+        color: var(--ink-muted);
+        font-weight: 500;
+    }
+
+    .cpd-txn-val {
+        font-weight: 600;
+        color: var(--ink);
+        font-family: 'JetBrains Mono',monospace;
+        font-size: 12px;
+    }
+
+        .cpd-txn-val.break {
+            word-break: break-all;
+            text-align: right;
+            max-width: 200px;
+        }
+
+    .cpd-action-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: sticky;
+        top: 80px;
+    }
+
+    .cpd-action-header {
+        padding: 14px 20px;
+        background: var(--ink);
+        border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .cpd-action-header-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cpd-action-body {
+        padding: 24px 20px;
+        text-align: center;
+    }
+
+    .cpd-action-icon {
+        font-size: 2.8rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .cpd-action-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .cpd-action-sub {
+        font-size: 13px;
+        color: var(--ink-muted);
+        margin-bottom: 20px;
+    }
+
+    .cpd-info-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        background: var(--accent-light);
+        border: 1px solid var(--accent-mid);
+        border-radius: var(--r-md);
+        padding: 11px 14px;
+        font-size: 12.5px;
+        color: var(--accent);
+        text-align: left;
+        margin-bottom: 16px;
+    }
+
+    .cpd-btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 48px;
+        border: none;
+        border-radius: var(--r-md);
+        font-size: 14px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: all .15s;
+        margin-bottom: 10px;
+        text-decoration: none;
+    }
+
+    .cpd-btn-success {
+        background: var(--success);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(22,163,74,.3);
+    }
+
+        .cpd-btn-success:hover {
+            background: #15803d;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(22,163,74,.35);
+            color: #fff;
+        }
+
+    .cpd-btn-warning {
+        background: #d97706;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(217,119,6,.3);
+    }
+
+        .cpd-btn-warning:hover {
+            background: #b45309;
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+    .cpd-btn-ghost {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        height: 40px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-md);
+        color: var(--ink-muted);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .cpd-btn-ghost:hover {
+            border-color: var(--border-strong);
+            color: var(--ink);
+        }
+
+    .cpd-bank-ok {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--success);
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .cpd-bank-bad {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--danger);
+        font-weight: 700;
+        font-size: 13px;
+    }
+</style>
+
+<div class="cpd-root">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="cpd-alert cpd-alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>@TempData["Success"]</span>
+            <button class="cpd-alert-close" onclick="this.closest('.cpd-alert').remove()">&times;</button>
         </div>
-
-        <!-- Milk Quality & Rate -->
-        <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light fw-semibold">
-                <i class="bi bi-droplet me-2 text-info"></i>Quality & Rate
-            </div>
-            <div class="card-body">
-                <div class="row g-3 text-center">
-                    <div class="col-3">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-muted small">Received Qty</div>
-                            <div class="fw-bold fs-5 text-primary">@Model.ReceivedQty.ToString("N2")</div>
-                            <div class="text-muted small">Litres</div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-muted small">Tested Fat</div>
-                            <div class="fw-bold fs-5">@(Model.TestedFat.HasValue? Model.TestedFat.Value.ToString("N2") + "%" : "—")</div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-muted small">Tested CLR</div>
-                            <div class="fw-bold fs-5">@(Model.TestedCLR.HasValue? Model.TestedCLR.Value.ToString("N2") : "—")</div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-muted small">Rate / Liter</div>
-                            <div class="fw-bold fs-5 text-success">₹@Model.RatePerLiter.ToString("N2")</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="cpd-alert cpd-alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>@TempData["Error"]</span>
+            <button class="cpd-alert-close" onclick="this.closest('.cpd-alert').remove()">&times;</button>
         </div>
+    }
 
-        <!-- Total -->
-        <div class="card shadow-sm mb-3 border-primary">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="text-muted small">Total Amount</div>
-                    <div class="text-muted small">@Model.ReceivedQty.ToString("N2") L × ₹@Model.RatePerLiter.ToString("N2")</div>
-                </div>
-                <div class="fw-bold fs-3 text-primary">₹ @Model.TotalAmount.ToString("N2")</div>
-            </div>
+    <div class="cpd-breadcrumb">
+        <a asp-action="CenterPayments">Center Payments</a>
+        <i class="bi bi-chevron-right" style="font-size:10px;"></i>
+        <span>CP-@Model.CenterPaymentId.ToString("D4")</span>
+    </div>
+
+    <div class="cpd-page-header">
+        <div>
+            <h1 class="cpd-page-title">CP-@Model.CenterPaymentId.ToString("D4")</h1>
+            <p class="cpd-page-sub">@Model.CenterName &nbsp;·&nbsp; @Model.PlantName &nbsp;·&nbsp; @Model.PaymentDate.ToString("dd MMM yyyy")</p>
         </div>
+        @{
+            string pillClass = Model.PaymentStatus switch
+            {
+                "Processed" => "pill-processed",
+                "Pending" => "pill-pending",
+                "Failed" => "pill-failed",
+                "Cancelled" => "pill-cancelled",
+                _ => "pill-cancelled"
+            };
+        }
+        <span class="cpd-status-pill @pillClass">
+            <span class="dot"></span> @Model.PaymentStatus
+        </span>
+    </div>
 
-        <!-- Bank / Transaction (shown after payment) -->
-        @if (Model.BankStatus != null)
-        {
-            <div class="card shadow-sm">
-                <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-bank me-2"></i>Transaction Details
+    <div class="cpd-layout">
+
+        <!-- LEFT -->
+        <div>
+
+            <!-- Transfer & Center -->
+            <div class="cpd-card">
+                <div class="cpd-card-header">
+                    <span class="cpd-card-header-icon icon-blue"><i class="bi bi-building"></i></span>
+                    <span class="cpd-card-title">Transfer &amp; Center Details</span>
                 </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-5 text-muted small">Bank Status</div>
-                        <div class="col-7">
+                <div class="cpd-card-body">
+                    <div class="cpd-detail-grid">
+                        <div class="cpd-detail-item">
+                            <span class="cpd-detail-label">Transfer Reference</span>
+                            <span class="cpd-detail-value mono">@Model.BatchRef</span>
+                        </div>
+                        <div class="cpd-detail-item">
+                            <span class="cpd-detail-label">Payment Date</span>
+                            <span class="cpd-detail-value">@Model.PaymentDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <div class="cpd-detail-item">
+                            <span class="cpd-detail-label">Collection Center</span>
+                            <span class="cpd-detail-value">@Model.CenterName</span>
+                        </div>
+                        <div class="cpd-detail-item">
+                            <span class="cpd-detail-label">Processing Plant</span>
+                            <span class="cpd-detail-value">@Model.PlantName</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality & Rate -->
+            <div class="cpd-card">
+                <div class="cpd-card-header">
+                    <span class="cpd-card-header-icon icon-purple"><i class="bi bi-droplet-half"></i></span>
+                    <span class="cpd-card-title">Quality &amp; Rate</span>
+                </div>
+                <div class="cpd-card-body">
+                    <div class="cpd-detail-grid-4">
+                        <div class="cpd-metric highlight">
+                            <div class="cpd-metric-label">Received Qty</div>
+                            <div class="cpd-metric-value">@Model.ReceivedQty.ToString("N2")</div>
+                            <div class="cpd-metric-unit">Litres</div>
+                        </div>
+                        <div class="cpd-metric">
+                            <div class="cpd-metric-label">Tested Fat</div>
+                            <div class="cpd-metric-value">@(Model.TestedFat.HasValue? Model.TestedFat.Value.ToString("N2") : "—")</div>
+                            <div class="cpd-metric-unit">%</div>
+                        </div>
+                        <div class="cpd-metric">
+                            <div class="cpd-metric-label">Tested CLR</div>
+                            <div class="cpd-metric-value">@(Model.TestedCLR.HasValue? Model.TestedCLR.Value.ToString("N2") : "—")</div>
+                            <div class="cpd-metric-unit">&nbsp;</div>
+                        </div>
+                        <div class="cpd-metric">
+                            <div class="cpd-metric-label">Rate / Litre</div>
+                            <div class="cpd-metric-value" style="color:var(--success);">₹@Model.RatePerLiter.ToString("N2")</div>
+                            <div class="cpd-metric-unit">per L</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="cpd-card">
+                <div class="cpd-card-body" style="padding:0;">
+                    <div class="cpd-total-bar">
+                        <div>
+                            <div class="cpd-total-label">Total Amount</div>
+                            <div class="cpd-total-calc">@Model.ReceivedQty.ToString("N2") L &nbsp;×&nbsp; ₹@Model.RatePerLiter.ToString("N2")/L</div>
+                        </div>
+                        <div class="cpd-total-value">₹@Model.TotalAmount.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction details -->
+            @if (Model.BankStatus != null)
+            {
+                <div class="cpd-card">
+                    <div class="cpd-card-header">
+                        <span class="cpd-card-header-icon icon-green"><i class="bi bi-bank2"></i></span>
+                        <span class="cpd-card-title">Transaction Details</span>
+                    </div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-txn-row">
+                            <span class="cpd-txn-key">Bank Status</span>
                             @if (Model.BankStatus == "Success")
                             {
-                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Success</span>
+                                <span class="cpd-bank-ok"><i class="bi bi-check-circle-fill"></i> Success</span>
                             }
                             else
                             {
-                                <span class="badge bg-danger">@Model.BankStatus</span>
+                                <span class="cpd-bank-bad"><i class="bi bi-x-circle-fill"></i> @Model.BankStatus</span>
                             }
                         </div>
-                        <div class="col-5 text-muted small">Transaction Ref</div>
-                        <div class="col-7 small font-monospace text-break">@Model.TransactionReference</div>
-                        <div class="col-5 text-muted small">Payment Via</div>
-                        <div class="col-7">Stripe</div>
+                        <div class="cpd-txn-row">
+                            <span class="cpd-txn-key">Transaction Ref</span>
+                            <span class="cpd-txn-val break">@Model.TransactionReference</span>
+                        </div>
+                        <div class="cpd-txn-row">
+                            <span class="cpd-txn-key">Payment Via</span>
+                            <span class="cpd-txn-val">Stripe</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
 
-    </div>
+        </div>
 
-    <!-- RIGHT: Action panel -->
-    <div class="col-lg-5">
-        <div class="card shadow-sm sticky-top" style="top: 80px;">
-            <div class="card-header bg-dark text-white fw-semibold">
-                <i class="bi bi-credit-card me-2"></i>Payment Action
-            </div>
-            <div class="card-body text-center py-4">
-
-                @if (isPending)
-                {
-                    <div class="mb-3">
-                        <i class="bi bi-hourglass-split text-warning" style="font-size:2.5rem;"></i>
-                        <div class="fw-semibold mt-2">Payment Pending</div>
-                        <div class="text-muted small">Click below to pay via Stripe</div>
+        <!-- RIGHT: Action panel -->
+        <div>
+            <div class="cpd-action-card">
+                <div class="cpd-action-header">
+                    <div class="cpd-action-header-title">
+                        <i class="bi bi-credit-card-2-front"></i> Payment Action
                     </div>
+                </div>
+                <div class="cpd-action-body">
 
-                    <div class="alert alert-info text-start small py-2 mb-3">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Payments are processed securely via <strong>Stripe</strong>.
-                        After successful payment, the status updates to <strong>Processed</strong> automatically.
-                    </div>
+                    @if (isPending)
+                    {
+                        <i class="bi bi-hourglass-split cpd-action-icon" style="color:var(--warning);"></i>
+                        <div class="cpd-action-title">Payment Pending</div>
+                        <div class="cpd-action-sub">Ready to pay via Stripe</div>
+                        <div class="cpd-info-notice">
+                            <i class="bi bi-shield-check" style="flex-shrink:0;margin-top:1px;"></i>
+                            <span>Processed securely via <strong>Stripe</strong>. Status updates to <strong>Processed</strong> automatically on success.</span>
+                        </div>
+                        <form asp-action="CreateCenterCheckoutSession" method="post">
+                            <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
+                            <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+                            <input type="hidden" name="centerName" value="@Model.CenterName" />
+                            <button type="submit" class="cpd-btn-primary cpd-btn-success">
+                                <i class="bi bi-stripe"></i>
+                                Pay ₹@Model.TotalAmount.ToString("N2") via Stripe
+                            </button>
+                        </form>
+                        <a asp-action="CenterPayments" class="cpd-btn-ghost">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    }
+                    else if (isProcessed)
+                    {
+                        <i class="bi bi-check-circle-fill cpd-action-icon" style="color:var(--success);"></i>
+                        <div class="cpd-action-title" style="color:var(--success);">Payment Complete</div>
+                        <div class="cpd-action-sub">Transaction completed successfully via Stripe.</div>
+                        <a asp-action="CenterPayments" class="cpd-btn-ghost">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    }
+                    else if (isFailed)
+                    {
+                        <i class="bi bi-x-circle-fill cpd-action-icon" style="color:var(--danger);"></i>
+                        <div class="cpd-action-title" style="color:var(--danger);">Payment Failed</div>
+                        <div class="cpd-action-sub">The Stripe transaction was not successful.</div>
+                        <form asp-action="CreateCenterCheckoutSession" method="post">
+                            <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
+                            <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+                            <input type="hidden" name="centerName" value="@Model.CenterName" />
+                            <button type="submit" class="cpd-btn-primary cpd-btn-warning">
+                                <i class="bi bi-arrow-clockwise"></i> Retry via Stripe
+                            </button>
+                        </form>
+                        <a asp-action="CenterPayments" class="cpd-btn-ghost">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    }
+                    else if (isCancelled)
+                    {
+                        <i class="bi bi-slash-circle cpd-action-icon" style="color:var(--cancelled);"></i>
+                        <div class="cpd-action-title" style="color:var(--cancelled);">Payment Cancelled</div>
+                        <div class="cpd-action-sub">Use Re-pay from the payments list to reactivate this record.</div>
+                        <a asp-action="CenterPayments" class="cpd-btn-ghost">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    }
 
-                    <form asp-action="CreateCenterCheckoutSession" method="post">
-                        <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
-                        <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
-                        <input type="hidden" name="centerName" value="@Model.CenterName" />
-                        <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
-                            <i class="bi bi-stripe me-2"></i>Pay ₹@Model.TotalAmount.ToString("N2") via Stripe
-                        </button>
-                    </form>
-                    <a asp-action="CenterPayments" class="btn btn-outline-secondary btn-sm w-100">
-                        Back to List
-                    </a>
-                }
-                else if (isProcessed)
-                {
-                    <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
-                    <div class="fw-bold fs-5 mt-2 text-success">Payment Processed!</div>
-                    <div class="text-muted small mb-3">Transaction completed successfully via Stripe.</div>
-                    <a asp-action="CenterPayments" class="btn btn-outline-secondary w-100">
-                        <i class="bi bi-arrow-left me-1"></i>Back to List
-                    </a>
-                }
-                else if (isFailed)
-                {
-                    <i class="bi bi-x-circle-fill text-danger" style="font-size:3rem;"></i>
-                    <div class="fw-bold fs-5 mt-2 text-danger">Payment Failed</div>
-                    <div class="text-muted small mb-3">Stripe transaction was not successful.</div>
-
-                    <form asp-action="CreateCenterCheckoutSession" method="post">
-                        <input type="hidden" name="centerPaymentId" value="@Model.CenterPaymentId" />
-                        <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
-                        <input type="hidden" name="centerName" value="@Model.CenterName" />
-                        <button type="submit" class="btn btn-warning w-100 mb-2">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Retry Payment via Stripe
-                        </button>
-                    </form>
-                    <a asp-action="CenterPayments" class="btn btn-outline-secondary btn-sm w-100">
-                        Back to List
-                    </a>
-                }
-
+                </div>
             </div>
         </div>
-    </div>
 
+    </div>
 </div>

@@ -37,6 +37,8 @@ namespace DairyIndustry.Repositories
 
         int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate);
 
+        int ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter, DateTime paymentDate);
+
         List<CenterPaymentModel> GetAllCenterPayments(int? plantId = null);
 
         CenterPaymentModel GetCenterPaymentById(int centerPaymentId);

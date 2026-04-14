@@ -52,5 +52,9 @@
         public string PlantName { get; set; }
         public int? OriginalTransferId { get; set; }
 
+        // Cancelled payment routing — if a Cancelled row exists for this transfer,
+        // Re-pay must call ReactivateCenterPayment (UPDATE) not CreateCenterPayment (INSERT)
+        public bool HasCancelledPayment { get; set; }
+        public int? CancelledPaymentId { get; set; }
     }
 }

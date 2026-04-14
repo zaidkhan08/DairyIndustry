@@ -689,13 +689,24 @@
                     </div>
 
                     <div style="padding: 0 20px 20px;">
+
+                        <!-- Re-pay notice: shown when selecting a transfer that has a cancelled payment -->
+                        <div id="repayNotice" style="display:none;margin-bottom:12px;">
+                            <div style="background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:var(--radius-md);padding:11px 14px;font-size:12.5px;color:var(--accent);display:flex;align-items:flex-start;gap:8px;">
+                                <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
+                                <span>A cancelled payment exists for this transfer. Confirming will <strong>reactivate</strong> that record — no duplicate will be created.</span>
+                            </div>
+                        </div>
+
                         <form asp-action="CreateCenterPayment" method="post" id="paymentForm">
                             <input type="hidden" name="transferId" id="hiddenTransferId" />
                             <input type="hidden" name="ratePerLiter" id="hiddenRate" />
+                            <input type="hidden" name="hasCancelledPayment" id="hiddenHasCancelled" value="false" />
+                            <input type="hidden" name="cancelledPaymentId" id="hiddenCancelledId" value="" />
 
                             <button type="submit" class="ncp-btn-confirm" id="confirmBtn" disabled>
-                                <i class="bi bi-check2-circle"></i>
-                                Confirm & Pay
+                                <i class="bi bi-check2-circle" id="confirmIcon"></i>
+                                <span id="confirmLabel">Confirm & Pay</span>
                             </button>
                         </form>
                         <a asp-action="CenterPayments" class="ncp-btn-cancel">
@@ -729,6 +740,8 @@
                 previewCard.style.display = 'none';
                 summaryWaiting.style.display = '';
                 summaryContent.style.display = 'none';
+                const rn = document.getElementById('repayNotice');
+                if (rn) rn.style.display = 'none';
                 return;
             }
 
@@ -782,6 +795,25 @@
                     }
 
                     document.getElementById('hiddenTransferId').value = data.transferId;
+
+                    // Route correctly: cancelled payment → reactivate, fresh transfer → create
+                    const hasCancelled = !!data.hasCancelledPayment;
+                    document.getElementById('hiddenHasCancelled').value = hasCancelled;
+                    document.getElementById('hiddenCancelledId').value  = hasCancelled ? (data.cancelledPaymentId ?? '') : '';
+
+                    // Update button label + re-pay notice
+                    const repayNotice = document.getElementById('repayNotice');
+                    const confirmLabel = document.getElementById('confirmLabel');
+                    const confirmIcon  = document.getElementById('confirmIcon');
+                    if (hasCancelled) {
+                        repayNotice.style.display = '';
+                        confirmLabel.textContent  = 'Re-activate & Pay';
+                        confirmIcon.className     = 'bi bi-arrow-clockwise';
+                    } else {
+                        repayNotice.style.display = 'none';
+                        confirmLabel.textContent  = 'Confirm & Pay';
+                        confirmIcon.className     = 'bi bi-check2-circle';
+                    }
 
                     // Summary panel
                     const selectEl = document.getElementById('transferSelect');

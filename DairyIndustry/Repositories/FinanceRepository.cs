@@ -339,13 +339,9 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // GET ELIGIBLE TRANSFERS — scoped by PlantId for Plant Manager
-        // A transfer is eligible when it has NO active (Pending/Processed/Failed)
-        // center payment. Cancelled payments free the transfer for re-payment.
-        //
-        // Column sources (confirmed from schema):
-        //   TestedFat / TestedCLR  →  Production.TransferQualityTests  (on TransferId)
-        //   MilkTypeId             →  Collection.CenterMilkInventory   (on CenterId)
-        //   Fallback fat/clr       →  Collection.CollectionBatches.AvgFat / AvgCLR
+        // TestedFat/CLR  → Production.TransferQualityTests (fallback: cb.AvgFat/AvgCLR)
+        // MilkTypeId     → Collection.CenterMilkInventory
+        // Cancelled payments do NOT block a transfer — only Pending/Processed/Failed do.
         // ════════════════════════════════════════════════════════
         public List<TransferForPaymentModel> GetEligibleTransfers(int? plantId = null)
         {
@@ -358,33 +354,34 @@ namespace DairyIndustry.Repositories
                     cb.CenterId,
                     mt.PlantId,
                     mt.ReceivedQty,
-                    COALESCE(tqt.TestedFat, cb.AvgFat)   AS TestedFat,
-                    COALESCE(tqt.TestedCLR, cb.AvgCLR)   AS TestedCLR,
-                    -- MilkTypeId: prefer CenterMilkInventory, fall back to batch's most recent collection
-                    COALESCE(
-                        cmi.MilkTypeId,
-                        (SELECT TOP 1 mc.MilkTypeId
-                         FROM Collection.MilkCollection mc
-                         WHERE mc.BatchId = cb.BatchId
-                         ORDER BY mc.CollectionId DESC)
-                    ) AS MilkTypeId,
-                    cc.CenterName,
-                    pp.PlantName,
+                    COALESCE(tqt.TestedFat, cb.AvgFat)  AS TestedFat,
+                    COALESCE(tqt.TestedCLR, cb.AvgCLR)  AS TestedCLR,
+                    cmi.MilkTypeId,
                     CONCAT('T-', mt.TransferId,
                            ' | ', cc.CenterName,
                            ' | ', mt.ReceivedQty, ' L',
-                           ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS DisplayText
-                FROM  Production.MilkTransfers              mt
-                INNER JOIN Collection.CollectionBatches     cb  ON cb.BatchId   = mt.BatchId
-                INNER JOIN Collection.CollectionCenters     cc  ON cc.CenterId  = cb.CenterId
-                INNER JOIN Production.ProcessingPlants      pp  ON pp.PlantId   = mt.PlantId
-                LEFT  JOIN Production.TransferQualityTests  tqt ON tqt.TransferId = mt.TransferId
-                LEFT  JOIN Collection.CenterMilkInventory   cmi ON cmi.CenterId  = cb.CenterId
+                           ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS DisplayText,
+                    -- Cancelled payment lookup: if a Cancelled row exists, capture its Id
+                    -- so the controller can call ReactivateCenterPayment instead of CreateCenterPayment
+                    cp_cancelled.CenterPaymentId AS CancelledPaymentId,
+                    CASE WHEN cp_cancelled.CenterPaymentId IS NOT NULL THEN 1 ELSE 0 END AS HasCancelledPayment
+                FROM  Production.MilkTransfers             mt
+                INNER JOIN Collection.CollectionBatches    cb  ON cb.BatchId     = mt.BatchId
+                INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId    = cb.CenterId
+                LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
+                LEFT  JOIN Collection.CenterMilkInventory  cmi ON cmi.CenterId  = cb.CenterId
+                -- Join to the most recent Cancelled row for this transfer (if any)
+                LEFT  JOIN (
+                    SELECT BatchId, PlantId, MAX(CenterPaymentId) AS CenterPaymentId
+                    FROM   Finance.CenterPayments
+                    WHERE  PaymentStatus = 'Cancelled'
+                    GROUP  BY BatchId, PlantId
+                ) cp_cancelled ON cp_cancelled.BatchId = mt.BatchId
+                             AND  cp_cancelled.PlantId = mt.PlantId
                 WHERE mt.ReceivedQty IS NOT NULL
                   AND (@PlantId IS NULL OR mt.PlantId = @PlantId)
                   AND NOT EXISTS (
-                        SELECT 1
-                        FROM   Finance.CenterPayments cp
+                        SELECT 1 FROM Finance.CenterPayments cp
                         WHERE  cp.BatchId       = mt.BatchId
                           AND  cp.PlantId       = mt.PlantId
                           AND  cp.PaymentStatus IN ('Pending','Processed','Failed')
@@ -412,8 +409,8 @@ namespace DairyIndustry.Repositories
                             TestedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]),
                             MilkTypeId = r["MilkTypeId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["MilkTypeId"]),
                             BatchId = Convert.ToInt32(r["BatchId"]),
-                            CenterName = r["CenterName"].ToString(),
-                            PlantName = r["PlantName"].ToString()
+                            HasCancelledPayment = Convert.ToInt32(r["HasCancelledPayment"]) == 1,
+                            CancelledPaymentId = r["CancelledPaymentId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["CancelledPaymentId"])
                         });
                     }
                 }
@@ -447,21 +444,33 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // CREATE CENTER PAYMENT
-        // Guards against duplicates at the C# level before hitting the SP.
-        // The SP also has its own duplicate check as a second safety net.
+        // SP signature: @BatchId @CenterId @PlantId @ReceivedQty
+        //               @RatePerLiter @TestedFat @TestedCLR @PaymentDate
+        // It does NOT take @TransferId — resolve it first, then call SP.
         // ════════════════════════════════════════════════════════
         public int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate)
         {
-            // ── Guard: resolve BatchId + PlantId for this transfer ──
+            // Step 1 — resolve TransferId into the exact fields the SP expects
             string lookupSql = @"
-                SELECT mt.BatchId, mt.PlantId
-                FROM   Production.MilkTransfers mt
+                SELECT mt.BatchId,
+                       cb.CenterId,
+                       mt.PlantId,
+                       mt.ReceivedQty,
+                       COALESCE(tqt.TestedFat, cb.AvgFat) AS TestedFat,
+                       COALESCE(tqt.TestedCLR, cb.AvgCLR) AS TestedCLR
+                FROM   Production.MilkTransfers             mt
+                INNER JOIN Collection.CollectionBatches     cb  ON cb.BatchId     = mt.BatchId
+                LEFT  JOIN Production.TransferQualityTests  tqt ON tqt.TransferId = mt.TransferId
                 WHERE  mt.TransferId = @TransferId";
 
-            int batchId, plantId;
+            int batchId; int centerId; int plantId;
+            decimal receivedQty;
+            decimal? testedFat; decimal? testedCLR;
+
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand(lookupSql, con))
             {
+                cmd.CommandType = CommandType.Text;
                 cmd.Parameters.AddWithValue("@TransferId", transferId);
                 con.Open();
                 using (SqlDataReader r = cmd.ExecuteReader())
@@ -469,40 +478,27 @@ namespace DairyIndustry.Repositories
                     if (!r.Read())
                         throw new Exception($"Transfer T-{transferId} not found.");
                     batchId = Convert.ToInt32(r["BatchId"]);
+                    centerId = Convert.ToInt32(r["CenterId"]);
                     plantId = Convert.ToInt32(r["PlantId"]);
+                    receivedQty = Convert.ToDecimal(r["ReceivedQty"]);
+                    testedFat = r["TestedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedFat"]);
+                    testedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]);
                 }
             }
 
-            // ── Guard: block if an active (non-cancelled) payment already exists ──
-            string dupCheckSql = @"
-                SELECT COUNT(*)
-                FROM   Finance.CenterPayments
-                WHERE  BatchId       = @BatchId
-                  AND  PlantId       = @PlantId
-                  AND  PaymentStatus IN ('Pending', 'Processed', 'Failed')";
-
-            using (SqlConnection con = _db.GetConnection())
-            using (SqlCommand cmd = new SqlCommand(dupCheckSql, con))
-            {
-                cmd.Parameters.AddWithValue("@BatchId", batchId);
-                cmd.Parameters.AddWithValue("@PlantId", plantId);
-                con.Open();
-                int existing = Convert.ToInt32(cmd.ExecuteScalar());
-                if (existing > 0)
-                    throw new Exception(
-                        $"A payment for Transfer T-{transferId} already exists and is active. " +
-                        "Cancel it first before creating a new one.");
-            }
-
-            // ── Safe to create ──
+            // Step 2 — call SP with exactly the 8 declared parameters
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessCenterPayment", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@TransferId", transferId);
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                cmd.Parameters.AddWithValue("@CenterId", centerId);
+                cmd.Parameters.AddWithValue("@PlantId", plantId);
+                cmd.Parameters.AddWithValue("@ReceivedQty", receivedQty);
                 cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
+                cmd.Parameters.AddWithValue("@TestedFat", (object?)testedFat ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@TestedCLR", (object?)testedCLR ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
-
                 con.Open();
                 using (SqlDataReader r = cmd.ExecuteReader())
                 {
@@ -535,28 +531,15 @@ namespace DairyIndustry.Repositories
             cp.PaymentStatus,
             cc.CenterName,
             pp.PlantName,
-            ISNULL(
-                CONCAT('T-',
-                    (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
-                     WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-                     ORDER BY mt2.TransferId),
-                    ' | ',
-                    FORMAT(
-                        (SELECT TOP 1 mt2.ReceivedDate FROM Production.MilkTransfers mt2
-                         WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-                         ORDER BY mt2.TransferId),
-                    'dd-MMM-yyyy')),
-                CONCAT('Batch-', cp.BatchId)
-            ) AS BatchRef,
-            (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
-             WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-             ORDER BY mt2.TransferId) AS OriginalTransferId,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
             pt.BankStatus,
             pt.TransactionReference
         FROM Finance.CenterPayments cp
         INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
         INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
         INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
+        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
+                                                    AND mt.PlantId  = cp.PlantId
         LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
                                                     AND pt.PaymentType = 'Center'
         WHERE (@PlantId IS NULL OR cp.PlantId = @PlantId)
@@ -598,28 +581,15 @@ namespace DairyIndustry.Repositories
             cp.PaymentStatus,
             cc.CenterName,
             pp.PlantName,
-            ISNULL(
-                CONCAT('T-',
-                    (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
-                     WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-                     ORDER BY mt2.TransferId),
-                    ' | ',
-                    FORMAT(
-                        (SELECT TOP 1 mt2.ReceivedDate FROM Production.MilkTransfers mt2
-                         WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-                         ORDER BY mt2.TransferId),
-                    'dd-MMM-yyyy')),
-                CONCAT('Batch-', cp.BatchId)
-            ) AS BatchRef,
-            (SELECT TOP 1 mt2.TransferId FROM Production.MilkTransfers mt2
-             WHERE mt2.BatchId = cp.BatchId AND mt2.PlantId = cp.PlantId
-             ORDER BY mt2.TransferId) AS OriginalTransferId,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
             pt.BankStatus,
             pt.TransactionReference
         FROM Finance.CenterPayments cp
         INNER JOIN Collection.CollectionBatches   cb ON cb.BatchId  = cp.BatchId
         INNER JOIN Collection.CollectionCenters   cc ON cc.CenterId = cp.CenterId
         INNER JOIN Production.ProcessingPlants    pp ON pp.PlantId  = cp.PlantId
+        LEFT  JOIN Production.MilkTransfers       mt ON mt.BatchId  = cp.BatchId
+                                                    AND mt.PlantId  = cp.PlantId
         LEFT  JOIN Finance.PaymentTransactions    pt ON pt.PaymentId   = cp.CenterPaymentId
                                                     AND pt.PaymentType = 'Center'
         WHERE cp.CenterPaymentId = @CenterPaymentId";
@@ -685,9 +655,32 @@ namespace DairyIndustry.Repositories
                 PlantName = r["PlantName"].ToString(),
                 BatchRef = r["BatchRef"].ToString(),
                 BankStatus = r["BankStatus"] == DBNull.Value ? null : r["BankStatus"].ToString(),
-                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString(),
-                OriginalTransferId = r["OriginalTransferId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["OriginalTransferId"])
+                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString()
             };
+        }
+
+        // ════════════════════════════════════════════════════════
+        // REACTIVATE CANCELLED CENTER PAYMENT
+        // Updates the existing Cancelled row back to Pending
+        // with a fresh rate and date — no duplicate row created.
+        // ════════════════════════════════════════════════════════
+        public int ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter, DateTime paymentDate)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ReactivateCenterPayment", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@CenterPaymentId", centerPaymentId);
+                cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
+                cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                        return Convert.ToInt32(r["CenterPaymentId"]);
+                }
+            }
+            return centerPaymentId;
         }
 
         public void CancelCenterPayment(int centerPaymentId)

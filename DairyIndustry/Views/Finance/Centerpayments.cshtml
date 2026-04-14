@@ -911,12 +911,11 @@
                                         </a>
                                         @if (canRepay)
                                         {
-                                            string repayUrl = p.OriginalTransferId.HasValue
-                                            ? $"/Finance/CreateCenterPayment?preselect={p.OriginalTransferId}"
-                                            : "/Finance/CreateCenterPayment";
-                                            <a href="@repayUrl" class="cp-repay-btn" title="Create new payment for this transfer">
+                                            <button class="cp-repay-btn"
+                                                    title="Re-pay this cancelled payment"
+                                                    onclick="openRepay(@p.CenterPaymentId, 'CP-@p.CenterPaymentId.ToString("D4")', @p.RatePerLiter, '@Html.Raw(p.CenterName.Replace("'", "\\'"))')">
                                                 <i class="bi bi-arrow-clockwise"></i> Re-pay
-                                            </a>
+                                            </button>
                                         }
                                         @if (canCancel)
                                         {
@@ -953,6 +952,35 @@
     </div>
 </div>
 
+<!-- ── Re-pay Confirm Overlay ── -->
+<div class="cp-overlay" id="repayOverlay">
+    <div class="cp-confirm-box">
+        <div class="cp-confirm-icon" style="background:var(--accent-light);color:var(--accent);border-color:var(--accent-mid);">
+            <i class="bi bi-arrow-clockwise"></i>
+        </div>
+        <div class="cp-confirm-title">Re-pay this payment?</div>
+        <p class="cp-confirm-msg" id="repayMsg"></p>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">
+                Rate per Liter (₹)
+            </label>
+            <input type="number" id="repayRate" step="0.01" min="0.01"
+                   style="width:100%;height:40px;border:1.5px solid var(--border);border-radius:var(--r-md);padding:0 12px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;" />
+        </div>
+        <div class="cp-confirm-btns">
+            <button class="cp-btn-no" onclick="closeRepay()">Cancel</button>
+            <form id="repayForm" asp-action="ReactivateCenterPayment" method="post" style="flex:1;display:flex;">
+                <input type="hidden" name="centerPaymentId" id="repayId" />
+                <input type="hidden" name="ratePerLiter" id="repayRateHidden" />
+                <button type="submit" class="cp-btn-yes" style="background:var(--accent);"
+                        onclick="document.getElementById('repayRateHidden').value=document.getElementById('repayRate').value">
+                    <i class="bi bi-check2-circle me-1"></i> Confirm Re-pay
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     let activeStatus = 'all';
 
@@ -972,7 +1000,6 @@
 
     function filterStatus(status, btn) {
         activeStatus = status;
-        // Update pill active classes
         document.querySelectorAll('.cp-filter-pill').forEach(p => {
             p.className = 'cp-filter-pill';
         });
@@ -998,8 +1025,23 @@
         document.getElementById('cancelOverlay').classList.remove('open');
     }
 
+    function openRepay(id, ref, rate, center) {
+        document.getElementById('repayId').value   = id;
+        document.getElementById('repayRate').value = parseFloat(rate).toFixed(2);
+        document.getElementById('repayMsg').textContent =
+            `Reactivate ${ref} for ${center}? The existing cancelled record will be reset to Pending — no duplicate will be created.`;
+        document.getElementById('repayOverlay').classList.add('open');
+    }
+
+    function closeRepay() {
+        document.getElementById('repayOverlay').classList.remove('open');
+    }
+
     document.getElementById('cancelOverlay').addEventListener('click', function(e) {
         if (e.target === this) closeCancel();
     });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCancel(); });
+    document.getElementById('repayOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeRepay();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCancel(); closeRepay(); } });
 </script>
