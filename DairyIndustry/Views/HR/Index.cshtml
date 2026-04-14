@@ -1,0 +1,175 @@
+﻿@model List<DairyIndustry.Models.StaffModel>
+@{
+    ViewData["Title"] = "Staff List";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-people-fill me-2"></i>Staff List
+        </h2>
+        <small class="text-muted">@Model.Count record(s) found</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Dashboard" class="btn btn-outline-primary">
+            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+        </a>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill me-1"></i> Add Staff
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted small">ROLE</label>
+                    <select name="roleId" class="form-select">
+                        <option value="">All Roles</option>
+                        @foreach (var item in ViewBag.Roles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected>@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted small">STATUS</label>
+                    <select name="isActive" class="form-select">
+                        <option value="">All Status</option>
+                        @if (ViewBag.SelectedActive == true)
+                        {
+                            <option value="true" selected>Active</option>
+                            <option value="false">Inactive</option>
+                        }
+                        else if (ViewBag.SelectedActive == false)
+                        {
+                            <option value="true">Active</option>
+                            <option value="false" selected>Inactive</option>
+                        }
+                        else
+                        {
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" w-100>
+                        <i class="bi bi-funnel-fill me-1"></i> Filter
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" w-100>
+                        <i class="bi bi-x-lg"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Staff Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th class="px-3">Staff</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>Date of Joining</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            <tr>
+                                <td class="px-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                        {
+                                            <img src="@s.ProfilePhoto" class="rounded-circle"
+                                                 style="width:40px;height:40px;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle bg-primary bg-opacity-10
+                                                                    d-flex align-items-center justify-content-center"
+                                                 style="width:40px;height:40px;">
+                                                <i class="bi bi-person-fill text-primary"></i>
+                                            </div>
+                                        }
+                                        <div>
+                                            <div class="fw-semibold">@s.FullName</div>
+                                            <small class="text-muted">@s.Email</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+                                        @s.RoleName
+                                    </span>
+                                </td>
+                                <td>@(s.Phone ?? "—")</td>
+                                <td>@(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")</td>
+                                <td><span class="@s.StatusBadgeClass">@s.StatusLabel</span></td>
+                                <td class="text-center">
+                                    <a asp-action="Details" asp-route-id="@s.StaffId"
+                                       class="btn btn-sm btn-outline-primary me-1" title="Details">
+                                        <i class="bi bi-eye-fill"></i>Details
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@s.StaffId"
+                                       class="btn btn-sm btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil-fill"></i>Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top text-muted small">
+                Showing @Model.Count staff member(s)
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+                No staff members found matching your filters.
+                <div class="mt-2">
+                    <a asp-action="Index" class="btn btn-outline-primary btn-sm me-2">Clear Filters</a>
+                    <a asp-action="Create" class="btn btn-primary btn-sm">Add Staff</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

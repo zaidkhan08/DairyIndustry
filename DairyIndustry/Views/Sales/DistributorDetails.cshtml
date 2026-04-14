@@ -1,0 +1,158 @@
+﻿@model DairyIndustry.Models.DistributorModel
+@{
+    ViewData["Title"] = "Distributor Details";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    var orders = ViewBag.Orders as List<DairyIndustry.Models.SalesOrderModel> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">@Model.DistributorName</h4>
+        <small class="text-muted">Distributor Profile</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="EditDistributor" asp-route-id="@Model.DistributorId"
+           class="btn btn-outline-primary btn-sm">✏️ Edit</a>
+        <a asp-action="Distributors" class="btn btn-outline-secondary btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Profile Card -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white fw-semibold" style="background:#1a2e4a;">
+                🏪 Distributor Info
+            </div>
+            <div class="card-body">
+                <dl class="row small mb-0">
+                    <dt class="col-5 text-muted">Name</dt>
+                    <dd class="col-7 fw-semibold">@Model.DistributorName</dd>
+
+                    <dt class="col-5 text-muted">Location</dt>
+                    <dd class="col-7">@(Model.Location ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">Contact</dt>
+                    <dd class="col-7">@(Model.ContactNumber ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">Email</dt>
+                    <dd class="col-7" style="word-break:break-all;">@(Model.Email ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">Address</dt>
+                    <dd class="col-7">@(Model.Address ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">GSTIN</dt>
+                    <dd class="col-7"><code class="small">@(Model.GSTIN ?? "—")</code></dd>
+
+                    <dt class="col-5 text-muted">Registered</dt>
+                    <dd class="col-7">
+                        @(Model.RegisteredOn.HasValue
+                                                ? Model.RegisteredOn.Value.ToString("dd MMM yyyy")
+                                                : "—")
+                    </dd>
+
+                    <dt class="col-5 text-muted">Status</dt>
+                    <dd class="col-7">
+                        <span class="badge bg-@Model.StatusBadgeClass">@Model.Status</span>
+                    </dd>
+                </dl>
+            </div>
+
+            <div class="card-footer bg-white">
+                <div class="d-grid gap-2">
+                    @if (Model.Status == "Pending")
+                    {
+                        <form asp-action="ApproveDistributor" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
+                            <input type="hidden" name="action" value="Approve" />
+                            <button class="btn btn-success w-100">✅ Approve</button>
+                        </form>
+                        <form asp-action="ApproveDistributor" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
+                            <input type="hidden" name="action" value="Reject" />
+                            <button class="btn btn-danger w-100"
+                                    onclick="return confirm('Reject this distributor?')">
+                                ❌ Reject
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Status == "Approved")
+                    {
+                        <form asp-action="SuspendDistributor" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
+                            <button class="btn btn-outline-warning w-100"
+                                    onclick="return confirm('Suspend this distributor?')">
+                                🚫 Suspend
+                            </button>
+                        </form>
+                        <a asp-action="Create" class="btn btn-outline-primary w-100">➕ New Order</a>
+                    }
+                    @if (Model.Status == "Suspended" || Model.Status == "Rejected")
+                    {
+                        <form asp-action="ReinstateDistributor" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
+                            <button class="btn btn-success w-100">✅ Reinstate</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom fw-semibold text-primary">
+                Orders
+                @if (orders.Any())
+                {
+                    <span class="badge bg-primary ms-1">@orders.Count</span>
+                }
+            </div>
+            <div class="card-body p-0">
+                @if (orders.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                    <th class="text-center">Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in orders)
+                                {
+                                    <tr>
+                                        <td class="text-muted small">#@o.OrderId</td>
+                                        <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                        <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
+                                        </td>
+                                        <td>
+                                            <a asp-action="Details" asp-route-id="@o.OrderId"
+                                               class="btn btn-sm btn-outline-primary">View</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No orders yet for this distributor.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,337 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@model ChillingDashboardViewModel
+
+@{
+    ViewData["Title"] = "Chilling Center — Dashboard";
+
+    // Build chart labels and data from RecentEntries grouped by date
+    var chartData = Model.RecentEntries
+        .GroupBy(e => e.StoredDate.ToString("dd MMM"))
+        .Select(g => new { Label = g.Key, Total = g.Sum(e => e.MilkQuantity) })
+        .OrderBy(x => x.Label)
+        .ToList();
+
+    var chartLabels = "[" + string.Join(",", chartData.Select(x => $"'{x.Label}'")) + "]";
+    var chartValues = "[" + string.Join(",", chartData.Select(x => x.Total.ToString("F2"))) + "]";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-semibold text-primary mb-0">Chilling Center</h3>
+        <small class="text-muted">Dashboard — @Model.Summary.ReportDate.ToString("dd MMM yyyy")</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary px-4">+ New Entry</a>
+</div>
+
+<!-- Success / Error -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ── SUMMARY CARDS ─────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Today's Entries</span>
+                    <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                        <svg class="text-primary" width="18" height="18" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    </div>
+                </div>
+                <div class="fs-2 fw-bold text-dark">@Model.Summary.TotalEntries</div>
+                <div class="text-muted small">storage records</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Total Quantity</span>
+                    <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                        <svg width="18" height="18" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                </div>
+                <div class="fs-2 fw-bold text-dark">@Model.Summary.TotalQuantity.ToString("N0")</div>
+                <div class="text-muted small">litres stored today</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Safe</span>
+                    <div class="bg-success bg-opacity-10 rounded-3 p-2">
+                        <svg width="18" height="18" fill="none" stroke="#198754" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                </div>
+                <div class="fs-2 fw-bold text-success">@Model.Summary.SafeCount</div>
+                <div class="text-muted small">temp &le; 5&deg;C</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Alerts</span>
+                    <div class="@(Model.Summary.CriticalAlerts > 0 ? "bg-danger" : "bg-secondary") bg-opacity-10 rounded-3 p-2">
+                        <svg width="18" height="18" fill="none" stroke="@(Model.Summary.CriticalAlerts > 0 ? "#dc3545" : "#6c757d")" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                </div>
+                <div class="fs-2 fw-bold @(Model.Summary.CriticalAlerts > 0 ? "text-danger" : "text-secondary")">
+                    @(Model.Summary.CriticalAlerts + Model.Summary.Warnings)
+                </div>
+                <div class="text-muted small">@Model.Summary.CriticalAlerts critical &bull; @Model.Summary.Warnings warning</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── CHART + TIMELINE ROW ──────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <!-- Chart.js Line Chart -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-primary">Storage Quantity Trend</span>
+                <span class="text-muted small">Last @Model.RecentEntries.Count entries</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 260px; position: relative;">
+                    <canvas id="storageChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Feed -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-primary">Live Feed</span>
+                <a asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body overflow-auto" style="max-height: 300px;">
+                @if (Model.RecentEntries.Any())
+                {
+                    <div class="ps-2">
+                        @foreach (var entry in Model.RecentEntries)
+                        {
+                            <div class="d-flex gap-3 mb-3 position-relative">
+                                <!-- Colored dot based on TempStatus -->
+                                <div class="flex-shrink-0 mt-1">
+                                    <span class="d-block rounded-circle bg-@entry.TempBadgeClass"
+                                          style="width:12px;height:12px;margin-top:3px;"></span>
+                                </div>
+                                <div>
+                                    <div class="text-muted" style="font-size:11px;">
+                                        @entry.StoredDate.ToString("dd MMM yyyy")
+                                    </div>
+                                    <div class="fw-semibold" style="font-size:13px;">@entry.PlantName</div>
+                                    <div class="text-muted" style="font-size:12px;">
+                                        @entry.ItemName — @entry.MilkQuantity.ToString("N0") L
+                                        @if (entry.Temperature.HasValue)
+                                        {
+                                            <span class="badge bg-@entry.TempBadgeClass ms-1">
+                                                @entry.Temperature.Value.ToString("N1")&deg;C
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4 small">No recent entries.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── PLANT CAPACITY + ACTIVE ALERTS ROW ───────────────── -->
+<div class="row g-3 mb-4">
+
+    <!-- Plant Capacity -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-primary">Plant Capacity Overview</span>
+                <a asp-action="Capacity" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.PlantCapacity.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plant</th>
+                                    <th class="text-end">Today (L)</th>
+                                    <th class="text-end">All Time (L)</th>
+                                    <th class="text-center">Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var plant in Model.PlantCapacity)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@plant.PlantName</div>
+                                            @if (!string.IsNullOrEmpty(plant.Location))
+                                            {
+                                                <small class="text-muted">@plant.Location</small>
+                                            }
+                                        </td>
+                                        <td class="text-end">@plant.StoredToday.ToString("N2")</td>
+                                        <td class="text-end">@plant.TotalStoredAllTime.ToString("N2")</td>
+                                        <td class="text-center">
+                                            @if (plant.AlertCount > 0)
+                                            {
+                                                <span class="badge bg-danger">@plant.AlertCount</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">0</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No plants found.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-danger">Active Alerts Today</span>
+                <a asp-action="Alerts" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.ActiveAlerts.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var alert in Model.ActiveAlerts)
+                        {
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-semibold small">@alert.PlantName</div>
+                                        <small class="text-muted">@alert.ItemName — @alert.MilkQuantity.ToString("N0") L</small>
+                                    </div>
+                                    <span class="badge bg-@alert.TempBadgeClass">
+                                        @(alert.Temperature.HasValue? alert.Temperature.Value.ToString("N1") + "°C" : "—")
+                                    </span>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <span class="text-success fw-semibold small">All temperatures safe today.</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── QUICK NAV ─────────────────────────────────────────── -->
+<div class="row g-2">
+    <div class="col-6 col-md-3">
+        <a asp-action="Index" class="btn btn-outline-primary w-100">All Entries</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Create" class="btn btn-primary w-100">Add New Entry</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Alerts" class="btn btn-outline-danger w-100">Temperature Alerts</a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-action="Capacity" class="btn btn-outline-secondary w-100">Capacity Monitor</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        const ctx = document.getElementById('storageChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(chartLabels),
+                datasets: [{
+                    label: 'Quantity (L)',
+                    data: @Html.Raw(chartValues),
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.07)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#0d6efd',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: '#f1f5f9' },
+                        ticks: {
+                            font: { size: 11 },
+                            color: '#94a3b8',
+                            callback: function(val) { return val.toLocaleString() + ' L'; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 }, color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    </script>
+}

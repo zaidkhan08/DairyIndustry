@@ -1,0 +1,234 @@
+﻿@model DairyIndustry.Models.HRDashboardViewModel
+@{
+    ViewData["Title"] = "HR Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-people-fill me-2"></i>HR Dashboard
+        </h2>
+        <small class="text-muted">Human Resource Overview — @DateTime.Today.ToString("dd MMM yyyy")</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-person-plus-fill me-1"></i> Add Staff
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-people-fill fs-3 text-primary"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-primary">@Model.Summary.TotalStaff</div>
+                    <div class="text-muted small">Total Staff</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                    <i class="bi bi-person-check-fill fs-3 text-success"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-success">@Model.Summary.ActiveStaff</div>
+                    <div class="text-muted small">Active Staff</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                    <i class="bi bi-person-dash-fill fs-3 text-danger"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-danger">@Model.Summary.InactiveStaff</div>
+                    <div class="text-muted small">Inactive Staff</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                    <i class="bi bi-clock-history fs-3 text-warning"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-warning">@Model.Summary.NewJoiningThisMonth</div>
+                    <div class="text-muted small">Joined This Month</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Staff by Role + Recent Joinings -->
+<div class="row g-3 mb-4">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-bar-chart-fill me-2"></i>Staff by Role
+            </div>
+            <div class="card-body p-0">
+                @if (Model.StaffByType.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in Model.StaffByType)
+                        {
+                            int pct = Model.Summary.TotalStaff > 0
+                            ? (int)((item.Count * 100.0) / Model.Summary.TotalStaff) : 0;
+                            <li class="list-group-item px-3 py-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="fw-semibold">@item.StaffType</span>
+                                    <span class="badge bg-primary rounded-pill">@item.Count</span>
+                                </div>
+                                <div class="progress" style="height:6px;">
+                                    <div class="progress-bar bg-primary" style="width:@pct%"></div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No staff data available.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-person-lines-fill me-2"></i>Recently Joined Staff
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentJoinings.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var s in Model.RecentJoinings)
+                        {
+                            <li class="list-group-item px-3 py-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                    {
+                                        <img src="@s.ProfilePhoto" class="rounded-circle"
+                                             style="width:42px;height:42px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-primary bg-opacity-10
+                                                                d-flex align-items-center justify-content-center"
+                                             style="width:42px;height:42px;">
+                                            <i class="bi bi-person-fill text-primary"></i>
+                                        </div>
+                                    }
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold">@s.FullName</div>
+                                        <small class="text-muted">@s.RoleName</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="@s.StatusBadgeClass">@s.StatusLabel</span>
+                                        <div class="text-muted small mt-1">
+                                            @(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No recent staff found.</div>
+                }
+            </div>
+            <div class="card-footer bg-white border-0">
+                <a asp-action="Index" class="btn btn-outline-primary btn-sm w-100">
+                    View All Staff <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Payments + Quick Nav -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-warning text-dark fw-semibold">
+                <i class="bi bi-cash-coin me-2"></i>Pending Payments
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold text-warning">@Model.Summary.PendingPaymentsCount</div>
+                <div class="text-muted">payments awaiting processing</div>
+                <div class="fs-5 fw-semibold mt-2">
+                    ₹@Model.Summary.PendingPaymentsAmount.ToString("N0")
+                </div>
+                <div class="text-muted small">total pending amount</div>
+            </div>
+            <div class="card-footer bg-white border-0">
+                <a asp-action="Payments" asp-route-status="Pending"
+                   class="btn btn-warning btn-sm w-100">
+                    View Pending <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-grid-fill me-2"></i>Quick Navigation
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a asp-action="Index" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-people-fill d-block fs-4 mb-1"></i>All Staff
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-action="Create" class="btn btn-outline-success w-100 py-3">
+                            <i class="bi bi-person-plus-fill d-block fs-4 mb-1"></i>Add Staff
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-action="Payments" class="btn btn-outline-warning w-100 py-3">
+                            <i class="bi bi-cash-stack d-block fs-4 mb-1"></i>Payments
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-action="Index" asp-route-isActive="true"
+                           class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-person-check-fill d-block fs-4 mb-1"></i>Active Only
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

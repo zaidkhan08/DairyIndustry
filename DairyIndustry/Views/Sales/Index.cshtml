@@ -1,0 +1,128 @@
+﻿@model List<DairyIndustry.Models.SalesOrderModel>
+@{
+    ViewData["Title"] = "Sales Orders";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Sales Orders</h4>
+        <small class="text-muted">All orders across all distributors</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">➕ New Order</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label text-muted small mb-1">Distributor</label>
+                    <select name="distributorId" class="form-select form-select-sm">
+                        <option value="">— All Distributors —</option>
+                        @foreach (SelectListItem item in (SelectList)ViewBag.Distributors)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">— All Status —</option>
+                        @foreach (SelectListItem item in (SelectList)ViewBag.Statuses)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">From Date</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm"
+                           value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">To Date</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm"
+                           value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background:#1a2e4a; color:#fff;">
+                        <tr>
+                            <th>#</th>
+                            <th>Distributor</th>
+                            <th>Date</th>
+                            <th class="text-end">Amount (₹)</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in Model)
+                        {
+                            <tr>
+                                <td class="text-muted small">#@o.OrderId</td>
+                                <td>
+                                    <div class="fw-semibold">@o.DistributorName</div>
+                                    @if (!string.IsNullOrEmpty(o.Location))
+                                    {
+                                        <small class="text-muted">📍 @o.Location</small>
+                                    }
+                                </td>
+                                <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="Details" asp-route-id="@o.OrderId"
+                                       class="btn btn-sm btn-outline-primary">Details</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top bg-light text-muted small">
+                Showing <strong>@Model.Count</strong> order(s)
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                No orders found.
+                <a asp-action="Create" class="btn btn-primary btn-sm ms-2">Create First Order</a>
+            </div>
+        }
+    </div>
+</div>

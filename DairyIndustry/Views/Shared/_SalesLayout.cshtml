@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Sales | DMS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+
+    <style>
+        /* ── Sidebar slide behaviour ── */
+        #sales-sidebar {
+            width: 220px;
+            min-width: 220px;
+            transform: translateX(-220px);
+            transition: transform .25s ease;
+            position: fixed;
+            top: 54px;
+            left: 0;
+            bottom: 0;
+            z-index: 1020;
+            overflow-y: auto;
+        }
+
+            #sales-sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+
+        /* Push main content when sidebar is open */
+        #page-content {
+            transition: margin-left .25s ease;
+            margin-left: 0;
+        }
+
+            #page-content.sidebar-pushed {
+                margin-left: 220px;
+            }
+
+        /* Overlay (mobile / narrow screens) */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 54px;
+            background: rgba(0,0,0,.45);
+            z-index: 1015;
+        }
+
+            #sidebar-overlay.show {
+                display: block;
+            }
+
+        /* Toggle button */
+        #sidebarToggle {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,.1);
+            color: #fff;
+            cursor: pointer;
+            transition: background .15s;
+            flex-shrink: 0;
+        }
+
+            #sidebarToggle:hover {
+                background: rgba(255,255,255,.2);
+            }
+
+            /* Hamburger icon SVG */
+            #sidebarToggle svg {
+                width: 18px;
+                height: 18px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+            }
+
+        @@media (max-width: 768px) {
+            #page-content.sidebar-pushed {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body style="margin:0; padding:0;">
+
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-dark px-3 sticky-top"
+         style="height:54px; background:#0f1e30; z-index:1030; box-shadow:0 2px 8px rgba(0,0,0,.3);">
+
+        <!-- Sidebar toggle button -->
+        <button id="sidebarToggle" title="Toggle sidebar">
+            <svg viewBox="0 0 24 24">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+        </button>
+
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 ms-2" href="/">
+            <span>🥛</span> DMS
+        </a>
+
+        <div class="ms-auto d-flex align-items-center gap-3">
+            @{
+                var role = Context.Session.GetString("RoleName") ?? "";
+                var user = Context.Session.GetString("Username") ?? "";
+            }
+            @if (!string.IsNullOrEmpty(user))
+            {
+                <span class="badge bg-secondary">@role</span>
+                <span class="text-white-50 small d-none d-sm-inline">@user</span>
+                <a href="/Admin/Logout" class="btn btn-outline-light btn-sm">Logout</a>
+            }
+        </div>
+    </nav>
+
+    <!-- Sidebar overlay (click to close on mobile) -->
+    <div id="sidebar-overlay"></div>
+
+    <!-- Sidebar (rendered outside the flex row so it can be fixed-position) -->
+    @await Html.PartialAsync("_SalesSidebar")
+
+    <!-- Page content -->
+    <div id="page-content" class="p-4" style="background:#f3f5f8; min-height:calc(100vh - 54px); overflow-x:auto;">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show py-2">
+                @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show py-2">
+                @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        (function () {
+            var toggle   = document.getElementById('sidebarToggle');
+            var sidebar  = document.getElementById('sales-sidebar');
+            var content  = document.getElementById('page-content');
+            var overlay  = document.getElementById('sidebar-overlay');
+
+            function isMobile() { return window.innerWidth <= 768; }
+
+            function openSidebar() {
+                sidebar.classList.add('sidebar-open');
+                overlay.classList.add('show');
+                if (!isMobile()) content.classList.add('sidebar-pushed');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('sidebar-open');
+                overlay.classList.remove('show');
+                content.classList.remove('sidebar-pushed');
+            }
+
+            toggle.addEventListener('click', function () {
+                sidebar.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
+            });
+
+            overlay.addEventListener('click', closeSidebar);
+
+            // Re-evaluate push on resize
+            window.addEventListener('resize', function () {
+                if (sidebar.classList.contains('sidebar-open')) {
+                    if (isMobile()) content.classList.remove('sidebar-pushed');
+                    else content.classList.add('sidebar-pushed');
+                }
+            });
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

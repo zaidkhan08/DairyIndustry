@@ -1,0 +1,83 @@
+﻿@model DairyIndustry.Models.DistributorFormModel
+@{
+    ViewData["Title"] = "Add Distributor";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Add Distributor</h4>
+        <small class="text-muted">Admin direct-add — no user account is created this way</small>
+    </div>
+    <a asp-action="Distributors" class="btn btn-outline-secondary btn-sm">← Back</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white fw-semibold" style="background:#1a2e4a;">
+                🏪 Distributor Details
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="AddDistributor" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label asp-for="DistributorName" class="form-label fw-semibold"></label>
+                        <input asp-for="DistributorName" class="form-control"
+                               placeholder="Business / distributor name" />
+                        <span asp-validation-for="DistributorName" class="text-danger small"></span>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Location" class="form-label fw-semibold"></label>
+                            <input asp-for="Location" class="form-control" placeholder="City / Area" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ContactNumber" class="form-label fw-semibold"></label>
+                            <input asp-for="ContactNumber" class="form-control"
+                                   placeholder="10-digit mobile" />
+                            <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold"></label>
+                            <input asp-for="Email" class="form-control"
+                                   placeholder="name@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GSTIN" class="form-label fw-semibold"></label>
+                            <input asp-for="GSTIN" class="form-control" placeholder="15-char GSTIN" />
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Address" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Address" class="form-control" rows="2"
+                                  placeholder="Full address"></textarea>
+                    </div>
+
+                    <div class="alert alert-info small py-2 mb-4">
+                        ℹ️ Distributors added here start as <strong>Pending</strong> and must be approved
+                        before orders can be placed. For self-registration with login credentials, use the
+                        <a asp-controller="DistributorRegister" asp-action="Index" target="_blank">
+                            Register page
+                        </a>.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">Save Distributor</button>
+                        <a asp-action="Distributors" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

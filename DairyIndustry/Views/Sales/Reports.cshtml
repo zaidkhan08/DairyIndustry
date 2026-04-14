@@ -1,0 +1,184 @@
+﻿@model DairyIndustry.Models.SalesDashboardViewModel
+@{
+    ViewData["Title"] = "Sales Reports";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Sales Reports</h4>
+        <small class="text-muted">Complete sales analysis and distributor breakdown</small>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #0d6efd!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Total</div>
+                <div class="fs-3 fw-bold text-primary">@Model.Summary.TotalOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Delivered</div>
+                <div class="fs-3 fw-bold text-success">@Model.Summary.DeliveredOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #ffc107!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Pending</div>
+                <div class="fs-3 fw-bold text-warning">@Model.Summary.PendingOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #dc3545!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Cancelled</div>
+                <div class="fs-3 fw-bold text-danger">@Model.Summary.CancelledOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Total Revenue (Delivered)</div>
+                <div class="fs-3 fw-bold text-success">₹@Model.Summary.TotalRevenue.ToString("N0")</div>
+                <small class="text-muted">Today: ₹@Model.Summary.TodayRevenue.ToString("N0")</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Status Breakdown -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom fw-semibold text-primary">
+                Order Status Breakdown
+            </div>
+            <div class="card-body p-0">
+                @if (Model.OrdersByStatus.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-center">Count</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Model.OrdersByStatus)
+                                {
+                                    var bc = s.OrderStatus switch
+                                    {
+                                        "Pending" => "warning",
+                                        "Confirmed" => "info",
+                                        "Dispatched" => "primary",
+                                        "Delivered" => "success",
+                                        "Cancelled" => "danger",
+                                        _ => "secondary"
+                                    };
+                                    <tr>
+                                        <td><span class="badge bg-@bc">@s.OrderStatus</span></td>
+                                        <td class="text-center fw-semibold">@s.Count</td>
+                                        <td class="text-end">₹@s.TotalAmount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No data.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Distributor Sales -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom fw-semibold text-primary">
+                Distributor-wise Sales
+            </div>
+            <div class="card-body p-0">
+                @if (Model.TopDistributors.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead style="background:#1a2e4a; color:#fff;">
+                                <tr>
+                                    <th>Distributor</th>
+                                    <th class="text-center">Orders</th>
+                                    <th class="text-end">Revenue (₹)</th>
+                                    <th class="text-center">Delivered</th>
+                                    <th class="text-center">Pending</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var d in Model.TopDistributors)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@d.DistributorName</div>
+                                            @if (!string.IsNullOrEmpty(d.Location))
+                                            {
+                                                <small class="text-muted">@d.Location</small>
+                                            }
+                                        </td>
+                                        <td class="text-center">@d.TotalOrders</td>
+                                        <td class="text-end fw-semibold text-success">
+                                            ₹@d.TotalRevenue.ToString("N2")
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success">@d.DeliveredOrders</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning text-dark">@d.PendingOrders</span>
+                                        </td>
+                                        <td>
+                                            <a asp-action="Index"
+                                               asp-route-distributorId="@d.DistributorId"
+                                               class="btn btn-sm btn-outline-primary">Orders</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.TotalOrders)</td>
+                                    <td class="text-end text-success">
+                                        ₹@Model.TopDistributors.Sum(x => x.TotalRevenue).ToString("N2")
+                                    </td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.DeliveredOrders)</td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.PendingOrders)</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No data.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

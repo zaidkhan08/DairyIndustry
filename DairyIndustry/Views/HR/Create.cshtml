@@ -1,0 +1,272 @@
+﻿@model DairyIndustry.Models.StaffFormModel
+@{
+    ViewData["Title"] = "Add New Staff";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="bi bi-person-plus-fill me-2"></i>Add New Staff
+        </h2>
+        <small class="text-muted">Fill in the details to register a new staff member</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to List
+    </a>
+</div>
+
+@* FIX: enctype="multipart/form-data" is required for file upload to work *@
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-md-8">
+
+            <!-- Personal Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-person-fill me-2"></i>Personal Information
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="form-label fw-semibold">
+                                First Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FirstName" class="form-control" placeholder="e.g. Raj" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="form-label fw-semibold">
+                                Last Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="LastName" class="form-control" placeholder="e.g. Patel" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="RoleId" class="form-label fw-semibold">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="RoleId" class="form-select" asp-items="ViewBag.Roles">
+                                <option value="0">-- Select Role --</option>
+                            </select>
+                            <span asp-validation-for="RoleId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-semibold">Phone Number</label>
+                            <input asp-for="Phone" class="form-control" placeholder="e.g. 9876543210" />
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold">Email Address</label>
+                            <input asp-for="Email" class="form-control" type="email"
+                                   placeholder="e.g. raj@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="DOJ" class="form-label fw-semibold">Date of Joining</label>
+                            <input asp-for="DOJ" class="form-control" type="date" />
+                            <span asp-validation-for="DOJ" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Salary" class="form-label fw-semibold">Salary (₹)</label>
+                            <input asp-for="Salary" class="form-control" type="number"
+                                   step="0.01" placeholder="e.g. 25000.00" />
+                            <span asp-validation-for="Salary" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-end pb-1">
+                            <div class="form-check form-switch ms-1">
+                                <input asp-for="IsActive" class="form-check-input"
+                                       type="checkbox" role="switch" checked />
+                                <label asp-for="IsActive" class="form-check-label fw-semibold">
+                                    Active Staff Member
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assigning Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-diagram-3-fill me-2"></i>Assigning
+                    <small class="fw-normal ms-2">(fill only one)</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="PlantId" class="form-label fw-semibold">Plant</label>
+                            <select asp-for="PlantId" class="form-select" asp-items="ViewBag.Plants"
+                                    id="plantSelect" onchange="clearOther('centerSelect')">
+                                <option value="">— Select Plant —</option>
+                            </select>
+                            <span asp-validation-for="PlantId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="CenterId" class="form-label fw-semibold">
+                                Collection Center
+                            </label>
+                            <select asp-for="CenterId" class="form-select" asp-items="ViewBag.Centers"
+                                    id="centerSelect" onchange="clearOther('plantSelect')">
+                                <option value="">— Select Collection Center —</option>
+                            </select>
+                            <span asp-validation-for="CenterId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Select either a Plant or a Collection Center — not both.
+                                Selecting one automatically clears the other.
+                            </small>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Details -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-bank2 me-2"></i>Bank Account Details
+                    <small class="fw-normal ms-2">(optional — fill all 3 or leave all blank)</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="BankName" class="form-label fw-semibold">Bank Name</label>
+                            <input asp-for="BankName" class="form-control"
+                                   placeholder="e.g. State Bank of India" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="AccountNumber" class="form-label fw-semibold">
+                                Account Number
+                            </label>
+                            <input asp-for="AccountNumber" class="form-control"
+                                   placeholder="e.g. 123456789012" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="IFSCCode" class="form-label fw-semibold">IFSC Code</label>
+                            <input asp-for="IFSCCode" class="form-control"
+                                   placeholder="e.g. SBIN0001234" />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN — Photo -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    <i class="bi bi-camera-fill me-2"></i>Profile Photo
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        @* FIX: Replaced external placeholder URL (often blocked) with
+                           an inline SVG data URI — always works without internet *@
+                        <img id="photoPreview"
+                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23e9ecef' rx='75'/%3E%3Ccircle cx='75' cy='60' r='28' fill='%23adb5bd'/%3E%3Cellipse cx='75' cy='130' rx='45' ry='35' fill='%23adb5bd'/%3E%3C/svg%3E"
+                             class="rounded-circle border border-2 border-primary"
+                             style="width:150px;height:150px;object-fit:cover;" />
+                    </div>
+                    <label asp-for="PhotoFile" class="form-label fw-semibold d-block">
+                        Upload Photo
+                    </label>
+                    @* FIX: name="PhotoFile" must exactly match what Request.Form.Files["PhotoFile"] reads *@
+                    <input type="file" name="PhotoFile" id="PhotoFile" class="form-control"
+                           accept="image/*" onchange="previewPhoto(this)" />
+                    <small class="text-muted d-block mt-2">Optional — JPG or PNG, max 5MB</small>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-3 border-start border-4 border-info">
+                <div class="card-body">
+                    <h6 class="fw-bold text-info mb-2">
+                        <i class="bi bi-info-circle-fill me-1"></i> Tips
+                    </h6>
+                    <ul class="list-unstyled small text-muted mb-0">
+                        <li class="mb-1">
+                            <i class="bi bi-dot text-primary"></i>
+                            First Name, Last Name and Role are required
+                        </li>
+                        <li class="mb-1">
+                            <i class="bi bi-dot text-primary"></i>
+                            Assign to Plant OR Collection Center — not both
+                        </li>
+                        <li class="mb-1">
+                            <i class="bi bi-dot text-primary"></i>
+                            For bank details, fill all 3 or leave all blank
+                        </li>
+                        <li>
+                            <i class="bi bi-dot text-primary"></i>
+                            Staff will be Active by default
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a asp-action="Index" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
+        <button type="submit" class="btn btn-primary px-5">
+            <i class="bi bi-check-lg me-1"></i> Save Staff
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // Live photo preview — reads the selected file and shows it in the img tag
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                // Basic client-side size check (5 MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Photo must be smaller than 5MB.');
+                    input.value = '';
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('photoPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Auto-clear the other dropdown when one assignment is chosen
+        function clearOther(otherId) {
+            var other = document.getElementById(otherId);
+            if (other) other.value = '';
+        }
+    </script>
+}
