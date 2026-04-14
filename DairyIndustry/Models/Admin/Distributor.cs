@@ -11,5 +11,6 @@
         public string? GSTIN { get; set; }
         public string Status { get; set; } = "Pending";
         public DateTime RegisteredOn { get; set; }
+        public string Username { get; set; }
     }
 }

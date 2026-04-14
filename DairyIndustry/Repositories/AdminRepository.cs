@@ -1516,25 +1516,23 @@ namespace DairyIndustry.Repositories
                 return list;
             }
         }
-        public int AddDistributor(Distributor distributor)
+        public int RegisterDistributor(Distributor distributor, string username, string passwordHash)
         {
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddDistributor", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
-                    con.Open();
-
                     cmd.Parameters.AddWithValue("@DistributorName", distributor.DistributorName);
                     cmd.Parameters.AddWithValue("@Location", (object?)distributor.Location ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ContactNumber", (object?)distributor.ContactNumber ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Email", (object?)distributor.Email ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Address", (object?)distributor.Address ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@GSTIN", (object?)distributor.GSTIN ?? DBNull.Value);
-
+                    cmd.Parameters.AddWithValue("@Username", username);
+                    cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    con.Open();
                     var result = cmd.ExecuteScalar();
-
                     return Convert.ToInt32(result);
                 }
             }

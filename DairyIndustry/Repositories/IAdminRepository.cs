@@ -137,7 +137,7 @@ namespace DairyIndustry.Repositories
 
         //Distributers
         List<Distributor> GetDistributors();
-        int AddDistributor(Distributor distributor);
+        int RegisterDistributor(Distributor distributor, string username, string passwordHash);
         bool UpdateDistributorStatus(int distributorId, string status);
         Distributor? GetDistributorById(int distributorId);
         List<Distributor> GetPendingDistributors();

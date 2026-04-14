@@ -857,24 +857,24 @@ namespace DairyIndustry.Controllers
             var distributors = _adminRepo.GetDistributors();
             return View(distributors);
         }
-        public IActionResult AddDistributor()
+        
+        [HttpGet]
+        [SessionAuthorize("Admin")]
+        public IActionResult RegisterDistributor()
         {
             return View();
         }
 
-        // POST: Add Distributor
         [HttpPost]
-        public IActionResult AddDistributor(Distributor distributor)
+        [SessionAuthorize("Admin")]
+        public IActionResult RegisterDistributor(Distributor distributor, string username, string password)
         {
-            if (ModelState.IsValid)
-            {
-                _adminRepo.AddDistributor(distributor);
-                TempData["success"] = "Distributor added successfully!";
-                return RedirectToAction("Distributors");
-            }
-
-            return View(distributor);
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            _adminRepo.RegisterDistributor(distributor, username, passwordHash);
+            ViewBag.Success = "Registration submitted. Please wait for admin approval.";
+            return View();
         }
+
         [HttpPost]
         [SessionAuthorize("Admin")]
         public IActionResult UpdateDistributorStatus(int distributorId, string status)
