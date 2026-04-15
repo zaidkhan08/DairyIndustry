@@ -12,13 +12,14 @@ namespace DairyIndustry.Controllers
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly IReportRepository _reportRepo;
+        private readonly IWebHostEnvironment _env;
 
-
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
             _reportRepo = reportRepo;
+            _env=env;
         }
 
         // ════════════════════════════════════════════════════════
@@ -405,35 +406,51 @@ namespace DairyIndustry.Controllers
             }
 
             string photoPath = null;
-            if (profilePhoto != null && profilePhoto.Length > 0)
-            {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
-                if (!allowedExtensions.Contains(extension))
-                {
-                    ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetAllRoles());
-                }
-                if (profilePhoto.Length > 2 * 1024 * 1024)
-                {
-                    ViewBag.Error = "Photo size must be less than 2MB.";
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetAllRoles());
-                }
-                string uploadsFolder = Path.Combine(
-                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-                string uniqueFileName = $"staff_{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(profilePhoto.FileName)}";
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                    profilePhoto.CopyTo(stream);
-                photoPath = $"/uploads/staff/{uniqueFileName}";
-            }
 
+            try
+            {
+                if (profilePhoto != null && profilePhoto.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
+
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ViewBag.Error = "Only .jpg, .jpeg, .png allowed";
+                        return View(_adminRepo.GetAllRoles());
+                    }
+
+                    if (profilePhoto.Length > 2 * 1024 * 1024)
+                    {
+                        ViewBag.Error = "Max size 2MB";
+                        return View(_adminRepo.GetAllRoles());
+                    }
+
+                    string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
+
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    string fileName = Guid.NewGuid().ToString() + extension;
+                    string filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        profilePhoto.CopyTo(stream);
+                    }
+
+                    photoPath = "/uploads/staff/" + fileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Upload failed: " + ex.Message;
+
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+
+                return View(_adminRepo.GetAllRoles());
+            }
             _adminRepo.AddStaff(firstName, lastName, phone, email,
     roleId, doj, bankName, accountNumber,
     ifscCode, Salary, photoPath,
@@ -494,13 +511,12 @@ namespace DairyIndustry.Controllers
                 return View(_adminRepo.GetStaffById(staffId));
             }
 
-            string finalPhoto = profilePhoto; 
+            string finalPhoto = profilePhoto;
 
             if (photoFile != null && photoFile.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var extension = Path.GetExtension(photoFile.FileName).ToLower();
-
                 if (!allowedExtensions.Contains(extension))
                 {
                     ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
@@ -509,7 +525,6 @@ namespace DairyIndustry.Controllers
                     ViewBag.Centers = _adminRepo.GetAllCenters();
                     return View(_adminRepo.GetStaffById(staffId));
                 }
-
                 if (photoFile.Length > 2 * 1024 * 1024)
                 {
                     ViewBag.Error = "Photo size must be less than 2MB.";
@@ -519,40 +534,23 @@ namespace DairyIndustry.Controllers
                     return View(_adminRepo.GetStaffById(staffId));
                 }
 
-                string uploadsFolder = Path.Combine(
-                    Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
-
+                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
                 string fileName = Guid.NewGuid().ToString() + extension;
                 string filePath = Path.Combine(uploadsFolder, fileName);
 
-                try
+                byte[] fileBytes;
+                using (var ms = new MemoryStream())
                 {
-                    using (var stream = new FileStream(
-                        filePath,
-                        FileMode.Create,
-                        FileAccess.Write,
-                        FileShare.None,
-                        4096,
-                        FileOptions.SequentialScan))
-                    {
-                        photoFile.CopyTo(stream);
-                    }
+                    photoFile.CopyTo(ms);
+                    fileBytes = ms.ToArray();
+                }
+                System.IO.File.WriteAllBytes(filePath, fileBytes);
 
-                    finalPhoto = $"/uploads/staff/{fileName}";
-                }
-                catch (Exception ex)
-                {
-                    ViewBag.Error = "Error uploading file: " + ex.Message;
-                    ViewBag.Roles = _adminRepo.GetAllRoles();
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetStaffById(staffId));
-                }
+                finalPhoto = $"/uploads/staff/{fileName}";
             }
-
             _adminRepo.UpdateStaff(
                 staffId,
                 firstName,
