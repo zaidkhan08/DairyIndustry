@@ -1,4 +1,5 @@
-﻿@{
+﻿@model DairyIndustry.Models.Logistics.DriversModel
+@{
     ViewData["Title"] = "Driver Registration";
     Layout = null;
 }
@@ -8,96 +9,130 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Driver Registration</title>
+    <title>Driver Registration — DairyManage</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .auth-card {
+            max-width: 480px;
+            width: 100%;
+            border-radius: 16px;
+        }
+
+        .brand-icon {
+            width: 50px;
+            height: 50px;
+            background: #2563eb;
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <div class="min-vh-100 d-flex justify-content-center align-items-center py-4">
-        <div class="card shadow-sm border-0" style="max-width:520px; width:90%;">
+    <div class="min-vh-100 d-flex flex-column justify-content-center align-items-center py-5">
 
-            <div class="card-header bg-primary text-white py-3">
-                <h5 class="mb-0 fw-semibold">Driver Registration</h5>
-            </div>
+        <div class="brand-icon shadow-sm">
+            <i class="bi bi-truck"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-1">Join the Fleet</h4>
+        <p class="text-muted mb-4 text-center">Register your driver account to manage <br> milk logistics and vehicles.</p>
 
-            <div class="card-body p-4">
+        <div class="card auth-card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5">
 
                 @if (ViewBag.Success != null)
                 {
-                    <div class="alert alert-success">
-                        @ViewBag.Success
+                    <div class="alert alert-success border-0 small d-flex align-items-center mb-4">
+                        <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.Success
                     </div>
                 }
-
                 @if (ViewBag.Error != null)
                 {
-                    <div class="alert alert-danger">
-                        @ViewBag.Error
+                    <div class="alert alert-danger border-0 small d-flex align-items-center mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @ViewBag.Error
                     </div>
                 }
 
-                <form method="post" action="/Logistics/Register">
+                <form method="post" asp-action="RegisterDriver" asp-controller="Logistics">
 
-                    <h6 class="text-muted fw-semibold border-bottom pb-2 mb-3">
-                        Personal Information
-                    </h6>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">
-                            Full Name <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" name="driverName"
-                               class="form-control" placeholder="Enter your full name" required />
+                    <div class="d-flex align-items-center gap-2 mb-3 mt-2">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-1 px-2 small fw-bold">1</div>
+                        <h6 class="mb-0 fw-bold text-secondary text-uppercase small" style="letter-spacing: 1px;">Identity</h6>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">
-                            License Number <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" name="licenseNo"
-                               class="form-control" placeholder="e.g. GJ05 2024 001234" required />
+                    <div class="form-floating mb-3">
+                        <input type="text" name="driverName" class="form-control" id="nameInput" placeholder="Full Name" required>
+                        <label for="nameInput text-muted">Full Name</label>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-medium">Phone</label>
-                        <input type="text" name="phone"
-                               class="form-control" placeholder="Enter phone number" />
+                    <div class="form-floating mb-3">
+                        <input type="text" name="licenseNo" class="form-control" id="licenseInput" placeholder="License No" required>
+                        <label for="licenseInput">License Number (e.g. GJ05...)</label>
                     </div>
 
-                    <h6 class="text-muted fw-semibold border-bottom pb-2 mb-3">
-                        Login Credentials
-                    </h6>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">
-                            Username <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" name="username"
-                               class="form-control" placeholder="Choose a username" required />
+                    <div class="form-floating mb-4">
+                        <input type="tel" name="phone" class="form-control" id="phoneInput" placeholder="Phone">
+                        <label for="phoneInput">Phone Number</label>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-medium">
-                            Password <span class="text-danger">*</span>
-                        </label>
-                        <input type="password" name="password"
-                               class="form-control" placeholder="Choose a password" required />
+                    <div class="d-flex align-items-center gap-2 mb-3 pt-2">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-1 px-2 small fw-bold">2</div>
+                        <h6 class="mb-0 fw-bold text-secondary text-uppercase small" style="letter-spacing: 1px;">Access Details</h6>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" asp-action="RegisterDriver" asp-controller="Logistics" class="btn btn-primary px-4">
-                            Register
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light border-end-0 text-muted">@@</span>
+                        <input type="text" name="username" class="form-control border-start-0 ps-0" placeholder="Username" required />
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <input type="password" name="password" class="form-control" id="passInput" placeholder="Password" required>
+                        <label for="passInput">Password</label>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary rounded-3 shadow-sm">
+                            Complete Registration
                         </button>
-                        <a href="/Admin/Login" class="btn btn-outline-secondary px-4">
-                            Back to Login
+                        <a href="/Admin/Login" class="btn btn-link text-decoration-none text-muted small mt-2">
+                            Already have an account? <span class="text-primary fw-semibold">Login here</span>
                         </a>
                     </div>
 
                 </form>
-
             </div>
+        </div>
+
+        <div class="mt-4 text-muted small">
+            &copy; @DateTime.Now.Year Dairy Management System &bull; Logistics Module
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
