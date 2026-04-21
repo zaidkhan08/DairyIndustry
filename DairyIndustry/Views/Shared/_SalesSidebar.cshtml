@@ -1,10 +1,10 @@
 ﻿@{
     string action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     string roleName = Context.Session.GetString("RoleName") ?? "";
-    bool isAdmin = roleName == "Administrator";
-    bool isStaff = roleName == "Staff";
+    bool isAdmin = roleName == "Admin";
+    // bool isStaff = roleName == "Staff";
     bool isDist = roleName == "Distributor";
-    bool isAdminOrStaff = isAdmin || isStaff;
+    //bool isAdmin = isAdmin;  //|| isStaff;
 
     bool Active(string a) => string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
 }
@@ -29,7 +29,7 @@
     <!-- Navigation -->
     <nav style="flex:1; padding:8px 0; overflow-y:auto;">
 
-        @if (isAdminOrStaff)
+        @if (isAdmin)
         {
             <div class="sb-section-label">Overview</div>
 
@@ -48,6 +48,7 @@
                class="sb-link @(Active("Index") ? "active" : "")">
                 <span class="sb-icon">📋</span> All Orders
             </a>
+
             <a asp-controller="Sales" asp-action="Create"
                class="sb-link @(Active("Create") ? "active" : "")">
                 <span class="sb-icon">➕</span> New Order
@@ -60,7 +61,7 @@
                 <span class="sb-icon">🏪</span> All Distributors
             </a>
 
-            @if (isAdmin)
+            @* @if (isAdmin)
             {
                 <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
                    class="sb-link">
@@ -70,16 +71,24 @@
                    class="sb-link @(Active("AddDistributor") ? "active" : "")">
                     <span class="sb-icon">➕</span> Add Distributor
                 </a>
-            }
+            } *@
         }
 
         @if (isDist)
         {
             <div class="sb-section-label">My Account</div>
 
+            <a asp-controller="Sales" asp-action="EditDistributor"
+               class="sb-link @(Active("EditDistributor") ? "active" : "")">
+                <span class="sb-icon">➕</span> Edit Profile
+            </a>
             <a asp-controller="Sales" asp-action="MyOrders"
                class="sb-link @(Active("MyOrders") ? "active" : "")">
                 <span class="sb-icon">📋</span> My Orders
+            </a>
+            <a asp-controller="Sales" asp-action="Create"
+               class="sb-link @(Active("Create") ? "active" : "")">
+                <span class="sb-icon">➕</span> New Order
             </a>
         }
 

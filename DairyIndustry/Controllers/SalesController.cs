@@ -41,7 +41,7 @@ namespace DairyIndustry.Controllers
         //  ALL ORDERS — Admin only
         //  GET /Sales/Index
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin")]
 
         public IActionResult Index(int? distributorId, string? status,
                                    DateTime? fromDate, DateTime? toDate)
@@ -58,7 +58,7 @@ namespace DairyIndustry.Controllers
         //  ORDER DETAILS — Admin sees all; Distributor sees own only
         //  GET /Sales/Details/5
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
 
         public IActionResult Details(int id)
         {
@@ -92,7 +92,7 @@ namespace DairyIndustry.Controllers
         //  CREATE ORDER — Admin only
         //  GET /Sales/Create
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
         public IActionResult Create()
         {
             LoadDistributorDropdown();
@@ -102,7 +102,7 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
         public IActionResult Create(SalesOrderFormModel model)
         {
             if (!ModelState.IsValid)
@@ -132,7 +132,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
         public IActionResult AddOrderDetail(AddOrderDetailFormModel model)
         {
             if (!ModelState.IsValid)
@@ -230,7 +230,7 @@ namespace DairyIndustry.Controllers
         //  EDIT DISTRIBUTOR — Admin only
         //  GET/POST /Sales/EditDistributor/5
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
         public IActionResult EditDistributor(int id)
         {
             var dist = _repo.GetDistributorById(id);
@@ -253,7 +253,7 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Admin", "Distributor")]
+        [SessionAuthorize("Admin","Distributor")]
         public IActionResult EditDistributor(DistributorFormModel model)
         {
             if (!ModelState.IsValid) return View(model);

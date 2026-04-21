@@ -306,6 +306,7 @@ namespace DairyIndustry.Repositories
             {
                 cmd.CommandType = System.Data.CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@DistributorId", model.DistributorId);
+                cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
                 cmd.Parameters.AddWithValue("@OrderDate", model.OrderDate);
                 using var reader = cmd.ExecuteReader();
                 if (!reader.Read()) return 0;
