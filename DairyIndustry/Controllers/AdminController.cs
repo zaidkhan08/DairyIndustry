@@ -12,13 +12,6 @@ namespace DairyIndustry.Controllers
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly IReportRepository _reportRepo;
-
-
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo)
-        {
-            _adminRepo = adminRepo;
-            _logisticsRepo = logisticsRepo;
-            _reportRepo = reportRepo;
         private readonly ISalesRepository _salesRepo;
 
 
@@ -34,6 +27,7 @@ namespace DairyIndustry.Controllers
         // LOGIN — NO [SessionAuthorize] here
         // ════════════════════════════════════════════════════════
 
+        [HttpGet]
         public IActionResult Login()
         {
             return View();
@@ -101,23 +95,18 @@ namespace DairyIndustry.Controllers
                 //    return RedirectToAction("Index", "Finance");
 
                 case "Distributor":
-                    var distResult = _salesRepo.GetDistributorForLogin(user.Username);
-                    if (distResult != null)
+                    
                     {
-                        HttpContext.Session.SetInt32("DistributorId", distResult.DistributorId);
-                        HttpContext.Session.SetString("DistributorName", distResult.DistributorName!);
-                        HttpContext.Session.SetString("DistributorStatus", distResult.Status!);
+                        HttpContext.Session.SetInt32("DistributorId",user.UserId);
+                        HttpContext.Session.SetString("DistributorName", user.Username!);
                     }
-                    if (distResult?.IsActive == true &&
-                        (distResult.Status ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                    if (user.RoleName== "Distributor")
                         return RedirectToAction("MyOrders", "Sales");
                     else
                         return RedirectToAction("NotApproved", "Sales");
 
-                //case "HR Manager":
-                //    return RedirectToAction("Index", "HR");
-
-
+                case "HR Manager":
+                    return RedirectToAction("Index", "HR");
 
                 default:
                     return RedirectToAction("Index", "Admin");

@@ -8,7 +8,7 @@ namespace DairyIndustry.Controllers
 {
     // ── Default: any logged-in user can reach this controller ─────────────
     // Individual actions narrow by role where needed.
-    //[SessionAuthorize]
+    [SessionAuthorize]
     public class SalesController : Controller
     {
         private readonly ISalesRepository _repo;
@@ -23,7 +23,7 @@ namespace DairyIndustry.Controllers
         //  DASHBOARD — Admin only
         //  GET /Sales/Dashboard
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult Dashboard()
         {
             var vm = new SalesDashboardViewModel
@@ -41,7 +41,8 @@ namespace DairyIndustry.Controllers
         //  ALL ORDERS — Admin only
         //  GET /Sales/Index
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin", "Distributor")]
+
         public IActionResult Index(int? distributorId, string? status,
                                    DateTime? fromDate, DateTime? toDate)
         {
@@ -57,6 +58,8 @@ namespace DairyIndustry.Controllers
         //  ORDER DETAILS — Admin sees all; Distributor sees own only
         //  GET /Sales/Details/5
         // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Admin", "Distributor")]
+
         public IActionResult Details(int id)
         {
             var order = _repo.GetOrderById(id);
@@ -78,8 +81,8 @@ namespace DairyIndustry.Controllers
             order.OrderDetails = _repo.GetOrderDetails(id);
 
             // Product dropdown only for Admin on Pending orders
-            if (order.CanAddItems && role == "Administrator")
-                LoadProductDropdown();
+            //if (order.CanAddItems && role == "Admin" && role == "Distributor")
+            LoadProductDropdown();
 
             return View(order);
         }
@@ -89,7 +92,7 @@ namespace DairyIndustry.Controllers
         //  CREATE ORDER — Admin only
         //  GET /Sales/Create
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator", "Distributor")]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult Create()
         {
             LoadDistributorDropdown();
@@ -98,8 +101,8 @@ namespace DairyIndustry.Controllers
         }
 
         [HttpPost]
-        //[ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator","Distributor")]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult Create(SalesOrderFormModel model)
         {
             if (!ModelState.IsValid)
@@ -128,8 +131,8 @@ namespace DairyIndustry.Controllers
         //  POST /Sales/AddOrderDetail
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
-        //[ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator", "Distributor")]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult AddOrderDetail(AddOrderDetailFormModel model)
         {
             if (!ModelState.IsValid)
@@ -150,7 +153,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult UpdateStatus(int orderId, string newStatus)
         {
             if (!ValidOrderStatuses.Contains(newStatus))
@@ -172,7 +175,7 @@ namespace DairyIndustry.Controllers
         //  DISTRIBUTORS LIST — Admin only
         //  GET /Sales/Distributors
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult Distributors(string? status)
         {
             var all = _repo.GetDistributors();
@@ -187,7 +190,7 @@ namespace DairyIndustry.Controllers
         //  DISTRIBUTOR DETAILS — Admin only
         //  GET /Sales/DistributorDetails/5
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult DistributorDetails(int id)
         {
             var dist = _repo.GetDistributorById(id);
@@ -205,12 +208,12 @@ namespace DairyIndustry.Controllers
         //  ADD DISTRIBUTOR (admin direct-add) — Admin only
         //  GET/POST /Sales/AddDistributor
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult AddDistributor() => View(new DistributorFormModel());
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[SessionAuthorize("Admin")]
+        [SessionAuthorize("Admin")]
         public IActionResult AddDistributor(DistributorFormModel model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -227,7 +230,7 @@ namespace DairyIndustry.Controllers
         //  EDIT DISTRIBUTOR — Admin only
         //  GET/POST /Sales/EditDistributor/5
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator", "Distributor")]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult EditDistributor(int id)
         {
             var dist = _repo.GetDistributorById(id);
@@ -250,14 +253,14 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator", "Distributor")]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult EditDistributor(DistributorFormModel model)
         {
             if (!ModelState.IsValid) return View(model);
 
             bool ok = _repo.UpdateDistributor(model);
             TempData[ok ? "Success" : "Error"] = ok ? "Distributor updated." : "Update failed.";
-            return RedirectToAction("DistributorDetails", new { id = model.DistributorId });
+            return RedirectToAction("DistributorDetails", new { id = model.DistributorId});
         }
 
 
@@ -268,7 +271,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult ApproveDistributor(int distributorId, string action)
         {
             if (action != "Approve" && action != "Reject")
@@ -293,7 +296,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult SuspendDistributor(int distributorId)
         {
             bool ok = _repo.SuspendDistributor(distributorId);
@@ -303,7 +306,7 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult ReinstateDistributor(int distributorId)
         {
             bool ok = _repo.ReinstateDistributor(distributorId);
@@ -330,7 +333,7 @@ namespace DairyIndustry.Controllers
         //  REPORTS — Admin only
         //  GET /Sales/Reports
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Administrator")]
+        [SessionAuthorize("Admin")]
         public IActionResult Reports()
         {
             var vm = new SalesDashboardViewModel
@@ -402,6 +405,9 @@ namespace DairyIndustry.Controllers
 
             try
             {
+                model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                model.ConfirmPassword = BCrypt.Net.BCrypt.HashPassword(model.ConfirmPassword);
+
                 _repo.RegisterDistributor(model);
                 TempData["RegSuccess"] =
                     "Registration submitted! Our team will review and approve your account. " +
