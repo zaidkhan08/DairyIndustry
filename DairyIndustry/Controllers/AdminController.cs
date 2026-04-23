@@ -1,5 +1,6 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Admin;
+using DairyIndustry.Models.Finance;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
@@ -12,14 +13,16 @@ namespace DairyIndustry.Controllers
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly IReportRepository _reportRepo;
+        private readonly IFinanceRepository _financeRepo;
         private readonly IWebHostEnvironment _env;
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
             _reportRepo = reportRepo;
-            _env=env;
+            _financeRepo = financeRepo;
+            _env = env;
         }
 
         // ════════════════════════════════════════════════════════
@@ -581,14 +584,17 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public ActionResult AddPlant()
         {
+            ViewBag.States = _adminRepo.GetAllStates();
+            ViewBag.City = _adminRepo.GetAllCities();
             return View();
         }
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public ActionResult AddPlant(string PlantName, string Location)
+        public ActionResult AddPlant(string PlantName, string Location,string City,string State)
         {
-            _adminRepo.AddPlant(PlantName, Location);
+            string loc = $"{Location}, {City}, {State}";
+            _adminRepo.AddPlant(PlantName, loc);
             return RedirectToAction("GetAllPlants");
         }
 
@@ -1027,6 +1033,29 @@ namespace DairyIndustry.Controllers
         {
             var result = _adminRepo.MarkAllNotificationsRead();
             return Json(new { success = result });
+        }
+
+        //Finance
+
+        [SessionAuthorize("Admin")]
+        public IActionResult CenterPayments()
+        {
+            List<CenterPaymentModel> payments = _financeRepo.GetAllCenterPayments(plantId: null);
+            return View(payments);
+        }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult CenterPaymentDetail(int id)
+        {
+            CenterPaymentModel payment = _financeRepo.GetCenterPaymentById(id);
+
+            if (payment == null)
+            {
+                TempData["Error"] = $"Center payment #{id} was not found.";
+                return RedirectToAction(nameof(CenterPayments));
+            }
+
+            return View(payment);
         }
 
 

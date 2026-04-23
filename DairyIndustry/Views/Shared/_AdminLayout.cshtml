@@ -136,11 +136,11 @@
             <div class="nav-label">Modules</div>
 
             <!-- Farmers -->
-            <a asp-controller="Farmer" asp-action="Index"
+            @* <a asp-controller="Farmer" asp-action="Index"
                class="nav-item-link @(ctrl == "Farmer" ? "active" : "")">
                 <i class="bi bi-person-badge-fill"></i>
                 <span>Farmers</span>
-            </a>
+            </a> *@
 
             <!-- Logistics submenu -->
             @{
@@ -280,8 +280,8 @@
             </div>
 
             <!-- Collection / Center Payment -->
-            <a asp-controller="Finance" asp-action="CenterPayments"
-               class="nav-item-link @(ctrl == "Finance" && act == "CenterPayments" ? "active" : "")">
+            <a asp-controller="Admin" asp-action="CenterPayments"
+               class="nav-item-link @(ctrl == "Admin" && act == "CenterPayments" ? "active" : "")">
                 <i class="bi bi-bucket-fill"></i>
                 <span>Center Payment</span>
             </a>
