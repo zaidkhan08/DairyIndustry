@@ -4,6 +4,7 @@
     {
         public int FarmerId { get; set; }
         public string FarmerName { get; set; }
+        public string? FarmerCode { get; set; }
     }
 
     public class CenterDropdownModel

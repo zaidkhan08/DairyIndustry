@@ -1,0 +1,1318 @@
+﻿@model DairyIndustry.Models.Production.ProductionDashboardViewModel
+@{
+    ViewData["Title"] = "Production Dashboard";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+}
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+    :root {
+        --white: #ffffff;
+        --bg: #f4f6f9;
+        --border: #e5e7eb;
+        --border-light: #f0f2f5;
+        --text: #111827;
+        --text-mid: #374151;
+        --text-muted: #6b7280;
+        --text-light: #9ca3af;
+        --teal: #10b981;
+        --teal-bg: #d1fae5;
+        --teal-text: #065f46;
+        --blue: #3b82f6;
+        --blue-bg: #dbeafe;
+        --blue-text: #1e40af;
+        --amber: #f59e0b;
+        --amber-bg: #fef3c7;
+        --amber-text: #92400e;
+        --red: #ef4444;
+        --red-bg: #fee2e2;
+        --red-text: #991b1b;
+        --purple: #8b5cf6;
+        --purple-bg: #ede9fe;
+        --purple-text: #5b21b6;
+        --gray-bg: #f3f4f6;
+        --gray-text: #4b5563;
+        --radius: 10px;
+        --radius-sm: 6px;
+        --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg);
+        font-family: 'Inter', sans-serif;
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    /* ── Page Header ─────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 1.5rem 1.75rem 1.25rem;
+        background: var(--white);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+
+        .page-subtitle strong {
+            color: var(--text-mid);
+            font-weight: 600;
+        }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--white);
+        color: var(--text-mid);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+
+        .btn-outline:hover {
+            background: var(--bg);
+        }
+
+    /* ── Main Container ──────────────────────── */
+    .dash-body {
+        padding: 1.5rem 1.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* ── Top Summary Cards (6-col) ───────────── */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .sum-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.25rem 1rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: box-shadow 0.15s;
+    }
+
+        .sum-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+    .sum-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .sum-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .sum-icon.blue {
+            background: var(--blue-bg);
+        }
+
+        .sum-icon.teal {
+            background: var(--teal-bg);
+        }
+
+        .sum-icon.amber {
+            background: var(--amber-bg);
+        }
+
+        .sum-icon.red {
+            background: var(--red-bg);
+        }
+
+        .sum-icon.purple {
+            background: var(--purple-bg);
+        }
+
+        .sum-icon.gray {
+            background: var(--gray-bg);
+        }
+
+    .sum-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    .badge-teal {
+        background: var(--teal-bg);
+        color: var(--teal-text);
+    }
+
+    .badge-blue {
+        background: var(--blue-bg);
+        color: var(--blue-text);
+    }
+
+    .badge-amber {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    .badge-red {
+        background: var(--red-bg);
+        color: var(--red-text);
+    }
+
+    .badge-purple {
+        background: var(--purple-bg);
+        color: var(--purple-text);
+    }
+
+    .badge-gray {
+        background: var(--gray-bg);
+        color: var(--gray-text);
+    }
+
+    .sum-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1;
+    }
+
+    .sum-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .sum-link {
+        font-size: 12px;
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+        .sum-link:hover {
+            text-decoration: underline;
+        }
+
+    /* ── Middle 3-Col ────────────────────────── */
+    .mid-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
+    }
+
+    /* ── Generic Panel ───────────────────────── */
+    .panel {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .panel-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .panel-title-icon {
+        font-size: 16px;
+    }
+
+    .panel-view-all {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--blue);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+        .panel-view-all:hover {
+            text-decoration: underline;
+        }
+
+    .panel-body {
+        padding: 1rem 1.25rem;
+        flex: 1;
+    }
+
+    .panel-footer {
+        padding: 0.75rem 1.25rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    /* ── Production Batches Panel ────────────── */
+    .batch-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .batch-cell {
+        border-radius: var(--radius-sm);
+        padding: 1rem 1rem 0.75rem;
+        text-align: center;
+    }
+
+        .batch-cell.amber-bg {
+            background: var(--amber-bg);
+        }
+
+        .batch-cell.teal-bg {
+            background: var(--teal-bg);
+        }
+
+        .batch-cell.red-bg {
+            background: var(--red-bg);
+        }
+
+        .batch-cell.gray-bg {
+            background: var(--gray-bg);
+        }
+
+    .batch-num {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+
+        .batch-num.amber {
+            color: var(--amber);
+        }
+
+        .batch-num.teal {
+            color: var(--teal);
+        }
+
+        .batch-num.red {
+            color: var(--red);
+        }
+
+        .batch-num.gray {
+            color: var(--text-muted);
+        }
+
+    .batch-lbl {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .view-all-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 9px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-mid);
+        text-decoration: none;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: background 0.12s;
+    }
+
+        .view-all-btn:hover {
+            background: var(--bg);
+        }
+
+        .view-all-btn.amber-btn {
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+
+            .view-all-btn.amber-btn:hover {
+                background: var(--amber-bg);
+            }
+
+    /* ── Transfer Overview Panel ─────────────── */
+    .transfer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 13px;
+    }
+
+        .transfer-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .transfer-row .t-label {
+            color: var(--text-muted);
+        }
+
+        .transfer-row .t-value {
+            font-weight: 600;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+        }
+
+            .transfer-row .t-value.red {
+                color: var(--red);
+            }
+
+    .progress-wrap {
+        margin-top: 12px;
+    }
+
+    .progress-track {
+        height: 7px;
+        background: var(--border-light);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: var(--teal);
+        transition: width 0.8s ease;
+    }
+
+    .progress-label {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* ── Quick Actions ────────────────────────── */
+    .qa-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .qa-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 14px 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--white);
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.12s, border-color 0.12s;
+    }
+
+        .qa-btn:hover {
+            background: var(--bg);
+            border-color: #d1d5db;
+        }
+
+        .qa-btn.blue-qa {
+            border-color: #bfdbfe;
+        }
+
+        .qa-btn.teal-qa {
+            border-color: #a7f3d0;
+        }
+
+        .qa-btn.amber-qa {
+            border-color: #fde68a;
+        }
+
+        .qa-btn.red-qa {
+            border-color: #fecaca;
+        }
+
+        .qa-btn.purple-qa {
+            border-color: #ddd6fe;
+        }
+
+        .qa-btn.gray-qa {
+            border-color: var(--border);
+        }
+
+    .qa-icon {
+        font-size: 20px;
+        line-height: 1;
+    }
+
+        .qa-icon.blue-qa {
+            color: var(--blue);
+        }
+
+        .qa-icon.teal-qa {
+            color: var(--teal);
+        }
+
+        .qa-icon.amber-qa {
+            color: var(--amber);
+        }
+
+        .qa-icon.red-qa {
+            color: var(--red);
+        }
+
+        .qa-icon.purple-qa {
+            color: var(--purple);
+        }
+
+        .qa-icon.gray-qa {
+            color: var(--text-muted);
+        }
+
+    .qa-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-mid);
+        text-align: center;
+        line-height: 1.3;
+    }
+
+    /* ── Bottom 2-Col ────────────────────────── */
+    .bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    /* ── Data Table ──────────────────────────── */
+    .dash-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .dash-table th {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            background: #fafafa;
+        }
+
+        .dash-table td {
+            padding: 10px 1.25rem;
+            color: var(--text-mid);
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .dash-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dash-table tr:hover td {
+            background: #fafbff;
+        }
+
+    /* ── Status Pills ────────────────────────── */
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+
+    .pill-active {
+        background: var(--teal-bg);
+        color: var(--teal-text);
+    }
+
+    .pill-inactive {
+        background: var(--red-bg);
+        color: var(--red-text);
+    }
+
+    .pill-inprogress {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    .pill-completed {
+        background: var(--teal-bg);
+        color: var(--teal-text);
+    }
+
+    .pill-failed {
+        background: var(--red-bg);
+        color: var(--red-text);
+    }
+
+    .pill-cancelled {
+        background: var(--gray-bg);
+        color: var(--gray-text);
+    }
+
+    .pill-pending {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    /* Role badges */
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 9px;
+        border-radius: 4px;
+    }
+
+    .role-plantmanager {
+        background: var(--blue-bg);
+        color: var(--blue-text);
+    }
+
+    .role-driver {
+        background: var(--teal-bg);
+        color: var(--teal-text);
+    }
+
+    .role-admin {
+        background: var(--purple-bg);
+        color: var(--purple-text);
+    }
+
+    .role-center {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    .role-default {
+        background: var(--gray-bg);
+        color: var(--gray-text);
+    }
+
+    /* ── Responsive ──────────────────────────── */
+    @@media (max-width: 1280px) {
+        .summary-grid {
+            grid-template-columns: repeat(3, minmax(0,1fr));
+        }
+
+        .mid-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0,1fr));
+        }
+
+        .mid-grid, .bottom-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dash-body {
+            padding: 1rem;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 12px;
+        }
+    }
+</style>
+
+<!-- ═══════════════════════════════════════════
+     PAGE HEADER
+═══════════════════════════════════════════ -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Production Dashboard</h1>
+        <p class="page-subtitle">
+            Welcome back, <strong>@User.Identity?.Name?.Split('\\').Last()</strong>
+            &nbsp;&mdash;&nbsp; @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+        </p>
+    </div>
+    <div class="header-actions btn-primary">
+        <a href="@Url.Action("StartBatch", "Production")" class="btn-outline">
+            &#43; Start Batch
+        </a>
+    </div>
+</div>
+
+<div class="dash-body">
+
+    <!-- ═══ ROW 1 — 6 Summary Cards ══════════════ -->
+    <div class="summary-grid">
+
+        <!-- Milk Transfers -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon gray">🚛</div>
+                @if (Model.PendingTransfers > 0)
+                {
+                    <span class="sum-badge badge-amber">@Model.PendingTransfers Pending</span>
+                }
+                else
+                {
+                    <span class="sum-badge badge-teal">0 Pending</span>
+                }
+            </div>
+            <div>
+                <div class="sum-value">@Model.TotalTransfers</div>
+                <div class="sum-label">Milk Transfers</div>
+            </div>
+            <a href="@Url.Action("Index", "Production")" class="sum-link">View all &rarr;</a>
+        </div>
+
+        <!-- Production Batches -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon amber">🏭</div>
+                @if (Model.InProgressBatches > 0)
+                {
+                    <span class="sum-badge badge-amber">@Model.InProgressBatches Active</span>
+                }
+                else
+                {
+                    <span class="sum-badge badge-gray">0 Active</span>
+                }
+            </div>
+            <div>
+                <div class="sum-value">@Model.TotalBatches</div>
+                <div class="sum-label">Production Batches</div>
+            </div>
+            <a href="@Url.Action("ProductionBatches", "Production")" class="sum-link">View all &rarr;</a>
+        </div>
+
+        <!-- Raw Milk Stock -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon teal">🥛</div>
+                @if (Model.LowStockCount > 0)
+                {
+                    <span class="sum-badge badge-amber">@Model.LowStockCount Low</span>
+                }
+                else
+                {
+                    <span class="sum-badge badge-teal">Stocked</span>
+                }
+            </div>
+            <div>
+                <div class="sum-value">@((Model.TotalRawMilkStock / 1000).ToString("F1"))k</div>
+                <div class="sum-label">Raw Milk Stock (L)</div>
+            </div>
+            <a href="@Url.Action("RawMilkInventory", "Production")" class="sum-link">View all &rarr;</a>
+        </div>
+
+        <!-- Quality Tests -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon red">🧪</div>
+                @if (Model.DeviatedTests > 0)
+                {
+                    <span class="sum-badge badge-red">@Model.DeviatedTests Deviated</span>
+                }
+                else
+                {
+                    <span class="sum-badge badge-teal">All Normal</span>
+                }
+            </div>
+            <div>
+                <div class="sum-value">@Model.TotalQualityTests</div>
+                <div class="sum-label">Quality Tests</div>
+            </div>
+            <a href="@Url.Action("QualityTests", "Production")" class="sum-link">View all &rarr;</a>
+        </div>
+
+        <!-- Center Payments -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon blue">💳</div>
+                @if (Model.PendingCenterPayments > 0)
+                {
+                    <span class="sum-badge badge-amber">@Model.PendingCenterPayments Pending</span>
+                }
+                else
+                {
+                    <span class="sum-badge badge-teal">All Settled</span>
+                }
+            </div>
+            <div>
+                <div class="sum-value">₹@((Model.TotalPaidToCenters / 100000).ToString("F1"))L</div>
+                <div class="sum-label">Center Payments</div>
+            </div>
+            <a href="@Url.Action("CenterPayments", "Finance")" class="sum-link">View all &rarr;</a>
+        </div>
+
+        <!-- Products / Wastage -->
+        <div class="sum-card">
+            <div class="sum-card-top">
+                <div class="sum-icon purple">📦</div>
+                <span class="sum-badge badge-gray">@Model.TotalProductWastage Logged</span>
+            </div>
+            <div>
+                <div class="sum-value">@Model.TotalMilkProcessWastage.ToString("N0")</div>
+                <div class="sum-label">Process Wastage (L)</div>
+            </div>
+            <a href="@Url.Action("WastageLog", "Production")" class="sum-link">View all &rarr;</a>
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 2 — Production Batches | Transfer Overview | Quick Actions ════ -->
+    <div class="mid-grid">
+
+        <!-- Production Batches -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">⚙️</span>
+                    Production Batches
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="batch-grid">
+                    <div class="batch-cell amber-bg">
+                        <div class="batch-num amber">@Model.InProgressBatches</div>
+                        <div class="batch-lbl">In Progress</div>
+                    </div>
+                    <div class="batch-cell teal-bg">
+                        <div class="batch-num teal">@Model.CompletedBatches</div>
+                        <div class="batch-lbl">Completed</div>
+                    </div>
+                    <div class="batch-cell red-bg">
+                        <div class="batch-num red">@Model.QCFailedBatches</div>
+                        <div class="batch-lbl">QC Failed</div>
+                    </div>
+                    <div class="batch-cell gray-bg">
+                        <div class="batch-num gray">@(Model.TotalBatches - Model.InProgressBatches - Model.CompletedBatches - Model.QCFailedBatches)</div>
+                        <div class="batch-lbl">Cancelled</div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <a href="@Url.Action("Batches", "Production")" class="view-all-btn amber-btn">
+                    ☰&nbsp; View All Batches
+                </a>
+            </div>
+        </div>
+
+        <!-- Transfer Overview -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🚛</span>
+                    Transfer Overview
+                </div>
+            </div>
+            <div class="panel-body">
+                @{
+                    var totalDispatched = Model.RecentTransfers.Sum(t => t.DispatchQty);
+                    var receivedQty = Model.RecentTransfers.Where(t => t.Status == "Received").Sum(t => t.DispatchQty);
+                    var receivedPct = totalDispatched > 0 ? (int)Math.Round(receivedQty / totalDispatched * 100) : 0;
+                }
+                <div class="transfer-row">
+                    <span class="t-label">Total Dispatched</span>
+                    <span class="t-value">@totalDispatched.ToString("N0") L</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Total Loss</span>
+                    <span class="t-value red">@Model.TotalLossLitres.ToString("N1") L</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Loss %</span>
+                    <span class="t-value red">@Model.AvgLossPct.ToString("F2")%</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Pending Receipt</span>
+                    <span class="t-value">
+                        @if (Model.PendingTransfers == 0)
+                        {
+                            <span class="pill pill-active">0</span>
+                        }
+                        else
+                        {
+                            <span class="pill pill-pending">@Model.PendingTransfers</span>
+                        }
+                    </span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:@receivedPct%"></div>
+                    </div>
+                    <p class="progress-label">@receivedPct% transfers received</p>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <a href="@Url.Action("Index", "Production")" class="view-all-btn">
+                    ☰&nbsp; View All Transfers
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">⚡</span>
+                    Quick Actions
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="qa-grid">
+                    <a href="@Url.Action("Create", "Staff")" class="qa-btn blue-qa">
+                        <span class="qa-icon blue-qa">👤</span>
+                        <span class="qa-label">Add Staff</span>
+                    </a>
+                    <a href="@Url.Action("Create", "Plant")" class="qa-btn amber-qa">
+                        <span class="qa-icon amber-qa">🏭</span>
+                        <span class="qa-label">Add Plant</span>
+                    </a>
+                    <a href="@Url.Action("Create", "Center")" class="qa-btn teal-qa">
+                        <span class="qa-icon teal-qa">🏠</span>
+                        <span class="qa-label">Add Center</span>
+                    </a>
+                    <a href="@Url.Action("Create", "Product")" class="qa-btn red-qa">
+                        <span class="qa-icon red-qa">📦</span>
+                        <span class="qa-label">Add Product</span>
+                    </a>
+                    <a href="@Url.Action("RateChart", "Finance")" class="qa-btn gray-qa">
+                        <span class="qa-icon gray-qa">₹</span>
+                        <span class="qa-label">Rate Chart</span>
+                    </a>
+                    <a href="@Url.Action("AuditLogs", "Admin")" class="qa-btn purple-qa">
+                        <span class="qa-icon purple-qa">🕐</span>
+                        <span class="qa-label">Audit Logs</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 3 — Recent Transfers | Recent Batches ════ -->
+    <div class="bottom-grid">
+
+        <!-- Recent Transfers Table -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🚛</span>
+                    Recent Transfers
+                </div>
+                <a href="@Url.Action("Index", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentTransfers.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Batch Ref</th>
+                            <th>Center</th>
+                            <th>Dispatched</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.RecentTransfers.Take(6))
+                        {
+                            <tr>
+                                <td style="font-weight:600;font-size:12px;font-family:'DM Mono',monospace">@t.BatchRef</td>
+                                <td>@t.CenterName</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px">@t.DispatchDate.ToString("dd MMM yy")</td>
+                                <td>
+                                    @if (t.Status == "Received")
+                                    {
+                                        <span class="pill pill-completed">Received</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pill pill-pending">Dispatched</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No transfers recorded yet.</div>
+            }
+        </div>
+
+        <!-- Recent Batches Table -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">⚙️</span>
+                    Recent Batches
+                </div>
+                <a href="@Url.Action("ProductionBatches", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentBatches.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Plant</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.RecentBatches.Take(6))
+                        {
+                            <tr>
+                                <td style="font-weight:500">@b.ProductName</td>
+                                <td>@b.PlantName</td>
+                                <td style="font-size:12px;font-family:'DM Mono',monospace">@b.ProductionDate.ToString("dd MMM yy")</td>
+                                <td>
+                                    @switch (b.BatchStatus)
+                                    {
+                                        case "InProgress":
+                                            <span class="pill pill-inprogress">InProgress</span>
+                                            break;
+                                        case "Completed":
+                                            <span class="pill pill-completed">Completed</span>
+                                            break;
+                                        case "QCFailed":
+                                            <span class="pill pill-failed">QC Failed</span>
+                                            break;
+                                        case "Cancelled":
+                                            <span class="pill pill-cancelled">Cancelled</span>
+                                            break;
+                                        default:
+                                            <span class="pill pill-cancelled">@b.BatchStatus</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No production batches found.</div>
+            }
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 4 — Inventory + Loss Log ════════ -->
+    <div class="bottom-grid">
+
+        <!-- Raw Milk Inventory -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🥛</span>
+                    Raw Milk Inventory
+                </div>
+                <a href="@Url.Action("RawMilkInventory", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.Inventory.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Plant</th>
+                            <th>Milk Type</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var inv in Model.Inventory.Take(7))
+                        {
+                            <tr>
+                                <td style="font-size:12px">@inv.PlantName</td>
+                                <td style="font-size:12px">@inv.MilkTypeName</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px">@inv.Quantity.ToString("N0") L</td>
+                                <td>
+                                    @switch (inv.StockLabel)
+                                    {
+                                        case "Available":
+                                            <span class="pill pill-active">Available</span>
+                                            break;
+                                        case "Low":
+                                            <span class="pill pill-inprogress">Low</span>
+                                            break;
+                                        default:
+                                            <span class="pill pill-failed">Empty</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No inventory data found.</div>
+            }
+        </div>
+
+        <!-- Transfer Loss Log -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">📉</span>
+                    Transfer Loss Log
+                </div>
+                <a href="@Url.Action("TransferLossLog", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentLosses.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Route</th>
+                            <th>Loss (L)</th>
+                            <th>Loss %</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in Model.RecentLosses.Take(6))
+                        {
+                            <tr>
+                                <td>
+                                    <div style="font-size:12px;font-weight:500">@l.PlantName</div>
+                                    <div style="font-size:11px;color:var(--text-muted)">@l.DispatchDate.ToString("dd MMM")</div>
+                                </td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px">@l.LossQty.ToString("N1")</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px">@l.LossPct.ToString("F1")%</td>
+                                <td>
+                                    @switch (l.LossCategory)
+                                    {
+                                        case "Severe":
+                                            <span class="pill pill-failed">Severe</span>
+                                            break;
+                                        case "Moderate":
+                                            <span class="pill pill-inprogress">Moderate</span>
+                                            break;
+                                        default:
+                                            <span class="pill pill-active">Minor</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No loss records yet.</div>
+            }
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 5 — Center Payments (Full Width) ═ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">💳</span>
+                Recent Center Payments
+            </div>
+            <a href="@Url.Action("CenterPayments", "Finance")" class="panel-view-all">View All</a>
+        </div>
+        @if (Model.RecentCenterPayments.Any())
+        {
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>Center</th>
+                        <th>Plant</th>
+                        <th>Qty (L)</th>
+                        <th>Rate/L</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cp in Model.RecentCenterPayments.Take(6))
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:500">@cp.CenterName</div>
+                                <div style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace">@cp.BatchRef</div>
+                            </td>
+                            <td style="font-size:13px">@cp.PlantName</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:12px">@cp.ReceivedQty.ToString("N0")</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:12px">₹@cp.RatePerLiter.ToString("F2")</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">₹@cp.TotalAmount.ToString("N2")</td>
+                            <td style="font-size:12px;color:var(--text-muted)">@cp.PaymentDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @switch (cp.PaymentStatus)
+                                {
+                                    case "Processed":
+                                        <span class="pill pill-completed">Processed</span>
+                                        break;
+                                    case "Failed":
+                                        <span class="pill pill-failed">Failed</span>
+                                        break;
+                                    default:
+                                        <span class="pill pill-pending">Pending</span>
+                                        break;
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No center payments recorded yet.</div>
+        }
+        <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border-light);display:flex;gap:8px">
+            <a href="@Url.Action("ProcessCenterPayment", "Finance")" class="btn-primary">+ Process Payment</a>
+            <a href="@Url.Action("CenterPayments", "Finance")" class="btn-outline">All Payments</a>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        // Counter animation on page load
+        document.querySelectorAll('.sum-value').forEach(el => {
+            const txt = el.textContent.trim();
+            const hasCurr = txt.startsWith('₹');
+            const raw = txt.replace(/[^\d.]/g, '');
+            const num = parseFloat(raw);
+            if (isNaN(num) || num === 0) return;
+
+            const suffix = txt.replace(/[\d,. ₹]/g, '').trim();
+            const prefix = hasCurr ? '₹' : '';
+            const isFloat = txt.includes('.');
+            const decs = isFloat ? (txt.split('.')[1]?.replace(/\D/, '').length || 1) : 0;
+
+            let start = performance.now();
+            const dur = 800;
+
+            function tick(now) {
+                const p = Math.min((now - start) / dur, 1);
+                const ease = 1 - Math.pow(1 - p, 3);
+                const v = num * ease;
+                const disp = isFloat ? v.toFixed(decs) : Math.round(v).toLocaleString('en-IN');
+                el.textContent = prefix + disp + suffix;
+                if (p < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
+
+        // Animate progress bar
+        document.querySelectorAll('.progress-fill').forEach(el => {
+            const target = el.style.width;
+            el.style.width = '0%';
+            setTimeout(() => el.style.width = target, 100);
+        });
+    </script>
+}

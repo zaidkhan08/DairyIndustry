@@ -1870,5 +1870,26 @@ namespace DairyIndustry.Repositories
             catch { return false; }
         }
 
+
+        //Added By Zaid On 24 Apr
+
+
+        public int? GetCenterIdByUser(int userId)
+        {
+            using (var con = _db.GetConnection())
+            using (var cmd = new SqlCommand(
+                "SELECT CenterId FROM Admin.UserCenters WHERE UserId = @UserId", con))
+            {
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                con.Open();
+
+                var result = cmd.ExecuteScalar();
+
+                return result == null || result == DBNull.Value
+                    ? null
+                    : Convert.ToInt32(result);
+            }
+        }
+
     }
 }

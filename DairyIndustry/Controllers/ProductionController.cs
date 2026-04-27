@@ -11,14 +11,17 @@ namespace DairyIndustry.Controllers
         private readonly IProductionRepository _productionRepo;
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly IFinanceRepository _financeRepo;
 
         public ProductionController(IProductionRepository productionRepo,
                                     IAdminRepository adminRepo,
-                                    ILogisticsRepository logisticsRepo)
+                                    ILogisticsRepository logisticsRepo,
+                                    IFinanceRepository financeRepo)
         {
             _productionRepo = productionRepo;
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _financeRepo = financeRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -530,5 +533,101 @@ namespace DairyIndustry.Controllers
             ViewBag.Summary = summary;
             return View(logs);
         }
+        // ════════════════════════════════════════════════════════
+        // DASHBOARD — Production Overview
+        // GET /Production/Dashboard
+        // Accessible to: Plant Manager, Collection Agent
+        // ════════════════════════════════════════════════════════
+        public IActionResult Dashboard()
+        {
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName != "Plant Manager" && roleName != "Collection Agent")
+                return RedirectToAction("AccessDenied", "Home");
+
+            int? plantId = null;
+            if (roleName == "Plant Manager")
+                plantId = HttpContext.Session.GetInt32("PlantId");
+
+            // ── Fetch all raw lists ────────────────────────────
+            var transfers = _productionRepo.GetAllTransfers(plantId);
+            var batches = _productionRepo.GetAllProductionBatches(plantId);
+            var inventory = _productionRepo.GetRawMilkInventory(plantId);
+            var qualityTests = _productionRepo.GetAllQualityTests(plantId);
+            var lossLog = _productionRepo.GetTransferLossLog(plantId);
+            var productWaste = _productionRepo.GetAllProductWastage(plantId);
+            var milkWaste = _productionRepo.GetAllMilkProcessWastage(plantId);
+
+            // ── Finance data (center payments) ────────────────
+            var centerPayments = _financeRepo.GetAllCenterPayments(plantId);
+            // NOTE: _financeRepo requires IFinanceRepository injected into this controller.
+            // If not already injected, add it to the constructor (see note below).
+
+            // ── Build ViewModel ───────────────────────────────
+            var vm = new ProductionDashboardViewModel
+            {
+                // Transfers
+                TotalTransfers = transfers.Count,
+                PendingTransfers = transfers.Count(t => t.Status == "Dispatched"),
+                ReceivedTransfers = transfers.Count(t => t.Status == "Received"),
+
+                // Batches
+                TotalBatches = batches.Count,
+                InProgressBatches = batches.Count(b => b.BatchStatus == "InProgress"),
+                CompletedBatches = batches.Count(b => b.BatchStatus == "Completed"),
+                QCFailedBatches = batches.Count(b => b.BatchStatus == "QCFailed"),
+
+                // Inventory
+                TotalRawMilkStock = inventory.Sum(i => i.Quantity),
+                LowStockCount = inventory.Count(i => i.Quantity <= 500),
+
+                // Quality
+                TotalQualityTests = qualityTests.Count,
+                DeviatedTests = qualityTests.Count(q => q.QualityResult == "Deviated"),
+
+                // Loss
+                TotalLossLitres = lossLog.Sum(l => l.LossQty),
+                AvgLossPct = lossLog.Any() ? lossLog.Average(l => l.LossPct) : 0,
+
+                // Finance
+                PendingCenterPayments = centerPayments.Count(cp => cp.PaymentStatus == "Pending"),
+                TotalPaidToCenters = centerPayments
+                                            .Where(cp => cp.PaymentStatus == "Processed")
+                                            .Sum(cp => cp.TotalAmount),
+
+                // Wastage
+                TotalProductWastage = productWaste.Count,
+                TotalMilkProcessWastage = milkWaste.Sum(w => w.WastageQuantity),
+
+                // Recent lists (capped at 6 items each)
+                RecentTransfers = transfers.OrderByDescending(t => t.DispatchDate).Take(6).ToList(),
+                RecentBatches = batches.OrderByDescending(b => b.ProductionDate).Take(6).ToList(),
+                Inventory = inventory,
+                RecentLosses = lossLog.OrderByDescending(l => l.RecordedAt).Take(6).ToList(),
+                RecentCenterPayments = centerPayments.OrderByDescending(c => c.PaymentDate).Take(6).ToList(),
+            };
+
+            return View(vm);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // CONSTRUCTOR NOTE:
+        // If IFinanceRepository is not yet injected, update the constructor:
+        //
+        //   private readonly IFinanceRepository _financeRepo;
+        //
+        //   public ProductionController(IProductionRepository productionRepo,
+        //                               IAdminRepository adminRepo,
+        //                               ILogisticsRepository logisticsRepo,
+        //                               IFinanceRepository financeRepo)
+        //   {
+        //       _productionRepo = productionRepo;
+        //       _adminRepo      = adminRepo;
+        //       _logisticsRepo  = logisticsRepo;
+        //       _financeRepo    = financeRepo;
+        //   }
+        // ─────────────────────────────────────────────────────────
+
+
     }
 }

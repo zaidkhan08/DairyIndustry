@@ -46,14 +46,69 @@ namespace DairyIndustry.Controllers
             return View(payments);
         }
 
+        [SessionAuthorize("Admin", "Collection Agent")]
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Farmers = _financeRepo.GetAllFarmers();
-            ViewBag.Centers = _financeRepo.GetAllCenters();
+             string role = HttpContext.Session.GetString("RoleName");
+
+            if (role == "Collection Agent")
+            {
+                ViewBag.IsAgent = true;
+                ViewBag.CenterId = HttpContext.Session.GetInt32("CenterId");
+                ViewBag.CenterName = HttpContext.Session.GetString("CenterName");
+            }
+            else
+            {
+                ViewBag.IsAgent = false;
+                ViewBag.Centers = _financeRepo.GetAllCenters();
+            }
+
             return View();
         }
 
+        /// <summary>
+        /// AJAX — returns farmers who have collections at the given center.
+        /// Called when the user picks a center on the Create page.
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetFarmersByCenter(int centerId)
+        {
+            var farmers = _financeRepo.GetFarmersByCenter(centerId);
+            return Json(farmers.Select(f => new
+            {
+                farmerId = f.FarmerId,
+                farmerName = f.FarmerName,
+                farmerCode = f.FarmerCode
+            }));
+        }
+
+        /// <summary>
+        /// AJAX — looks up a farmer by FarmerCode and validates they belong to the chosen center.
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetFarmerByCode(string farmerCode, int centerId)
+        {
+            var farmer = _financeRepo.GetFarmerByCode(farmerCode);
+            if (farmer == null)
+                return Json(new { success = false, message = "No farmer found with this code." });
+
+            // Confirm this farmer actually has collections at the selected center
+            var farmers = _financeRepo.GetFarmersByCenter(centerId);
+            bool belongsToCenter = farmers.Any(f => f.FarmerId == farmer.FarmerId);
+            if (!belongsToCenter)
+                return Json(new { success = false, message = "This farmer has no collections at the selected center." });
+
+            return Json(new
+            {
+                success = true,
+                farmerId = farmer.FarmerId,
+                farmerName = farmer.FarmerName,
+                farmerCode = farmer.FarmerCode
+            });
+        }
+
+        [SessionAuthorize("Admin", "Collection Agent")]
         [HttpPost]
         public IActionResult Preview(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
         {
@@ -65,6 +120,10 @@ namespace DairyIndustry.Controllers
             if (preview == null || preview.TotalAmount == 0)
                 return Json(new { success = false, message = "No unpaid collections found for this farmer in the selected date range." });
 
+            string paidByName = HttpContext.Session.GetString("FullName")
+                             ?? HttpContext.Session.GetString("UserName")
+                             ?? "Unknown";
+
             return Json(new
             {
                 success = true,
@@ -72,16 +131,19 @@ namespace DairyIndustry.Controllers
                 centerName = preview.CenterName,
                 totalQty = preview.TotalQty,
                 totalAmount = preview.TotalAmount,
-                unpaidCollections = preview.UnpaidCollections
+                unpaidCollections = preview.UnpaidCollections,
+                paidBy = paidByName
             });
         }
 
+        [SessionAuthorize("Admin", "Collection Agent")]
         [HttpPost]
         public IActionResult Create(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
         {
             try
             {
-                int paymentId = _financeRepo.CreateFarmerPayment(centerId, farmerId, fromDate, toDate, DateTime.Today);
+                int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+                int paymentId = _financeRepo.CreateFarmerPayment(centerId, farmerId, fromDate, toDate, DateTime.Today, userId);
                 TempData["Success"] = "Payment record created. Proceed to pay via Stripe.";
                 return RedirectToAction("Detail", new { id = paymentId });
             }

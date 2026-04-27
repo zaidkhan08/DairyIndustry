@@ -59,6 +59,24 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
 
+
+            if (user.RoleName == "Collection Agent")
+            {
+                var centerId = _adminRepo.GetCenterIdByUser(user.UserId); // you may need to create this
+
+                if (centerId.HasValue)
+                {
+                    HttpContext.Session.SetInt32("CenterId", centerId.Value);
+
+                   var center = _adminRepo.getCollectionById(centerId.Value); // optional but recommended
+                    if (center != null)
+                    {
+                        HttpContext.Session.SetString("CenterName", center.CenterName);
+                    }
+                }
+            }
+
+
             switch (user.RoleName)
             {
                 case "Admin":
@@ -80,7 +98,7 @@ namespace DairyIndustry.Controllers
                         if (plant != null)
                             HttpContext.Session.SetString("PlantName", plant.PlantName);
                     }
-                    return RedirectToAction("Index", "Production");
+                    return RedirectToAction("Dashboard", "Production");
 
                 case "Collection Agent":
                     return RedirectToAction("Index", "Production");
@@ -480,8 +498,8 @@ namespace DairyIndustry.Controllers
     string accountNumber,
     string ifscCode,
     decimal salary,
-    string profilePhoto,   
-    IFormFile photoFile,   
+    string profilePhoto,
+    IFormFile photoFile,
     int? centerId,
     int? plantId)
         {
@@ -494,7 +512,7 @@ namespace DairyIndustry.Controllers
                 return View(_adminRepo.GetStaffById(staffId));
             }
 
-            string finalPhoto = profilePhoto; 
+            string finalPhoto = profilePhoto;
 
             if (photoFile != null && photoFile.Length > 0)
             {

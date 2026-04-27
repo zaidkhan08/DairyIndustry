@@ -1,8 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Create Farmer Payment";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
-
-
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,8 +27,6 @@
         --green-border: #a7f3d0;
         --red: #b91c1c;
         --red-bg: #fee2e2;
-        --amber: #9a5c0a;
-        --amber-bg: #fef3c7;
         --font: 'DM Sans', sans-serif;
         --mono: 'DM Mono', monospace;
         --radius: 10px;
@@ -50,7 +46,6 @@
         color: var(--ink);
     }
 
-    /* ── Topbar ── */
     .cp-topbar {
         display: flex;
         align-items: flex-start;
@@ -109,7 +104,64 @@
             color: var(--ink);
         }
 
-    /* ── Layout Grid ── */
+    .cp-steps {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 1.75rem;
+    }
+
+    .cp-step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--ink-4);
+        padding: 0.5rem 1rem 0.5rem 0.75rem;
+    }
+
+        .cp-step.active {
+            color: var(--accent);
+        }
+
+        .cp-step.done {
+            color: var(--green);
+        }
+
+    .step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.68rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .cp-step.done .step-num {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+    }
+
+    .cp-step.active .step-num {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .step-sep {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+        min-width: 24px;
+        max-width: 40px;
+    }
+
     .cp-grid {
         display: grid;
         grid-template-columns: 420px 1fr;
@@ -117,7 +169,6 @@
         align-items: start;
     }
 
-    /* ── Cards ── */
     .cp-card {
         background: var(--surface-0);
         border: 1px solid var(--border);
@@ -170,7 +221,6 @@
         padding: 1.4rem;
     }
 
-    /* ── Form Fields ── */
     .field-group {
         margin-bottom: 1.1rem;
     }
@@ -194,112 +244,12 @@
         color: var(--red);
     }
 
-    /* ── Farmer ID Input with lookup ── */
-    .farmer-lookup-row {
-        display: grid;
-        grid-template-columns: 110px 1fr;
-        gap: 0.5rem;
-        align-items: start;
+    .field-hint {
+        font-size: 0.72rem;
+        color: var(--ink-4);
+        margin-top: 0.35rem;
     }
 
-    .lookup-id-wrap {
-        position: relative;
-    }
-
-    .lookup-id-input {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        font-family: var(--mono);
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--ink);
-        background: var(--surface-0);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-        letter-spacing: 0.04em;
-    }
-
-        .lookup-id-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(30,111,235,0.1);
-        }
-
-        .lookup-id-input.valid {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
-        }
-
-        .lookup-id-input.invalid {
-            border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(185,28,28,0.1);
-        }
-
-    .farmer-name-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
-        background: var(--surface-1);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        min-height: 36px;
-    }
-
-        .farmer-name-chip .avatar {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--accent-bg);
-            color: var(--accent);
-            font-size: 0.65rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            text-transform: uppercase;
-        }
-
-        .farmer-name-chip .name-text {
-            font-size: 0.83rem;
-            font-weight: 600;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .farmer-name-chip .placeholder-text {
-            font-size: 0.78rem;
-            color: var(--ink-4);
-        }
-
-        .farmer-name-chip.found {
-            border-color: var(--green-border);
-            background: var(--green-bg);
-        }
-
-            .farmer-name-chip.found .name-text {
-                color: var(--green);
-            }
-
-            .farmer-name-chip.found .avatar {
-                background: var(--green-dark);
-                color: #fff;
-            }
-
-        .farmer-name-chip.error {
-            border-color: #fca5a5;
-            background: var(--red-bg);
-        }
-
-            .farmer-name-chip.error .placeholder-text {
-                color: var(--red);
-            }
-
-    /* ── Standard Input ── */
     .cp-input, .cp-select {
         width: 100%;
         padding: 0.5rem 0.75rem;
@@ -327,13 +277,123 @@
             box-shadow: 0 0 0 3px rgba(30,111,235,0.1);
         }
 
+        .cp-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+    .lookup-row {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 0.5rem;
+        align-items: start;
+    }
+
+    .lookup-id-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--ink);
+        background: var(--surface-0);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+        .lookup-id-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .lookup-id-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(30,111,235,0.1);
+        }
+
+        .lookup-id-input.valid {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
+        }
+
+        .lookup-id-input.invalid {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(185,28,28,0.1);
+        }
+
+    .name-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        min-height: 36px;
+    }
+
+        .name-chip .avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-size: 0.65rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+
+        .name-chip .name-text {
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .name-chip .placeholder-text {
+            font-size: 0.78rem;
+            color: var(--ink-4);
+        }
+
+        .name-chip.found {
+            border-color: var(--green-border);
+            background: var(--green-bg);
+        }
+
+            .name-chip.found .name-text {
+                color: var(--green);
+            }
+
+            .name-chip.found .avatar {
+                background: var(--green-dark);
+                color: #fff;
+            }
+
+        .name-chip.error {
+            border-color: #fca5a5;
+            background: var(--red-bg);
+        }
+
+            .name-chip.error .placeholder-text {
+                color: var(--red);
+            }
+
     .date-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
     }
 
-    /* ── Preview Button ── */
     .btn-preview {
         width: 100%;
         padding: 0.6rem 1rem;
@@ -362,7 +422,6 @@
             cursor: not-allowed;
         }
 
-    /* ── Spinner ── */
     .spinner {
         width: 14px;
         height: 14px;
@@ -372,10 +431,15 @@
         animation: spin 0.6s linear infinite;
         display: none;
     }
+    @@keyframes spin {
+        to
 
- 
+    {
+        transform: rotate(360deg);
+    }
 
-    /* ── Preview Placeholder ── */
+    }
+
     .preview-placeholder {
         display: flex;
         flex-direction: column;
@@ -400,7 +464,7 @@
     .preview-placeholder p {
         font-size: 0.82rem;
         color: var(--ink-4);
-        max-width: 220px;
+        max-width: 240px;
         line-height: 1.5;
     }
 
@@ -412,7 +476,6 @@
         margin-bottom: 0.35rem;
     }
 
-    /* ── Preview Summary ── */
     .preview-summary {
         display: none;
     }
@@ -463,7 +526,6 @@
                 color: var(--green);
             }
 
-    /* ── Summary Detail List ── */
     .summary-dl {
         background: var(--surface-1);
         border: 1px solid var(--border);
@@ -499,7 +561,6 @@
         color: var(--ink);
     }
 
-    /* ── Error Alert ── */
     .preview-error {
         display: none;
         align-items: flex-start;
@@ -514,7 +575,6 @@
         font-weight: 500;
     }
 
-    /* ── Form Actions ── */
     .form-actions {
         display: flex;
         gap: 0.6rem;
@@ -565,67 +625,17 @@
             color: #fff;
         }
 
-    /* ── Step indicator strip ── */
-    .cp-steps {
-        display: flex;
+    .paidby-badge {
+        display: inline-flex;
         align-items: center;
-        gap: 0;
-        margin-bottom: 1.75rem;
-    }
-
-    .cp-step {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
+        gap: 0.35rem;
+        padding: 0.2rem 0.65rem;
+        background: var(--accent-bg);
+        color: var(--accent);
+        border-radius: 20px;
+        font-size: 0.78rem;
         font-weight: 600;
-        color: var(--ink-4);
-        padding: 0.5rem 1rem 0.5rem 0.75rem;
-        position: relative;
     }
-
-        .cp-step.active {
-            color: var(--accent);
-        }
-
-        .cp-step.done {
-            color: var(--green);
-        }
-
-    .step-num {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        border: 2px solid currentColor;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.68rem;
-        font-weight: 700;
-        flex-shrink: 0;
-    }
-
-    .cp-step.done .step-num {
-        background: var(--green);
-        border-color: var(--green);
-        color: #fff;
-    }
-
-    .cp-step.active .step-num {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #fff;
-    }
-
-    .step-sep {
-        flex: 1;
-        height: 1px;
-        background: var(--border);
-        min-width: 24px;
-        max-width: 40px;
-    }
-
-
 </style>
 
 <div class="cp-wrap">
@@ -645,17 +655,11 @@
 
     <!-- Steps -->
     <div class="cp-steps">
-        <div class="cp-step active" id="step1">
-            <div class="step-num">1</div> Fill Details
-        </div>
+        <div class="cp-step active" id="step1"><div class="step-num">1</div> Fill Details</div>
         <div class="step-sep"></div>
-        <div class="cp-step" id="step2">
-            <div class="step-num">2</div> Preview
-        </div>
+        <div class="cp-step" id="step2"><div class="step-num">2</div> Preview</div>
         <div class="step-sep"></div>
-        <div class="cp-step" id="step3">
-            <div class="step-num">3</div> Confirm
-        </div>
+        <div class="cp-step" id="step3"><div class="step-num">3</div> Confirm</div>
     </div>
 
     <!-- Grid -->
@@ -669,79 +673,80 @@
                 </div>
                 <div>
                     <div class="cp-card-title">Payment Details</div>
-                    <div class="cp-card-subtitle">Enter farmer & collection period</div>
+                    <div class="cp-card-subtitle">Select center first, then enter farmer code</div>
                 </div>
             </div>
             <div class="cp-card-body">
 
-                <!-- Farmer Lookup -->
-                <div class="field-group">
-                    <label class="field-label field-required">Farmer</label>
-                    <div class="farmer-lookup-row">
-                        <div class="lookup-id-wrap">
-                            <input type="number"
-                                   id="farmerIdInput"
-                                   class="lookup-id-input"
-                                   placeholder="ID"
-                                   min="1"
-                                   oninput="lookupFarmer(this.value)" />
-                        </div>
-                        <div class="farmer-name-chip" id="farmerChip">
-                            <span class="placeholder-text">Enter farmer ID →</span>
-                        </div>
-                    </div>
-                    <!-- Hidden real select for form value -->
-                    <select id="farmerId" name="farmerId" style="display:none;" required>
-                        <option value="">-- Select Farmer --</option>
-                        @foreach (var f in (IEnumerable<DairyIndustry.Models.Admin.FarmerDropdownModel>)ViewBag.Farmers)
-                        {
-                            <option value="@f.FarmerId" data-name="@f.FarmerName">@f.FarmerName</option>
-                        }
-                    </select>
-                </div>
+                <!-- 1. Center -->
+                @if (ViewBag.IsAgent != null && ViewBag.IsAgent == true)
+                {
+                    <!-- Hidden center id -->
+                    <input type="hidden" id="centerId" value="@ViewBag.CenterId" />
 
-                <!-- Center Lookup -->
-                <div class="field-group">
-                    <label class="field-label field-required">Collection Center</label>
-                    <div class="farmer-lookup-row">
-                        <div class="lookup-id-wrap">
-                            <input type="number"
-                                   id="centerIdInput"
-                                   class="lookup-id-input"
-                                   placeholder="ID"
-                                   min="1"
-                                   oninput="lookupCenter(this.value)" />
-                        </div>
-                        <div class="farmer-name-chip" id="centerChip">
-                            <span class="placeholder-text">Enter center ID →</span>
-                        </div>
-                    </div>
-                    <!-- Hidden real select for form value -->
-                    <select id="centerId" name="centerId" style="display:none;" required>
-                        <option value="">— Select Center —</option>
+                    <!-- Auto-filled readonly -->
+                    <input type="text"
+                           class="cp-input"
+                           value="@ViewBag.CenterName"
+                           readonly />
+
+                    <script>
+                        // 🔥 Auto trigger center selection
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const centerId = "@ViewBag.CenterId";
+                            if (centerId) {
+                                onCenterChange(centerId);
+                            }
+                        });
+                    </script>
+                }
+                else
+                {
+                    <select id="centerSelect" class="cp-select" required onchange="onCenterChange(this.value)">
+                        <option value="">— Select a center —</option>
                         @foreach (var c in (IEnumerable<DairyIndustry.Models.Admin.CenterDropdownModel>)ViewBag.Centers)
                         {
                             <option value="@c.CenterId" data-name="@c.CenterName">@c.CenterName</option>
                         }
                     </select>
+                }
+
+                <!-- 2. Farmer Code (locked until center chosen) -->
+                <div class="field-group">
+                    <label class="field-label field-required">Farmer Code</label>
+                    <div class="lookup-row">
+                        <input type="text"
+                               id="farmerCodeInput"
+                               class="lookup-id-input"
+                               placeholder="e.g. FC-001"
+                               disabled
+                               oninput="lookupFarmerByCode(this.value)" />
+                        <div class="name-chip" id="farmerChip">
+                            <span class="placeholder-text">Select center first →</span>
+                        </div>
+                    </div>
+                    <p class="field-hint">Only farmers with collections at the selected center are accepted.</p>
+                    <!-- Hidden fields -->
+                    <input type="hidden" id="farmerId" />
+                    <input type="hidden" id="centerId" />
                 </div>
 
-                <!-- Date Range -->
+                <!-- 3. Date Range (default: last 1 month) -->
                 <div class="field-group">
                     <label class="field-label field-required">Collection Period</label>
                     <div class="date-row">
                         <div>
-                            <label class="field-label" style="font-size:0.68rem; color:var(--ink-4); margin-bottom:0.3rem;">From</label>
+                            <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">From</label>
                             <input type="date" id="fromDate" class="cp-input" required />
                         </div>
                         <div>
-                            <label class="field-label" style="font-size:0.68rem; color:var(--ink-4); margin-bottom:0.3rem;">To</label>
+                            <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">To</label>
                             <input type="date" id="toDate" class="cp-input" required />
                         </div>
                     </div>
                 </div>
 
-                <!-- Preview Trigger -->
+                <!-- Preview button -->
                 <button type="button" class="btn-preview" id="previewBtn" onclick="previewPayment()">
                     <div class="spinner" id="previewSpinner"></div>
                     <svg id="previewIcon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -769,7 +774,7 @@
                     <div class="placeholder-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a8b3c0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                     </div>
-                    <p><strong>No Preview Yet</strong>Fill in the farmer, center, and date range, then click Preview Collections.</p>
+                    <p><strong>No Preview Yet</strong>Select a center, enter a farmer code, set the date range, then click Preview Collections.</p>
                 </div>
 
                 <!-- Error -->
@@ -781,7 +786,6 @@
                 <!-- Summary -->
                 <div id="previewSummary" class="preview-summary">
 
-                    <!-- KPI row -->
                     <div class="summary-kpi-row">
                         <div class="summary-kpi">
                             <div class="kpi-num" id="prev_collections">—</div>
@@ -797,7 +801,6 @@
                         </div>
                     </div>
 
-                    <!-- Detail rows -->
                     <div class="summary-dl">
                         <div class="summary-dl-row">
                             <span class="summary-dl-label">Farmer</span>
@@ -815,9 +818,18 @@
                             <span class="summary-dl-label">Payment Date</span>
                             <span class="summary-dl-value" id="prev_date">—</span>
                         </div>
+                        <div class="summary-dl-row">
+                            <span class="summary-dl-label">Paid By</span>
+                            <span class="summary-dl-value">
+                                <span class="paidby-badge" id="prev_paidby">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                    <span id="prev_paidby_text">—</span>
+                                </span>
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- Hidden form -->
+                    <!-- Confirm form -->
                     <form asp-action="Create" method="post" id="createForm">
                         <input type="hidden" name="farmerId" id="hf_farmerId" />
                         <input type="hidden" name="centerId" id="hf_centerId" />
@@ -843,162 +855,120 @@
 
 @section Scripts {
     <script>
-        // Build lookup maps from hidden selects
-        const farmerMap = {};
-        document.querySelectorAll('#farmerId option').forEach(opt => {
-            if (opt.value) farmerMap[opt.value] = opt.getAttribute('data-name') || opt.textContent.trim();
-        });
+        // ── Default: From = 1 month ago, To = today ──────────────────────────────
+        (function () {
+            const today = new Date();
+            const from  = new Date(today);
+            from.setMonth(from.getMonth() - 1);
+            const fmt = d => d.toISOString().split('T')[0];
+            document.getElementById('fromDate').value = fmt(from);
+            document.getElementById('toDate').value   = fmt(today);
+        })();
 
-        const centerMap = {};
-        document.querySelectorAll('#centerId option').forEach(opt => {
-            if (opt.value) centerMap[opt.value] = opt.getAttribute('data-name') || opt.textContent.trim();
-        });
+        // ── State ────────────────────────────────────────────────────────────────
+        let selectedCenterId = null;
+        let farmerTimer      = null;
 
-        let farmerTimer = null;
-        let centerTimer = null;
+        // ── Center changed ───────────────────────────────────────────────────────
+        function onCenterChange(val) {
+            selectedCenterId = val || null;
 
-        function lookupFarmer(val) {
-            const chip    = document.getElementById('farmerChip');
-            const idInput = document.getElementById('farmerIdInput');
-            const v = val.trim();
+            const codeInput = document.getElementById('farmerCodeInput');
+            const chip      = document.getElementById('farmerChip');
+
+            // Reset farmer state
+            codeInput.value = '';
+            codeInput.classList.remove('valid', 'invalid');
+            document.getElementById('farmerId').value = '';
+            document.getElementById('centerId').value = val;
+
+            chip.className = 'name-chip';
+            chip.innerHTML = val
+                ? '<span class="placeholder-text">Enter farmer code →</span>'
+                : '<span class="placeholder-text">Select center first →</span>';
+
+            codeInput.disabled = !val;
+            if (val) codeInput.focus();
+
+            resetPreview();
+        }
+
+        // ── Farmer code lookup — scoped to selected center ───────────────────────
+        function lookupFarmerByCode(val) {
+            const chip      = document.getElementById('farmerChip');
+            const codeInput = document.getElementById('farmerCodeInput');
+            const v         = val.trim().toUpperCase();
 
             clearTimeout(farmerTimer);
-            idInput.classList.remove('valid','invalid');
+            codeInput.classList.remove('valid', 'invalid');
+            chip.className = 'name-chip';
             chip.innerHTML = '<span class="placeholder-text">Searching…</span>';
-            chip.className = 'farmer-name-chip';
+            document.getElementById('farmerId').value = '';
 
             if (!v) {
-                chip.innerHTML = '<span class="placeholder-text">Enter farmer ID →</span>';
-                document.getElementById('farmerId').value = '';
+                chip.innerHTML = '<span class="placeholder-text">Enter farmer code →</span>';
                 return;
             }
 
             farmerTimer = setTimeout(async () => {
-                const name = farmerMap[v];
-                if (name) {
-                    idInput.classList.add('valid');
-                    chip.className = 'farmer-name-chip found';
-                    const initials = name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-                    chip.innerHTML = `<div class="avatar">${initials}</div><span class="name-text">${name}</span>`;
-                    document.getElementById('farmerId').value = v;
+                if (!selectedCenterId) return;
+                try {
+                    const res  = await fetch(`/Finance/GetFarmerByCode?farmerCode=${encodeURIComponent(v)}&centerId=${selectedCenterId}`);
+                    const data = await res.json();
 
-                    // Auto-fetch the center for this farmer
-                    await autoFillCenter(v);
-                } else {
-                    idInput.classList.add('invalid');
-                    chip.className = 'farmer-name-chip error';
-                    chip.innerHTML = '<span class="placeholder-text">Farmer not found</span>';
-                    document.getElementById('farmerId').value = '';
-
-                    // Clear center
-                    clearCenter();
+                    if (data.success) {
+                        codeInput.classList.add('valid');
+                        chip.className = 'name-chip found';
+                        const initials = data.farmerName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                        chip.innerHTML = `<div class="avatar">${initials}</div><span class="name-text">${data.farmerName}</span>`;
+                        document.getElementById('farmerId').value = data.farmerId;
+                    } else {
+                        codeInput.classList.add('invalid');
+                        chip.className = 'name-chip error';
+                        chip.innerHTML = `<span class="placeholder-text">${data.message}</span>`;
+                    }
+                } catch {
+                    chip.className = 'name-chip error';
+                    chip.innerHTML = '<span class="placeholder-text">Lookup failed — try again</span>';
                 }
-            }, 300);
+            }, 350);
         }
 
-        async function autoFillCenter(farmerId) {
-            const chip    = document.getElementById('centerChip');
-            const idInput = document.getElementById('centerIdInput');
-
-            // Show loading state
-            chip.className = 'farmer-name-chip';
-            chip.innerHTML = '<span class="placeholder-text">Fetching center…</span>';
-            idInput.classList.remove('valid','invalid');
-            idInput.value = '';
-
-            try {
-                const res  = await fetch(`/Finance/GetFarmerCenter?farmerId=${farmerId}`);
-                const data = await res.json();
-
-                if (data.success) {
-                    idInput.value = data.centerId;
-                    idInput.classList.add('valid');
-                    chip.className = 'farmer-name-chip found';
-                    const initials = data.centerName.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-                    chip.innerHTML = `<div class="avatar">${initials}</div><span class="name-text">${data.centerName}</span>`;
-                    document.getElementById('centerId').value = data.centerId;
-                } else {
-                    clearCenter();
-                }
-            } catch (e) {
-                clearCenter();
-            }
-        }
-
-        function clearCenter() {
-            const chip    = document.getElementById('centerChip');
-            const idInput = document.getElementById('centerIdInput');
-            idInput.value = '';
-            idInput.classList.remove('valid','invalid');
-            chip.className = 'farmer-name-chip';
-            chip.innerHTML = '<span class="placeholder-text">Enter center ID →</span>';
-            document.getElementById('centerId').value = '';
-        }
-
-        // Manual center lookup
-        function lookupCenter(val) {
-            const chip    = document.getElementById('centerChip');
-            const idInput = document.getElementById('centerIdInput');
-            const v = String(val).trim();
-
-            clearTimeout(centerTimer);
-            idInput.classList.remove('valid','invalid');
-            chip.innerHTML = '<span class="placeholder-text">Searching…</span>';
-            chip.className = 'farmer-name-chip';
-
-            if (!v) {
-                chip.innerHTML = '<span class="placeholder-text">Enter center ID →</span>';
-                document.getElementById('centerId').value = '';
-                return;
-            }
-
-            centerTimer = setTimeout(() => {
-                const name = centerMap[v];
-                if (name) {
-                    idInput.classList.add('valid');
-                    chip.className = 'farmer-name-chip found';
-                    const initials = name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-                    chip.innerHTML = `<div class="avatar">${initials}</div><span class="name-text">${name}</span>`;
-                    document.getElementById('centerId').value = v;
-                } else {
-                    idInput.classList.add('invalid');
-                    chip.className = 'farmer-name-chip error';
-                    chip.innerHTML = '<span class="placeholder-text">Center not found</span>';
-                    document.getElementById('centerId').value = '';
-                }
-            }, 300);
-        }
-
+        // ── Step indicator ───────────────────────────────────────────────────────
         function setStep(n) {
-            [1,2,3].forEach(i => {
-                const el = document.getElementById('step'+i);
-                el.classList.remove('active','done');
+            [1, 2, 3].forEach(i => {
+                const el = document.getElementById('step' + i);
+                el.classList.remove('active', 'done');
                 if (i < n) el.classList.add('done');
                 if (i === n) el.classList.add('active');
             });
         }
 
+        function resetPreview() {
+            document.getElementById('previewPlaceholder').style.display = '';
+            document.getElementById('previewError').style.display       = 'none';
+            document.getElementById('previewSummary').style.display     = 'none';
+            setStep(1);
+        }
+
+        // ── Preview ──────────────────────────────────────────────────────────────
         async function previewPayment() {
             const farmerId = document.getElementById('farmerId').value;
             const centerId = document.getElementById('centerId').value;
             const fromDate = document.getElementById('fromDate').value;
             const toDate   = document.getElementById('toDate').value;
 
-            if (!farmerId || !centerId || !fromDate || !toDate) {
-                alert('Please fill all fields before previewing.');
-                return;
-            }
+            if (!centerId) { alert('Please select a collection center.'); return; }
+            if (!farmerId) { alert('Please enter a valid farmer code.'); return; }
+            if (!fromDate || !toDate) { alert('Please set the collection period dates.'); return; }
 
-            // Loading state
             const btn = document.getElementById('previewBtn');
             btn.disabled = true;
             document.getElementById('previewSpinner').style.display = 'block';
-            document.getElementById('previewIcon').style.display = 'none';
-
-            // Hide all panels
+            document.getElementById('previewIcon').style.display    = 'none';
             document.getElementById('previewPlaceholder').style.display = 'none';
-            document.getElementById('previewError').style.display = 'none';
-            document.getElementById('previewSummary').style.display = 'none';
+            document.getElementById('previewError').style.display       = 'none';
+            document.getElementById('previewSummary').style.display     = 'none';
 
             try {
                 const response = await fetch('/Finance/Preview', {
@@ -1006,7 +976,6 @@
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `farmerId=${farmerId}&centerId=${centerId}&fromDate=${fromDate}&toDate=${toDate}`
                 });
-
                 const data = await response.json();
 
                 if (!data.success) {
@@ -1014,21 +983,17 @@
                     document.getElementById('previewError').style.display = 'flex';
                     setStep(1);
                 } else {
-                    // Populate KPIs
                     document.getElementById('prev_collections').textContent = data.unpaidCollections;
                     document.getElementById('prev_qty').textContent         = data.totalQty.toFixed(2);
                     document.getElementById('prev_amount').textContent      = '₹' + data.totalAmount.toFixed(2);
+                    document.getElementById('prev_farmer').textContent      = data.farmerName;
+                    document.getElementById('prev_center').textContent      = data.centerName;
 
-                    // Populate detail
-                    document.getElementById('prev_farmer').textContent = data.farmerName;
-                    document.getElementById('prev_center').textContent = data.centerName;
-
-                    const fd = new Date(fromDate), td = new Date(toDate);
-                    const fmt = d => d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-                    document.getElementById('prev_period').textContent = fmt(fd) + ' → ' + fmt(td);
+                    const fmt = d => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    document.getElementById('prev_period').textContent = fmt(fromDate) + ' → ' + fmt(toDate);
                     document.getElementById('prev_date').textContent   = fmt(new Date());
+                    document.getElementById('prev_paidby_text').textContent = data.paidBy || '—';
 
-                    // Hidden fields
                     document.getElementById('hf_farmerId').value = farmerId;
                     document.getElementById('hf_centerId').value = centerId;
                     document.getElementById('hf_fromDate').value = fromDate;
@@ -1037,17 +1002,16 @@
                     document.getElementById('previewSummary').style.display = 'block';
                     setStep(2);
                 }
-            } catch (e) {
+            } catch {
                 document.getElementById('previewErrorText').textContent = 'Network error — please try again.';
                 document.getElementById('previewError').style.display = 'flex';
             } finally {
                 btn.disabled = false;
                 document.getElementById('previewSpinner').style.display = 'none';
-                document.getElementById('previewIcon').style.display = 'block';
+                document.getElementById('previewIcon').style.display    = 'block';
             }
         }
 
-        // Set step 3 on form submit
         document.getElementById('createForm').addEventListener('submit', () => setStep(3));
     </script>
 }

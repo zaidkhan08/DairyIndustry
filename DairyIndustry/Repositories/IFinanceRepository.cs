@@ -11,6 +11,14 @@ namespace DairyIndustry.Repositories
         List<FarmerDropdownModel> GetAllFarmers();
         List<CenterDropdownModel> GetAllCenters();
 
+
+
+        /// <summary>Returns active farmers registered at a specific center.</summary>
+        List<FarmerDropdownModel> GetFarmersByCenter(int centerId);
+
+        /// <summary>Looks up a farmer by their FarmerCode; returns null if not found.</summary>
+        FarmerDropdownModel GetFarmerByCode(string farmerCode);
+
         // ════════════════════════════════════════════════════════
         // FARMER PAYMENTS
         // ════════════════════════════════════════════════════════
@@ -18,7 +26,8 @@ namespace DairyIndustry.Repositories
         FarmerPaymentPreviewModel PreviewFarmerPayment(int farmerId, int centerId,
                                                        DateTime fromDate, DateTime toDate);
         int CreateFarmerPayment(int centerId, int farmerId,
-                                DateTime fromDate, DateTime toDate, DateTime paymentDate);
+                                DateTime fromDate, DateTime toDate, DateTime paymentDate,
+                                int paidByUserId);
         List<FarmerPaymentModel> GetAllFarmerPayments();
         FarmerPaymentModel GetFarmerPaymentById(int paymentId);
         CenterDropdownModel GetFarmerDefaultCenter(int farmerId);

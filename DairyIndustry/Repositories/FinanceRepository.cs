@@ -80,7 +80,8 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         public int CreateFarmerPayment(int centerId, int farmerId,
-                                       DateTime fromDate, DateTime toDate, DateTime paymentDate)
+                                       DateTime fromDate, DateTime toDate, DateTime paymentDate,
+                                       int paidByUserId)
         {
             using (SqlConnection con = _db.GetConnection())
             {
@@ -92,6 +93,7 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@FromDate", fromDate);
                     cmd.Parameters.AddWithValue("@ToDate", toDate);
                     cmd.Parameters.AddWithValue("@PaymentDate", paymentDate);
+                    cmd.Parameters.AddWithValue("@PaidByUserId", paidByUserId);
 
                     con.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
@@ -124,19 +126,22 @@ namespace DairyIndustry.Repositories
                     fp.TotalAmount,
                     fp.PaymentDate,
                     fp.PaymentStatus,
+                    fp.PaidByUserId,
                     f.FarmerName,
                     cc.CenterName,
                     pt.BankStatus,
                     pt.TransactionReference,
                     ba.BankName,
                     ba.AccountNumber,
-                    ba.IFSCCode
+                    ba.IFSCCode,
+                    u.Username AS PaidBy
                 FROM Finance.FarmerPayments fp
                 INNER JOIN Farmer.Farmers               f  ON f.FarmerId      = fp.FarmerId
                 INNER JOIN Collection.CollectionCenters cc ON cc.CenterId     = fp.CenterId
                 LEFT  JOIN Finance.PaymentTransactions  pt ON pt.PaymentId    = fp.PaymentId
                                                           AND pt.PaymentType  = 'Farmer'
                 LEFT  JOIN Finance.BankAccounts         ba ON ba.BankAccountId = f.BankAccountId
+                LEFT  JOIN Admin.Users                  u  ON u.UserId        = fp.PaidByUserId
                 ORDER BY fp.PaymentDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
@@ -175,19 +180,22 @@ namespace DairyIndustry.Repositories
                     fp.TotalAmount,
                     fp.PaymentDate,
                     fp.PaymentStatus,
+                    fp.PaidByUserId,
                     f.FarmerName,
                     cc.CenterName,
                     pt.BankStatus,
                     pt.TransactionReference,
                     ba.BankName,
                     ba.AccountNumber,
-                    ba.IFSCCode
+                    ba.IFSCCode,
+                    u.Username AS PaidBy
                 FROM Finance.FarmerPayments fp
                 INNER JOIN Farmer.Farmers               f  ON f.FarmerId      = fp.FarmerId
                 INNER JOIN Collection.CollectionCenters cc ON cc.CenterId     = fp.CenterId
                 LEFT  JOIN Finance.PaymentTransactions  pt ON pt.PaymentId    = fp.PaymentId
                                                           AND pt.PaymentType  = 'Farmer'
                 LEFT  JOIN Finance.BankAccounts         ba ON ba.BankAccountId = f.BankAccountId
+                LEFT  JOIN Admin.Users                  u  ON u.UserId        = fp.PaidByUserId
                 WHERE fp.PaymentId = @PaymentId";
 
             using (SqlConnection con = _db.GetConnection())
@@ -304,6 +312,81 @@ namespace DairyIndustry.Repositories
                 }
             }
             return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET FARMERS BY CENTER
+        // ════════════════════════════════════════════════════════
+
+        public List<FarmerDropdownModel> GetFarmersByCenter(int centerId)
+        {
+            var list = new List<FarmerDropdownModel>();
+            // Farmers whose most-recent collection belongs to this center
+            string query = @"
+                SELECT DISTINCT f.FarmerId, f.FarmerName, f.FarmerCode
+                FROM Farmer.Farmers f
+                WHERE f.IsActive = 1
+                  AND f.FarmerId IN (
+                      SELECT DISTINCT mc.FarmerId
+                      FROM Collection.MilkCollection mc
+                      WHERE mc.CenterId = @CenterId
+                  )
+                ORDER BY f.FarmerName";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@CenterId", centerId);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(new FarmerDropdownModel
+                            {
+                                FarmerId = Convert.ToInt32(reader["FarmerId"]),
+                                FarmerName = reader["FarmerName"].ToString(),
+                                FarmerCode = reader["FarmerCode"] == DBNull.Value
+                                             ? null
+                                             : reader["FarmerCode"].ToString()
+                            });
+                    }
+                }
+            }
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET FARMER BY CODE
+        // ════════════════════════════════════════════════════════
+
+        public FarmerDropdownModel GetFarmerByCode(string farmerCode)
+        {
+            string query = @"
+                SELECT FarmerId, FarmerName, FarmerCode
+                FROM Farmer.Farmers
+                WHERE IsActive = 1
+                  AND FarmerCode = @FarmerCode";
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@FarmerCode", farmerCode);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return new FarmerDropdownModel
+                            {
+                                FarmerId = Convert.ToInt32(reader["FarmerId"]),
+                                FarmerName = reader["FarmerName"].ToString(),
+                                FarmerCode = reader["FarmerCode"].ToString()
+                            };
+                    }
+                }
+            }
+            return null;
         }
 
         public CenterDropdownModel GetFarmerDefaultCenter(int farmerId)
@@ -632,7 +715,9 @@ namespace DairyIndustry.Repositories
                 TransactionReference = reader["TransactionReference"] == DBNull.Value ? null : reader["TransactionReference"].ToString(),
                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
                 AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString(),
+                PaidByUserId = reader["PaidByUserId"] == DBNull.Value ? null : (int?)Convert.ToInt32(reader["PaidByUserId"]),
+                PaidBy = reader["PaidBy"] == DBNull.Value ? null : reader["PaidBy"].ToString()
             };
         }
 

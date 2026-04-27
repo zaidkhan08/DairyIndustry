@@ -4,317 +4,971 @@
     ViewData["Title"] = "Milk Transfers";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
     var RoleName = Context.Session.GetString("RoleName");
+    bool isPlantManager = RoleName == "Plant Manager";
+    bool isCollectionAgent = RoleName == "Collection Agent";
+
+    // ── Plant Manager buckets ────────────────────────────
+    var pm_dispatched = Model.Where(t => t.Status == "Dispatched").ToList();
+    var pm_done = Model.Where(t => t.Status == "Received" && t.HasQualityTest).ToList();
+    var pm_qcpending = Model.Where(t => t.Status == "Received" && !t.HasQualityTest).ToList();
+
+    // ── Collection Agent buckets ─────────────────────────
+    var ca_dispatched = Model.Where(t => t.Status == "Dispatched").ToList();
+    var ca_delivered = Model.Where(t => t.Status == "Received").ToList();
 }
 
 <style>
-    .glass-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+   
+
+    :root {
+        --surface: #ffffff;
+        --bg: #f5f6f8;
+        --border: #e5e7eb;
+        --text-primary: #111827;
+        --text-muted: #6b7280;
+        --text-xs: #9ca3af;
+        --accent: #f5c518;
+        --accent-hover: #e0b000;
+        --green: #16a34a;
+        --green-bg: #dcfce7;
+        --yellow-bg: #fef9c3;
+        --yellow-text: #854d0e;
+        --blue: #2563eb;
+        --blue-bg: #eff6ff;
+        --red: #dc2626;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --shadow-card: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
     }
 
-    .table-custom thead {
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+    *, *::before, *::after {
+        box-sizing: border-box;
     }
 
-    .table-custom th {
+    body, .transfer-root {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text-primary);
+    }
+
+    /* ── Info card ──────────────────────────────────────── */
+    .info-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 24px 28px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-card);
+    }
+
+    .info-card-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin: 0 0 6px;
+    }
+
+    .info-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-muted);
+        font-size: .82rem;
+        flex-wrap: wrap;
+    }
+
+    .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .75rem;
         font-weight: 600;
+    }
+
+    .badge-dispatched {
+        background: var(--yellow-bg);
+        color: var(--yellow-text);
+    }
+
+    .badge-received {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .badge-role-pm {
+        background: var(--blue-bg);
+        color: var(--blue);
+    }
+
+    .badge-role-ca {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 24px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .info-grid-item label {
+        display: block;
+        font-size: .68rem;
+        font-weight: 700;
         text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        color: #495057;
-        padding: 1rem;
+        letter-spacing: .07em;
+        color: var(--text-xs);
+        margin-bottom: 4px;
     }
 
-    .table-custom td {
-        vertical-align: middle;
-        padding: 1rem;
-        border-color: #f1f3f5;
-    }
-
-    .status-badge {
-        padding: 0.5em 0.85em;
-        font-weight: 500;
-        border-radius: 6px;
-    }
-
-    .id-pill {
-        background: #e9ecef;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-family: 'SFMono-Regular', Consolas, monospace;
-        font-size: 0.85rem;
-    }
-
-    .numeric-val {
+    .info-grid-item span {
+        font-size: .92rem;
         font-weight: 600;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: var(--text-primary);
     }
 
-    .btn-action {
-        border-radius: 8px;
-        transition: all 0.2s;
+    /* ── Tabs ───────────────────────────────────────────── */
+    .tab-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 6px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-card);
+        flex-wrap: wrap;
     }
 
-        .btn-action:hover {
-            transform: translateY(-1px);
+    .tab-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 18px;
+        border-radius: var(--radius-md);
+        font-size: .85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all .18s;
+        color: var(--text-muted);
+        border: none;
+        background: transparent;
+        white-space: nowrap;
+    }
+
+        .tab-item .tab-count {
+            background: #f3f4f6;
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 1px 8px;
+            font-size: .73rem;
+            font-weight: 600;
+            transition: all .18s;
         }
 
-    .tr-dispatched {
-        border-left: 4px solid #ffc107;
-    }
+        .tab-item.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+        }
 
-    .tr-received {
-        border-left: 4px solid #198754;
-    }
+            .tab-item.active .tab-count {
+                background: rgba(0,0,0,.12);
+                color: #000;
+            }
 
-    .btn-group-custom {
+        .tab-item:hover:not(.active) {
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+    /* ── Toolbar ────────────────────────────────────────── */
+    .toolbar {
         display: flex;
-        gap: 6px;
-        justify-content: center;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
     }
 
-    .btn-table-action {
-        background-color: #ffffff;
-        border: 1px solid #ced4da !important;
-        color: #495057 !important;
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: .85rem;
+        font-weight: 500;
+    }
+
+    .btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 20px;
+        background: var(--accent);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: .85rem;
+        font-weight: 700;
+        color: #000;
+        cursor: pointer;
+        transition: background .15s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+        .btn-create:hover {
+            background: var(--accent-hover);
+            color: #000;
+        }
+
+    /* ── Table card ─────────────────────────────────────── */
+    .table-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+    }
+
+    .transfers-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .transfers-table thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .transfers-table thead th {
+            padding: 11px 18px;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-xs);
+            background: #fafafa;
+            white-space: nowrap;
+        }
+
+        .transfers-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+        }
+
+            .transfers-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .transfers-table tbody tr:hover {
+                background: #fafbff;
+            }
+
+        .transfers-table td {
+            padding: 14px 18px;
+            vertical-align: middle;
+            font-size: .84rem;
+        }
+
+    /* ── Cell styles ────────────────────────────────────── */
+    .cell-name strong {
+        display: block;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
+    .cell-name .sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 3px;
+        flex-wrap: wrap;
+    }
+
+    .pill-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .72rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .dot-status {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .dot-dispatched {
+        background: #f59e0b;
+    }
+
+    .dot-received {
+        background: var(--green);
+    }
+
+    .status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-size: .73rem;
+        font-weight: 600;
+    }
+
+    .status-dispatched {
+        background: var(--yellow-bg);
+        color: var(--yellow-text);
+    }
+
+    .status-received {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .cell-route strong {
+        display: block;
+        font-size: .84rem;
+        font-weight: 600;
+    }
+
+    .cell-route .route-detail {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-muted);
+        font-size: .78rem;
+        margin-top: 2px;
+    }
+
+    .cell-driver strong {
+        display: block;
+        font-size: .84rem;
+        font-weight: 500;
+    }
+
+    .cell-driver .sub {
+        font-size: .77rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .qty-val {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .loss-positive {
+        color: var(--red);
+    }
+
+    .loss-zero {
+        color: var(--green);
+    }
+
+    /* ── QC badge ───────────────────────────────────────── */
+    .qc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-size: .73rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: opacity .15s;
+    }
+
+        .qc-badge:hover {
+            opacity: .82;
+        }
+
+    .qc-pending {
+        background: #fff7e6;
+        color: #b45309;
+        border: 1px solid #fde68a;
+    }
+
+    .qc-done {
+        background: var(--blue-bg);
+        color: var(--blue);
+        border: 1px solid #bfdbfe;
+    }
+
+    /* ── Three-dot menu ─────────────────────────────────── */
+    .action-cell {
+        position: relative;
+        text-align: right;
+    }
+
+    .btn-more {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 4px 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        height: 32px;
-        border-radius: 6px !important;
-        transition: all 0.2s;
-        text-decoration: none;
+        transition: all .15s;
+        color: var(--text-muted);
+        font-size: 1rem;
     }
 
-        .btn-table-action i {
-            margin-right: 4px;
+        .btn-more:hover {
+            background: var(--bg);
+            border-color: var(--border);
+            color: var(--text-primary);
         }
 
-        .btn-table-action:hover {
-            background-color: #f8f9fa;
-            border-color: #adb5bd !important;
-            color: #212529 !important;
-        }
-
-    .btn-table-success {
-        background-color: #198754;
-        border-color: #198754 !important;
-        color: white !important;
+    .action-dropdown {
+        display: none;
+        position: absolute;
+        right: 10px;
+        top: calc(100% - 6px);
+        z-index: 200;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: 0 8px 24px rgba(0,0,0,.12);
+        min-width: 165px;
+        padding: 6px;
     }
 
-        .btn-table-success:hover {
-            background-color: #157347;
+        .action-dropdown.open {
+            display: block;
         }
 
-    /* ── NEW: QC Test button ─────────────────────────────── */
-    .btn-table-qc {
-        background-color: #0d6efd;
-        border-color: #0d6efd !important;
-        color: white !important;
-    }
-
-        .btn-table-qc:hover {
-            background-color: #0b5ed7;
-            border-color: #0b5ed7 !important;
-            color: white !important;
+        .action-dropdown .menu-label {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-xs);
+            padding: 4px 10px 6px;
         }
 
-    /* Already-tested muted button */
-    .btn-table-qc-done {
-        background-color: #e9ecef;
-        border-color: #dee2e6 !important;
-        color: #6c757d !important;
-        cursor: default;
-        pointer-events: none;
-    }
-
-    /* QC Pending — yellow */
-    .btn-table-qc-pending {
-        background-color: #ffc107;
-        border-color: #ffc107 !important;
-        color: #000 !important;
-    }
-
-        .btn-table-qc-pending:hover {
-            background-color: #e0a800;
-            border-color: #e0a800 !important;
-            color: #000 !important;
+        .action-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-decoration: none;
+            background: transparent;
+            transition: background .12s;
         }
 
-    /* QC Done — muted grey, not clickable for add */
-    .btn-table-qc-done {
-        background-color: #e9ecef;
-        border-color: #dee2e6 !important;
-        color: #6c757d !important;
+            .action-dropdown a:hover {
+                background: var(--bg);
+            }
+
+    /* ── Alerts ─────────────────────────────────────────── */
+    .alert-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        border-radius: var(--radius-md);
+        font-size: .84rem;
+        font-weight: 500;
+        margin-bottom: 16px;
     }
 
-        .btn-table-qc-done:hover {
-            background-color: #dee2e6;
-            color: #495057 !important;
+    .alert-success {
+        background: var(--green-bg);
+        color: #15803d;
+        border: 1px solid #86efac;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: var(--red);
+        border: 1px solid #fca5a5;
+    }
+
+    /* ── Empty state ────────────────────────────────────── */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
         }
+
+        .empty-state p {
+            font-size: .9rem;
+            margin: 0;
+        }
+
+    .tab-panel {
+        display: none;
+    }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+    /* ── CA read-only delivered info chip ───────────────── */
+    .info-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: #f3f4f6;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        font-size: .71rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    @@media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .transfers-table th:nth-child(n+4):not(:last-child),
+        .transfers-table td:nth-child(n+4):not(:last-child) {
+            display: none;
+        }
+    }
 </style>
 
-<div class="d-flex justify-content-end mb-4 pt-2">
-    @if (RoleName == "Collection Agent")
+<div class="transfer-root">
+
+    @* ── Alerts ─────────────────────────────────────────── *@
+    @if (TempData["Success"] != null)
     {
-        <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
-            <i class="bi bi-plus-lg me-2"></i>Create New Batch
-        </a>
+        <div class="alert-banner alert-success">
+            <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        </div>
     }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-banner alert-error">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        </div>
+    }
+
+    @* ════════════════════════════════════════════════════
+       COLLECTION AGENT VIEW
+       • Sees: their batches only (dispatched + delivered)
+       • Can do: Create new batch only
+       • Cannot do: Receive, QC, dropdown actions — none shown
+    ════════════════════════════════════════════════════ *@
+    @if (isCollectionAgent)
+    {
+        <div class="info-card">
+            <h1 class="info-card-title">My Dispatches</h1>
+            <div class="info-card-meta">
+                <span class="badge-status badge-role-ca">
+                    <i class="bi bi-person-badge" style="font-size:.8rem"></i> Collection Agent
+                </span>
+                <span style="color:var(--border)">•</span>
+                <span>@Model.Count total records</span>
+                <span class="badge-status badge-dispatched">
+                    <span class="dot-status dot-dispatched"></span> @ca_dispatched.Count In Transit
+                </span>
+                <span class="badge-status badge-received">
+                    <span class="dot-status dot-received"></span> @ca_delivered.Count Delivered
+                </span>
+            </div>
+            <div class="info-grid">
+                <div class="info-grid-item">
+                    <label>Total Dispatched (L)</label>
+                    <span>@Model.Sum(t => t.DispatchQty).ToString("N0") L</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>In Transit</label>
+                    <span>@ca_dispatched.Count batches</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>Delivered to Plant</label>
+                    <span>@ca_delivered.Count batches</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>Total Loss (L)</label>
+                    <span class="@(Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty!.Value) > 0 ? "text-danger" : "")">
+                        @(Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty!.Value).ToString("N2")) L
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-bar" id="caTabBar">
+            <button class="tab-item active" data-tab="ca-transit" onclick="switchTab('ca-transit','caTabBar',this)">
+                <i class="bi bi-truck"></i> In Transit <span class="tab-count">@ca_dispatched.Count</span>
+            </button>
+            <button class="tab-item" data-tab="ca-delivered" onclick="switchTab('ca-delivered','caTabBar',this)">
+                <i class="bi bi-check2-all"></i> Delivered <span class="tab-count">@ca_delivered.Count</span>
+            </button>
+            <button class="tab-item" data-tab="ca-all" onclick="switchTab('ca-all','caTabBar',this)">
+                <i class="bi bi-list-ul"></i> All <span class="tab-count">@Model.Count</span>
+            </button>
+        </div>
+
+        <div class="toolbar">
+            <div class="toolbar-left"><i class="bi bi-funnel"></i> Your dispatch records</div>
+            <a asp-action="Create" class="btn-create"><i class="bi bi-plus-lg"></i> Create New Batch</a>
+        </div>
+
+        @foreach (var (tabId, rows, emptyMsg) in new[] {
+        ("ca-transit",   (IEnumerable<DairyIndustry.Models.Production.MilkTransferModel>)ca_dispatched, "No batches currently in transit."),
+        ("ca-delivered", ca_delivered,  "No delivered batches yet."),
+        ("ca-all",       Model,         "No transfer records found.")
+        })
+        {
+            <div class="tab-panel @(tabId == "ca-transit" ? "active" : "")" id="tab-@tabId">
+                <div class="table-card">
+                    @if (!rows.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>@emptyMsg</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="transfers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch / Ref</th>
+                                        <th>Route &amp; Date</th>
+                                        <th>Driver</th>
+                                        <th class="text-end">Dispatch (L)</th>
+                                        <th class="text-end">Received (L)</th>
+                                        <th class="text-end">Loss (L)</th>
+                                        <th>Status</th>
+                                     
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var t in rows)
+                                    {
+                                        <tr>
+                                            <td class="cell-name">
+                                                <strong>@t.PlantName</strong>
+                                                <div class="sub">
+                                                    <span class="pill-count"><i class="bi bi-box-seam" style="font-size:.75rem"></i> #@t.BatchRef</span>
+                                                    <span class="pill-count"><i class="bi bi-hash" style="font-size:.75rem"></i> TR-@t.TransferId</span>
+                                                </div>
+                                            </td>
+                                            <td class="cell-route">
+                                                <strong>@t.DispatchDate.ToString("dd MMM yyyy · HH:mm")</strong>
+                                                <div class="route-detail">
+                                                    <span>@t.CenterName</span>
+                                                    <span style="color:var(--text-xs)">⟶</span>
+                                                    <span>@t.PlantName</span>
+                                                </div>
+                                            </td>
+                                            <td class="cell-driver">
+                                                <strong>@(t.DriverName ?? "No Driver")</strong>
+                                                <div class="sub"><i class="bi bi-truck me-1" style="font-size:.72rem"></i>@t.VehicleNumber</div>
+                                            </td>
+                                            <td class="text-end"><span class="qty-val">@t.DispatchQty.ToString("N2")</span></td>
+                                            <td class="text-end">
+                                                <span class="qty-val">@(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N2") : "—")</span>
+                                            </td>
+                                            <td class="text-end">
+                                                @if (t.LossQty.HasValue)
+                                                {
+                                                    <span class="qty-val @(t.LossQty > 0 ? "loss-positive" : "loss-zero")">
+                                                        @(t.LossQty > 0 ? "-" : "")@Math.Abs(t.LossQty.Value).ToString("N2")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+
+                                                    <span style="color:var(--text-xs)">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (t.Status == "Received")
+                                                {
+                                                    <span class="status-tag status-received">
+                                                        <span class="dot-status dot-received"></span> Delivered
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-tag status-dispatched">
+                                                        <span class="dot-status dot-dispatched"></span> In Transit
+                                                    </span>
+                                                }
+                                            </td>
+                                            
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    @* ════════════════════════════════════════════════════
+       PLANT MANAGER VIEW
+       • Sees: all transfers, full details
+       • Can do: Receive (Dispatched), Add QC / View QC (Received)
+         — via three-dot dropdown per row
+    ════════════════════════════════════════════════════ *@
+    @if (isPlantManager)
+    {
+        <div class="info-card">
+            <h1 class="info-card-title">Milk Transfers</h1>
+            <div class="info-card-meta">
+                <span class="badge-status badge-role-pm">
+                    <i class="bi bi-building" style="font-size:.8rem"></i> Plant Manager
+                </span>
+                <span style="color:var(--border)">•</span>
+                <span>@Model.Count total transfers</span>
+                <span class="badge-status badge-dispatched">
+                    <span class="dot-status dot-dispatched"></span> @pm_dispatched.Count Pending Receipt
+                </span>
+                <span class="badge-status badge-received">
+                    <span class="dot-status dot-received"></span> @(pm_done.Count + pm_qcpending.Count) Received
+                </span>
+            </div>
+            <div class="info-grid">
+                <div class="info-grid-item">
+                    <label>Total Dispatched (L)</label>
+                    <span>@Model.Sum(t => t.DispatchQty).ToString("N0") L</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>Total Received (L)</label>
+                    <span>@(Model.Where(t => t.ReceivedQty.HasValue).Sum(t => t.ReceivedQty!.Value).ToString("N0")) L</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>Total Loss (L)</label>
+                    <span class="@(Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty!.Value) > 0 ? "text-danger" : "")">
+                        @(Model.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty!.Value).ToString("N2")) L
+                    </span>
+                </div>
+                <div class="info-grid-item">
+                    <label>QC Pending</label>
+                    <span class="@(pm_qcpending.Count > 0 ? "text-warning" : "")">@pm_qcpending.Count tests</span>
+                </div>
+                <div class="info-grid-item">
+                    <label>QC Completed</label>
+                    <span>@pm_done.Count / @(pm_done.Count + pm_qcpending.Count)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-bar" id="pmTabBar">
+            <button class="tab-item active" data-tab="pm-pending" onclick="switchTab('pm-pending','pmTabBar',this)">
+                <i class="bi bi-clock-history"></i> Pending Receipt <span class="tab-count">@pm_dispatched.Count</span>
+            </button>
+            <button class="tab-item" data-tab="pm-qcpending" onclick="switchTab('pm-qcpending','pmTabBar',this)">
+                <i class="bi bi-clipboard2-pulse"></i> QC Pending <span class="tab-count">@pm_qcpending.Count</span>
+            </button>
+            <button class="tab-item" data-tab="pm-done" onclick="switchTab('pm-done','pmTabBar',this)">
+                <i class="bi bi-check2-all"></i> Completed <span class="tab-count">@pm_done.Count</span>
+            </button>
+            <button class="tab-item" data-tab="pm-all" onclick="switchTab('pm-all','pmTabBar',this)">
+                <i class="bi bi-list-ul"></i> All <span class="tab-count">@Model.Count</span>
+            </button>
+        </div>
+
+        <div class="toolbar">
+            <div class="toolbar-left"><i class="bi bi-funnel"></i> Plant transfer records</div>
+        </div>
+
+        @foreach (var (tabId, rows, emptyMsg) in new[] {
+        ("pm-pending",   (IEnumerable<DairyIndustry.Models.Production.MilkTransferModel>)pm_dispatched, "No transfers pending receipt."),
+        ("pm-qcpending", pm_qcpending, "No transfers awaiting QC."),
+        ("pm-done",      pm_done,      "No completed transfers yet."),
+        ("pm-all",       Model,        "No transfer records found.")
+        })
+        {
+            <div class="tab-panel @(tabId == "pm-pending" ? "active" : "")" id="tab-@tabId">
+                <div class="table-card">
+                    @if (!rows.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>@emptyMsg</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="transfers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch / Ref</th>
+                                        <th>Route &amp; Date</th>
+                                        <th>Driver</th>
+                                        <th class="text-end">Dispatch (L)</th>
+                                        <th class="text-end">Received (L)</th>
+                                        <th class="text-end">Loss (L)</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var t in rows)
+                                    {
+                                        <tr>
+                                            <td class="cell-name">
+                                                <strong>@t.PlantName</strong>
+                                                <div class="sub">
+                                                    <span class="pill-count"><i class="bi bi-box-seam" style="font-size:.75rem"></i> #@t.BatchRef</span>
+                                                    <span class="pill-count"><i class="bi bi-hash" style="font-size:.75rem"></i> TR-@t.TransferId</span>
+                                                    @if (t.Status == "Received" && !t.HasQualityTest)
+                                                    {
+                                                        <a asp-action="AddQualityTest" asp-route-id="@t.TransferId" class="qc-badge qc-pending">
+                                                            <i class="bi bi-clock"></i> QC Pending
+                                                        </a>
+                                                    }
+                                                    else if (t.Status == "Received" && t.HasQualityTest)
+                                                    {
+                                                        <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId" class="qc-badge qc-done">
+                                                            <i class="bi bi-clipboard2-check"></i> QC Done
+                                                        </a>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="cell-route">
+                                                <strong>@t.DispatchDate.ToString("dd MMM yyyy · HH:mm")</strong>
+                                                <div class="route-detail">
+                                                    <span>@t.CenterName</span>
+                                                    <span style="color:var(--text-xs)">⟶</span>
+                                                    <span>@t.PlantName</span>
+                                                </div>
+                                            </td>
+                                            <td class="cell-driver">
+                                                <strong>@(t.DriverName ?? "No Driver")</strong>
+                                                <div class="sub"><i class="bi bi-truck me-1" style="font-size:.72rem"></i>@t.VehicleNumber</div>
+                                            </td>
+                                            <td class="text-end"><span class="qty-val">@t.DispatchQty.ToString("N2")</span></td>
+                                            <td class="text-end">
+                                                <span class="qty-val">@(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N2") : "—")</span>
+                                            </td>
+                                            <td class="text-end">
+                                                @if (t.LossQty.HasValue)
+                                                {
+                                                    <span class="qty-val @(t.LossQty > 0 ? "loss-positive" : "loss-zero")">
+                                                        @(t.LossQty > 0 ? "-" : "")@Math.Abs(t.LossQty.Value).ToString("N2")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+
+                                                    <span style="color:var(--text-xs)">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (t.Status == "Received")
+                                                {
+                                                    <span class="status-tag status-received">
+                                                        <span class="dot-status dot-received"></span> Received
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-tag status-dispatched">
+                                                        <span class="dot-status dot-dispatched"></span> Dispatched
+                                                    </span>
+                                                }
+                                            </td>
+
+                                            @* Three-dot dropdown — PM ONLY *@
+                                            <td class="action-cell">
+                                                <button class="btn-more"
+                                                        onclick="toggleMenu(event,'menu-@(tabId)-@t.TransferId')"
+                                                        title="More actions">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <div class="action-dropdown" id="menu-@(tabId)-@t.TransferId">
+                                                    <div class="menu-label">More Action</div>
+                                                    <a asp-action="Detail" asp-route-id="@t.TransferId">
+                                                        <i class="bi bi-eye" style="width:16px"></i> View Detail
+                                                    </a>
+                                                    @if (t.Status == "Dispatched")
+                                                    {
+                                                        <a asp-action="Receive" asp-route-id="@t.TransferId">
+                                                            <i class="bi bi-download" style="width:16px"></i> Receive
+                                                        </a>
+                                                    }
+                                                    @if (t.Status == "Received" && !t.HasQualityTest)
+                                                    {
+                                                        <a asp-action="AddQualityTest" asp-route-id="@t.TransferId">
+                                                            <i class="bi bi-clipboard2-plus" style="width:16px"></i> Add QC Test
+                                                        </a>
+                                                    }
+                                                    @if (t.Status == "Received" && t.HasQualityTest)
+                                                    {
+                                                        <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId">
+                                                            <i class="bi bi-clipboard2-check" style="width:16px"></i> View QC
+                                                        </a>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show glass-card mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-            <div>@TempData["Success"]</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+@section Scripts {
+    <script>
+        function switchTab(tabId, barId, btn) {
+            document.getElementById(barId)
+                    .querySelectorAll('.tab-item')
+                    .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // hide panels that belong to this bar (same prefix: ca- or pm-)
+            var prefix = tabId.split('-')[0];
+            document.querySelectorAll('.tab-panel').forEach(p => {
+                if (p.id.startsWith('tab-' + prefix + '-')) p.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+
+        function toggleMenu(e, menuId) {
+            e.stopPropagation();
+            var target = document.getElementById(menuId);
+            var isOpen = target.classList.contains('open');
+            document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
+            if (!isOpen) target.classList.add('open');
+        }
+
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
+        });
+    </script>
 }
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show glass-card mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-            <div>@TempData["Error"]</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-<div class="card glass-card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-custom mb-0">
-                <thead>
-                    <tr>
-                        <th>Transfer Ref</th>
-                        <th>Batch</th>
-                        <th>Route (From-To)</th>
-                        <th>Logistics</th>
-                        <th class="text-end">Dispatch (L)</th>
-                        <th class="text-end">Received (L)</th>
-                        <th class="text-end">Loss (L)</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        @if (RoleName == "Plant Manager")
-                        {
-                            <th class="text-center">Actions</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!Model.Any())
-                    {
-                        <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
-                                No transfer records found in the system.
-                            </td>
-                        </tr>
-                    }
-                    @foreach (var t in Model)
-                    {
-                        <tr class="@(t.Status == "Received" ? "tr-received" : "tr-dispatched")">
-                            <td><span class="id-pill">TR-@t.TransferId</span></td>
-                            <td><span class="text-muted small fw-bold">#@t.BatchRef</span></td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span class="fw-semibold text-dark">@t.PlantName</span>
-                                    <span class="text-muted small">from @t.CenterName</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <span class="small text-dark"><i class="bi bi-truck me-1"></i>@t.VehicleNumber</span>
-                                    <span class="text-muted small">@(t.DriverName ?? "No Driver Assigned")</span>
-                                </div>
-                            </td>
-                            <td class="text-end numeric-val">@t.DispatchQty.ToString("N2")</td>
-                            <td class="text-end numeric-val">@(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N2") : "-")</td>
-                            <td class="text-end">
-                                @if (t.LossQty.HasValue)
-                                {
-                                    <span class="numeric-val @(t.LossQty > 0 ? "text-danger" : "text-success")">
-                                        @(t.LossQty > 0 ? "-" : "")@Math.Abs(t.LossQty.Value).ToString("N2")
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">-</span>
-                                }
-                            </td>
-                            <td>
-                                <div class="small text-dark">@t.DispatchDate.ToString("dd MMM yyyy")</div>
-                            </td>
-                            <td>
-                                @if (t.Status == "Received")
-                                {
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle status-badge">
-                                        <i class="bi bi-check2-all me-1"></i> Received
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle status-badge">
-                                        <i class="bi bi-clock-history me-1"></i> Dispatched
-                                    </span>
-                                }
-                            </td>
-                            @if (RoleName == "Plant Manager")
-                            {
-                                <td class="text-center text-nowrap">
-                                    <div class="btn-group-custom">
-
-                                   
-                                        <a asp-action="Detail" asp-route-id="@t.TransferId"
-                                           class="btn-table-action" title="View Details">
-                                            <i class="bi bi-eye"></i> Detail
-                                        </a>
-
-                                        
-                                        @if (t.Status == "Dispatched")
-                                        {
-                                            <a asp-action="Receive" asp-route-id="@t.TransferId"
-                                               class="btn-table-action btn-table-success" title="Confirm Receipt">
-                                                <i class="bi bi-download"></i> Receive
-                                            </a>
-                                        }
-
-
-                                        @if (t.Status == "Received")
-                                        {
-                                            @if (!t.HasQualityTest)
-                                            {
-                                                <a asp-action="AddQualityTest" asp-route-id="@t.TransferId"
-                                                   class="btn-table-action btn-table-qc-pending" title="QC Test Pending">
-                                                    <i class="bi bi-clock me-1"></i> QC Test
-                                                </a>
-                                            }
-                                            else
-                                            {
-                                                <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId"
-                                                   class="btn-table-action btn-table-qc-done" title="QC Done">
-                                                    <i class="bi bi-clipboard2-check me-1"></i> QC Done
-                                                </a>
-                                            }
-                                        }
-
-                                    </div>
-                                </td>
-                            }
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
