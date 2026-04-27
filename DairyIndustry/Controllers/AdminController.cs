@@ -926,31 +926,49 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult AdminOrder(AdminOrderModel model)
         {
+            // Validate cart has items
+            if (model.CartItems == null || !model.CartItems.Any())
+            {
+                ModelState.AddModelError("", "Please add at least one product to the order.");
+            }
+
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _adminRepo.CreateOrder(model);
-                    ViewBag.Message = "Order Created Successfully!";
-                    model = new AdminOrderModel();
+                    int orderId = _adminRepo.CreateOrder(model);
+                    TempData["Success"] = $"Order #{orderId} created successfully!";
+                    return RedirectToAction("AdminOrder");
                 }
                 catch (Exception ex)
                 {
                     ModelState.AddModelError("", ex.Message);
                 }
             }
+
             model.DistributorList = _adminRepo.GetDistributors();
             model.ProductList = _adminRepo.GetAllProducts(null, true);
-            model.PlantList = _adminRepo.GetActivePlants();   // added
+            model.PlantList = _adminRepo.GetActivePlants();
             return View(model);
         }
+
         [HttpGet]
         [SessionAuthorize("Admin")]
-        public IActionResult AdminOrderList()
+        public IActionResult AdminOrderList(
+    int? distributorId,
+    string? orderStatus,
+    DateTime? fromDate,
+    DateTime? toDate)
         {
-            var model = new AdminOrderListModel();
-            model.DistributorList = _adminRepo.GetDistributors();
-            model.Orders = _adminRepo.GetAllOrders(null, null, null, null);
+            var model = new AdminOrderListModel
+            {
+                DistributorId = distributorId,
+                OrderStatus = orderStatus,
+                FromDate = fromDate,
+                ToDate = toDate,
+                Orders = _adminRepo.GetAllOrders(distributorId, orderStatus, fromDate, toDate),
+                DistributorList = _adminRepo.GetDistributors()
+            };
             return View(model);
         }
 
@@ -970,17 +988,31 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [SessionAuthorize("Admin")]
-        public IActionResult UpdateOrderStatus(int orderId, string status, int? distributorId, string? orderStatus, DateTime? fromDate, DateTime? toDate)
+        public IActionResult UpdateOrderStatus(
+     int orderId,
+     string status,
+     int? distributorId,
+     string? orderStatus,
+     string? fromDate,
+     string? toDate)
         {
-            _adminRepo.UpdateOrderStatus(orderId, status);
-            TempData["Message"] = $"Order #{orderId} updated to {status}.";
+            try
+            {
+                _adminRepo.UpdateOrderStatus(orderId, status);
+                TempData["Message"] = $"Order #{orderId} status updated to {status}.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
 
+            // Redirect back to list preserving whatever filters were active
             return RedirectToAction("AdminOrderList", new
             {
-                DistributorId = distributorId,
-                OrderStatus = orderStatus,
-                FromDate = fromDate?.ToString("yyyy-MM-dd"),
-                ToDate = toDate?.ToString("yyyy-MM-dd")
+                distributorId,
+                orderStatus,
+                fromDate,
+                toDate
             });
         }
 

@@ -15,6 +15,14 @@
         </div>
     }
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Order Management</h5>
@@ -23,8 +31,9 @@
             </a>
         </div>
 
+        @* ── Filter Form ── *@
         <div class="card-body border-bottom">
-            <form method="post" asp-action="AdminOrderList" asp-controller="Admin">
+            <form method="get" asp-action="AdminOrderList" asp-controller="Admin">
                 <div class="row g-3 align-items-end">
 
                     <div class="col-md-3">
@@ -34,7 +43,7 @@
                             @foreach (var d in Model.DistributorList)
                             {
                                 <option value="@d.DistributorId"
-                                        selected="@(Model.DistributorId == d.DistributorId ? "selected" : null)">
+                                        selected="@(Model.DistributorId == d.DistributorId)">
                                     @d.DistributorName
                                 </option>
                             }
@@ -47,7 +56,7 @@
                             <option value="">All Statuses</option>
                             @foreach (var s in AdminOrderListModel.StatusOptions)
                             {
-                                <option value="@s" selected="@(Model.OrderStatus == s ? "selected" : null)">
+                                <option value="@s" selected="@(Model.OrderStatus == s)">
                                     @s
                                 </option>
                             }
@@ -85,6 +94,7 @@
             @if (!Model.Orders.Any())
             {
                 <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                     <p class="mb-0">No orders found for the selected filters.</p>
                 </div>
             }
@@ -136,28 +146,38 @@
                                         <span class="badge @badgeClass">@order.OrderStatus</span>
                                     </td>
                                     <td class="text-center">
-                                        <form method="post" asp-action="UpdateOrderStatus" asp-controller="Admin"
+                                        <form method="post"
+                                              asp-action="UpdateOrderStatus"
+                                              asp-controller="Admin"
                                               class="d-inline-flex gap-1 align-items-center">
-                                            <input type="hidden" name="orderId" value="@order.OrderId" />
-                                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
-                                            <input type="hidden" name="orderStatus" value="@Model.OrderStatus" />
-                                            <input type="hidden" name="fromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
-                                            <input type="hidden" name="toDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                                            @Html.AntiForgeryToken()
 
-                                            <select name="status" class="form-select form-select-sm" style="width:130px;">
+                                            <input type="hidden" name="orderId" value="@order.OrderId" />
+
+                                            @* Pass current filters so redirect preserves them *@
+                                            <input type="hidden" name="distributorId"
+                                                   value="@Model.DistributorId" />
+                                            <input type="hidden" name="orderStatus"
+                                                   value="@Model.OrderStatus" />
+                                            <input type="hidden" name="fromDate"
+                                                   value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                                            <input type="hidden" name="toDate"
+                                                   value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+
+                                            <select name="status"
+                                                    class="form-select form-select-sm"
+                                                    style="width:130px;">
                                                 @foreach (var s in AdminOrderListModel.StatusOptions)
                                                 {
-                                                    if (s == order.OrderStatus)
-                                                    {
-                                                        <option value="@s" selected>@s</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option value="@s">@s</option>
-                                                    }
+                                                    <option value="@s"
+                                                            selected="@(s == order.OrderStatus)">
+                                                        @s
+                                                    </option>
                                                 }
                                             </select>
-                                            <button type="submit" class="btn btn-sm btn-outline-dark"
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-dark"
                                                     title="Update status">
                                                 &#10003;
                                             </button>

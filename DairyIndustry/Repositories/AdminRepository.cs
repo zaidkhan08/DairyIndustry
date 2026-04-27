@@ -1696,22 +1696,29 @@ namespace DairyIndustry.Repositories
             using (SqlConnection con = _db.GetConnection())
             {
                 con.Open();
+
+                // Step 1: Create order header
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_CreateOrder", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@DistributorId", model.DistributorId);
-                    cmd.Parameters.AddWithValue("@PlantId", model.PlantId);   // added
+                    cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
                     cmd.Parameters.AddWithValue("@OrderDate", model.OrderDate.Date);
                     orderId = Convert.ToInt32(cmd.ExecuteScalar());
                 }
-                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
+
+                // Step 2: Add each cart item
+                foreach (var item in model.CartItems)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@OrderId", orderId);
-                    cmd.Parameters.AddWithValue("@ProductId", model.ProductId);
-                    cmd.Parameters.AddWithValue("@Quantity", model.Quantity);
-                    cmd.Parameters.AddWithValue("@UnitPrice", model.UnitPrice);
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@OrderId", orderId);
+                        cmd.Parameters.AddWithValue("@ProductId", item.ProductId);
+                        cmd.Parameters.AddWithValue("@Quantity", item.Quantity);
+                        cmd.Parameters.AddWithValue("@UnitPrice", item.UnitPrice);
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
             return orderId;
