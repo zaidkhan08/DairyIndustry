@@ -45,6 +45,20 @@ namespace DairyIndustry.Repositories
         List<SalesOrderDetailModel> GetOrderDetails(int orderId);
         bool AddOrderDetail(AddOrderDetailFormModel model);
 
+        // ── DISTRIBUTOR ORDER PLACEMENT (smart merge logic) ───────────────
+        // Used when a Distributor places an order from the portal.
+        // • Finds or creates a Pending order for this distributor on today's date.
+        // • If a detail row for the same ProductId already exists on that order,
+        //   adds the new quantity to it (merge). Otherwise inserts a new row.
+        // • UnitPrice is always auto-fetched from Production.Products.MRP —
+        //   the distributor never supplies a price.
+        // Returns the OrderId (existing or newly created).
+        int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity);
+
+        // ── PRODUCTS ──────────────────────────────────────────────────────
+        // Returns a single product (used for MRP auto-fill).
+        ProductSalesModel? GetProductById(int productId);
+
         // ── DASHBOARD (inline queries) ─────────────────────────────────────
         SalesDashboardSummaryModel GetDashboardSummary();
         List<OrderStatusCountModel> GetOrdersByStatus();

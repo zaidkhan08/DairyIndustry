@@ -295,6 +295,7 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════════════
         //  CREATE ORDER — SP: usp_Sales_CreateOrder + inline UPDATE for PlantId
+        //  Used by Admin when creating an order manually.
         // ═══════════════════════════════════════════════════════════════════
         public int CreateOrder(SalesOrderFormModel model)
         {
@@ -372,6 +373,7 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════════════
         //  ADD ORDER DETAIL — SP: usp_Sales_AddOrderDetail
+        //  Used by Admin when adding items to an order from the Details page.
         // ═══════════════════════════════════════════════════════════════════
         public bool AddOrderDetail(AddOrderDetailFormModel model)
         {
@@ -385,6 +387,179 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@UnitPrice", model.UnitPrice);
             cmd.ExecuteNonQuery();
             return true;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  PLACE DISTRIBUTOR ORDER — inline (smart merge logic)
+        //
+        //  Called ONLY from the Distributor portal (not Admin).
+        //  Rules:
+        //   1. Look for an existing Pending order for this distributor
+        //      with OrderDate = TODAY. If none exists, create one via SP.
+        //   2. Within that order, check if a detail row for @ProductId already
+        //      exists. If yes → UPDATE its Quantity (add the new qty).
+        //      If no  → INSERT a new detail row.
+        //   3. UnitPrice is ALWAYS fetched from Production.Products.MRP.
+        //      Distributor never supplies a price.
+        //   4. Recalculate SalesOrders.TotalAmount after every change.
+        //
+        //  Orders placed on DIFFERENT dates are separate orders (step 1 only
+        //  matches today's date), so historical entries are never merged.
+        //
+        //  No SP changes needed — all logic is in C#/inline SQL.
+        // ═══════════════════════════════════════════════════════════════════
+        public int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var tx = con.BeginTransaction();
+
+            try
+            {
+                // ── Step 1: fetch MRP from Products ──────────────────────
+                decimal unitPrice;
+                using (var cmd = new SqlCommand(
+                    "SELECT MRP FROM Production.Products WHERE ProductId = @ProductId AND IsActive = 1",
+                    con, tx))
+                {
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    var result = cmd.ExecuteScalar();
+                    if (result == null || result == DBNull.Value)
+                        throw new InvalidOperationException("Product not found or is inactive.");
+                    unitPrice = Convert.ToDecimal(result);
+                }
+
+                // ── Step 2: find existing Pending order for today ─────────
+                int orderId = 0;
+                using (var cmd = new SqlCommand(@"
+                    SELECT TOP 1 OrderId
+                    FROM Sales.SalesOrders
+                    WHERE DistributorId = @DistributorId
+                      AND OrderStatus   = 'Pending'
+                      AND CAST(OrderDate AS DATE) = CAST(GETDATE() AS DATE)
+                    ORDER BY OrderId DESC",
+                    con, tx))
+                {
+                    cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        orderId = Convert.ToInt32(result);
+                }
+
+                // ── Step 3: if no order today, create one ─────────────────
+                if (orderId == 0)
+                {
+                    using var cmd = new SqlCommand(@"
+                        INSERT INTO Sales.SalesOrders
+                            (DistributorId, PlantId, OrderDate, TotalAmount, OrderStatus)
+                        VALUES
+                            (@DistributorId, @PlantId, CAST(GETDATE() AS DATE), 0, 'Pending');
+                        SELECT SCOPE_IDENTITY();",
+                        con, tx);
+                    cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                    cmd.Parameters.AddWithValue("@PlantId", plantId);
+                    var result = cmd.ExecuteScalar();
+                    if (result == null || result == DBNull.Value)
+                        throw new InvalidOperationException("Failed to create order.");
+                    orderId = Convert.ToInt32(result);
+                }
+
+                // ── Step 4: check if product already in this order ────────
+                int existingDetailId = 0;
+                using (var cmd = new SqlCommand(@"
+                    SELECT OrderDetailId
+                    FROM Sales.SalesOrderDetails
+                    WHERE OrderId = @OrderId AND ProductId = @ProductId",
+                    con, tx))
+                {
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        existingDetailId = Convert.ToInt32(result);
+                }
+
+                // ── Step 5: merge or insert ───────────────────────────────
+                if (existingDetailId > 0)
+                {
+                    // Same product on same order → add quantities together
+                    using var cmd = new SqlCommand(@"
+                        UPDATE Sales.SalesOrderDetails
+                        SET    Quantity  = Quantity + @Quantity,
+                               UnitPrice = @UnitPrice
+                        WHERE  OrderDetailId = @DetailId",
+                        con, tx);
+                    cmd.Parameters.AddWithValue("@Quantity", quantity);
+                    cmd.Parameters.AddWithValue("@UnitPrice", unitPrice);
+                    cmd.Parameters.AddWithValue("@DetailId", existingDetailId);
+                    cmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    // New product for this order → insert row
+                    using var cmd = new SqlCommand(@"
+                        INSERT INTO Sales.SalesOrderDetails (OrderId, ProductId, Quantity, UnitPrice)
+                        VALUES (@OrderId, @ProductId, @Quantity, @UnitPrice)",
+                        con, tx);
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    cmd.Parameters.AddWithValue("@Quantity", quantity);
+                    cmd.Parameters.AddWithValue("@UnitPrice", unitPrice);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // ── Step 6: recalculate order total ───────────────────────
+                using (var cmd = new SqlCommand(@"
+                    UPDATE Sales.SalesOrders
+                    SET    TotalAmount = (
+                        SELECT ISNULL(SUM(Quantity * UnitPrice), 0)
+                        FROM   Sales.SalesOrderDetails
+                        WHERE  OrderId = @OrderId
+                    )
+                    WHERE  OrderId = @OrderId",
+                    con, tx))
+                {
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                tx.Commit();
+                return orderId;
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET PRODUCT BY ID — inline query
+        //  Returns a single product row; used to auto-fill MRP in the view.
+        // ═══════════════════════════════════════════════════════════════════
+        public ProductSalesModel? GetProductById(int productId)
+        {
+            const string sql = @"
+                SELECT ProductId, ProductName, ProductType, Unit, MRP
+                FROM Production.Products
+                WHERE ProductId = @ProductId AND IsActive = 1";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@ProductId", productId);
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read()) return null;
+            return new ProductSalesModel
+            {
+                ProductId = Convert.ToInt32(reader["ProductId"]),
+                ProductName = reader["ProductName"].ToString(),
+                ProductType = reader["ProductType"].ToString(),
+                Unit = reader["Unit"].ToString(),
+                MRP = Convert.ToDecimal(reader["MRP"])
+            };
         }
 
 

@@ -2,14 +2,31 @@
 @{
     ViewData["Title"] = "Create New Order";
     Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    bool isDistributor = ViewBag.IsDistributor == true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0">Create New Order</h4>
-        <small class="text-muted">Select distributor, plant and date. Add products on the next step.</small>
+        <small class="text-muted">
+            @if (isDistributor)
+            {
+                <span>Select a plant and date. Add products on the next step.</span>
+            }
+            else
+            {
+                <span>Select distributor, plant and date. Add products on the next step.</span>
+            }
+        </small>
     </div>
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← Back</a>
+    @if (isDistributor)
+    {
+        <a asp-action="MyOrders" class="btn btn-outline-secondary btn-sm">← My Orders</a>
+    }
+    else
+    {
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← Back</a>
+    }
 </div>
 
 <div class="row justify-content-center">
@@ -22,15 +39,36 @@
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
 
-                    <div class="mb-3">
-                        <label asp-for="DistributorId" class="form-label fw-semibold"></label>
-                        <select asp-for="DistributorId" asp-items="ViewBag.Distributors"
-                                class="form-select">
-                            <option value="">— Select Distributor —</option>
-                        </select>
-                        <span asp-validation-for="DistributorId" class="text-danger small"></span>
-                        <div class="form-text">Only <strong>Approved</strong> distributors can receive orders.</div>
-                    </div>
+                    @if (isDistributor)
+                    {
+                        <!--
+                            Distributor: show their name as read-only text.
+                            The hidden input passes their DistributorId to the controller.
+                            The controller re-reads DistributorId from session on POST,
+                            so even if someone edits the hidden value it is ignored.
+                        -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Distributor</label>
+                            <div class="form-control bg-light text-muted" style="cursor:not-allowed;">
+                                🏢 @ViewBag.DistributorName
+                            </div>
+                            <input type="hidden" asp-for="DistributorId" />
+                            <div class="form-text">You are placing this order as yourself.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Admin: full distributor dropdown (Approved only) -->
+                        <div class="mb-3">
+                            <label asp-for="DistributorId" class="form-label fw-semibold"></label>
+                            <select asp-for="DistributorId" asp-items="ViewBag.Distributors"
+                                    class="form-select">
+                                <option value="">— Select Distributor —</option>
+                            </select>
+                            <span asp-validation-for="DistributorId" class="text-danger small"></span>
+                            <div class="form-text">Only <strong>Approved</strong> distributors can receive orders.</div>
+                        </div>
+                    }
 
                     <div class="mb-3">
                         <label asp-for="PlantId" class="form-label fw-semibold"></label>
@@ -47,13 +85,23 @@
                     </div>
 
                     <div class="alert alert-info small py-2 mb-4">
-                        ℹ️ After creating the order you'll be taken to the details page to add products
-                        (plant, product name, qty, unit price, total).
+                        ℹ️ After creating the order you'll be taken to the details page to add products.
+                        @if (isDistributor)
+                        {
+                            <span>Unit prices are set automatically from the product rate — you don't need to enter them.</span>
+                        }
                     </div>
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary px-4">Create Order →</button>
-                        <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                        @if (isDistributor)
+                        {
+                            <a asp-action="MyOrders" class="btn btn-outline-secondary px-4">Cancel</a>
+                        }
+                        else
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                        }
                     </div>
                 </form>
             </div>

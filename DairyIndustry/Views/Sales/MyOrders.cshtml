@@ -2,99 +2,168 @@
 @{
     ViewData["Title"] = "My Orders";
     Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    string distName = ViewBag.DistributorName ?? "Distributor";
 }
 
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0">My Orders</h4>
-        <small class="text-muted">Welcome, <strong>@ViewBag.DistributorName</strong></small>
+        <small class="text-muted">Welcome, <strong>@distName</strong> — all your orders are shown below.</small>
+    </div>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
+        ➕ Place New Order
+    </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        ✅ @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+        ❌ @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ── Quick Place-Order Panel (collapsible) ──────────────────────────── -->
+<div class="collapse mb-4" id="placeOrderPanel">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold text-white" style="background:#1a2e4a;">
+            🛒 Place a New Order
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted small mb-3">
+                Select a product and quantity. The unit price is set automatically from the current
+                product rate — you don't need to enter it.
+                <br />
+                <strong>Same product ordered today?</strong> It will be added to your existing order
+                for today rather than creating a duplicate.
+            </p>
+
+            <form asp-action="PlaceOrder" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Product</label>
+                        <select name="productId" id="productSelect" class="form-select" required>
+                            <option value="">— Select Product —</option>
+                            @foreach (var p in (IEnumerable<SelectListItem>)ViewBag.Products)
+                            {
+                                <option value="@p.Value"
+                                        data-mrp="@(((DairyIndustry.Models.ProductSalesModel?)null)?.MRP ?? 0)">
+                                    @p.Text
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Quantity</label>
+                        <input name="quantity" type="number" step="0.01" min="0.01"
+                               class="form-control" placeholder="e.g. 10" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Processing Plant</label>
+                        <select name="plantId" class="form-select" required>
+                            <option value="">— Select Plant —</option>
+                            @foreach (var pl in (IEnumerable<SelectListItem>)ViewBag.Plants)
+                            {
+                                <option value="@pl.Value">@pl.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100">Place Order</button>
+                    </div>
+                </div>
+                <div class="mt-2 text-muted small" id="priceHint"></div>
+            </form>
+        </div>
     </div>
 </div>
 
-@if (Model.Any())
+<!-- ── Orders Table ───────────────────────────────────────────────────── -->
+@if (!Model.Any())
 {
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #0d6efd!important;">
-                <div class="card-body py-3">
-                    <div class="text-muted small">Total Orders</div>
-                    <div class="fs-3 fw-bold text-primary">@Model.Count</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
-                <div class="card-body py-3">
-                    <div class="text-muted small">Delivered</div>
-                    <div class="fs-3 fw-bold text-success">@Model.Count(o => o.OrderStatus == "Delivered")</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #ffc107!important;">
-                <div class="card-body py-3">
-                    <div class="text-muted small">Pending</div>
-                    <div class="fs-3 fw-bold text-warning">@Model.Count(o => o.OrderStatus == "Pending")</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
-                <div class="card-body py-3">
-                    <div class="text-muted small">Total Value</div>
-                    <div class="fs-3 fw-bold text-success">₹@Model.Sum(o => o.TotalAmount).ToString("N0")</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead style="background:#1a2e4a; color:#fff;">
-                        <tr>
-                            <th>#</th>
-                            <th>Order Date</th>
-                            <th class="text-end">Amount (₹)</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var o in Model)
-                        {
-                            <tr>
-                                <td class="text-muted small">#@o.OrderId</td>
-                                <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
-                                <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
-                                <td class="text-center">
-                                    <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
-                                </td>
-                                <td class="text-center">
-                                    <a asp-action="Details" asp-route-id="@o.OrderId"
-                                       class="btn btn-sm btn-outline-primary">View</a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="px-3 py-2 border-top bg-light text-muted small">
-                @Model.Count order(s)
-            </div>
-        </div>
+    <div class="alert alert-info">
+        You haven't placed any orders yet. Click <strong>Place New Order</strong> above to get started.
     </div>
 }
 else
 {
     <div class="card border-0 shadow-sm">
-        <div class="text-center text-muted py-5">
-            <div style="font-size:3rem;">📋</div>
-            <div class="fs-5 mt-2">No orders yet.</div>
-            <p class="text-muted small mt-1">
-                Your orders will appear here once they are created by the sales team.
-            </p>
+        <div class="card-header fw-semibold" style="background:#f8f9fa;">
+            📦 Order History (@Model.Count orders)
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model)
+                    {
+                        <tr>
+                            <td><strong>#@o.OrderId</strong></td>
+                            <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                            <td>₹@o.TotalAmount.ToString("N2")</td>
+                            <td>
+                                @{
+                                    string badge = o.OrderStatus switch
+                                    {
+                                        "Pending" => "warning text-dark",
+                                        "Confirmed" => "primary",
+                                        "Dispatched" => "info text-dark",
+                                        "Delivered" => "success",
+                                        "Cancelled" => "danger",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge bg-@badge">@o.OrderStatus</span>
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Details" asp-route-id="@o.OrderId"
+                                   class="btn btn-outline-primary btn-sm">View Details</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        // Build a product→MRP map from the server-rendered products list.
+        // This is used only to show the user a price hint before submitting —
+        // the actual price is always re-fetched server-side from Production.Products.MRP.
+        const productPrices = {};
+        @foreach (var p in (IEnumerable<DairyIndustry.Models.ProductSalesModel>)
+                                                  ((Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Products).Items)
+        {
+                @Html.Raw($"productPrices[{p.ProductId}] = {p.MRP};")
+        }
+
+        document.getElementById('productSelect').addEventListener('change', function () {
+            const hint = document.getElementById('priceHint');
+            const mrp = productPrices[this.value];
+            if (mrp) {
+                hint.textContent = `Unit price (MRP): ₹${parseFloat(mrp).toFixed(2)} — applied automatically.`;
+            } else {
+                hint.textContent = '';
+            }
+        });
+    </script>
 }
