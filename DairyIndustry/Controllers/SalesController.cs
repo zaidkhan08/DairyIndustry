@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
-    // ── Default: any logged-in user can reach this controller ─────────────
-    // Individual actions narrow by role where needed.
     [SessionAuthorize]
     public class SalesController : Controller
     {
@@ -21,7 +19,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  DASHBOARD — Admin only
-        //  GET /Sales/Dashboard
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult Dashboard()
@@ -39,7 +36,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  ALL ORDERS — Admin only
-        //  GET /Sales/Index
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult Index(int? distributorId, string? status,
@@ -55,7 +51,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  ORDER DETAILS — Admin sees all; Distributor sees own only
-        //  GET /Sales/Details/5
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin", "Distributor")]
         public IActionResult Details(int id)
@@ -67,7 +62,6 @@ namespace DairyIndustry.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Distributor can only view their own orders
             string role = HttpContext.Session.GetString("RoleName") ?? "";
             if (role == "Distributor")
             {
@@ -77,6 +71,9 @@ namespace DairyIndustry.Controllers
             }
 
             order.OrderDetails = _repo.GetOrderDetails(id);
+
+            // Pass the full product list so the view can show MRP automatically
+            ViewBag.ProductList = _repo.GetProducts();
             LoadProductDropdown();
 
             return View(order);
@@ -84,9 +81,15 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  CREATE ORDER — Admin selects distributor from dropdown.
-        //                 Distributor sees their own name (no dropdown).
-        //  GET /Sales/Create
+        //  CREATE ORDER
+        //
+        //  ADMIN path   → normal SP flow, distributor dropdown shown.
+        //  DISTRIBUTOR path → on this single page choose plant + product + qty,
+        //                     then POST calls PlaceDistributorOrder (inline,
+        //                     smart merge, auto-MRP). We NEVER call the SP
+        //                     usp_Sales_CreateOrder for distributors because that
+        //                     SP validates Status='Approved' and throws the
+        //                     "Distributor not found or not yet approved" error.
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin", "Distributor")]
         public IActionResult Create()
@@ -95,17 +98,14 @@ namespace DairyIndustry.Controllers
 
             if (role == "Distributor")
             {
-                // Distributor portal: pre-fill name from session, no dropdown shown
                 int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
-                string distName = HttpContext.Session.GetString("DistributorName") ?? "";
                 ViewBag.IsDistributor = true;
-                ViewBag.DistributorName = distName;
+                ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName") ?? "";
                 LoadPlantDropdown();
-                LoadProductDropdown(); // needed for the product selection step on same page
+                ViewBag.ProductList = _repo.GetProducts(); // full list for MRP hint + select
                 return View(new SalesOrderFormModel { DistributorId = distId });
             }
 
-            // Admin path: full distributor dropdown
             ViewBag.IsDistributor = false;
             LoadDistributorDropdown();
             LoadPlantDropdown();
@@ -119,28 +119,55 @@ namespace DairyIndustry.Controllers
         {
             string role = HttpContext.Session.GetString("RoleName") ?? "";
 
-            // Distributor: always force DistributorId from session — ignore any
-            // value the form might submit (prevents ID tampering).
+            // ── DISTRIBUTOR POST ──────────────────────────────────────────
+            // Read extra fields posted from the distributor form.
+            // Never call usp_Sales_CreateOrder for distributors.
             if (role == "Distributor")
             {
-                model.DistributorId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
-            }
+                int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0; // always from session
 
-            if (!ModelState.IsValid)
-            {
-                if (role == "Distributor")
+                bool productOk = int.TryParse(Request.Form["SelectedProductId"], out int productId) && productId > 0;
+                bool qtyOk = decimal.TryParse(Request.Form["SelectedQuantity"],
+                                              System.Globalization.NumberStyles.Any,
+                                              System.Globalization.CultureInfo.InvariantCulture,
+                                              out decimal quantity) && quantity > 0;
+
+                if (!productOk || !qtyOk || model.PlantId <= 0)
                 {
+                    TempData["Error"] = "Please select a plant, a product, and enter a valid quantity.";
                     ViewBag.IsDistributor = true;
                     ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
                     LoadPlantDropdown(model.PlantId);
-                    LoadProductDropdown();
+                    ViewBag.ProductList = _repo.GetProducts();
+                    return View(model);
                 }
-                else
+
+                try
                 {
-                    ViewBag.IsDistributor = false;
-                    LoadDistributorDropdown(model.DistributorId);
-                    LoadPlantDropdown(model.PlantId);
+                    int orderId = _repo.PlaceDistributorOrder(distId, model.PlantId, productId, quantity);
+                    TempData["Success"] = "Order placed! Unit price set automatically from product rate.";
+                    return RedirectToAction("Details", new { id = orderId });
                 }
+                catch (Exception ex)
+                {
+                    string msg = ex.Message.Contains("not found or is inactive")
+                        ? "Selected product is no longer available."
+                        : "Could not place order. Please contact admin if your account is pending approval.";
+                    TempData["Error"] = msg;
+                    ViewBag.IsDistributor = true;
+                    ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
+                    LoadPlantDropdown(model.PlantId);
+                    ViewBag.ProductList = _repo.GetProducts();
+                    return View(model);
+                }
+            }
+
+            // ── ADMIN POST ────────────────────────────────────────────────
+            if (!ModelState.IsValid)
+            {
+                ViewBag.IsDistributor = false;
+                LoadDistributorDropdown(model.DistributorId);
+                LoadPlantDropdown(model.PlantId);
                 return View(model);
             }
 
@@ -152,28 +179,16 @@ namespace DairyIndustry.Controllers
             }
 
             TempData["Error"] = "Could not create order. Ensure the distributor is Approved.";
-            if (role == "Distributor")
-            {
-                ViewBag.IsDistributor = true;
-                ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
-                LoadPlantDropdown(model.PlantId);
-                LoadProductDropdown();
-            }
-            else
-            {
-                ViewBag.IsDistributor = false;
-                LoadDistributorDropdown(model.DistributorId);
-                LoadPlantDropdown(model.PlantId);
-            }
+            ViewBag.IsDistributor = false;
+            LoadDistributorDropdown(model.DistributorId);
+            LoadPlantDropdown(model.PlantId);
             return View(model);
         }
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  PLACE DISTRIBUTOR ORDER — Distributor portal quick-order.
-        //  Distributor picks product + quantity. Price is auto from MRP.
-        //  Smart merge: same product on same-day order → qty is added.
-        //  POST /Sales/PlaceOrder
+        //  PLACE ORDER — quick-order posted from MyOrders page
+        //  Distributor only. Same PlaceDistributorOrder logic.
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -196,7 +211,7 @@ namespace DairyIndustry.Controllers
             try
             {
                 int orderId = _repo.PlaceDistributorOrder(distributorId, plantId, productId, quantity);
-                TempData["Success"] = "Order placed successfully! Your unit price has been set from the product rate.";
+                TempData["Success"] = "Order placed! Unit price set automatically from product rate.";
                 return RedirectToAction("Details", new { id = orderId });
             }
             catch (Exception ex)
@@ -211,8 +226,18 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  ADD ORDER DETAIL — Admin only (adds product line to existing order)
-        //  POST /Sales/AddOrderDetail
+        //  ADD ORDER DETAIL — Admin and Distributor
+        //
+        //  UnitPrice: AUTO-FETCHED from Production.Products.MRP for BOTH roles.
+        //  Neither Admin nor Distributor types a price — the field is removed
+        //  from the view entirely.
+        //
+        //  Merge logic (BOTH roles):
+        //  If the same ProductId already exists in this order's detail rows,
+        //  we ADD the new quantity to the existing row instead of inserting
+        //  a duplicate line. This matches the same behaviour as
+        //  PlaceDistributorOrder so there is never a duplicate product row
+        //  on any order regardless of how the product was added.
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -221,31 +246,32 @@ namespace DairyIndustry.Controllers
         {
             string role = HttpContext.Session.GetString("RoleName") ?? "";
 
-            // For Distributor: auto-fill UnitPrice from MRP — never trust form value
+            // Step 1 — auto-fetch MRP (ignore any UnitPrice the form may have sent)
+            var product = _repo.GetProductById(model.ProductId);
+            if (product == null)
+            {
+                TempData["Error"] = "Selected product not found or is inactive.";
+                return RedirectToAction("Details", new { id = model.OrderId });
+            }
+            model.UnitPrice = product.MRP;
+
+            // Step 2 — ownership check for Distributor
             if (role == "Distributor")
             {
-                var product = _repo.GetProductById(model.ProductId);
-                if (product == null)
-                {
-                    TempData["Error"] = "Selected product not found.";
-                    return RedirectToAction("Details", new { id = model.OrderId });
-                }
-                model.UnitPrice = product.MRP;
-
-                // Security: verify this order belongs to the logged-in distributor
                 var order = _repo.GetOrderById(model.OrderId);
                 int myId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
                 if (order == null || order.DistributorId != myId)
                     return View("AccessDenied");
             }
 
-            if (!ModelState.IsValid)
+            if (model.Quantity <= 0)
             {
-                TempData["Error"] = "Invalid product entry. Check quantity and price.";
+                TempData["Error"] = "Quantity must be greater than zero.";
                 return RedirectToAction("Details", new { id = model.OrderId });
             }
 
-            bool ok = _repo.AddOrderDetail(model);
+            // Step 3 — merge or insert via repository
+            bool ok = _repo.AddOrMergeOrderDetail(model);
             TempData[ok ? "Success" : "Error"] = ok ? "Product added." : "Failed to add product.";
             return RedirectToAction("Details", new { id = model.OrderId });
         }
@@ -253,7 +279,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  UPDATE ORDER STATUS — Admin only
-        //  POST /Sales/UpdateStatus
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -277,7 +302,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  DISTRIBUTORS LIST — Admin only
-        //  GET /Sales/Distributors
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult Distributors(string? status)
@@ -292,7 +316,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  DISTRIBUTOR DETAILS — Admin only
-        //  GET /Sales/DistributorDetails/5
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult DistributorDetails(int id)
@@ -310,7 +333,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════════════════
         //  ADD DISTRIBUTOR (admin direct-add) — Admin only
-        //  GET/POST /Sales/AddDistributor
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult AddDistributor() => View(new DistributorFormModel());
@@ -321,7 +343,6 @@ namespace DairyIndustry.Controllers
         public IActionResult AddDistributor(DistributorFormModel model)
         {
             if (!ModelState.IsValid) return View(model);
-
             int newId = _repo.AddDistributor(model);
             TempData[newId > 0 ? "Success" : "Error"] = newId > 0
                 ? "Distributor added successfully."
@@ -331,8 +352,7 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  EDIT DISTRIBUTOR — Admin only
-        //  GET/POST /Sales/EditDistributor/5
+        //  EDIT DISTRIBUTOR
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin", "Distributor")]
         public IActionResult EditDistributor(int id)
@@ -361,17 +381,23 @@ namespace DairyIndustry.Controllers
         public IActionResult EditDistributor(DistributorFormModel model)
         {
             if (!ModelState.IsValid) return View(model);
-
             bool ok = _repo.UpdateDistributor(model);
-            TempData[ok ? "Success" : "Error"] = ok ? "Distributor updated." : "Update failed.";
+            if (!ok)
+            {
+                TempData["Error"] = "Update failed.";
+                return View(model);
+            }
+            TempData["Success"] = "Profile updated successfully.";
+            // Distributor goes back to MyOrders; Admin goes to DistributorDetails
+            string role = HttpContext.Session.GetString("RoleName") ?? "";
+            if (role == "Distributor")
+                return RedirectToAction("MyOrders");
             return RedirectToAction("DistributorDetails", new { id = model.DistributorId });
         }
 
 
         // ════════════════════════════════════════════════════════════════════
         //  APPROVE / REJECT — Admin only
-        //  SP: usp_Sales_ApproveDistributor  (action = "Approve" | "Reject")
-        //  POST /Sales/ApproveDistributor
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -383,20 +409,16 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = "Invalid action.";
                 return RedirectToAction("DistributorDetails", new { id = distributorId });
             }
-
             bool ok = _repo.ApproveOrRejectDistributor(distributorId, action);
             TempData[ok ? "Success" : "Error"] = ok
                 ? $"Distributor {(action == "Approve" ? "approved" : "rejected")} successfully."
                 : "Action failed.";
-
             return RedirectToAction("DistributorDetails", new { id = distributorId });
         }
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  SUSPEND / REINSTATE — Admin only (inline queries)
-        //  POST /Sales/SuspendDistributor
-        //  POST /Sales/ReinstateDistributor
+        //  SUSPEND / REINSTATE — Admin only
         // ════════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -420,8 +442,35 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  DISTRIBUTOR PORTAL — own orders list
-        //  GET /Sales/MyOrders
+        //  MY PROFILE — Distributor self-edit
+        //  GET /Sales/MyProfile
+        //  Loads the distributor's own record by DistributorId from session
+        //  and forwards to the shared EditDistributor view.
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult MyProfile()
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var dist = _repo.GetDistributorById(distId);
+            if (dist == null)
+            {
+                TempData["Error"] = "Could not load your profile.";
+                return RedirectToAction("MyOrders");
+            }
+            return View("EditDistributor", new DistributorFormModel
+            {
+                DistributorId = dist.DistributorId,
+                DistributorName = dist.DistributorName,
+                Location = dist.Location,
+                ContactNumber = dist.ContactNumber,
+                Email = dist.Email,
+                Address = dist.Address,
+                GSTIN = dist.GSTIN
+            });
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  MY ORDERS — Distributor portal, own order list
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Distributor")]
         public IActionResult MyOrders()
@@ -429,18 +478,15 @@ namespace DairyIndustry.Controllers
             int distributorId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
             var orders = _repo.GetOrders(distributorId, null, null, null);
             ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
-
-            // Load dropdowns for the quick PlaceOrder form on this page
+            // Pass full product list (not SelectList) so view can show MRP hints
+            ViewBag.ProductList = _repo.GetProducts();
             LoadPlantDropdown();
-            LoadProductDropdown();
-
             return View(orders);
         }
 
 
         // ════════════════════════════════════════════════════════════════════
         //  REPORTS — Admin only
-        //  GET /Sales/Reports
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult Reports()
@@ -460,9 +506,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         private void LoadDistributorDropdown(int? selected = null) =>
             ViewBag.Distributors = new SelectList(
-                _repo.GetDistributors()
-                     .Where(d => d.Status == "Approved")
-                     .ToList(),
+                _repo.GetDistributors().Where(d => d.Status == "Approved").ToList(),
                 "DistributorId", "DisplayText", selected);
 
         private void LoadPlantDropdown(int? selected = null) =>
@@ -483,33 +527,24 @@ namespace DairyIndustry.Controllers
 
 
     // ════════════════════════════════════════════════════════════════════════
-    //  SEPARATE PUBLIC CONTROLLER — No [SessionAuthorize] at all
-    //  Handles distributor self-registration. Public page, no login needed.
-    //  Route: /DistributorRegister
-    //  Views: Views/DistributorRegister/Register.cshtml
-    //         Views/DistributorRegister/RegisterSuccess.cshtml
+    //  DISTRIBUTOR REGISTRATION — public, no login required
     // ════════════════════════════════════════════════════════════════════════
     public class DistributorRegisterController : Controller
     {
         private readonly ISalesRepository _repo;
-
         public DistributorRegisterController(ISalesRepository repo) => _repo = repo;
 
-        // GET /DistributorRegister
         public IActionResult Index() => View("Register", new DistributorRegisterModel());
 
-        // POST /DistributorRegister
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Index(DistributorRegisterModel model)
         {
             if (!ModelState.IsValid) return View("Register", model);
-
             try
             {
                 model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
                 model.ConfirmPassword = BCrypt.Net.BCrypt.HashPassword(model.ConfirmPassword);
-
                 _repo.RegisterDistributor(model);
                 TempData["RegSuccess"] =
                     "Registration submitted! Our team will review and approve your account. " +
@@ -523,13 +558,11 @@ namespace DairyIndustry.Controllers
                     : ex.Message.Contains("GSTIN already registered")
                         ? "A distributor with this GSTIN is already registered."
                         : "Registration failed. Please check your details and try again.";
-
                 ModelState.AddModelError("", msg);
                 return View("Register", model);
             }
         }
 
-        // GET /DistributorRegister/Success
         public IActionResult Success() => View("RegisterSuccess");
     }
 }

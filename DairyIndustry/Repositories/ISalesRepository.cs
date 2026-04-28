@@ -41,8 +41,15 @@ namespace DairyIndustry.Repositories
         int CreateOrder(SalesOrderFormModel model);
         bool UpdateOrderStatus(int orderId, string status);
 
-        // ── ORDER LINE ITEMS (existing SPs) ───────────────────────────────
+        // ── ORDER LINE ITEMS ───────────────────────────────────────────────
         List<SalesOrderDetailModel> GetOrderDetails(int orderId);
+
+        // Merge-aware insert: if same ProductId already in order → adds qty.
+        // Used by both Admin and Distributor from the Details page.
+        // UnitPrice must be set to MRP by the caller before invoking.
+        bool AddOrMergeOrderDetail(AddOrderDetailFormModel model);
+
+        // Legacy SP wrapper — kept so existing call sites still compile.
         bool AddOrderDetail(AddOrderDetailFormModel model);
 
         // ── DISTRIBUTOR ORDER PLACEMENT (smart merge logic) ───────────────

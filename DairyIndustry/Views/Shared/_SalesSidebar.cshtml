@@ -61,6 +61,15 @@
                 <span class="sb-icon">🏪</span> All Distributors
             </a>
 
+            <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
+               class="sb-link">
+                <span class="sb-icon">⏳</span> Pending Approvals
+            </a>
+            <a asp-controller="Sales" asp-action="AddDistributor"
+               class="sb-link @(Active("AddDistributor") ? "active" : "")">
+                <span class="sb-icon">➕</span> Add Distributor
+            </a>
+
             @* @if (isAdmin)
             {
                 <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"

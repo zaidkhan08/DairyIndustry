@@ -3,20 +3,14 @@
     ViewData["Title"] = "Create New Order";
     Layout = "~/Views/Shared/_SalesLayout.cshtml";
     bool isDistributor = ViewBag.IsDistributor == true;
+    var productList = ViewBag.ProductList as List<DairyIndustry.Models.ProductSalesModel> ?? new();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0">Create New Order</h4>
         <small class="text-muted">
-            @if (isDistributor)
-            {
-                <span>Select a plant and date. Add products on the next step.</span>
-            }
-            else
-            {
-                <span>Select distributor, plant and date. Add products on the next step.</span>
-            }
+            @(isDistributor ? "Select a plant and product — price is set automatically." : "Select distributor and plant, then add products on the next step.")
         </small>
     </div>
     @if (isDistributor)
@@ -29,11 +23,19 @@
     }
 </div>
 
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2">
+        ❌ @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6">
+    <div class="col-md-@(isDistributor ? "8" : "6")">
         <div class="card border-0 shadow-sm">
             <div class="card-header text-white fw-semibold" style="background:#1a2e4a;">
-                📋 Order Details
+                📋 @(isDistributor ? "Place Your Order" : "Order Details")
             </div>
             <div class="card-body p-4">
                 <form asp-action="Create" method="post">
@@ -41,12 +43,7 @@
 
                     @if (isDistributor)
                     {
-                        <!--
-                            Distributor: show their name as read-only text.
-                            The hidden input passes their DistributorId to the controller.
-                            The controller re-reads DistributorId from session on POST,
-                            so even if someone edits the hidden value it is ignored.
-                        -->
+                        <!-- ── Distributor: name shown as read-only, ID from session on server ── -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Distributor</label>
                             <div class="form-control bg-light text-muted" style="cursor:not-allowed;">
@@ -55,53 +52,84 @@
                             <input type="hidden" asp-for="DistributorId" />
                             <div class="form-text">You are placing this order as yourself.</div>
                         </div>
+
+                        <!-- Plant -->
+                        <div class="mb-3">
+                            <label asp-for="PlantId" class="form-label fw-semibold">Processing Plant</label>
+                            <select asp-for="PlantId" asp-items="ViewBag.Plants" class="form-select" required>
+                                <option value="">— Select Processing Plant —</option>
+                            </select>
+                        </div>
+
+                        <!-- Product selection (extra form field, not part of SalesOrderFormModel) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Product</label>
+                            <select name="SelectedProductId" id="productSelect" class="form-select" required>
+                                <option value="">— Select Product —</option>
+                                @foreach (var p in productList)
+                                {
+                                    <option value="@p.ProductId" data-mrp="@p.MRP" data-unit="@p.Unit">
+                                        @p.ProductName (@p.ProductType)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- MRP hint — shown after product is selected -->
+                        <div id="mrpHint" class="alert alert-info py-2 small mb-3" style="display:none;">
+                            💰 Unit Price (MRP): <strong id="mrpValue"></strong> — applied automatically, you don't need to enter it.
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Quantity</label>
+                            <input name="SelectedQuantity" type="number" step="0.01" min="0.01"
+                                   class="form-control" placeholder="e.g. 10.00" required />
+                            <div class="form-text" id="unitHint"></div>
+                        </div>
+
+                        <div class="alert alert-secondary small py-2 mb-4">
+                            ℹ️ Ordering the same product again today will <strong>add to your existing order</strong> rather than creating a duplicate.
+                        </div>
                     }
                     else
                     {
-                        <!-- Admin: full distributor dropdown (Approved only) -->
+                        <!-- ── Admin: full distributor dropdown ── -->
                         <div class="mb-3">
-                            <label asp-for="DistributorId" class="form-label fw-semibold"></label>
-                            <select asp-for="DistributorId" asp-items="ViewBag.Distributors"
-                                    class="form-select">
+                            <label asp-for="DistributorId" class="form-label fw-semibold">Distributor</label>
+                            <select asp-for="DistributorId" asp-items="ViewBag.Distributors" class="form-select">
                                 <option value="">— Select Distributor —</option>
                             </select>
                             <span asp-validation-for="DistributorId" class="text-danger small"></span>
-                            <div class="form-text">Only <strong>Approved</strong> distributors can receive orders.</div>
+                            <div class="form-text">Only <strong>Approved</strong> distributors are listed.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PlantId" class="form-label fw-semibold">Processing Plant</label>
+                            <select asp-for="PlantId" asp-items="ViewBag.Plants" class="form-select">
+                                <option value="">— Select Processing Plant —</option>
+                            </select>
+                            <span asp-validation-for="PlantId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="OrderDate" class="form-label fw-semibold">Order Date</label>
+                            <input asp-for="OrderDate" class="form-control" type="date" />
+                            <span asp-validation-for="OrderDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="alert alert-info small py-2 mb-4">
+                            ℹ️ After creating the order you'll be taken to the details page to add products.
+                            Unit prices are set automatically from the product rate.
                         </div>
                     }
 
-                    <div class="mb-3">
-                        <label asp-for="PlantId" class="form-label fw-semibold"></label>
-                        <select asp-for="PlantId" asp-items="ViewBag.Plants" class="form-select">
-                            <option value="">— Select Processing Plant —</option>
-                        </select>
-                        <span asp-validation-for="PlantId" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-4">
-                        <label asp-for="OrderDate" class="form-label fw-semibold"></label>
-                        <input asp-for="OrderDate" class="form-control" type="date" />
-                        <span asp-validation-for="OrderDate" class="text-danger small"></span>
-                    </div>
-
-                    <div class="alert alert-info small py-2 mb-4">
-                        ℹ️ After creating the order you'll be taken to the details page to add products.
-                        @if (isDistributor)
-                        {
-                            <span>Unit prices are set automatically from the product rate — you don't need to enter them.</span>
-                        }
-                    </div>
-
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4">Create Order →</button>
-                        @if (isDistributor)
-                        {
-                            <a asp-action="MyOrders" class="btn btn-outline-secondary px-4">Cancel</a>
-                        }
-                        else
-                        {
-                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
-                        }
+                        <button type="submit" class="btn btn-primary px-4">
+                            @(isDistributor ? "Place Order →" : "Create Order →")
+                        </button>
+                        <a asp-action="@(isDistributor ? "MyOrders" : "Index")"
+                           class="btn btn-outline-secondary px-4">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -112,5 +140,26 @@
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    @if (isDistributor)
+    {
+        <script>
+            document.getElementById('productSelect').addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                const mrp = opt.getAttribute('data-mrp');
+                const unit = opt.getAttribute('data-unit');
+                const hint = document.getElementById('mrpHint');
+                const mrpVal = document.getElementById('mrpValue');
+                const unitHint = document.getElementById('unitHint');
+                if (mrp) {
+                    mrpVal.textContent = '₹' + parseFloat(mrp).toFixed(2) + ' per ' + (unit || 'unit');
+                    hint.style.display = 'block';
+                    unitHint.textContent = 'Unit: ' + (unit || '');
+                } else {
+                    hint.style.display = 'none';
+                    unitHint.textContent = '';
+                }
+            });
+        </script>
     }
 }

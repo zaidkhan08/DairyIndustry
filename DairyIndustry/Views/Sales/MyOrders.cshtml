@@ -1,169 +1,148 @@
-﻿@model List<DairyIndustry.Models.SalesOrderModel>
-@{
-    ViewData["Title"] = "My Orders";
-    Layout = "~/Views/Shared/_SalesLayout.cshtml";
-    string distName = ViewBag.DistributorName ?? "Distributor";
+﻿@{
+    string action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string roleName = Context.Session.GetString("RoleName") ?? "";
+    bool isAdmin = roleName == "Admin";
+    // bool isStaff = roleName == "Staff";
+    bool isDist = roleName == "Distributor";
+    //bool isAdmin = isAdmin;  //|| isStaff;
+
+    bool Active(string a) => string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
 }
 
-<!-- ── Header ──────────────────────────────────────────────────────────── -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-0">My Orders</h4>
-        <small class="text-muted">Welcome, <strong>@distName</strong> — all your orders are shown below.</small>
-    </div>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
-        ➕ Place New Order
-    </button>
-</div>
+<div id="sales-sidebar"
+     style="background:#1a2e4a; display:flex; flex-direction:column;">
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
-        ✅ @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
-        ❌ @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-<!-- ── Quick Place-Order Panel (collapsible) ──────────────────────────── -->
-<div class="collapse mb-4" id="placeOrderPanel">
-    <div class="card border-0 shadow-sm">
-        <div class="card-header fw-semibold text-white" style="background:#1a2e4a;">
-            🛒 Place a New Order
+    <!-- Module header -->
+    <div style="background:#16263e; padding:14px 16px; border-bottom:1px solid #2a4060; flex-shrink:0;">
+        <div style="font-size:.65rem; color:#8fa8c8; text-transform:uppercase; letter-spacing:.1em;">
+            Sales Module
         </div>
-        <div class="card-body p-4">
-            <p class="text-muted small mb-3">
-                Select a product and quantity. The unit price is set automatically from the current
-                product rate — you don't need to enter it.
-                <br />
-                <strong>Same product ordered today?</strong> It will be added to your existing order
-                for today rather than creating a duplicate.
-            </p>
-
-            <form asp-action="PlaceOrder" method="post">
-                @Html.AntiForgeryToken()
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Product</label>
-                        <select name="productId" id="productSelect" class="form-select" required>
-                            <option value="">— Select Product —</option>
-                            @foreach (var p in (IEnumerable<SelectListItem>)ViewBag.Products)
-                            {
-                                <option value="@p.Value"
-                                        data-mrp="@(((DairyIndustry.Models.ProductSalesModel?)null)?.MRP ?? 0)">
-                                    @p.Text
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Quantity</label>
-                        <input name="quantity" type="number" step="0.01" min="0.01"
-                               class="form-control" placeholder="e.g. 10" required />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Processing Plant</label>
-                        <select name="plantId" class="form-select" required>
-                            <option value="">— Select Plant —</option>
-                            @foreach (var pl in (IEnumerable<SelectListItem>)ViewBag.Plants)
-                            {
-                                <option value="@pl.Value">@pl.Text</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-success w-100">Place Order</button>
-                    </div>
-                </div>
-                <div class="mt-2 text-muted small" id="priceHint"></div>
-            </form>
+        @{
+            var distName = Context.Session.GetString("DistributorName");
+            var username = Context.Session.GetString("Username");
+        }
+        <div style="font-size:.82rem; color:#fff; font-weight:600; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            @(distName ?? username ?? "")
         </div>
     </div>
-</div>
 
-<!-- ── Orders Table ───────────────────────────────────────────────────── -->
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        You haven't placed any orders yet. Click <strong>Place New Order</strong> above to get started.
-    </div>
-}
-else
-{
-    <div class="card border-0 shadow-sm">
-        <div class="card-header fw-semibold" style="background:#f8f9fa;">
-            📦 Order History (@Model.Count orders)
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Order #</th>
-                        <th>Date</th>
-                        <th>Total Amount</th>
-                        <th>Status</th>
-                        <th class="text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var o in Model)
-                    {
-                        <tr>
-                            <td><strong>#@o.OrderId</strong></td>
-                            <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
-                            <td>₹@o.TotalAmount.ToString("N2")</td>
-                            <td>
-                                @{
-                                    string badge = o.OrderStatus switch
-                                    {
-                                        "Pending" => "warning text-dark",
-                                        "Confirmed" => "primary",
-                                        "Dispatched" => "info text-dark",
-                                        "Delivered" => "success",
-                                        "Cancelled" => "danger",
-                                        _ => "secondary"
-                                    };
-                                }
-                                <span class="badge bg-@badge">@o.OrderStatus</span>
-                            </td>
-                            <td class="text-center">
-                                <a asp-action="Details" asp-route-id="@o.OrderId"
-                                   class="btn btn-outline-primary btn-sm">View Details</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-}
+    <!-- Navigation -->
+    <nav style="flex:1; padding:8px 0; overflow-y:auto;">
 
-@section Scripts {
-    <script>
-        // Build a product→MRP map from the server-rendered products list.
-        // This is used only to show the user a price hint before submitting —
-        // the actual price is always re-fetched server-side from Production.Products.MRP.
-        const productPrices = {};
-        @foreach (var p in (IEnumerable<DairyIndustry.Models.ProductSalesModel>)
-                                                  ((Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Products).Items)
+        @if (isAdmin)
         {
-                @Html.Raw($"productPrices[{p.ProductId}] = {p.MRP};")
+            <div class="sb-section-label">Overview</div>
+
+            <a asp-controller="Sales" asp-action="Dashboard"
+               class="sb-link @(Active("Dashboard") ? "active" : "")">
+                <span class="sb-icon">📊</span> Dashboard
+            </a>
+            <a asp-controller="Sales" asp-action="Reports"
+               class="sb-link @(Active("Reports") ? "active" : "")">
+                <span class="sb-icon">📈</span> Reports
+            </a>
+
+            <div class="sb-section-label">Orders</div>
+
+            <a asp-controller="Sales" asp-action="Index"
+               class="sb-link @(Active("Index") ? "active" : "")">
+                <span class="sb-icon">📋</span> All Orders
+            </a>
+
+            <a asp-controller="Sales" asp-action="Create"
+               class="sb-link @(Active("Create") ? "active" : "")">
+                <span class="sb-icon">➕</span> New Order
+            </a>
+
+            <div class="sb-section-label">Distributors</div>
+
+            <a asp-controller="Sales" asp-action="Distributors"
+               class="sb-link @(Active("Distributors") ? "active" : "")">
+                <span class="sb-icon">🏪</span> All Distributors
+            </a>
+
+            @* @if (isAdmin)
+            {
+                <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
+                   class="sb-link">
+                    <span class="sb-icon">⏳</span> Pending Approvals
+                </a>
+                <a asp-controller="Sales" asp-action="AddDistributor"
+                   class="sb-link @(Active("AddDistributor") ? "active" : "")">
+                    <span class="sb-icon">➕</span> Add Distributor
+                </a>
+            } *@
         }
 
-        document.getElementById('productSelect').addEventListener('change', function () {
-            const hint = document.getElementById('priceHint');
-            const mrp = productPrices[this.value];
-            if (mrp) {
-                hint.textContent = `Unit price (MRP): ₹${parseFloat(mrp).toFixed(2)} — applied automatically.`;
-            } else {
-                hint.textContent = '';
-            }
-        });
-    </script>
-}
+        @if (isDist)
+        {
+            <div class="sb-section-label">My Account</div>
+
+            <a asp-controller="Sales" asp-action="MyProfile"
+               class="sb-link @(Active("MyProfile") ? "active" : "")">
+                <span class="sb-icon">✏️</span> Edit Profile
+            </a>
+            <a asp-controller="Sales" asp-action="MyOrders"
+               class="sb-link @(Active("MyOrders") ? "active" : "")">
+                <span class="sb-icon">📋</span> My Orders
+            </a>
+            <a asp-controller="Sales" asp-action="Create"
+               class="sb-link @(Active("Create") ? "active" : "")">
+                <span class="sb-icon">➕</span> New Order
+            </a>
+        }
+
+    </nav>
+
+    <!-- Footer link -->
+    <div style="padding:12px 16px; border-top:1px solid #2a4060; font-size:.75rem; flex-shrink:0;">
+        <a asp-controller="DistributorRegister" asp-action="Index"
+           style="color:#8fa8c8; text-decoration:none; display:flex; align-items:center; gap:8px;">
+            <span>🔗</span> Distributor Register Page
+        </a>
+    </div>
+</div>
+
+<style>
+    .sb-section-label {
+        font-size: .62rem;
+        color: #6a8aaa;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        padding: 10px 18px 3px;
+        margin-top: 2px;
+    }
+
+    .sb-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 18px;
+        color: #b8cfe8;
+        text-decoration: none;
+        font-size: .83rem;
+        border-left: 3px solid transparent;
+        transition: background .13s, color .13s, border-left-color .13s;
+        white-space: nowrap;
+    }
+
+        .sb-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #e8f2ff;
+            border-left-color: #4a9eda;
+        }
+
+        .sb-link.active {
+            background: rgba(74, 158, 218, .18);
+            color: #ffffff;
+            border-left-color: #4a9eda;
+            font-weight: 600;
+        }
+
+    .sb-icon {
+        width: 18px;
+        text-align: center;
+        font-size: .88rem;
+        flex-shrink: 0;
+    }
+</style>

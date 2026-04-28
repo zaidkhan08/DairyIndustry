@@ -94,16 +94,27 @@ namespace DairyIndustry.Controllers
                 //case "Finance Manager":
                 //    return RedirectToAction("Index", "Finance");
 
+                //case "Distributor":
+
+                //    {
+                //        HttpContext.Session.SetInt32("DistributorId",user.UserId);
+                //        HttpContext.Session.SetString("DistributorName", user.Username!);
+                //    }
+                //    if (user.RoleName== "Distributor")
+                //        return RedirectToAction("MyOrders", "Sales");
+                //    else
+                //        return RedirectToAction("NotApproved", "Sales");
+
                 case "Distributor":
-                    
+                    var distLogin = _salesRepo.GetDistributorForLogin(username);
+                    if (distLogin == null || !distLogin.IsActive)
                     {
-                        HttpContext.Session.SetInt32("DistributorId",user.UserId);
-                        HttpContext.Session.SetString("DistributorName", user.Username!);
+                        ViewBag.Error = "Your distributor account is not yet approved. Please contact admin.";
+                        return View();
                     }
-                    if (user.RoleName== "Distributor")
-                        return RedirectToAction("MyOrders", "Sales");
-                    else
-                        return RedirectToAction("NotApproved", "Sales");
+                    HttpContext.Session.SetInt32("DistributorId", distLogin.DistributorId);
+                    HttpContext.Session.SetString("DistributorName", distLogin.DistributorName ?? username);
+                    return RedirectToAction("MyOrders", "Sales");
 
                 case "HR Manager":
                     return RedirectToAction("Index", "HR");
