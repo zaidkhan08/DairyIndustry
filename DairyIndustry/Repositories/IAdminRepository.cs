@@ -10,7 +10,7 @@ namespace DairyIndustry.Repositories
         // ── ROLES ──────────────────────────────────────────────
         int CreateRole(string roleName);
         List<RoleModel> GetAllRoles();
-
+        UserProfileVM GetUserProfile(int userId);
         // ── USERS ──────────────────────────────────────────────
         int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
         User GetUserByUsername(string username);
@@ -158,6 +158,10 @@ namespace DairyIndustry.Repositories
         bool MarkNotificationRead(int notificationId);
         bool MarkAllNotificationsRead();
 
+        //Email
+
+        void SendOtpEmail(string toEmail, string toName, string otp, string purpose);
+        void ChangePassword(int userId, string newPasswordHash);
     }
 
 }

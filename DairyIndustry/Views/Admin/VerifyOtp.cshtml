@@ -1,0 +1,470 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Verify OTP";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Verify OTP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-wrapper {
+            display: flex;
+            width: 900px;
+            min-height: 520px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* ── LEFT PANEL — same as login ── */
+        .left-panel {
+            flex: 1.1;
+            background: linear-gradient(145deg, #eaf6fb 0%, #ddf0f8 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            overflow: hidden;
+        }
+
+        .brand {
+            position: absolute;
+            top: 28px;
+            left: 32px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #4bbcd8;
+            letter-spacing: -0.5px;
+        }
+
+            .brand span {
+                color: #333;
+            }
+
+        .deco {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.18;
+        }
+
+        .deco-1 {
+            width: 180px;
+            height: 180px;
+            background: #4bbcd8;
+            top: -50px;
+            right: -50px;
+        }
+
+        .deco-2 {
+            width: 80px;
+            height: 80px;
+            background: #4bbcd8;
+            bottom: 30px;
+            left: 10px;
+        }
+
+        .deco-3 {
+            width: 30px;
+            height: 30px;
+            background: #333;
+            top: 120px;
+            right: 40px;
+            border-radius: 6px;
+            opacity: 0.1;
+            transform: rotate(20deg);
+        }
+
+        .scatter {
+            position: absolute;
+            opacity: 0.35;
+            font-size: 18px;
+        }
+
+        .sc1 {
+            top: 60px;
+            right: 90px;
+        }
+
+        .sc2 {
+            top: 180px;
+            left: 30px;
+            font-size: 14px;
+        }
+
+        .sc3 {
+            bottom: 90px;
+            right: 60px;
+            font-size: 22px;
+        }
+
+        .sc4 {
+            bottom: 140px;
+            left: 60px;
+            font-size: 12px;
+        }
+
+        .illustration {
+            width: 100%;
+            max-width: 340px;
+            z-index: 1;
+        }
+
+        /* ── RIGHT PANEL ── */
+        .right-panel {
+            flex: 0.9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 56px 52px;
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #9aa5b4;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .email-badge {
+            display: inline-block;
+            background: #eaf6fb;
+            color: #4bbcd8;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 28px;
+        }
+
+        /* Error alert */
+        .alert-danger {
+            background: #fff0f0;
+            border: 1px solid #ffc7c7;
+            color: #e05c5c;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* 6 OTP boxes */
+        .otp-boxes {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+            .otp-boxes input {
+                width: 48px;
+                height: 56px;
+                text-align: center;
+                font-size: 22px;
+                font-weight: 700;
+                font-family: 'Nunito', sans-serif;
+                color: #1a1a2e;
+                border: 1.5px solid #e2e8f0;
+                border-radius: 8px;
+                background: #fafbfc;
+                outline: none;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+
+                .otp-boxes input:focus {
+                    border-color: #4bbcd8;
+                    box-shadow: 0 0 0 3px rgba(75,188,216,0.12);
+                    background: #fff;
+                }
+
+        /* Remember device */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #9aa5b4;
+        }
+
+            .remember-row input[type="checkbox"] {
+                accent-color: #4bbcd8;
+                width: 15px;
+                height: 15px;
+                cursor: pointer;
+            }
+
+        /* Submit button */
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #4bbcd8 0%, #38a8c4 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(75,188,216,0.35);
+        }
+
+            .btn-login:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(75,188,216,0.45);
+            }
+
+            .btn-login:active {
+                transform: translateY(0);
+            }
+
+        /* Footer */
+        .footer-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #9aa5b4;
+        }
+
+            .footer-links a {
+                color: #9aa5b4;
+                text-decoration: none;
+            }
+
+                .footer-links a:hover {
+                    color: #4bbcd8;
+                }
+
+        /* Resend */
+        .resend-row {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9aa5b4;
+        }
+
+            .resend-row a {
+                color: #4bbcd8;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+                .resend-row a:hover {
+                    text-decoration: underline;
+                }
+
+        /* Countdown */
+        #countdown {
+            font-weight: 700;
+            color: #4bbcd8;
+        }
+
+        @@media (max-width: 700px) {
+            .login-wrapper {
+                flex-direction: column;
+                width: 95vw;
+                min-height: auto;
+            }
+
+            .left-panel {
+                min-height: 200px;
+            }
+
+            .right-panel {
+                padding: 36px 28px;
+            }
+
+            .otp-boxes input {
+                width: 40px;
+                height: 48px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+
+        <!-- LEFT: same illustration as login -->
+        <div class="left-panel">
+            <div class="brand">Dairy<span>Industry</span></div>
+            <div class="deco deco-1"></div>
+            <div class="deco deco-2"></div>
+            <div class="deco deco-3"></div>
+            <span class="scatter sc1">✈</span>
+            <span class="scatter sc2">✦</span>
+            <span class="scatter sc3">◈</span>
+            <span class="scatter sc4">✧</span>
+
+            <svg class="illustration" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Phone / OTP illustration -->
+                <!-- Phone body -->
+                <rect x="115" y="30" width="110" height="190" rx="16" fill="#fff" stroke="#d9edf4" stroke-width="2" />
+                <!-- Screen -->
+                <rect x="125" y="50" width="90" height="130" rx="6" fill="#eaf6fb" />
+                <!-- Notch -->
+                <rect x="150" y="34" width="40" height="8" rx="4" fill="#d9edf4" />
+                <!-- Lock icon on screen -->
+                <rect x="155" y="75" width="30" height="24" rx="4" fill="#4bbcd8" opacity="0.3" />
+                <rect x="155" y="75" width="30" height="24" rx="4" fill="#4bbcd8" opacity="0.5" />
+                <path d="M162 75 Q162 64 170 64 Q178 64 178 75" stroke="#4bbcd8" stroke-width="3" fill="none" stroke-linecap="round" />
+                <circle cx="170" cy="87" r="3" fill="#fff" />
+                <!-- OTP dots on screen -->
+                <circle cx="145" cy="120" r="6" fill="#4bbcd8" />
+                <circle cx="160" cy="120" r="6" fill="#4bbcd8" />
+                <circle cx="175" cy="120" r="6" fill="#e2e8f0" />
+                <circle cx="190" cy="120" r="6" fill="#e2e8f0" />
+                <!-- Text lines -->
+                <rect x="130" y="138" width="80" height="6" rx="3" fill="#e0edf3" />
+                <rect x="138" y="150" width="64" height="6" rx="3" fill="#e0edf3" />
+                <!-- Home bar -->
+                <rect x="150" y="208" width="40" height="5" rx="2.5" fill="#d9edf4" />
+                <!-- Signal waves -->
+                <path d="M230 80 Q245 65 260 80" stroke="#4bbcd8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.4" />
+                <path d="M222 72 Q245 48 268 72" stroke="#4bbcd8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.25" />
+                <circle cx="245" cy="85" r="4" fill="#4bbcd8" opacity="0.5" />
+                <!-- Ground line -->
+                <line x1="30" y1="220" x2="310" y2="220" stroke="#c8dfe8" stroke-width="1.5" stroke-dasharray="4 4" />
+                <!-- Plants -->
+                <rect x="28" y="200" width="6" height="20" rx="3" fill="#8bc34a" />
+                <ellipse cx="31" cy="195" rx="9" ry="10" fill="#a5d64c" />
+                <rect x="305" y="196" width="6" height="24" rx="3" fill="#8bc34a" />
+                <ellipse cx="308" cy="188" rx="11" ry="12" fill="#a5d64c" />
+            </svg>
+        </div>
+
+        <!-- RIGHT: OTP Form -->
+        <div class="right-panel">
+            <h1 class="form-title">Verify OTP</h1>
+            <p class="form-subtitle">OTP sent to</p>
+            <span class="email-badge">@ViewBag.MaskedEmail</span>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert-danger">@ViewBag.Error</div>
+            }
+
+            <!-- Hidden input to collect joined OTP value on submit -->
+            <form method="post" action="/Admin/VerifyOtp" id="otpForm">
+                <input type="hidden" name="otpCode" id="otpCode" />
+
+                <div class="otp-boxes">
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                    <input type="text" maxlength="1" class="otp-input" inputmode="numeric" pattern="[0-9]" autocomplete="off" />
+                </div>
+
+                <div class="remember-row">
+                    <input type="checkbox" name="rememberDevice" id="rememberDevice" value="true" />
+                    <label for="rememberDevice">Trust this device for 30 days</label>
+                </div>
+
+                <button type="submit" class="btn-login">VERIFY</button>
+            </form>
+
+            <div class="resend-row">
+                OTP expires in <span id="countdown">10:00</span> &nbsp;|&nbsp;
+                <a href="/Admin/ResendOtp">Resend OTP</a>
+            </div>
+
+            <div class="footer-links">
+                <a href="/Admin/Login">← Back to login</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ── Auto-focus next box on input ──
+        const inputs = document.querySelectorAll('.otp-input');
+
+        inputs.forEach((input, i) => {
+            input.addEventListener('input', () => {
+                // Allow digits only
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value && i < inputs.length - 1)
+                    inputs[i + 1].focus();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                // Backspace → go back
+                if (e.key === 'Backspace' && !input.value && i > 0)
+                    inputs[i - 1].focus();
+            });
+
+            // Allow paste of full 6-digit OTP
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+                [...pasted].slice(0, 6).forEach((char, j) => {
+                    if (inputs[j]) inputs[j].value = char;
+                });
+                const next = Math.min(pasted.length, 5);
+                inputs[next].focus();
+            });
+        });
+
+        // ── On submit: join 6 boxes into hidden input ──
+        document.getElementById('otpForm').addEventListener('submit', (e) => {
+            const joined = [...inputs].map(i => i.value).join('');
+            if (joined.length < 6) {
+                e.preventDefault();
+                alert('Please enter all 6 digits.');
+                return;
+            }
+            document.getElementById('otpCode').value = joined;
+        });
+
+        // ── Countdown timer (10 min) ──
+        let total = 10 * 60;
+        const el = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            total--;
+            const m = String(Math.floor(total / 60)).padStart(2, '0');
+            const s = String(total % 60).padStart(2, '0');
+            el.textContent = `${m}:${s}`;
+            if (total <= 0) {
+                clearInterval(timer);
+                el.textContent = 'Expired';
+                el.style.color = '#e05c5c';
+            }
+        }, 1000);
+
+        // ── Focus first box on load ──
+        inputs[0].focus();
+    </script>
+</body>
+</html>

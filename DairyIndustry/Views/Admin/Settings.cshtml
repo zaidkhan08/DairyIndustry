@@ -1,0 +1,203 @@
+﻿@model List<DairyIndustry.Models.Admin.TrustedDevice>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Settings";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible rounded-3 py-2 small fade show mb-3">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- ── ACCOUNT SECTION ── -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:34px;height:34px;border-radius:10px;
+                                    background:#eaf6fb;display:flex;align-items:center;
+                                    justify-content:center;">
+                            <i class="bi bi-person" style="color:#4bbcd8;font-size:16px;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" style="font-size:15px;color:#1a1a2e;">Account</div>
+                            <div class="text-muted" style="font-size:12px;">Personal settings</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" style="border-color:#f0f4f8;" />
+
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <div style="font-size:14px;color:#1a1a2e;font-weight:500;">Change Password</div>
+                            <div class="text-muted" style="font-size:12px;">
+                                Update your login password with OTP verification
+                            </div>
+                        </div>
+                        <a href="/Admin/ChangePassword"
+                           class="btn btn-sm rounded-3 fw-bold"
+                           style="background:#eaf6fb;color:#4bbcd8;
+                                  border:1px solid #d0edf8;font-size:12px;
+                                  padding:6px 16px;">
+                            Change
+                        </a>
+                    </div>
+
+                    <hr class="my-3" style="border-color:#f0f4f8;" />
+
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <div style="font-size:14px;color:#1a1a2e;font-weight:500;">
+                                Logged in as
+                            </div>
+                            <div class="text-muted" style="font-size:12px;">
+                                @Context.Session.GetString("Username")
+                                &nbsp;·&nbsp;
+                                @Context.Session.GetString("RoleName")
+                            </div>
+                        </div>
+                        <span class="badge rounded-pill"
+                              style="background:#eaf6fb;color:#4bbcd8;
+                                     font-size:12px;padding:6px 14px;">
+                            Active
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── TRUSTED DEVICES SECTION ── -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:34px;height:34px;border-radius:10px;
+                                        background:#fff8ec;display:flex;align-items:center;
+                                        justify-content:center;">
+                                <i class="bi bi-shield-check" style="color:#f0a500;font-size:16px;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size:15px;color:#1a1a2e;">
+                                    Trusted Devices
+                                </div>
+                                <div class="text-muted" style="font-size:12px;">
+                                    Devices that skip OTP at login
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model != null && Model.Any(d => d.IsActive))
+                        {
+                            <form method="post" action="/Admin/RevokeAllDevices"
+                                  onsubmit="return confirm('Remove all trusted devices? You will need OTP on next login from all devices.')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        class="btn btn-sm rounded-3 fw-bold"
+                                        style="background:#fff0f0;color:#e05c5c;
+                                                   border:1px solid #ffc7c7;font-size:12px;
+                                                   padding:6px 16px;">
+                                    <i class="bi bi-slash-circle me-1"></i> Revoke All
+                                </button>
+                            </form>
+                        }
+                    </div>
+
+                    <hr class="my-3" style="border-color:#f0f4f8;" />
+
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-shield-x"
+                               style="font-size:36px;color:#e2e8f0;"></i>
+                            <p class="text-muted small mt-2 mb-0">
+                                No trusted devices yet.
+                            </p>
+                            <p class="text-muted" style="font-size:11px;">
+                                Check "Trust this device" at login to skip OTP next time.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var device in Model)
+                        {
+                            <div class="d-flex justify-content-between align-items-center py-3"
+                                 style="border-bottom:0.5px solid #f0f4f8;">
+
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Device icon -->
+                                    <div style="width:40px;height:40px;border-radius:10px;
+                                                        background:#f0f4f8;display:flex;align-items:center;
+                                                        justify-content:center;flex-shrink:0;">
+                                        @if (device.DeviceName != null &&
+                                                                        (device.DeviceName.Contains("Mobile") ||
+                                                                        device.DeviceName.Contains("Android") ||
+                                                                        device.DeviceName.Contains("iPhone")))
+                                        {
+                                            <i class="bi bi-phone" style="color:#9aa5b4;font-size:18px;"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-laptop" style="color:#9aa5b4;font-size:18px;"></i>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <!-- Truncate long user-agent string -->
+                                        <div style="font-size:13px;font-weight:500;color:#1a1a2e;
+                                                            max-width:280px;white-space:nowrap;
+                                                            overflow:hidden;text-overflow:ellipsis;">
+                                            @(device.DeviceName ?? "Unknown Device")
+                                        </div>
+                                        <div class="text-muted" style="font-size:11px;">
+                                            Added @device.CreatedAt.ToString("dd MMM yyyy")
+                                            &nbsp;·&nbsp;
+                                            Last used @device.LastUsedAt.ToString("dd MMM yyyy")
+                                        </div>
+                                        <div style="font-size:11px;">
+                                            @if (device.IsActive)
+                                            {
+                                                <span style="color:#2e7d32;">
+                                                    Expires @device.ExpiresAt.ToString("dd MMM yyyy")
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:#e05c5c;">Expired</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Revoke button -->
+                                <form method="post" action="/Admin/RevokeDevice">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="deviceId" value="@device.DeviceId" />
+                                    <button type="submit"
+                                            class="btn btn-sm rounded-3"
+                                            style="background:#fff0f0;color:#e05c5c;
+                                                           border:1px solid #ffc7c7;font-size:12px;
+                                                           padding:5px 14px;"
+                                            onclick="return confirm('Remove this device?')">
+                                        Remove
+                                    </button>
+                                </form>
+
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

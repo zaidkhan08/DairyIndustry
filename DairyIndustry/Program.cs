@@ -1,5 +1,7 @@
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
+using DairyIndustry.Interfaces;
+using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
 using DinkToPdf;
 using DinkToPdf.Contracts;
@@ -21,6 +23,7 @@ namespace DairyIndustry
             builder.Services.AddScoped<IProductionRepository,ProductionRepository>();
             builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>();
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
         
@@ -42,7 +45,8 @@ namespace DairyIndustry
             {
                 options.MultipartBodyLengthLimit = 5 * 1024 * 1024; // 5MB
             });
-
+            builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())

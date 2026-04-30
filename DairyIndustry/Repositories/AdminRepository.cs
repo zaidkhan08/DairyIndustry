@@ -1,6 +1,10 @@
 ﻿using DairyIndustry.Data;
 using DairyIndustry.Models.Admin;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
+using MimeKit;
 using System.Collections.Generic;
 using System.Data;
 
@@ -9,16 +13,62 @@ namespace DairyIndustry.Repositories
     public class AdminRepository : IAdminRepository
     {
         private readonly DbHelper _db;
+        private readonly EmailSettings _settings;
 
-        public AdminRepository(DbHelper db)
+        public AdminRepository(DbHelper db, IOptions<EmailSettings> settings)
         {
             _db = db;
+            _settings = settings.Value;
         }
 
         // ════════════════════════════════════════════════════════
         // ROLES
         // ════════════════════════════════════════════════════════
 
+        public UserProfileVM GetUserProfile(int userId)
+        {
+            UserProfileVM user = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_GetUserProfile", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            user = new UserProfileVM
+                            {
+                                UserId = Convert.ToInt32(reader["UserId"]),
+                                Username = reader["Username"].ToString(),
+                                RoleName = reader["RoleName"].ToString(),
+
+                                FullName = reader["FullName"].ToString(),
+                                Email = reader["Email"]?.ToString(),
+                                Phone = reader["Phone"]?.ToString(),
+
+                                DOJ = reader["DOJ"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["DOJ"])
+                                        : (DateTime?)null,
+
+                                Salary = reader["Salary"] != DBNull.Value
+                                        ? Convert.ToDecimal(reader["Salary"])
+                                        : (decimal?)null,
+
+                                ProfilePhoto = reader["ProfilePhoto"]?.ToString()
+                            };
+                        }
+                    }
+                }
+            }
+
+            return user;
+        }
         public int CreateRole(string roleName)
         {
             using (SqlConnection con = _db.GetConnection())
@@ -91,16 +141,13 @@ namespace DairyIndustry.Repositories
         public User GetUserByUsername(string username)
         {
             User user = null;
-
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_LoginUser", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@Username", username);
-
                     con.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -111,16 +158,28 @@ namespace DairyIndustry.Repositories
                                 Username = reader["Username"].ToString(),
                                 PasswordHash = reader["PasswordHash"].ToString(),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
-                                StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
                                 RoleId = Convert.ToInt32(reader["RoleId"]),
                                 RoleName = reader["RoleName"].ToString(),
-                                CreatedDate = DateTime.MinValue  // not returned by LoginUser SP
+                                CreatedDate = DateTime.MinValue,
+
+                                // Staff
+                                StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"] == DBNull.Value ? null : reader["FirstName"].ToString(),
+                                LastName = reader["LastName"] == DBNull.Value ? null : reader["LastName"].ToString(),
+                                FullName = reader["FullName"] == DBNull.Value ? null : reader["FullName"].ToString(),
+                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+
+                                // Center / Plant
+                                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
+                                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
                             };
                         }
                     }
                 }
             }
-
             return user;
         }
 
@@ -1873,6 +1932,61 @@ namespace DairyIndustry.Repositories
                 return true;
             }
             catch { return false; }
+        }
+
+        public void SendOtpEmail(string toEmail, string toName, string otp, string purpose)
+        {
+            var subject = purpose == "Login"
+                ? "Your DMS Login OTP"
+                : "Your DMS Password Change OTP";
+
+            var bodyHtml = $@"
+                <div style='font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px;
+                            border:1px solid #e0e0e0;border-radius:8px;'>
+                    <h2 style='color:#333;margin-bottom:4px;'>DMS Verification</h2>
+                    <p style='color:#666;font-size:14px;'>Hi {toName},</p>
+                    <p style='color:#666;font-size:14px;'>
+                        {(purpose == "Login"
+                            ? "Use the OTP below to complete your login."
+                            : "Use the OTP below to confirm your password change.")}
+                    </p>
+                    <div style='background:#f5f5f5;border-radius:8px;padding:20px;
+                                text-align:center;margin:20px 0;'>
+                        <span style='font-size:36px;font-weight:bold;
+                                     letter-spacing:12px;color:#222;'>{otp}</span>
+                    </div>
+                    <p style='color:#999;font-size:12px;'>
+                        This OTP expires in <strong>10 minutes</strong>. 
+                        Do not share it with anyone.
+                    </p>
+                    <p style='color:#999;font-size:12px;'>
+                        If you did not request this, contact your administrator immediately.
+                    </p>
+                </div>";
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("html") { Text = bodyHtml };
+
+            using var client = new SmtpClient();
+            client.Connect(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls);
+            client.Authenticate(_settings.SenderEmail, _settings.AppPassword);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+        public void ChangePassword(int userId, string newPasswordHash)
+        {
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand("Admin.usp_Auth_ChangePassword", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@NewPasswordHash", newPasswordHash);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
         }
 
     }

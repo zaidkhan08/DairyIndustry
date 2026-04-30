@@ -1,8 +1,10 @@
 ﻿using DairyIndustry.Filters;
+using DairyIndustry.Interfaces;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Finance;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualBasic;
 
 namespace DairyIndustry.Controllers
@@ -15,19 +17,35 @@ namespace DairyIndustry.Controllers
         private readonly IReportRepository _reportRepo;
         private readonly IFinanceRepository _financeRepo;
         private readonly IWebHostEnvironment _env;
+        private readonly EmailSettings _settings;
+        private readonly IAuthRepository _authRepo;
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo, IAuthRepository authRepo, IOptions<EmailSettings> settings)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
             _reportRepo = reportRepo;
             _financeRepo = financeRepo;
             _env = env;
+            _authRepo = authRepo;
+            _settings = settings.Value;
         }
 
         // ════════════════════════════════════════════════════════
         // LOGIN — NO [SessionAuthorize] here
         // ════════════════════════════════════════════════════════
+
+        public IActionResult Profile()
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            var user = _adminRepo.GetUserProfile(Convert.ToInt32(userId));
+
+            return View(user);
+        }
 
         public IActionResult Login()
         {
@@ -35,34 +53,87 @@ namespace DairyIndustry.Controllers
         }
 
         [HttpPost]
+        [HttpPost]
         public IActionResult Login(string username, string password)
         {
+            // 1. Get user
             var user = _adminRepo.GetUserByUsername(username);
-
             if (user == null)
             {
                 ViewBag.Error = "Invalid username or password.";
                 return View();
             }
 
+            // 2. Check active
             if (!user.IsActive)
             {
                 ViewBag.Error = "Your account is inactive. Contact admin.";
                 return View();
             }
 
+            // 3. Verify password
             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-
             if (!isPasswordValid)
             {
                 ViewBag.Error = "Invalid username or password.";
                 return View();
             }
 
+            // 4. Check trusted device cookie
+            var deviceToken = Request.Cookies["DMS_TrustedDevice"];
+            if (!string.IsNullOrEmpty(deviceToken))
+            {
+                bool isTrusted = _authRepo.CheckTrustedDevice(user.UserId, deviceToken);
+                if (isTrusted)
+                {
+                    SetSession(user);
+                    return RedirectByRole(user);
+                }
+            }
+
+            // 5. Admin has no email — skip OTP
+            if (string.IsNullOrEmpty(user.Email))
+            {
+                SetSession(user);
+                return RedirectByRole(user);
+            }
+
+            // 6. Generate and send OTP
+            var otp = _authRepo.GenerateOtp(user.UserId, "Login");
+            _adminRepo.SendOtpEmail(user.Email, user.FullName ?? user.Username, otp, "Login");
+
+            // 7. Store in TempData for OTP page
+            TempData["OtpUserId"] = user.UserId;
+            TempData["OtpUsername"] = user.Username;
+            TempData["OtpFullName"] = user.FullName ?? user.Username;
+            TempData["OtpEmail"] = MaskEmail(user.Email);
+
+            return RedirectToAction("VerifyOtp");
+        }
+        private void SetSession(User user)
+        {
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
 
+            if (user.StaffId.HasValue)
+                HttpContext.Session.SetInt32("StaffId", user.StaffId.Value);
+
+            if (user.CenterId.HasValue)
+            {
+                HttpContext.Session.SetInt32("CenterId", user.CenterId.Value);
+                HttpContext.Session.SetString("CenterName", user.CenterName ?? "");
+            }
+
+            if (user.PlantId.HasValue)
+            {
+                HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
+                HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
+            }
+        }
+
+        private IActionResult RedirectByRole(User user)
+        {
             switch (user.RoleName)
             {
                 case "Admin":
@@ -74,42 +145,324 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("DriverId", driver.DriverId);
                     return RedirectToAction("Index", "Logistics");
 
-                //Added By Zaid
                 case "Plant Manager":
-                    var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
-                    if (plantId.HasValue)
-                    {
-                        HttpContext.Session.SetInt32("PlantId", plantId.Value);
-                        var plant = _adminRepo.getPlantById(plantId.Value);
-                        if (plant != null)
-                            HttpContext.Session.SetString("PlantName", plant.PlantName);
-                    }
                     return RedirectToAction("Index", "Production");
 
                 case "Collection Agent":
-                    return RedirectToAction("Index", "Production");
-
-                //case "Production Manager":
-                //    return RedirectToAction("Index", "Production");
-
-                //case "Finance Manager":
-                //    return RedirectToAction("Index", "Finance");
-
-                //case "Sales Manager":
-                //    return RedirectToAction("Index", "Sales");
-
-                //case "HR Manager":
-                //    return RedirectToAction("Index", "HR");
+                    return RedirectToAction("Receive", "Production");
 
                 default:
-                    return RedirectToAction("Index", "Admin");
+                    return RedirectToAction("Login", "Admin");
             }
         }
 
+        private string MaskEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return "";
+            var parts = email.Split('@');
+            if (parts.Length != 2) return email;
+            var name = parts[0];
+            var domain = parts[1];
+            var masked = name.Length <= 2
+                ? new string('*', name.Length)
+                : name[..2] + new string('*', name.Length - 2);
+            return $"{masked}@{domain}";
+        }
+        [HttpGet]
+        public IActionResult ResendOtp()
+        {
+            if (TempData["OtpUserId"] == null)
+                return RedirectToAction("Login");
+
+            int userId = Convert.ToInt32(TempData["OtpUserId"]);
+            string username = TempData["OtpUsername"]?.ToString();
+            string fullName = TempData["OtpFullName"]?.ToString();
+            string email = TempData["OtpEmail"]?.ToString();
+
+            // Get real email from DB since TempData has masked version
+            var user = _adminRepo.GetUserByUsername(username);
+
+            var otp = _authRepo.GenerateOtp(userId, "Login");
+            _adminRepo.SendOtpEmail(user.Email, fullName, otp, "Login");
+
+            // Keep TempData alive
+            TempData["OtpUserId"] = userId;
+            TempData["OtpUsername"] = username;
+            TempData["OtpFullName"] = fullName;
+            TempData["OtpEmail"] = email;
+
+            TempData["Success"] = "OTP resent successfully.";
+            return RedirectToAction("VerifyOtp");
+        }
+        [HttpGet]
+        public IActionResult VerifyOtp()
+        {
+            // If OtpUserId not in TempData, user didn't come from login
+            if (TempData["OtpUserId"] == null)
+                return RedirectToAction("Login");
+
+            // Keep TempData alive for POST
+            TempData.Keep();
+
+            ViewBag.MaskedEmail = TempData["OtpEmail"];
+            ViewBag.FullName = TempData["OtpFullName"];
+            return View();
+        }
+
+        // ════════════════════════════════════════════════════
+        // POST — OTP Verification
+        // ════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult VerifyOtp(string otpCode, bool rememberDevice = false)
+        {
+            if (TempData["OtpUserId"] == null)
+                return RedirectToAction("Login");
+
+            int userId = Convert.ToInt32(TempData["OtpUserId"]);
+            string username = TempData["OtpUsername"]?.ToString();
+
+            // Validate OTP
+            var result = _authRepo.ValidateOtp(userId, otpCode, "Login");
+
+            if (!result.IsValid)
+            {
+                // Keep TempData alive so user can try again
+                TempData.Keep();
+                ViewBag.MaskedEmail = TempData["OtpEmail"];
+                ViewBag.FullName = TempData["OtpFullName"];
+                ViewBag.Error = result.Reason;
+                return View();
+            }
+
+            // OTP valid — get full user to set session
+            var user = _adminRepo.GetUserByUsername(username);
+
+            // Remember this device?
+            if (rememberDevice)
+            {
+                var newDeviceToken = Guid.NewGuid().ToString();
+                var deviceName = Request.Headers["User-Agent"].ToString();
+
+                _authRepo.RegisterTrustedDevice(userId, newDeviceToken, deviceName);
+
+                // Set HttpOnly cookie for 30 days
+                Response.Cookies.Append("DMS_TrustedDevice", newDeviceToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    Expires = DateTimeOffset.UtcNow.AddDays(30),
+                    SameSite = SameSiteMode.Strict
+                });
+            }
+
+            SetSession(user);
+            return RedirectByRole(user);
+        }
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
+        }
+
+        // ════════════════════════════════════════════════════
+        // GET — Change Password Page (Step 1: enter current password)
+        // ════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            if (HttpContext.Session.GetInt32("UserId") == null)
+                return RedirectToAction("Login");
+
+            return View();
+        }
+
+        // ════════════════════════════════════════════════════
+        // POST — Verify current password, send OTP
+        // ════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            // 1. Validate new password match
+            if (newPassword != confirmPassword)
+            {
+                ViewBag.Error = "New passwords do not match.";
+                return View();
+            }
+
+            // 2. Validate password length
+            if (newPassword.Length < 8)
+            {
+                ViewBag.Error = "Password must be at least 8 characters.";
+                return View();
+            }
+
+            // 3. Get user and verify current password
+            string username = HttpContext.Session.GetString("Username");
+            var user = _adminRepo.GetUserByUsername(username);
+
+            bool isCurrentValid = BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash);
+            if (!isCurrentValid)
+            {
+                ViewBag.Error = "Current password is incorrect.";
+                return View();
+            }
+
+            // 4. Check user has email for OTP
+            if (string.IsNullOrEmpty(user.Email))
+            {
+                // No email — change directly without OTP
+                var hash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                _adminRepo.ChangePassword(userId.Value, hash);
+                TempData["Success"] = "Password changed successfully.";
+                return RedirectToAction("ChangePassword");
+            }
+
+            // 5. Generate and send OTP
+            var otp = _authRepo.GenerateOtp(userId.Value, "ChangePassword");
+            _adminRepo.SendOtpEmail(user.Email, user.FullName ?? user.Username, otp, "ChangePassword");
+
+            // 6. Store new password hash in TempData (hashed — safe to store)
+            TempData["CpUserId"] = userId.Value;
+            TempData["CpNewHash"] = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            TempData["CpMaskedEmail"] = MaskEmail(user.Email);
+
+            return RedirectToAction("VerifyChangePasswordOtp");
+        }
+
+        // ════════════════════════════════════════════════════
+        // GET — OTP verification for change password
+        // ════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult VerifyChangePasswordOtp()
+        {
+            if (TempData["CpUserId"] == null)
+                return RedirectToAction("ChangePassword");
+
+            TempData.Keep();
+            ViewBag.MaskedEmail = TempData["CpMaskedEmail"];
+            return View();
+        }
+
+        // ════════════════════════════════════════════════════
+        // POST — Validate OTP and apply new password
+        // ════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult VerifyChangePasswordOtp(string otpCode)
+        {
+            if (TempData["CpUserId"] == null)
+                return RedirectToAction("ChangePassword");
+
+            int userId = Convert.ToInt32(TempData["CpUserId"]);
+            string newHash = TempData["CpNewHash"]?.ToString();
+
+            // Validate OTP
+            var result = _authRepo.ValidateOtp(userId, otpCode, "ChangePassword");
+
+            if (!result.IsValid)
+            {
+                TempData.Keep();
+                ViewBag.MaskedEmail = TempData["CpMaskedEmail"];
+                ViewBag.Error = result.Reason;
+                return View();
+            }
+
+            // OTP valid — apply new password
+            _adminRepo.ChangePassword(userId, newHash);
+
+            // Revoke all trusted devices — force re-login on other devices
+            _authRepo.RevokeAllTrustedDevices(userId);
+
+            // Clear the trusted device cookie on this device too
+            Response.Cookies.Delete("DMS_TrustedDevice");
+
+            // Clear session — force re-login
+            HttpContext.Session.Clear();
+
+            TempData["Success"] = "Password changed successfully. Please log in again.";
+            return RedirectToAction("Login");
+        }
+
+        // ════════════════════════════════════════════════════
+        // GET — Resend OTP for change password
+        // ════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult ResendChangePasswordOtp()
+        {
+            if (TempData["CpUserId"] == null)
+                return RedirectToAction("ChangePassword");
+
+            int userId = Convert.ToInt32(TempData["CpUserId"]);
+            string username = HttpContext.Session.GetString("Username");
+            var user = _adminRepo.GetUserByUsername(username);
+
+            var otp = _authRepo.GenerateOtp(userId, "ChangePassword");
+            _adminRepo.SendOtpEmail(user.Email, user.FullName ?? user.Username, otp, "ChangePassword");
+
+            TempData.Keep();
+            TempData["Success"] = "OTP resent successfully.";
+            return RedirectToAction("VerifyChangePasswordOtp");
+        }
+
+        // ════════════════════════════════════════════════════
+        // GET — Settings Page
+        // ════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult Settings()
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            var devices = _authRepo.GetTrustedDevices(userId.Value);
+            return View(devices);
+        }
+
+        // ════════════════════════════════════════════════════
+        // POST — Revoke single device
+        // ════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult RevokeDevice(int deviceId)
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            _authRepo.RevokeDeviceById(userId.Value, deviceId);
+
+            TempData["Success"] = "Device removed successfully.";
+            return RedirectToAction("Settings");
+        }
+
+        // ════════════════════════════════════════════════════
+        // POST — Revoke ALL devices
+        // ════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult RevokeAllDevices()
+        {
+            int? userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            _authRepo.RevokeAllTrustedDevices(userId.Value);
+
+            // Also clear cookie on current device
+            Response.Cookies.Delete("DMS_TrustedDevice");
+
+            TempData["Success"] = "All trusted devices removed.";
+            return RedirectToAction("Settings");
         }
 
         // ════════════════════════════════════════════════════════
@@ -136,9 +489,20 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
-        public IActionResult Roles()
+        public IActionResult Roles(int page = 1, int pageSize = 5)
         {
-            var roles = _adminRepo.GetAllRoles();
+            var allRoles = _adminRepo.GetAllRoles();
+
+            var totalRoles = allRoles.Count();
+
+            var roles = allRoles
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalRoles / pageSize);
+
             return View(roles);
         }
 
@@ -155,12 +519,22 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
-        public IActionResult Users()
+        public IActionResult Users(int page = 1, int pageSize = 10)
         {
-            var users = _adminRepo.GetAllUsers();
+            var allUsers = _adminRepo.GetAllUsers();
+
+            var totalUsers = allUsers.Count();
+
+            var users = allUsers
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalUsers / pageSize);
+
             return View(users);
         }
-
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult RegisterUser()
@@ -256,12 +630,30 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
-        public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
+        public IActionResult AuditLogs(
+    int? userId,
+    string? entityName,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int page = 1,
+    int pageSize = 10)
         {
-            var logs = _adminRepo.GetAuditLogs(userId, entityName, fromDate, toDate);
+            var allLogs = _adminRepo.GetAuditLogs(userId, entityName, fromDate, toDate);
+
+            var totalRecords = allLogs.Count();
+
+            var logs = allLogs
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalRecords = totalRecords;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
             return View(logs);
         }
-
         [SessionAuthorize("Admin")]
         public IActionResult Location()
         {
@@ -361,10 +753,22 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
-        public IActionResult Staff()
+        public IActionResult Staff(int page=1,int pageSize=10)
         {
             var staffList = _adminRepo.GetAllStaff();
-            return View(staffList);
+            var totalStaff = staffList.Count();
+
+            var staff = staffList
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalStaff / pageSize);
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalStaff = totalStaff;
+
+            return View(staff);
         }
 
         // Update GET action to pass plants and centers to view
@@ -376,19 +780,6 @@ namespace DairyIndustry.Controllers
             ViewBag.Centers = _adminRepo.GetAllCenters();
             return View(_adminRepo.GetAllRoles());
         }
-
-        [SessionAuthorize("Admin")]
-        public IActionResult GetStaffById(int id)
-        {
-            var staff = _adminRepo.GetStaffById(id);
-            if (staff == null)
-            {
-                TempData["Error"] = "Staff not found.";
-                return RedirectToAction("staff");
-            }
-            return View(staff);
-        }
-
         [SessionAuthorize("Admin")]
         [HttpPost]
         [RequestSizeLimit(5 * 1024 * 1024)]
@@ -397,7 +788,7 @@ namespace DairyIndustry.Controllers
                                int roleId, DateTime? doj,
                                string bankName, string accountNumber,
                                string ifscCode, IFormFile profilePhoto, Decimal Salary,
-                               int? centerId, int? plantId)   // NEW
+                               int? centerId, int? plantId)   
         {
             // Validate — cannot assign both
             if (centerId.HasValue && plantId.HasValue)
@@ -464,6 +855,18 @@ namespace DairyIndustry.Controllers
         }
 
         [SessionAuthorize("Admin")]
+        public IActionResult GetStaffById(int id)
+        {
+            var staff = _adminRepo.GetStaffById(id);
+            if (staff == null)
+            {
+                TempData["Error"] = "Staff not found.";
+                return RedirectToAction("staff");
+            }
+            return View(staff);
+        }
+
+        [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult ToggleStaffActive(int staffId, int isActive)
         {
@@ -487,7 +890,7 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [SessionAuthorize("Admin")]
-        [RequestSizeLimit(5 * 1024 * 1024)] // 2MB limit
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public IActionResult EditStaff(
     int staffId,
     string firstName,
