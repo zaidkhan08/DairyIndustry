@@ -1,148 +1,373 @@
-﻿@{
-    string action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    string roleName = Context.Session.GetString("RoleName") ?? "";
-    bool isAdmin = roleName == "Admin";
-    // bool isStaff = roleName == "Staff";
-    bool isDist = roleName == "Distributor";
-    //bool isAdmin = isAdmin;  //|| isStaff;
+﻿@model List<DairyIndustry.Models.SalesOrderModel>
+@{
+    ViewData["Title"] = "My Orders";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    string distName = ViewBag.DistributorName ?? "Distributor";
+    var productList = ViewBag.ProductList as List<DairyIndustry.Models.ProductSalesModel> ?? new();
+    var plantItems = ViewBag.Plants as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
 
-    bool Active(string a) => string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
+    // Stats
+    int total = Model.Count;
+    int pending = Model.Count(o => o.OrderStatus == "Pending");
+    int delivered = Model.Count(o => o.OrderStatus == "Delivered");
+    int cancelled = Model.Count(o => o.OrderStatus == "Cancelled");
+    decimal spent = Model.Where(o => o.OrderStatus == "Delivered").Sum(o => o.TotalAmount);
+
+    // Active filter tab (from query string)
+    string activeFilter = Context.Request.Query["status"].ToString();
+    var filtered = string.IsNullOrEmpty(activeFilter)
+        ? Model
+        : Model.Where(o => o.OrderStatus == activeFilter).ToList();
 }
 
-<div id="sales-sidebar"
-     style="background:#1a2e4a; display:flex; flex-direction:column;">
+<!-- ── Header ── -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">My Orders</h4>
+        <small class="text-muted">Welcome back, <strong>@distName</strong></small>
+    </div>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
+        ➕ Place New Order
+    </button>
+</div>
 
-    <!-- Module header -->
-    <div style="background:#16263e; padding:14px 16px; border-bottom:1px solid #2a4060; flex-shrink:0;">
-        <div style="font-size:.65rem; color:#8fa8c8; text-transform:uppercase; letter-spacing:.1em;">
-            Sales Module
-        </div>
-        @{
-            var distName = Context.Session.GetString("DistributorName");
-            var username = Context.Session.GetString("Username");
-        }
-        <div style="font-size:.82rem; color:#fff; font-weight:600; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-            @(distName ?? username ?? "")
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2">
+        ✅ @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2">
+        ❌ @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ── Summary Stat Cards ── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-primary">@total</div>
+            <div class="small text-muted">Total Orders</div>
         </div>
     </div>
-
-    <!-- Navigation -->
-    <nav style="flex:1; padding:8px 0; overflow-y:auto;">
-
-        @if (isAdmin)
-        {
-            <div class="sb-section-label">Overview</div>
-
-            <a asp-controller="Sales" asp-action="Dashboard"
-               class="sb-link @(Active("Dashboard") ? "active" : "")">
-                <span class="sb-icon">📊</span> Dashboard
-            </a>
-            <a asp-controller="Sales" asp-action="Reports"
-               class="sb-link @(Active("Reports") ? "active" : "")">
-                <span class="sb-icon">📈</span> Reports
-            </a>
-
-            <div class="sb-section-label">Orders</div>
-
-            <a asp-controller="Sales" asp-action="Index"
-               class="sb-link @(Active("Index") ? "active" : "")">
-                <span class="sb-icon">📋</span> All Orders
-            </a>
-
-            <a asp-controller="Sales" asp-action="Create"
-               class="sb-link @(Active("Create") ? "active" : "")">
-                <span class="sb-icon">➕</span> New Order
-            </a>
-
-            <div class="sb-section-label">Distributors</div>
-
-            <a asp-controller="Sales" asp-action="Distributors"
-               class="sb-link @(Active("Distributors") ? "active" : "")">
-                <span class="sb-icon">🏪</span> All Distributors
-            </a>
-
-            @* @if (isAdmin)
-            {
-                <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
-                   class="sb-link">
-                    <span class="sb-icon">⏳</span> Pending Approvals
-                </a>
-                <a asp-controller="Sales" asp-action="AddDistributor"
-                   class="sb-link @(Active("AddDistributor") ? "active" : "")">
-                    <span class="sb-icon">➕</span> Add Distributor
-                </a>
-            } *@
-        }
-
-        @if (isDist)
-        {
-            <div class="sb-section-label">My Account</div>
-
-            <a asp-controller="Sales" asp-action="MyProfile"
-               class="sb-link @(Active("MyProfile") ? "active" : "")">
-                <span class="sb-icon">✏️</span> Edit Profile
-            </a>
-            <a asp-controller="Sales" asp-action="MyOrders"
-               class="sb-link @(Active("MyOrders") ? "active" : "")">
-                <span class="sb-icon">📋</span> My Orders
-            </a>
-            <a asp-controller="Sales" asp-action="Create"
-               class="sb-link @(Active("Create") ? "active" : "")">
-                <span class="sb-icon">➕</span> New Order
-            </a>
-        }
-
-    </nav>
-
-    <!-- Footer link -->
-    <div style="padding:12px 16px; border-top:1px solid #2a4060; font-size:.75rem; flex-shrink:0;">
-        <a asp-controller="DistributorRegister" asp-action="Index"
-           style="color:#8fa8c8; text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <span>🔗</span> Distributor Register Page
-        </a>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-warning">@pending</div>
+            <div class="small text-muted">Pending</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-success">@delivered</div>
+            <div class="small text-muted">Delivered</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-primary">₹@spent.ToString("N0")</div>
+            <div class="small text-muted">Total Spent</div>
+        </div>
     </div>
 </div>
 
-<style>
-    .sb-section-label {
-        font-size: .62rem;
-        color: #6a8aaa;
-        text-transform: uppercase;
-        letter-spacing: .1em;
-        padding: 10px 18px 3px;
-        margin-top: 2px;
-    }
+<!-- ── Quick Place-Order Panel ── -->
+<div class="collapse mb-4" id="placeOrderPanel">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold text-white" style="background:#1a2e4a;">
+            🛒 Quick Order
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted small mb-3">
+                Unit price is set automatically from the product rate.
+                <strong>Same product ordered today?</strong> It will be merged — no duplicate created.
+            </p>
+            <form asp-action="PlaceOrder" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Product</label>
+                        <select name="productId" id="qProductSelect" class="form-select" required>
+                            <option value="">— Select Product —</option>
+                            @foreach (var p in productList)
+                            {
+                                <option value="@p.ProductId" data-mrp="@p.MRP" data-unit="@p.Unit">
+                                    @p.ProductName (@p.ProductType)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">Quantity</label>
+                        <input name="quantity" type="number" step="0.01" min="0.01"
+                               class="form-control" placeholder="e.g. 10" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Processing Plant</label>
+                        <select name="plantId" class="form-select" required>
+                            <option value="">— Select Plant —</option>
+                            @if (plantItems != null)
+                            {
+                                foreach (var pl in plantItems)
+                                {
+                                    <option value="@pl.Value">@pl.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">MRP</label>
+                        <div class="form-control bg-light text-muted small" id="qMrpDisplay"
+                             style="cursor:not-allowed; font-size:.8rem;">
+                            —
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success w-100">Add</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    .sb-link {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 18px;
-        color: #b8cfe8;
-        text-decoration: none;
-        font-size: .83rem;
-        border-left: 3px solid transparent;
-        transition: background .13s, color .13s, border-left-color .13s;
-        white-space: nowrap;
-    }
+<!-- ── Filter Tabs ── -->
+<div class="mb-2">
+    <ul class="nav nav-pills gap-1" id="statusTabs">
+        <li class="nav-item">
+            <a class="nav-link @(string.IsNullOrEmpty(activeFilter) ? "active" : "")"
+               href="?" data-status="">All (@total)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Pending" ? "active" : "") text-warning-emphasis"
+               href="?status=Pending" data-status="Pending">Pending (@pending)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Confirmed" ? "active" : "")"
+               href="?status=Confirmed" data-status="Confirmed">
+                Confirmed (@Model.Count(o => o.OrderStatus == "Confirmed"))
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Dispatched" ? "active" : "")"
+               href="?status=Dispatched" data-status="Dispatched">
+                Dispatched (@Model.Count(o => o.OrderStatus == "Dispatched"))
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Delivered" ? "active" : "")"
+               href="?status=Delivered" data-status="Delivered">Delivered (@delivered)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Cancelled" ? "active" : "") text-danger"
+               href="?status=Cancelled" data-status="Cancelled">Cancelled (@cancelled)</a>
+        </li>
+    </ul>
+</div>
 
-        .sb-link:hover {
-            background: rgba(255, 255, 255, .07);
-            color: #e8f2ff;
-            border-left-color: #4a9eda;
+<!-- ── Date Range Filter (client-side) ── -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto">
+                <label class="form-label fw-semibold small mb-0 text-muted">📅 Filter by Date</label>
+            </div>
+            <div class="col-auto">
+                <input type="date" id="fromDate" class="form-control form-control-sm"
+                       style="width:155px;" title="From date" />
+            </div>
+            <div class="col-auto text-muted small">to</div>
+            <div class="col-auto">
+                <input type="date" id="toDate" class="form-control form-control-sm"
+                       style="width:155px;" title="To date" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary btn-sm" onclick="applyDateFilter()">Apply</button>
+                <button class="btn btn-outline-secondary btn-sm ms-1" onclick="clearDateFilter()">Clear</button>
+            </div>
+            <div class="col-auto">
+                <span id="dateFilterBadge" class="badge bg-primary" style="display:none;"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Orders Table ── -->
+@if (!filtered.Any())
+{
+    <div class="alert alert-info">
+        @if (!Model.Any())
+        {
+            <span>You haven't placed any orders yet. Click <strong>Place New Order</strong> to get started.</span>
+        }
+        else
+        {
+            <span>No orders with status <strong>@activeFilter</strong>.</span>
+        }
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold" style="background:#f8f9fa;">
+            <span id="tableHeader">
+                📦 @(string.IsNullOrEmpty(activeFilter) ? "All Orders" : activeFilter + " Orders")
+                <span class="text-muted fw-normal">(@filtered.Count)</span>
+            </span>
+        </div>
+        <div id="tableWrap" class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="ordersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in filtered)
+                    {
+                        <tr data-date="@o.OrderDate.ToString("yyyy-MM-dd")"
+                            data-status="@o.OrderStatus">
+                            <td><strong>#@o.OrderId</strong></td>
+                            <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (o.OrderDetails.Any())
+                                {
+                                    <span class="badge bg-light text-dark border">
+                                        @o.OrderDetails.Count item@(o.OrderDetails.Count == 1 ? "" : "s")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td class="fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                            <td>
+                                @{
+                                    string badge = o.OrderStatus switch
+                                    {
+                                        "Pending" => "warning text-dark",
+                                        "Confirmed" => "primary",
+                                        "Dispatched" => "info text-dark",
+                                        "Delivered" => "success",
+                                        "Cancelled" => "danger",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge bg-@badge">@o.OrderStatus</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a asp-action="Details" asp-route-id="@o.OrderId"
+                                       class="btn btn-outline-primary btn-sm">View</a>
+
+                                    @if (o.OrderStatus == "Pending")
+                                    {
+                                        <form asp-action="CancelOrder" method="post" class="m-0"
+                                              onsubmit="return confirm('Cancel Order #@o.OrderId?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="orderId" value="@o.OrderId" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (o.OrderStatus == "Delivered")
+                                    {
+                                        <a asp-action="Reorder" asp-route-id="@o.OrderId"
+                                           class="btn btn-outline-success btn-sm"
+                                           onclick="return confirm('Reorder the same items from Order #@o.OrderId?')">
+                                            Reorder
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div id="noResultsMsg" class="text-center text-muted py-4" style="display:none;">
+            No orders match the selected filters.
+            <button class="btn btn-link btn-sm p-0 ms-1" onclick="clearDateFilter()">Clear date filter</button>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // ── Quick Order MRP hint ──────────────────────────────────────────
+        document.getElementById('qProductSelect').addEventListener('change', function () {
+            const opt     = this.options[this.selectedIndex];
+            const mrp     = opt.getAttribute('data-mrp');
+            const unit    = opt.getAttribute('data-unit');
+            const display = document.getElementById('qMrpDisplay');
+            display.textContent = mrp
+                ? '₹' + parseFloat(mrp).toFixed(2) + ' / ' + (unit || 'unit')
+                : '—';
+        });
+
+        // ── Date Range Filter ─────────────────────────────────────────────
+        let activeStatus = '@activeFilter';
+
+        document.querySelectorAll('#statusTabs .nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                activeStatus = this.getAttribute('data-status');
+                document.querySelectorAll('#statusTabs .nav-link')
+                    .forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                applyDateFilter();
+            });
+        });
+
+        function applyDateFilter() {
+            const from  = document.getElementById('fromDate').value;
+            const to    = document.getElementById('toDate').value;
+            const rows  = document.querySelectorAll('#ordersTable tbody tr');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const rowDate   = row.getAttribute('data-date');
+                const rowStatus = row.getAttribute('data-status');
+                const statusOk  = !activeStatus || rowStatus === activeStatus;
+                const fromOk    = !from || rowDate >= from;
+                const toOk      = !to   || rowDate <= to;
+                const show      = statusOk && fromOk && toOk;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            const header = document.getElementById('tableHeader');
+            if (header) header.textContent = `📦 Orders (${visible} shown)`;
+
+            const badge = document.getElementById('dateFilterBadge');
+            if (from || to) {
+                badge.style.display = 'inline';
+                badge.textContent   = (from ? from : '…') + ' → ' + (to ? to : '…');
+            } else {
+                badge.style.display = 'none';
+            }
+
+            const emptyMsg  = document.getElementById('noResultsMsg');
+            const tableWrap = document.getElementById('tableWrap');
+            if (emptyMsg)  emptyMsg.style.display  = visible === 0 ? 'block' : 'none';
+            if (tableWrap) tableWrap.style.display  = visible === 0 ? 'none'  : '';
         }
 
-        .sb-link.active {
-            background: rgba(74, 158, 218, .18);
-            color: #ffffff;
-            border-left-color: #4a9eda;
-            font-weight: 600;
+        function clearDateFilter() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value   = '';
+            applyDateFilter();
         }
-
-    .sb-icon {
-        width: 18px;
-        text-align: center;
-        font-size: .88rem;
-        flex-shrink: 0;
-    }
-</style>
+    </script>
+}

@@ -76,6 +76,12 @@ namespace DairyIndustry.Controllers
             ViewBag.ProductList = _repo.GetProducts();
             LoadProductDropdown();
 
+            if (role == "Distributor")
+            {
+                int dId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+                if (dId > 0) SetNotifBadge(dId, _repo.GetOrders(dId, null, null, null));
+            }
+
             return View(order);
         }
 
@@ -222,6 +228,87 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = msg;
                 return RedirectToAction("MyOrders");
             }
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  CANCEL ORDER — Distributor self-cancel (Pending orders only)
+        //  POST /Sales/CancelOrder
+        // ════════════════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Distributor")]
+        public IActionResult CancelOrder(int orderId)
+        {
+            int myId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var order = _repo.GetOrderById(orderId);
+
+            if (order == null || order.DistributorId != myId)
+            {
+                TempData["Error"] = "Order not found.";
+                return RedirectToAction("MyOrders");
+            }
+            if (order.OrderStatus != "Pending")
+            {
+                TempData["Error"] = "Only Pending orders can be cancelled.";
+                return RedirectToAction("Details", new { id = orderId });
+            }
+
+            bool ok = _repo.UpdateOrderStatus(orderId, "Cancelled");
+            TempData[ok ? "Success" : "Error"] = ok
+                ? "Order cancelled successfully."
+                : "Could not cancel the order.";
+            return RedirectToAction("MyOrders");
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  REORDER — Distributor re-places all items from a past Delivered order.
+        //  Loops through each line item and calls PlaceDistributorOrder for each,
+        //  which applies the smart merge / today's order logic automatically.
+        //  GET /Sales/Reorder/5
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult Reorder(int id)
+        {
+            int myId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var order = _repo.GetOrderById(id);
+
+            if (order == null || order.DistributorId != myId)
+            {
+                TempData["Error"] = "Order not found.";
+                return RedirectToAction("MyOrders");
+            }
+
+            var details = _repo.GetOrderDetails(id);
+            if (!details.Any())
+            {
+                TempData["Error"] = "This order has no items to reorder.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            int lastOrderId = 0;
+            int failCount = 0;
+            foreach (var item in details)
+            {
+                try
+                {
+                    lastOrderId = _repo.PlaceDistributorOrder(
+                        myId, order.PlantId, item.ProductId, item.Quantity);
+                }
+                catch { failCount++; }
+            }
+
+            if (failCount == details.Count)
+            {
+                TempData["Error"] = "Reorder failed — some products may no longer be available.";
+                return RedirectToAction("MyOrders");
+            }
+
+            TempData["Success"] = failCount == 0
+                ? $"Reorder placed successfully from Order #{id}."
+                : $"Reorder placed with {failCount} item(s) skipped (product unavailable).";
+            return RedirectToAction("Details", new { id = lastOrderId });
         }
 
 
@@ -457,6 +544,8 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = "Could not load your profile.";
                 return RedirectToAction("MyOrders");
             }
+            SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
+
             return View("EditDistributor", new DistributorFormModel
             {
                 DistributorId = dist.DistributorId,
@@ -478,10 +567,37 @@ namespace DairyIndustry.Controllers
             int distributorId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
             var orders = _repo.GetOrders(distributorId, null, null, null);
             ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
-            // Pass full product list (not SelectList) so view can show MRP hints
             ViewBag.ProductList = _repo.GetProducts();
             LoadPlantDropdown();
+            // Mark all notif orders as seen — badge clears after visiting this page
+            MarkNotifSeen(distributorId, orders);
+            SetNotifBadge(distributorId, orders);
             return View(orders);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  DISMISS NOTIF — form POST when distributor clicks "Mark as seen".
+        //  Marks all current notif orders as seen in session → badge clears
+        //  on next page load. Redirects back to the same page.
+        //  POST /Sales/DismissNotif
+        // ════════════════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Distributor")]
+        public IActionResult DismissNotif()
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            if (distId > 0)
+            {
+                var orders = _repo.GetOrders(distId, null, null, null);
+                MarkNotifSeen(distId, orders);
+            }
+            // Redirect back to whatever page the distributor was on
+            string referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer))
+                return Redirect(referer);
+            return RedirectToAction("MyOrders");
         }
 
 
@@ -504,6 +620,71 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ════════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════════
+        //  NOTIFICATION BADGE — auto-set on every page for Distributor
+        //  Counts orders with status Confirmed, Dispatched, or Delivered
+        //  (i.e. admin has acted on them). Badge shows on the My Orders
+        //  sidebar link so distributor always knows something needs attention.
+        //  Resets to 0 when distributor opens MyOrders (all orders are seen).
+        // ════════════════════════════════════════════════════════════════════
+        public override void OnActionExecuting(
+            Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
+        {
+            base.OnActionExecuting(context);
+            // Session is not yet available here — SetNotifBadge is called
+            // explicitly in each distributor GET action instead.
+        }
+
+        // Store notif orders as JSON in session so sidebar can read them directly.
+        // Sidebar reads "NotifOrders_<distId>" from session — no ViewBag needed.
+        private void SetNotifBadge(int distributorId, List<SalesOrderModel> orders)
+        {
+            string seenKey = $"NotifSeen_{distributorId}";
+            string seenRaw = HttpContext.Session.GetString(seenKey) ?? "";
+            var seenIds = seenRaw.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(s => int.TryParse(s, out int x) ? x : 0)
+                                    .ToHashSet();
+
+            var notifOrders = orders
+                .Where(o => (o.OrderStatus == "Confirmed" ||
+                             o.OrderStatus == "Dispatched" ||
+                             o.OrderStatus == "Delivered")
+                            && !seenIds.Contains(o.OrderId))
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new {
+                    OrderId = o.OrderId,
+                    Status = o.OrderStatus,
+                    Date = o.OrderDate.ToString("dd MMM yyyy"),
+                    Amount = o.TotalAmount
+                })
+                .ToList();
+
+            // Serialize to JSON and store in session — sidebar reads this directly
+            string json = System.Text.Json.JsonSerializer.Serialize(notifOrders);
+            HttpContext.Session.SetString($"NotifOrders_{distributorId}", json);
+        }
+
+        // Mark all current notif orders as seen in session.
+        // Called from MyOrders (server-side) and from DismissNotif (AJAX).
+        private void MarkNotifSeen(int distributorId, List<SalesOrderModel> orders)
+        {
+            string seenKey = $"NotifSeen_{distributorId}";
+            string seenRaw = HttpContext.Session.GetString(seenKey) ?? "";
+            var seenIds = seenRaw.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                    .ToHashSet();
+
+            // Add all currently active notif order IDs
+            foreach (var o in orders.Where(o =>
+                o.OrderStatus == "Confirmed" ||
+                o.OrderStatus == "Dispatched" ||
+                o.OrderStatus == "Delivered"))
+            {
+                seenIds.Add(o.OrderId.ToString());
+            }
+
+            HttpContext.Session.SetString(seenKey, string.Join(",", seenIds));
+        }
+
         private void LoadDistributorDropdown(int? selected = null) =>
             ViewBag.Distributors = new SelectList(
                 _repo.GetDistributors().Where(d => d.Status == "Approved").ToList(),
