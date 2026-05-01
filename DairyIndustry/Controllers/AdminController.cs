@@ -780,17 +780,17 @@ namespace DairyIndustry.Controllers
             ViewBag.Centers = _adminRepo.GetAllCenters();
             return View(_adminRepo.GetAllRoles());
         }
-        [SessionAuthorize("Admin")]
         [HttpPost]
-        [RequestSizeLimit(5 * 1024 * 1024)]
-        public IActionResult AddStaff(string firstName, string lastName,
-                               string phone, string email,
-                               int roleId, DateTime? doj,
-                               string bankName, string accountNumber,
-                               string ifscCode, IFormFile profilePhoto, Decimal Salary,
-                               int? centerId, int? plantId)   
+        [SessionAuthorize("Admin")]
+        [RequestSizeLimit(5 * 1024 * 1024)] // 5MB Request Limit
+        public async Task<IActionResult> AddStaff(string firstName, string lastName,
+                           string phone, string email,
+                           int roleId, DateTime? doj,
+                           string bankName, string accountNumber,
+                           string ifscCode, IFormFile profilePhoto, decimal Salary,
+                           int? centerId, int? plantId)
         {
-            // Validate — cannot assign both
+            // 1. Validation — cannot assign both
             if (centerId.HasValue && plantId.HasValue)
             {
                 ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
@@ -801,9 +801,10 @@ namespace DairyIndustry.Controllers
 
             string photoPath = null;
 
-            try
+            // 2. Handle File Upload
+            if (profilePhoto != null && profilePhoto.Length > 0)
             {
-                if (profilePhoto != null && profilePhoto.Length > 0)
+                try
                 {
                     var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                     var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
@@ -811,49 +812,56 @@ namespace DairyIndustry.Controllers
                     if (!allowedExtensions.Contains(extension))
                     {
                         ViewBag.Error = "Only .jpg, .jpeg, .png allowed";
+                        ViewBag.Plants = _adminRepo.GetAllPlants();
+                        ViewBag.Centers = _adminRepo.GetAllCenters();
                         return View(_adminRepo.GetAllRoles());
                     }
 
-                    if (profilePhoto.Length > 2 * 1024 * 1024)
+                    if (profilePhoto.Length > 2 * 1024 * 1024) // 2MB Limit
                     {
                         ViewBag.Error = "Max size 2MB";
+                        ViewBag.Plants = _adminRepo.GetAllPlants();
+                        ViewBag.Centers = _adminRepo.GetAllCenters();
                         return View(_adminRepo.GetAllRoles());
                     }
 
                     string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
 
                     if (!Directory.Exists(uploadsFolder))
+                    {
                         Directory.CreateDirectory(uploadsFolder);
+                    }
 
                     string fileName = Guid.NewGuid().ToString() + extension;
                     string filePath = Path.Combine(uploadsFolder, fileName);
 
+                    // Use FileStream with 'await' to prevent Visual Studio from hanging
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        profilePhoto.CopyTo(stream);
+                        await profilePhoto.CopyToAsync(stream);
                     }
 
                     photoPath = "/uploads/staff/" + fileName;
                 }
+                catch (Exception ex)
+                {
+                    ViewBag.Error = "Upload failed: " + ex.Message;
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Centers = _adminRepo.GetAllCenters();
+                    return View(_adminRepo.GetAllRoles());
+                }
             }
-            catch (Exception ex)
-            {
-                ViewBag.Error = "Upload failed: " + ex.Message;
 
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Centers = _adminRepo.GetAllCenters();
-
-                return View(_adminRepo.GetAllRoles());
-            }
-            _adminRepo.AddStaff(firstName, lastName, phone, email,
-    roleId, doj, bankName, accountNumber,
-    ifscCode, Salary, photoPath,
-    centerId, plantId); // NEW
+            // 3. Save to Database
+            // Note: If your Repo method is also async, use: await _adminRepo.AddStaffAsync(...)
+            await _adminRepo.AddStaffAsync(firstName, lastName, phone, email,
+                    roleId, doj, bankName, accountNumber,
+                    ifscCode, Salary, photoPath,
+                    centerId, plantId);
 
             TempData["Success"] = "Staff member added successfully.";
             return RedirectToAction("Staff");
         }
-
         [SessionAuthorize("Admin")]
         public IActionResult GetStaffById(int id)
         {
@@ -891,88 +899,29 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         [SessionAuthorize("Admin")]
         [RequestSizeLimit(5 * 1024 * 1024)]
-        public IActionResult EditStaff(
-    int staffId,
-    string firstName,
-    string lastName,
-    string phone,
-    string email,
-    int roleId,
-    DateTime? doj,
-    string bankName,
-    string accountNumber,
-    string ifscCode,
-    decimal salary,
-    string profilePhoto,   
-    IFormFile photoFile,   
-    int? centerId,
-    int? plantId)
+        [HttpPost]
+        public async Task<IActionResult> EditStaff(int staffId, string firstName, string lastName,
+    string phone, string email, int roleId, DateTime? doj, string bankName,
+    string accountNumber, string ifscCode, decimal salary, string profilePhoto,
+    IFormFile photoFile, int? centerId, int? plantId)
         {
-            if (centerId.HasValue && plantId.HasValue)
-            {
-                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
-                ViewBag.Roles = _adminRepo.GetAllRoles();
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Centers = _adminRepo.GetAllCenters();
-                return View(_adminRepo.GetStaffById(staffId));
-            }
-
             string finalPhoto = profilePhoto;
 
             if (photoFile != null && photoFile.Length > 0)
             {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                var extension = Path.GetExtension(photoFile.FileName).ToLower();
-                if (!allowedExtensions.Contains(extension))
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(photoFile.FileName);
+                string filePath = Path.Combine(_env.WebRootPath, "uploads", "staff", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
-                    ViewBag.Roles = _adminRepo.GetAllRoles();
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetStaffById(staffId));
+                    await photoFile.CopyToAsync(stream);
                 }
-                if (photoFile.Length > 2 * 1024 * 1024)
-                {
-                    ViewBag.Error = "Photo size must be less than 2MB.";
-                    ViewBag.Roles = _adminRepo.GetAllRoles();
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetStaffById(staffId));
-                }
-
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "staff");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                string fileName = Guid.NewGuid().ToString() + extension;
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                byte[] fileBytes;
-                using (var ms = new MemoryStream())
-                {
-                    photoFile.CopyTo(ms);
-                    fileBytes = ms.ToArray();
-                }
-                System.IO.File.WriteAllBytes(filePath, fileBytes);
-
-                finalPhoto = $"/uploads/staff/{fileName}";
+                finalPhoto = "/uploads/staff/" + fileName;
             }
-            _adminRepo.UpdateStaff(
-                staffId,
-                firstName,
-                lastName,
-                phone,
-                email,
-                roleId,
-                doj,
-                bankName,
-                accountNumber,
-                ifscCode,
-                salary,
-                finalPhoto,
-                centerId,
-                plantId
-            );
+
+            await _adminRepo.UpdateStaffAsync(staffId, firstName, lastName, phone, email,
+                roleId, doj, bankName, accountNumber, ifscCode, salary,
+                finalPhoto, centerId, plantId);
 
             TempData["Message"] = "Staff updated successfully.";
             return RedirectToAction("Staff");

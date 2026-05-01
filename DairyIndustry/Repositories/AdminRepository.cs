@@ -719,13 +719,13 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
 
-        public int AddStaff(string firstName, string lastName, string phone, string email,
-     int roleId, DateTime? doj,
-     string bankName, string accountNumber, string ifscCode,
-     decimal salary,
-     string profilePhoto = null,
-     int? centerId = null,
-     int? plantId = null)
+        public async Task<int> AddStaffAsync(string firstName, string lastName, string phone, string email,
+    int roleId, DateTime? doj,
+    string bankName, string accountNumber, string ifscCode,
+    decimal salary,
+    string profilePhoto = null,
+    int? centerId = null,
+    int? plantId = null)
         {
             using (SqlConnection con = _db.GetConnection())
             {
@@ -743,10 +743,11 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Salary", salary);
-                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value); // NEW
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value); // NEW
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+
+                    await con.OpenAsync(); // Non-blocking open
+                    var result = await cmd.ExecuteScalarAsync(); // Non-blocking execution
                     return Convert.ToInt32(result);
                 }
             }
@@ -894,83 +895,67 @@ namespace DairyIndustry.Repositories
 
             return staff;
         }
-        public void UpdateStaff(int staffId, string firstName, string lastName,
-                        string phone, string email, int roleId, DateTime? doj,
-                        string bankName, string accountNumber, string ifscCode,
-                        decimal salary, string profilePhoto,
-                        int? centerId, int? plantId)
+        public async Task UpdateStaffAsync(int staffId, string firstName, string lastName,
+                string phone, string email, int roleId, DateTime? doj,
+                string bankName, string accountNumber, string ifscCode,
+                decimal salary, string profilePhoto,
+                int? centerId, int? plantId)
         {
             using (SqlConnection con = _db.GetConnection())
             {
-                con.Open();
+                await con.OpenAsync(); // Use Async
 
-                // ── Step 1: Get existing BankAccountId for this staff ──
+                // 1. Get existing BankAccountId
                 int? bankAccountId = null;
                 using (SqlCommand getBank = new SqlCommand(
                     "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId", con))
                 {
                     getBank.Parameters.AddWithValue("@StaffId", staffId);
-                    var result = getBank.ExecuteScalar();
+                    var result = await getBank.ExecuteScalarAsync(); // Use Async
                     if (result != null && result != DBNull.Value)
                         bankAccountId = Convert.ToInt32(result);
                 }
 
-                // ── Step 2: Update or Insert bank account ──
-                if (!string.IsNullOrEmpty(bankName) &&
-                    !string.IsNullOrEmpty(accountNumber) &&
-                    !string.IsNullOrEmpty(ifscCode))
+                // 2. Update or Insert bank account 
+                if (!string.IsNullOrEmpty(bankName) && !string.IsNullOrEmpty(accountNumber))
                 {
                     if (bankAccountId.HasValue)
                     {
-                        // Update existing bank account
                         using (SqlCommand bankCmd = new SqlCommand(@"
-                    UPDATE Finance.BankAccounts
-                    SET BankName      = @BankName,
-                        AccountNumber = @AccountNumber,
-                        IFSCCode      = @IFSCCode
+                    UPDATE Finance.BankAccounts 
+                    SET BankName = @BankName, AccountNumber = @AccountNumber, IFSCCode = @IFSCCode 
                     WHERE BankAccountId = @BankAccountId", con))
                         {
                             bankCmd.Parameters.AddWithValue("@BankName", bankName);
                             bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
                             bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
                             bankCmd.Parameters.AddWithValue("@BankAccountId", bankAccountId.Value);
-                            bankCmd.ExecuteNonQuery();
+                            await bankCmd.ExecuteNonQueryAsync(); // Use Async
                         }
                     }
                     else
                     {
-                        // Insert new bank account and get new ID
                         using (SqlCommand bankCmd = new SqlCommand(@"
-                    INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
-                    VALUES (@BankName, @AccountNumber, @IFSCCode);
+                    INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode) 
+                    VALUES (@BankName, @AccountNumber, @IFSCCode); 
                     SELECT SCOPE_IDENTITY();", con))
                         {
                             bankCmd.Parameters.AddWithValue("@BankName", bankName);
                             bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
                             bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
-                            bankAccountId = Convert.ToInt32(bankCmd.ExecuteScalar());
+                            bankAccountId = Convert.ToInt32(await bankCmd.ExecuteScalarAsync()); // Use Async
                         }
                     }
                 }
 
-                // ── Step 3: Update HR.Staffs — all fields ──
+                // 3. Update Staff Table
                 using (SqlCommand cmd = new SqlCommand(@"
             UPDATE HR.Staffs
-            SET FirstName    = @FirstName,
-                LastName     = @LastName,
-                Phone        = @Phone,
-                Email        = @Email,
-                RoleId       = @RoleId,
-                DOJ          = @DOJ,
-                Salary       = @Salary,
-                ProfilePhoto = CASE WHEN @ProfilePhoto IS NOT NULL
-                                    THEN @ProfilePhoto
-                                    ELSE ProfilePhoto END,
-                BankAccountId = CASE WHEN @BankAccountId IS NOT NULL
-                                     THEN @BankAccountId
-                                     ELSE BankAccountId END,
-                CenterId     = @CenterId,
-                PlantId      = @PlantId
+            SET FirstName = @FirstName, LastName = @LastName, Phone = @Phone, Email = @Email, 
+                RoleId = @RoleId, DOJ = @DOJ, Salary = @Salary, 
+                ProfilePhoto = ISNULL(@ProfilePhoto, ProfilePhoto),
+                BankAccountId = ISNULL(@BankAccountId, BankAccountId),
+                CenterId = @CenterId, PlantId = @PlantId
             WHERE StaffId = @StaffId", con))
                 {
                     cmd.Parameters.AddWithValue("@StaffId", staffId);
@@ -985,7 +970,8 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@BankAccountId", (object?)bankAccountId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    cmd.ExecuteNonQuery();
+
+                    await cmd.ExecuteNonQueryAsync(); // Use Async
                 }
             }
         }
