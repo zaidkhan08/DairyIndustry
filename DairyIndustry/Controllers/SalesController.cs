@@ -313,6 +313,38 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
+        //  CONFIRM RECEIPT — Distributor confirms they received a Delivered order.
+        //  Changes status from Delivered → Received so admin knows it's acknowledged.
+        //  POST /Sales/ConfirmReceipt
+        // ════════════════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Distributor")]
+        public IActionResult ConfirmReceipt(int orderId)
+        {
+            int myId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var order = _repo.GetOrderById(orderId);
+
+            if (order == null || order.DistributorId != myId)
+            {
+                TempData["Error"] = "Order not found.";
+                return RedirectToAction("MyOrders");
+            }
+            if (order.OrderStatus != "Delivered")
+            {
+                TempData["Error"] = "Only Delivered orders can be confirmed as received.";
+                return RedirectToAction("Details", new { id = orderId });
+            }
+
+            bool ok = _repo.UpdateOrderStatus(orderId, "Received");
+            TempData[ok ? "Success" : "Error"] = ok
+                ? "Receipt confirmed! Thank you for acknowledging delivery."
+                : "Could not confirm receipt. Please try again.";
+            return RedirectToAction("Details", new { id = orderId });
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
         //  ADD ORDER DETAIL — Admin and Distributor
         //
         //  UnitPrice: AUTO-FETCHED from Production.Products.MRP for BOTH roles.
@@ -529,6 +561,89 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
+        //  PRODUCT CATALOGUE — Distributor read-only view of available products
+        //  GET /Sales/ProductCatalogue
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult ProductCatalogue()
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var products = _repo.GetProducts();
+            SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
+            return View(products);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  MY ANALYTICS — Distributor personal order analytics
+        //  GET /Sales/MyAnalytics
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult MyAnalytics()
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var analytics = _repo.GetDistributorAnalytics(distId);
+            SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
+            return View(analytics);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  EXPORT ORDERS — Download distributor order history as CSV
+        //  GET /Sales/ExportOrders
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult ExportOrders(string? status, string? fromDate, string? toDate)
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            string distName = HttpContext.Session.GetString("DistributorName") ?? "Distributor";
+
+            DateTime? from = DateTime.TryParse(fromDate, out var fd) ? fd : null;
+            DateTime? to = DateTime.TryParse(toDate, out var td) ? td : null;
+
+            var orders = _repo.GetOrders(distId, string.IsNullOrEmpty(status) ? null : status,
+                                         from, to);
+
+            // Build CSV
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Order #,Date,Status,Total Amount (₹)");
+            foreach (var o in orders)
+            {
+                sb.AppendLine(
+                    $"{o.OrderId}," +
+                    $"{o.OrderDate:dd-MMM-yyyy}," +
+                    $"{o.OrderStatus}," +
+                    $"{o.TotalAmount:N2}");
+            }
+
+            string fileName = $"Orders_{distName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.csv";
+            byte[] bytes = System.Text.Encoding.UTF8.GetPreamble()
+                           .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                           .ToArray();
+            return File(bytes, "text/csv", fileName);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  MY DETAILS — Distributor view-only profile (registration details)
+        //  GET /Sales/MyDetails
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Distributor")]
+        public IActionResult MyDetails()
+        {
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var dist = _repo.GetDistributorById(distId);
+            if (dist == null)
+            {
+                TempData["Error"] = "Could not load your details.";
+                return RedirectToAction("MyOrders");
+            }
+            SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
+            return View(dist);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
         //  MY PROFILE — Distributor self-edit
         //  GET /Sales/MyProfile
         //  Loads the distributor's own record by DistributorId from session
@@ -569,8 +684,8 @@ namespace DairyIndustry.Controllers
             ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName");
             ViewBag.ProductList = _repo.GetProducts();
             LoadPlantDropdown();
-            // Mark all notif orders as seen — badge clears after visiting this page
-            MarkNotifSeen(distributorId, orders);
+            // SetNotifBadge writes current unseen orders to session for sidebar
+            // Badge only clears when distributor explicitly clicks Mark as seen (DismissNotif)
             SetNotifBadge(distributorId, orders);
             return View(orders);
         }
@@ -639,17 +754,15 @@ namespace DairyIndustry.Controllers
         // Sidebar reads "NotifOrders_<distId>" from session — no ViewBag needed.
         private void SetNotifBadge(int distributorId, List<SalesOrderModel> orders)
         {
-            string seenKey = $"NotifSeen_{distributorId}";
-            string seenRaw = HttpContext.Session.GetString(seenKey) ?? "";
-            var seenIds = seenRaw.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(s => int.TryParse(s, out int x) ? x : 0)
-                                    .ToHashSet();
+            // Read seen (OrderId+Status) composite keys from DB
+            // e.g. "46_Confirmed" — so status change makes it new again
+            var seenKeys = _repo.GetSeenOrderKeys(distributorId);
 
             var notifOrders = orders
                 .Where(o => (o.OrderStatus == "Confirmed" ||
                              o.OrderStatus == "Dispatched" ||
                              o.OrderStatus == "Delivered")
-                            && !seenIds.Contains(o.OrderId))
+                            && !seenKeys.Contains($"{o.OrderId}_{o.OrderStatus}"))
                 .OrderByDescending(o => o.OrderDate)
                 .Select(o => new {
                     OrderId = o.OrderId,
@@ -659,30 +772,23 @@ namespace DairyIndustry.Controllers
                 })
                 .ToList();
 
-            // Serialize to JSON and store in session — sidebar reads this directly
             string json = System.Text.Json.JsonSerializer.Serialize(notifOrders);
             HttpContext.Session.SetString($"NotifOrders_{distributorId}", json);
         }
 
-        // Mark all current notif orders as seen in session.
-        // Called from MyOrders (server-side) and from DismissNotif (AJAX).
+        // Mark actioned orders as seen in DB with their current status.
+        // Uses (OrderId, Status) so re-seeing after status change works.
+        // Called from DismissNotif when distributor clicks Mark as seen.
         private void MarkNotifSeen(int distributorId, List<SalesOrderModel> orders)
         {
-            string seenKey = $"NotifSeen_{distributorId}";
-            string seenRaw = HttpContext.Session.GetString(seenKey) ?? "";
-            var seenIds = seenRaw.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                    .ToHashSet();
-
-            // Add all currently active notif order IDs
-            foreach (var o in orders.Where(o =>
-                o.OrderStatus == "Confirmed" ||
-                o.OrderStatus == "Dispatched" ||
-                o.OrderStatus == "Delivered"))
-            {
-                seenIds.Add(o.OrderId.ToString());
-            }
-
-            HttpContext.Session.SetString(seenKey, string.Join(",", seenIds));
+            var pairs = orders
+                .Where(o => o.OrderStatus == "Confirmed" ||
+                            o.OrderStatus == "Dispatched" ||
+                            o.OrderStatus == "Delivered")
+                .Select(o => (o.OrderId, o.OrderStatus));
+            _repo.MarkOrdersSeen(distributorId, pairs);
+            // Clear session cache so sidebar refreshes on next page load
+            HttpContext.Session.Remove($"NotifOrders_{distributorId}");
         }
 
         private void LoadDistributorDropdown(int? selected = null) =>

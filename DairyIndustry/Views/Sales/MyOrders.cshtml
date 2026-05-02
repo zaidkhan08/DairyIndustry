@@ -9,9 +9,10 @@
     // Stats
     int total = Model.Count;
     int pending = Model.Count(o => o.OrderStatus == "Pending");
-    int delivered = Model.Count(o => o.OrderStatus == "Delivered");
+    int delivered = Model.Count(o => o.OrderStatus == "Delivered" || o.OrderStatus == "Received");
+    int received = Model.Count(o => o.OrderStatus == "Received");
     int cancelled = Model.Count(o => o.OrderStatus == "Cancelled");
-    decimal spent = Model.Where(o => o.OrderStatus == "Delivered").Sum(o => o.TotalAmount);
+    decimal spent = Model.Where(o => o.OrderStatus == "Delivered" || o.OrderStatus == "Received").Sum(o => o.TotalAmount);
 
     // Active filter tab (from query string)
     string activeFilter = Context.Request.Query["status"].ToString();
@@ -26,9 +27,17 @@
         <h4 class="fw-bold mb-0">My Orders</h4>
         <small class="text-muted">Welcome back, <strong>@distName</strong></small>
     </div>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
-        ➕ Place New Order
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
+            ➕ Place New Order
+        </button>
+        <a asp-action="ExportOrders" class="btn btn-outline-success btn-sm">
+            ⬇️ Export CSV
+        </a>
+        <a asp-action="MyAnalytics" class="btn btn-outline-info btn-sm">
+            📊 Analytics
+        </a>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)
@@ -159,7 +168,15 @@
         </li>
         <li class="nav-item">
             <a class="nav-link @(activeFilter == "Delivered" ? "active" : "")"
-               href="?status=Delivered" data-status="Delivered">Delivered (@delivered)</a>
+               href="?status=Delivered" data-status="Delivered">
+                Delivered (@Model.Count(o => o.OrderStatus == "Delivered"))
+            </a>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Received" ? "active" : "")"
+               href="?status=Received" data-status="Received">
+                Received (@received)
+            </a>
+        </li>
         </li>
         <li class="nav-item">
             <a class="nav-link @(activeFilter == "Cancelled" ? "active" : "") text-danger"
@@ -262,7 +279,9 @@ else
                                         _ => "secondary"
                                     };
                                 }
-                                <span class="badge bg-@badge">@o.OrderStatus</span>
+                                <span class="badge bg-@badge">
+                                    @(o.OrderStatus == "Received" ? "Received ✅" : o.OrderStatus)
+                                </span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex gap-1 justify-content-center">
@@ -282,6 +301,22 @@ else
                                     }
 
                                     @if (o.OrderStatus == "Delivered")
+                                    {
+                                        <form asp-action="ConfirmReceipt" method="post" class="m-0"
+                                              onsubmit="return confirm('Confirm receipt of Order #@o.OrderId?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="orderId" value="@o.OrderId" />
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                ✅ Confirm
+                                            </button>
+                                        </form>
+                                        <a asp-action="Reorder" asp-route-id="@o.OrderId"
+                                           class="btn btn-outline-success btn-sm"
+                                           onclick="return confirm('Reorder the same items from Order #@o.OrderId?')">
+                                            Reorder
+                                        </a>
+                                    }
+                                    @if (o.OrderStatus == "Received")
                                     {
                                         <a asp-action="Reorder" asp-route-id="@o.OrderId"
                                            class="btn btn-outline-success btn-sm"

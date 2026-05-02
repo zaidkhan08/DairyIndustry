@@ -7,7 +7,7 @@
     bool isDist = role == "Distributor";
 
     // Timeline steps in order
-    var steps = new[] { "Pending", "Confirmed", "Dispatched", "Delivered" };
+    var steps = new[] { "Pending", "Confirmed", "Dispatched", "Delivered", "Received" };
     bool isCancelled = Model.OrderStatus == "Cancelled";
     int currentStep = Array.IndexOf(steps, Model.OrderStatus);
 }
@@ -20,8 +20,24 @@
     <div class="d-flex gap-2">
         @if (isDist && Model.OrderStatus == "Delivered")
         {
+            <form asp-action="ConfirmReceipt" method="post" class="m-0"
+                  onsubmit="return confirm('Confirm that you have received this order?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                <button type="submit" class="btn btn-success btn-sm">
+                    ✅ Confirm Receipt
+                </button>
+            </form>
             <a asp-action="Reorder" asp-route-id="@Model.OrderId"
-               class="btn btn-success btn-sm"
+               class="btn btn-outline-success btn-sm"
+               onclick="return confirm('Reorder the same items from this order?')">
+                🔁 Reorder
+            </a>
+        }
+        @if (isDist && Model.OrderStatus == "Received")
+        {
+            <a asp-action="Reorder" asp-route-id="@Model.OrderId"
+               class="btn btn-outline-success btn-sm"
                onclick="return confirm('Reorder the same items from this order?')">
                 🔁 Reorder
             </a>
@@ -69,11 +85,11 @@ else
             <div class="d-flex align-items-center justify-content-between position-relative">
                 <!-- connecting line -->
                 <div style="position:absolute; top:18px; left:10%; right:10%;
-                                     height:3px; background:#dee2e6; z-index:0;"></div>
+                                         height:3px; background:#dee2e6; z-index:0;"></div>
                 <div style="position:absolute; top:18px; left:10%;
-                                     height:3px; background:#0d6efd; z-index:1;
-                                     width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
-                                     transition:width .4s;"></div>
+                                         height:3px; background:#0d6efd; z-index:1;
+                                         width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
+                                         transition:width .4s;"></div>
 
                 @for (int i = 0; i < steps.Length; i++)
                 {
@@ -84,8 +100,8 @@ else
                     "background:#fff; border-color:#dee2e6; color:#adb5bd;";
                     <div class="d-flex flex-column align-items-center" style="z-index:2; flex:1;">
                         <div style="width:36px; height:36px; border-radius:50%; border:2px solid;
-                                                    display:flex; align-items:center; justify-content:center;
-                                                    font-size:.8rem; font-weight:700; @circleStyle">
+                                                            display:flex; align-items:center; justify-content:center;
+                                                            font-size:.8rem; font-weight:700; @circleStyle">
                             @if (done)
                             {
                                 <span>✓</span>
@@ -190,7 +206,11 @@ else
                         }
                         @if (Model.OrderStatus == "Delivered")
                         {
-                            <div class="text-center text-success fw-semibold py-1">✅ Order Delivered</div>
+                            <div class="text-center text-success fw-semibold py-1">✅ Order Delivered — Awaiting distributor confirmation</div>
+                        }
+                        @if (Model.OrderStatus == "Received")
+                        {
+                            <div class="text-center text-success fw-semibold py-1">✅ Receipt Confirmed by Distributor</div>
                         }
                         @if (isCancelled)
                         {
@@ -214,8 +234,27 @@ else
                         }
                         @if (Model.OrderStatus == "Delivered")
                         {
+                            <form asp-action="ConfirmReceipt" method="post"
+                                  onsubmit="return confirm('Confirm that you have received this order?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                                <button type="submit" class="btn btn-success w-100">
+                                    ✅ Confirm Receipt
+                                </button>
+                            </form>
                             <a asp-action="Reorder" asp-route-id="@Model.OrderId"
-                               class="btn btn-success w-100"
+                               class="btn btn-outline-success w-100 mt-1"
+                               onclick="return confirm('Reorder the same items from this order?')">
+                                🔁 Reorder This Order
+                            </a>
+                        }
+                        @if (Model.OrderStatus == "Received")
+                        {
+                            <div class="text-center text-success fw-semibold py-1">
+                                ✅ You confirmed receipt of this order
+                            </div>
+                            <a asp-action="Reorder" asp-route-id="@Model.OrderId"
+                               class="btn btn-outline-success w-100 mt-1"
                                onclick="return confirm('Reorder the same items from this order?')">
                                 🔁 Reorder This Order
                             </a>
@@ -368,10 +407,10 @@ else
         const mrpMap = {};
         @if (ViewBag.ProductList != null)
         {
-                    foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
-                    {
-                                @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
-                    }
+                        foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
+                        {
+                                        @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
+                        }
         }
 
         function setMRP(sel) {
@@ -726,7 +765,7 @@ else
                 @if (!string.IsNullOrEmpty(Model.Location))
                 {
                     @Model.Location
-                
+
                     <br />
                 }
                 @if (!string.IsNullOrEmpty(Model.ContactNumber))

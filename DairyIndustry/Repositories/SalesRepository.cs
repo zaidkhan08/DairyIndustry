@@ -746,6 +746,175 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════════════
+        //  DISTRIBUTOR ANALYTICS — all inline queries, no SPs needed
+        // ═══════════════════════════════════════════════════════════════════
+        public DistributorAnalyticsModel GetDistributorAnalytics(int distributorId)
+        {
+            var model = new DistributorAnalyticsModel();
+            using var con = _db.GetConnection();
+            con.Open();
+
+            // ── Overall totals ────────────────────────────────────────────
+            using (var cmd = new SqlCommand(@"
+                SELECT
+                    COUNT(*)                                                           AS TotalOrders,
+                    SUM(CASE WHEN OrderStatus IN ('Delivered','Received') THEN 1 ELSE 0 END) AS CompletedOrders,
+                    SUM(CASE WHEN OrderStatus = 'Cancelled'  THEN 1 ELSE 0 END)       AS CancelledOrders,
+                    SUM(CASE WHEN OrderStatus = 'Pending'    THEN 1 ELSE 0 END)       AS PendingOrders,
+                    ISNULL(SUM(CASE WHEN OrderStatus IN ('Delivered','Received') THEN TotalAmount END),0) AS TotalSpent,
+                    ISNULL(SUM(CASE WHEN OrderStatus IN ('Delivered','Received')
+                                    AND YEAR(OrderDate)  = YEAR(GETDATE())
+                                    AND MONTH(OrderDate) = MONTH(GETDATE())
+                               THEN TotalAmount END),0) AS ThisMonthSpent,
+                    ISNULL(SUM(CASE WHEN OrderStatus IN ('Delivered','Received')
+                                    AND YEAR(OrderDate)  = YEAR(DATEADD(MONTH,-1,GETDATE()))
+                                    AND MONTH(OrderDate) = MONTH(DATEADD(MONTH,-1,GETDATE()))
+                               THEN TotalAmount END),0) AS LastMonthSpent
+                FROM Sales.SalesOrders
+                WHERE DistributorId = @DistributorId", con))
+            {
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                using var r = cmd.ExecuteReader();
+                if (r.Read())
+                {
+                    model.TotalOrders = r["TotalOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalOrders"]);
+                    model.CompletedOrders = r["CompletedOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["CompletedOrders"]);
+                    model.CancelledOrders = r["CancelledOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["CancelledOrders"]);
+                    model.PendingOrders = r["PendingOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingOrders"]);
+                    model.TotalSpent = r["TotalSpent"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalSpent"]);
+                    model.ThisMonthSpent = r["ThisMonthSpent"] == DBNull.Value ? 0 : Convert.ToDecimal(r["ThisMonthSpent"]);
+                    model.LastMonthSpent = r["LastMonthSpent"] == DBNull.Value ? 0 : Convert.ToDecimal(r["LastMonthSpent"]);
+                }
+            }
+
+            // ── Monthly trend — last 6 months ─────────────────────────────
+            using (var cmd = new SqlCommand(@"
+                SELECT TOP 6
+                    FORMAT(OrderDate, 'MMM yyyy')         AS Label,
+                    YEAR(OrderDate)                        AS Yr,
+                    MONTH(OrderDate)                       AS Mo,
+                    COUNT(*)                               AS OrderCount,
+                    ISNULL(SUM(CASE WHEN OrderStatus IN ('Delivered','Received') THEN TotalAmount END),0) AS Amount
+                FROM Sales.SalesOrders
+                WHERE DistributorId = @DistributorId
+                  AND OrderDate >= DATEADD(MONTH, -5, DATEFROMPARTS(YEAR(GETDATE()),MONTH(GETDATE()),1))
+                GROUP BY FORMAT(OrderDate,'MMM yyyy'), YEAR(OrderDate), MONTH(OrderDate)
+                ORDER BY Yr, Mo", con))
+            {
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    model.MonthlyTrend.Add(new MonthlySpend
+                    {
+                        Label = r["Label"].ToString()!,
+                        Amount = r["Amount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["Amount"]),
+                        Count = r["OrderCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["OrderCount"])
+                    });
+            }
+
+            // ── Top 5 products by quantity ────────────────────────────────
+            using (var cmd = new SqlCommand(@"
+                SELECT TOP 5
+                    p.ProductName,
+                    p.Unit,
+                    SUM(sd.Quantity)             AS TotalQty,
+                    SUM(sd.Quantity * sd.UnitPrice) AS TotalSpent
+                FROM Sales.SalesOrderDetails  sd
+                INNER JOIN Sales.SalesOrders   so ON so.OrderId   = sd.OrderId
+                INNER JOIN Production.Products p  ON p.ProductId  = sd.ProductId
+                WHERE so.DistributorId = @DistributorId
+                  AND so.OrderStatus IN ('Delivered','Received','Dispatched','Confirmed')
+                GROUP BY p.ProductName, p.Unit
+                ORDER BY TotalQty DESC", con))
+            {
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    model.TopProducts.Add(new TopProduct
+                    {
+                        ProductName = r["ProductName"].ToString()!,
+                        Unit = r["Unit"].ToString()!,
+                        TotalQty = r["TotalQty"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalQty"]),
+                        TotalSpent = r["TotalSpent"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalSpent"])
+                    });
+            }
+
+            // ── Status breakdown ──────────────────────────────────────────
+            using (var cmd = new SqlCommand(@"
+                SELECT OrderStatus, COUNT(*) AS Cnt
+                FROM Sales.SalesOrders
+                WHERE DistributorId = @DistributorId
+                GROUP BY OrderStatus", con))
+            {
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    model.StatusBreakdown.Add(new StatusCount
+                    {
+                        Status = r["OrderStatus"].ToString()!,
+                        Count = Convert.ToInt32(r["Cnt"])
+                    });
+            }
+
+            return model;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  NOTIFICATION SEEN — DB-persisted, survives logout/login
+        //  Table: Sales.DistributorNotifSeen
+        //         (DistributorId, OrderId, SeenStatus, SeenOn)
+        //  PK is (DistributorId, OrderId, SeenStatus) so if admin moves an
+        //  order from Confirmed→Dispatched, the Dispatched entry is NEW and
+        //  the badge re-appears even though Confirmed was already seen.
+        // ═══════════════════════════════════════════════════════════════════
+        public HashSet<string> GetSeenOrderKeys(int distributorId)
+        {
+            // Returns "OrderId_Status" composite keys e.g. "46_Confirmed"
+            var keys = new HashSet<string>();
+            const string sql = @"
+                SELECT OrderId, SeenStatus
+                FROM   Sales.DistributorNotifSeen
+                WHERE  DistributorId = @DistributorId";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                keys.Add($"{reader["OrderId"]}_{reader["SeenStatus"]}");
+            return keys;
+        }
+
+        public void MarkOrdersSeen(int distributorId,
+            IEnumerable<(int OrderId, string Status)> orders)
+        {
+            var list = orders.ToList();
+            if (!list.Any()) return;
+
+            using var con = _db.GetConnection();
+            con.Open();
+            foreach (var (orderId, status) in list)
+            {
+                using var cmd = new SqlCommand(@"
+                    IF NOT EXISTS (
+                        SELECT 1 FROM Sales.DistributorNotifSeen
+                        WHERE  DistributorId = @DistributorId
+                          AND  OrderId       = @OrderId
+                          AND  SeenStatus    = @SeenStatus)
+                    INSERT INTO Sales.DistributorNotifSeen
+                        (DistributorId, OrderId, SeenStatus, SeenOn)
+                    VALUES
+                        (@DistributorId, @OrderId, @SeenStatus, GETDATE())", con);
+                cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+                cmd.Parameters.AddWithValue("@OrderId", orderId);
+                cmd.Parameters.AddWithValue("@SeenStatus", status);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
         //  HASH PASSWORD — SHA-256 hex, lowercase
         // ═══════════════════════════════════════════════════════════════════
         public static string HashPassword(string password)

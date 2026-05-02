@@ -74,5 +74,15 @@ namespace DairyIndustry.Repositories
         // ── DROPDOWNS (inline queries) ─────────────────────────────────────
         List<ProductSalesModel> GetProducts();
         List<PlantModel> GetPlants();
+
+        // ── DISTRIBUTOR ANALYTICS ─────────────────────────────────────────
+        DistributorAnalyticsModel GetDistributorAnalytics(int distributorId);
+
+        // ── NOTIFICATION SEEN (DB-persisted across logins) ────────────────
+        // Returns (OrderId, Status) pairs the distributor has already seen.
+        // Keyed as "OrderId_Status" so re-seeing after status change works.
+        HashSet<string> GetSeenOrderKeys(int distributorId);
+        // Marks given orders as seen at their current status.
+        void MarkOrdersSeen(int distributorId, IEnumerable<(int OrderId, string Status)> orders);
     }
 }

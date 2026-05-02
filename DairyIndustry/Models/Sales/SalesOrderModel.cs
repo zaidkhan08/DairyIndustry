@@ -21,6 +21,7 @@
             "Confirmed" => "info",
             "Dispatched" => "primary",
             "Delivered" => "success",
+            "Received" => "success",
             "Cancelled" => "danger",
             _ => "secondary"
         };
@@ -35,5 +36,8 @@
 
         public bool CanCancel => OrderStatus == "Pending" || OrderStatus == "Confirmed";
         public bool CanAddItems => OrderStatus == "Pending";
+
+        // Distributor can confirm receipt only when admin has marked Delivered
+        public bool CanConfirmReceipt => OrderStatus == "Delivered";
     }
 }

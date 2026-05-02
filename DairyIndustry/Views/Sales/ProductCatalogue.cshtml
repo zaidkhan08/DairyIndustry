@@ -1,0 +1,123 @@
+﻿@model List<DairyIndustry.Models.ProductSalesModel>
+@{
+    ViewData["Title"] = "Product Catalogue";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+
+    // Group products by type for organized display
+    var grouped = Model.GroupBy(p => p.ProductType).OrderBy(g => g.Key).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Product Catalogue</h4>
+        <small class="text-muted">All available products and their current rates</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">➕ Place New Order</a>
+</div>
+
+<!-- ── Search bar ── -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <input type="text" id="productSearch" class="form-control form-control-sm"
+                       placeholder="🔍 Search product name..." oninput="filterProducts()" />
+            </div>
+            <div class="col-md-4">
+                <select id="typeFilter" class="form-select form-select-sm" onchange="filterProducts()">
+                    <option value="">— All Types —</option>
+                    @foreach (var g in grouped)
+                    {
+                        <option value="@g.Key">@g.Key (@g.Count())</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 text-muted small" id="resultCount">
+                @Model.Count product@(Model.Count == 1 ? "" : "s") available
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No products are currently available.</div>
+}
+else
+{
+    <!-- ── Product Cards ── -->
+    <div class="row g-3" id="productGrid">
+        @foreach (var p in Model)
+        {
+            string typeColor = p.ProductType switch
+            {
+                "Milk" => "primary",
+                "Curd" => "info",
+                "Ghee" => "warning",
+                "Paneer" => "success",
+                "Butter" => "warning",
+                _ => "secondary"
+            };
+
+            <div class="col-md-4 col-lg-3 product-card"
+                 data-name="@p.ProductName.ToLower()"
+                 data-type="@p.ProductType">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-@typeColor bg-opacity-75">@p.ProductType</span>
+                            <span class="fw-bold text-primary fs-6">₹@p.MRP.ToString("N2")</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">@p.ProductName</h6>
+                        <div class="text-muted small">Per @p.Unit</div>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3">
+                        <a asp-action="Create" class="btn btn-outline-primary btn-sm w-100">
+                            Order Now →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- No results message -->
+    <div id="noProductsMsg" class="alert alert-info mt-3" style="display:none;">
+        No products match your search.
+        <button class="btn btn-link btn-sm p-0 ms-1" onclick="clearSearch()">Clear filter</button>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function filterProducts() {
+            const search = document.getElementById('productSearch').value.toLowerCase().trim();
+            const type   = document.getElementById('typeFilter').value.toLowerCase();
+            const cards  = document.querySelectorAll('.product-card');
+            let visible  = 0;
+
+            cards.forEach(card => {
+                const nameMatch = !search || card.getAttribute('data-name').includes(search);
+                const typeMatch = !type   || card.getAttribute('data-type').toLowerCase() === type;
+                const show = nameMatch && typeMatch;
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            document.getElementById('resultCount').textContent =
+                visible + ' product' + (visible === 1 ? '' : 's') + ' shown';
+
+            const noMsg = document.getElementById('noProductsMsg');
+            if (noMsg) noMsg.style.display = visible === 0 ? 'block' : 'none';
+
+            const grid = document.getElementById('productGrid');
+            if (grid) grid.style.display = visible === 0 ? 'none' : '';
+        }
+
+        function clearSearch() {
+            document.getElementById('productSearch').value = '';
+            document.getElementById('typeFilter').value = '';
+            filterProducts();
+        }
+    </script>
+}
