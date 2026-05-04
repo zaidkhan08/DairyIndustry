@@ -60,7 +60,7 @@ namespace DairyIndustry.Repositories
         // • UnitPrice is always auto-fetched from Production.Products.MRP —
         //   the distributor never supplies a price.
         // Returns the OrderId (existing or newly created).
-        int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity);
+        int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity, string? notes = null);
 
         // ── PRODUCTS ──────────────────────────────────────────────────────
         // Returns a single product (used for MRP auto-fill).

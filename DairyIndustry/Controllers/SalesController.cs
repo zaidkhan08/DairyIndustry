@@ -23,6 +23,7 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult Dashboard()
         {
+            SetPendingCount();
             var vm = new SalesDashboardViewModel
             {
                 Summary = _repo.GetDashboardSummary(),
@@ -39,12 +40,22 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         [SessionAuthorize("Admin")]
         public IActionResult Index(int? distributorId, string? status,
-                                   DateTime? fromDate, DateTime? toDate)
+                                   DateTime? fromDate, DateTime? toDate, string? search = null)
         {
+            SetPendingCount();
             var orders = _repo.GetOrders(distributorId, status, fromDate, toDate);
+
+            // Client-side name search — filter in memory (no new SP needed)
+            if (!string.IsNullOrWhiteSpace(search))
+                orders = orders.Where(o =>
+                    o.DistributorName != null &&
+                    o.DistributorName.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
             LoadOrderFilterDropdowns(distributorId, status);
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.Search = search;
             return View(orders);
         }
 
@@ -150,7 +161,9 @@ namespace DairyIndustry.Controllers
 
                 try
                 {
-                    int orderId = _repo.PlaceDistributorOrder(distId, model.PlantId, productId, quantity);
+                    string? notes = Request.Form["SelectedNotes"].ToString();
+                    int orderId = _repo.PlaceDistributorOrder(distId, model.PlantId, productId, quantity,
+                                    string.IsNullOrWhiteSpace(notes) ? null : notes);
                     TempData["Success"] = "Order placed! Unit price set automatically from product rate.";
                     return RedirectToAction("Details", new { id = orderId });
                 }
@@ -199,7 +212,7 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [SessionAuthorize("Distributor")]
-        public IActionResult PlaceOrder(int productId, decimal quantity, int plantId)
+        public IActionResult PlaceOrder(int productId, decimal quantity, int plantId, string? notes = null)
         {
             if (productId <= 0 || quantity <= 0 || plantId <= 0)
             {
@@ -216,7 +229,8 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                int orderId = _repo.PlaceDistributorOrder(distributorId, plantId, productId, quantity);
+                int orderId = _repo.PlaceDistributorOrder(distributorId, plantId, productId, quantity,
+                                string.IsNullOrWhiteSpace(notes) ? null : notes);
                 TempData["Success"] = "Order placed! Unit price set automatically from product rate.";
                 return RedirectToAction("Details", new { id = orderId });
             }
@@ -425,6 +439,7 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult Distributors(string? status)
         {
+            SetPendingCount();
             var all = _repo.GetDistributors();
             var shown = status == null ? all : all.Where(d => d.Status == status).ToList();
             ViewBag.DistributorSales = _repo.GetDistributorSales();
@@ -638,6 +653,7 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = "Could not load your details.";
                 return RedirectToAction("MyOrders");
             }
+            SetProfileSession(dist);
             SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
             return View(dist);
         }
@@ -659,6 +675,7 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = "Could not load your profile.";
                 return RedirectToAction("MyOrders");
             }
+            SetProfileSession(dist);
             SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
 
             return View("EditDistributor", new DistributorFormModel
@@ -736,6 +753,21 @@ namespace DairyIndustry.Controllers
         //  PRIVATE HELPERS
         // ════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════
+        //  PROFILE COMPLETENESS — stores session keys for sidebar indicator
+        //  Called whenever we load a distributor's profile data.
+        // ════════════════════════════════════════════════════════════════════
+        private void SetProfileSession(DistributorModel dist)
+        {
+            HttpContext.Session.SetString("DistributorName", dist.DistributorName ?? "");
+            HttpContext.Session.SetString("DistributorLocation", dist.Location ?? "");
+            HttpContext.Session.SetString("DistributorContact", dist.ContactNumber ?? "");
+            HttpContext.Session.SetString("DistributorEmail", dist.Email ?? "");
+            HttpContext.Session.SetString("DistributorAddress", dist.Address ?? "");
+            HttpContext.Session.SetString("DistributorGSTIN", dist.GSTIN ?? "");
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
         //  NOTIFICATION BADGE — auto-set on every page for Distributor
         //  Counts orders with status Confirmed, Dispatched, or Delivered
         //  (i.e. admin has acted on them). Badge shows on the My Orders
@@ -789,6 +821,12 @@ namespace DairyIndustry.Controllers
             _repo.MarkOrdersSeen(distributorId, pairs);
             // Clear session cache so sidebar refreshes on next page load
             HttpContext.Session.Remove($"NotifOrders_{distributorId}");
+        }
+
+        // Sets ViewBag.PendingCount for admin sidebar badge
+        private void SetPendingCount()
+        {
+            ViewBag.PendingCount = _repo.GetDistributors().Count(d => d.Status == "Pending");
         }
 
         private void LoadDistributorDropdown(int? selected = null) =>

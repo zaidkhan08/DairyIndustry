@@ -12,6 +12,7 @@
         public DateTime OrderDate { get; set; }
         public decimal TotalAmount { get; set; }
         public string? OrderStatus { get; set; }
+        public string? Notes { get; set; }  // optional distributor note on the order
 
         public List<SalesOrderDetailModel> OrderDetails { get; set; } = new();
 

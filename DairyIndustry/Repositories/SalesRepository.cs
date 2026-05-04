@@ -222,6 +222,7 @@ namespace DairyIndustry.Repositories
                        so.OrderDate,
                        so.OrderStatus,
                        so.TotalAmount,
+                       so.Notes,
                        d.DistributorName,
                        d.Location,
                        d.ContactNumber
@@ -255,6 +256,7 @@ namespace DairyIndustry.Repositories
             const string sql = @"
                 SELECT so.OrderId, so.DistributorId, so.PlantId,
                        so.OrderDate, so.TotalAmount, so.OrderStatus,
+                       so.Notes,
                        pp.PlantName,
                        d.DistributorName, d.Location, d.ContactNumber
                 FROM   Sales.SalesOrders               so
@@ -288,11 +290,15 @@ namespace DairyIndustry.Repositories
                 if (!reader.Read()) return 0;
                 newOrderId = Convert.ToInt32(reader["NewOrderId"]);
             }
-            if (newOrderId > 0 && model.PlantId > 0)
+            if (newOrderId > 0)
             {
+                var setClauses = new List<string>();
+                if (model.PlantId > 0) setClauses.Add("PlantId=@PlantId");
+                setClauses.Add("Notes=@Notes");
                 using var cmd = new SqlCommand(
-                    "UPDATE Sales.SalesOrders SET PlantId=@PlantId WHERE OrderId=@OrderId", con);
-                cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
+                    $"UPDATE Sales.SalesOrders SET {string.Join(",", setClauses)} WHERE OrderId=@OrderId", con);
+                if (model.PlantId > 0) cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
+                cmd.Parameters.AddWithValue("@Notes", (object?)model.Notes ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@OrderId", newOrderId);
                 cmd.ExecuteNonQuery();
             }
@@ -456,7 +462,7 @@ namespace DairyIndustry.Repositories
         //     Else → INSERT new detail row
         //  5. Recalculate TotalAmount on the order
         // ═══════════════════════════════════════════════════════════════════
-        public int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity)
+        public int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity, string? notes = null)
         {
             using var con = _db.GetConnection();
             con.Open();
@@ -496,12 +502,22 @@ namespace DairyIndustry.Repositories
                 {
                     using var cmd = new SqlCommand(@"
                         INSERT INTO Sales.SalesOrders
-                            (DistributorId, PlantId, OrderDate, TotalAmount, OrderStatus)
-                        VALUES (@DistributorId, @PlantId, CAST(GETDATE() AS DATE), 0, 'Pending');
+                            (DistributorId, PlantId, OrderDate, TotalAmount, OrderStatus, Notes)
+                        VALUES (@DistributorId, @PlantId, CAST(GETDATE() AS DATE), 0, 'Pending', @Notes);
                         SELECT SCOPE_IDENTITY();", con, tx);
                     cmd.Parameters.AddWithValue("@DistributorId", distributorId);
                     cmd.Parameters.AddWithValue("@PlantId", plantId);
+                    cmd.Parameters.AddWithValue("@Notes", (object?)notes ?? DBNull.Value);
                     orderId = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+                else if (!string.IsNullOrWhiteSpace(notes))
+                {
+                    // Order already existed today — update its Notes if a new one was provided
+                    using var cmd = new SqlCommand(
+                        "UPDATE Sales.SalesOrders SET Notes=@Notes WHERE OrderId=@OrderId", con, tx);
+                    cmd.Parameters.AddWithValue("@Notes", notes);
+                    cmd.Parameters.AddWithValue("@OrderId", orderId);
+                    cmd.ExecuteNonQuery();
                 }
 
                 // Step 4 — check if product already in this order
@@ -947,6 +963,8 @@ namespace DairyIndustry.Repositories
                 m.PlantId = Convert.ToInt32(r["PlantId"]);
             if (HasColumn(r, "PlantName") && r["PlantName"] != DBNull.Value)
                 m.PlantName = r["PlantName"].ToString();
+            if (HasColumn(r, "Notes") && r["Notes"] != DBNull.Value)
+                m.Notes = r["Notes"].ToString();
             return m;
         }
 

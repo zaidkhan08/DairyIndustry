@@ -17,6 +17,11 @@ namespace DairyIndustry.Models
         [Display(Name = "Order Date")]
         [DataType(DataType.Date)]
         public DateTime OrderDate { get; set; } = DateTime.Today;
+
+        // Optional note from distributor — stored in Sales.SalesOrders.Notes
+        [MaxLength(500, ErrorMessage = "Note cannot exceed 500 characters.")]
+        [Display(Name = "Order Note")]
+        public string? Notes { get; set; }
     }
 
     // Add line item form on the order details page
