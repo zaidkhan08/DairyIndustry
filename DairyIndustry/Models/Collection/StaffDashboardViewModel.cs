@@ -21,10 +21,10 @@
 
 
 
-        // 🔹 RESULT SET 2 (Shift + Batch)
+        //  RESULT SET 2 (Shift + Batch)
         public List<ShiftBatchInfo> Shifts { get; set; } = new();
 
-        // 🔹 RESULT SET 3 (Summary)
+        //  RESULT SET 3 (Summary)
         public decimal TotalMilkToday { get; set; }
         public decimal TotalAmountToday { get; set; }
         public int TotalEntriesToday { get; set; }

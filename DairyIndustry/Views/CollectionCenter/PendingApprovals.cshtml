@@ -1,0 +1,142 @@
+@model List<DairyIndustry.Models.FarmerModel.PendingApprovalViewModel>
+
+@{
+    ViewData["Title"] = "Pending Farmer Approvals";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4">
+
+    @* ── Page heading ──────────────────────────────────────── *@
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0">Pending Farmer Approvals</h4>
+            <small class="text-muted">
+                Farmers who self-registered and are waiting for your approval.
+            </small>
+        </div>
+        <a asp-controller="CollectionCenter"
+           asp-action="Dashboard"
+           class="btn btn-outline-secondary btn-sm">
+            ← Back to Dashboard
+        </a>
+    </div>
+
+    @* ── Alerts ────────────────────────────────────────────── *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @* ── Empty state ───────────────────────────────────────── *@
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center p-5">
+                <p class="text-muted mb-0">
+                    No pending farmer approvals at your center right now.
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* ── Table ─────────────────────────────────────────── *@
+        <div class="card">
+            <div class="card-header">
+                <strong>@Model.Count pending request(s)</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Location</th>
+                                <th>Bank</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{int sr = 1;}
+                            @foreach (var f in Model)
+                            {
+                                <tr>
+                                    <td>@sr</td>
+
+                                    <td>
+                                        @f.FarmerName
+                                        @if (!string.IsNullOrEmpty(f.ProfilePhoto))
+                                        {
+                                            <br />
+                                            <img src="@f.ProfilePhoto"
+                                                 width="40" height="40"
+                                                 class="rounded-circle border" />
+                                        }
+                                    </td>
+
+                                    <td>@f.Phone</td>
+
+                                    <td>
+                                        @f.VillageName<br />
+                                        <small class="text-muted">@f.CityName, @f.StateName</small>
+                                    </td>
+
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(f.BankName))
+                                        {
+                                            <span>@f.BankName</span><br />
+                                            <small class="text-muted">@f.AccountNumber</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not provided</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @* ── APPROVE ─────────────────────────── *@
+                                        <form method="post"
+                                              asp-controller="CollectionCenter"
+                                              asp-action="ApproveFarmer"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="farmerId" value="@f.FarmerId" />
+                                            <button type="submit"
+                                                    class="btn btn-success btn-sm"
+                                                    onclick="return confirm('Approve @f.FarmerName?')">
+                                                ✓ Approve
+                                            </button>
+                                        </form>
+
+                                        @* ── REJECT ──────────────────────────── *@
+                                        <a asp-controller="CollectionCenter"
+                                           asp-action="RejectFarmer"
+                                           asp-route-farmerId="@f.FarmerId"
+                                           class="btn btn-danger btn-sm">
+                                            ✗ Reject
+                                        </a>
+                                    </td>
+                                </tr>
+                                sr++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>

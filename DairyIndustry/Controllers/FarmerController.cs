@@ -1,4 +1,4 @@
-using DairyIndustry.Models.Admin;
+﻿using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.FarmerModel;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -10,15 +10,22 @@ namespace DairyIndustry.Controllers
         private readonly IFarmerRepository _repo;
         private readonly IAdminRepository _adminRepo;
         private readonly IWebHostEnvironment _env;
+        private readonly ICollectionCenterRepository _collectionCenter;
 
-    public FarmerController(
+        public FarmerController(
         IFarmerRepository repo,
         IAdminRepository adminRepo,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,ICollectionCenterRepository collectionRepo)
         {
             _repo = repo;
             _adminRepo = adminRepo;
+            _collectionCenter = collectionRepo;
             _env = env;
+        }
+
+        public IActionResult LayoutIndex()
+        {
+            return View();
         }
 
         // =========================
@@ -118,17 +125,19 @@ namespace DairyIndustry.Controllers
             if (ModelState.IsValid)
             {
                 var result = _repo.AddFarmer(model, staffId);
+                TempData["FarmerCode"] = result.FarmerCode;
+                TempData["Password"] = result.DefaultPassword;
 
-                TempData["Success"] = $"Farmer Registered! Code: {result.FarmerCode}";
+                TempData["Success"] = "Farmer Registered Successfully!";
+                //TempData["Success"] = $"Farmer Registered! Code: {result.FarmerCode}";
                 return RedirectToAction("Create");
             }
 
             return View(model);
         }
 
-        // =========================
-        // EDIT (GET)
-        // =========================
+
+        [HttpGet]
         public IActionResult Edit(int id)
         {
             int staffId = GetStaffId();
@@ -140,6 +149,7 @@ namespace DairyIndustry.Controllers
             if (model == null)
                 return NotFound();
 
+            // Load dropdowns
             model.States = _repo.GetStates();
             model.Cities = _repo.GetCitiesByState(model.StateId ?? 0);
             model.Villages = _repo.GetVillagesByCity(model.CityId ?? 0);
@@ -147,9 +157,6 @@ namespace DairyIndustry.Controllers
             return View(model);
         }
 
-        // =========================
-        // EDIT (POST)
-        // =========================
         [HttpPost]
         public IActionResult Edit(FarmerViewModel model)
         {
@@ -157,11 +164,10 @@ namespace DairyIndustry.Controllers
             if (staffId == 0)
                 return RedirectToAction("Login", "Auth");
 
-            model.States = _repo.GetStates();
-            model.Cities = _repo.GetCitiesByState(model.StateId ?? 0);
-            model.Villages = _repo.GetVillagesByCity(model.CityId ?? 0);
+            //  VERY IMPORTANT FIX
+            ModelState.Remove("PhotoFile");
 
-            // FILE UPLOAD
+            //  Handle photo
             if (model.PhotoFile != null && model.PhotoFile.Length > 0)
             {
                 string folder = Path.Combine(_env.WebRootPath, "uploads");
@@ -180,23 +186,33 @@ namespace DairyIndustry.Controllers
                 model.ProfilePhoto = "/uploads/" + fileName;
             }
 
-            try
+            // Validation AFTER removing PhotoFile
+            if (!ModelState.IsValid)
             {
-                int result = _repo.UpdateFarmer(model, staffId);
+                model.States = _repo.GetStates();
+                model.Cities = _repo.GetCitiesByState(model.StateId ?? 0);
+                model.Villages = _repo.GetVillagesByCity(model.CityId ?? 0);
 
-                if (result > 0)
-                {
-                    TempData["Success"] = "Farmer updated successfully!";
-                    return RedirectToAction("Index");
-                }
+                return View(model);
             }
-            catch (Exception ex)
+
+            int result = _repo.UpdateFarmer(model, staffId);
+
+            if (result > 0)
             {
-                TempData["Error"] = ex.Message;
+                TempData["Success"] = "Farmer updated successfully!";
+                return RedirectToAction("Index");
             }
+
+            TempData["Error"] = "Failed to update farmer.";
+
+            model.States = _repo.GetStates();
+            model.Cities = _repo.GetCitiesByState(model.StateId ?? 0);
+            model.Villages = _repo.GetVillagesByCity(model.CityId ?? 0);
 
             return View(model);
         }
+      
 
         // =========================
         // TOGGLE STATUS
@@ -215,7 +231,235 @@ namespace DairyIndustry.Controllers
 
             return RedirectToAction("Index");
         }
-    }
 
+        //farmer login
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        // =========================
+        // LOGIN POST
+        // =========================
+        [HttpPost]
+        public IActionResult Login(FarmerLoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var farmer = _repo.FarmerLogin(model.FarmerCode, model.Password);
+
+            if (farmer == null)
+            {
+                ModelState.AddModelError("", "Invalid Farmer Code or Password");
+                return View(model);
+            }
+
+            // SESSION
+            HttpContext.Session.SetInt32("FarmerId", farmer.FarmerId);
+            HttpContext.Session.SetString("FarmerCode", farmer.FarmerCode);
+            HttpContext.Session.SetString("FarmerName", farmer.FarmerName);
+
+            return RedirectToAction("Dashboard", "Farmer");
+        }
+
+        // =========================
+        // LOGOUT
+        // =========================
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
+
+        //dashboard
+
+        public IActionResult Dashboard()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+
+            if (farmerId == 0)
+                return RedirectToAction("Login");
+
+            ViewData["Title"] = "Dashboard";
+
+            var vm = _repo.GetDashboard(farmerId);
+
+            return View(vm);
+        }
+
+        //Tody's milk Entries
+        public IActionResult TodayMilk()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+
+            if (farmerId == 0)
+                return RedirectToAction("Login", "Farmer");
+
+            var data = _repo.GetTodayMilkEntries(farmerId);
+
+            return View(data);
+        }
+
+        //all milk Entries
+        public IActionResult AllMilkEntries()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+
+            if (farmerId == 0)
+                return RedirectToAction("Login", "Farmer");
+
+            var data = _repo.GetAllMilkEntries(farmerId);
+
+            return View(data);
+        }
+
+        //farmer profile
+        public IActionResult Profile()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+
+            if (farmerId == 0)
+                return RedirectToAction("Login");
+
+            var model = _repo.GetFarmerProfile(farmerId);
+
+            return View(model);
+        }
+
+
+
+
+        // SELF REGISTRATION — GET
+        // Public page, no login needed.
+        // Loads states for the first step dropdown.
+        [HttpGet]
+        public IActionResult Register()
+        {
+            var model = new SelfRegisterViewModel
+            {
+                States = _repo.GetStates()
+            };
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Register(SelfRegisterViewModel model)
+        {
+            // Reload states
+            model.States = _repo.GetStates();
+
+            // Reload dropdowns if validation fails
+            if (model.StateId != null)
+                model.Cities = _repo.GetCitiesByState(model.StateId.Value);
+
+            if (model.CityId != null)
+                model.Villages = _repo.GetVillagesByCity(model.CityId.Value);
+
+            if (model.VillageId != null)
+                model.Centers = _collectionCenter.GetCentersByVillage(model.VillageId.Value);
+
+            // Validation
+            if (string.IsNullOrWhiteSpace(model.FarmerName))
+            {
+                TempData["Error"] = "Farmer name is required.";
+                return View(model);
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Phone) || model.Phone.Length != 10)
+            {
+                TempData["Error"] = "Valid 10-digit phone number required.";
+                return View(model);
+            }
+
+            if (model.CenterId == null)
+            {
+                TempData["Error"] = "Please select a center.";
+                return View(model);
+            }
+
+            try
+            {
+                _repo.SelfRegisterFarmer(model);
+                return RedirectToAction("RegisterSuccess");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return View(model);
+            }
+        }
+        // REGISTER SUCCESS — static thank-you page
+        [HttpGet]
+        public IActionResult RegisterSuccess()
+        {
+            return View();
+        }
+
+        // CHECK STATUS — GET
+        // Public page. Just shows the phone input form.
+        [HttpGet]
+        public IActionResult CheckStatus()
+        {
+            return View(new FarmerStatusViewModel());
+        }
+
+        // CHECK STATUS — POST
+        // Looks up registration by phone and shows result.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CheckStatus(FarmerStatusViewModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Phone))
+            {
+                TempData["Error"] = "Please enter your phone number.";
+                model.Searched = false;
+                return View(model);
+            }
+
+            var result = _repo.GetFarmerStatusByPhone(model.Phone.Trim());
+
+            model.Searched = true;
+
+            if (result != null)
+            {
+                model.FarmerId = result.FarmerId;
+                model.FarmerName = result.FarmerName;
+                model.FarmerCode = result.FarmerCode;
+                model.ApprovalStatus = result.ApprovalStatus;
+                model.ApprovalRemark = result.ApprovalRemark;
+                model.CenterName = result.CenterName;
+            }
+
+            return View(model);
+        }
+        [HttpGet]
+        public JsonResult GetCenters(int villageId)
+        {
+            var centers = _collectionCenter.GetCentersByVillage(villageId);
+            return Json(centers);
+        }
+
+
+        //milk rejection entries (history) for farmer
+        public IActionResult RejectionHistory(DateTime? fromDate, DateTime? toDate)
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+
+            if (farmerId == 0)
+                return RedirectToAction("Login");
+
+            var data = _repo.GetRejectionHistory(farmerId, fromDate, toDate);
+
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            if (data.Count == 0)
+                TempData["Info"] = "No rejections found for this period.";
+
+            return View(data);
+        }
+    }
 
 }

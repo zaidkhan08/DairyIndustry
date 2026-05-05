@@ -1,16 +1,15 @@
 ﻿using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Collection;
 using DairyIndustry.Models.FarmerModel;
+using DairyIndustry.Models.Logistics;
 
 namespace DairyIndustry.Repositories
 {
     public interface ICollectionCenterRepository
     {
+
         // Dashboard — calls Collection.usp_Staff_Dashboard (3 result sets)
         StaffDashboardViewModel GetStaffDashboard(int staffId);
-
-        //To Diaplay Ratechart On Milk Entry Page
-     //   public List<RateChartModel> RateCharts { get; set; }
 
         // Milk Entry — calls Collection.usp_AddMilkEntry
         // NOTE: SP auto-detects CenterId, Shift, BatchId, Rate, Amount from StaffId + time
@@ -24,6 +23,22 @@ namespace DairyIndustry.Repositories
         // Single entry detail — calls Collection.usp_GetMilkEntryById
         // Staff can only view entries from their own center (enforced in SP)
         MilkCollectionViewModel GetMilkEntryById(int staffId, int collectionId);
+
+
+
+
+        // Save rejection
+        int RejectMilkEntry(MilkRejectionViewModel model, int staffId);
+
+        // Get rejection history for a Center
+        List<MilkRejectionViewModel> GetRejectionsByCenter(int centerId);
+
+        // Get rejection history for a farmer
+        List<MilkRejectionViewModel> GetRejectionsByFarmer(int farmerId);
+
+
+
+
 
         // Batch status (Morning + Evening) — calls Collection.usp_GetTodayBatchStatus
         // Returns exactly 2 rows. Batches open/close automatically via SQL Agent.
@@ -43,11 +58,12 @@ namespace DairyIndustry.Repositories
 
         List<MilkTypes> GetMilkTypes();
         int GetCenterIdByStaffId(int staffId);
-       
 
+        //All Entries
+        List<DateWiseMilkEntryViewModel> GetAllEntries(int centerId);
 
         //date wise milk entries 
-        public List<DateWiseMilkEntryViewModel> GetEntriesByDate(DateTime date, int centerId);
+        //   public List<DateWiseMilkEntryViewModel> GetEntriesByDate(DateTime date, int centerId);
 
         //inventory
         List<CenterInventoryViewModel> GetInventoryByCenter(int centerId);
@@ -57,5 +73,22 @@ namespace DairyIndustry.Repositories
 
         //ratechartmodel
         List<RateChartModel> GetRateCharts();
+
+        // Centers filtered by village (for self-registration dropdown)
+        List<CenterDropdownModel> GetCentersByVillage(int villageId);
+
+
+
+        // SP: Collection.usp_GetClosedBatchesForDispatch
+
+        List<ClosedBatchDropdownItem> GetClosedBatchesForDispatch(int centerId);
+        List<VehicleDropdownItem> GetActiveVehicles();
+        List<PlantDropdownItem> GetAllPlants();
+        int DispatchMilkTransfer(int batchId,int milkTypeId, int vehicleId, int plantId,
+                                                             decimal dispatchQty, DateTime dispatchDate);
+        List<DispatchHistoryViewModel> GetDispatchHistory(int centerId);
+
+
+       
     }
 }

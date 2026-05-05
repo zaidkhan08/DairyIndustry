@@ -20,8 +20,11 @@ builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new 
 builder.Services.AddSingleton<DbHelper>();
 builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
 builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
+
+builder.Services.AddScoped<IPlantRepository, PlantRepository>();
 builder.Services.AddScoped<ActionLogFilter>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+
 builder.Services.AddScoped<ILogisticsRepository, LogisticsRepository>();
 builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
@@ -48,6 +51,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Admin}/{action=Login}/{id?}");
+    pattern: "{controller=Farmer}/{action=LayoutIndex}/{id?}");
 
 app.Run();

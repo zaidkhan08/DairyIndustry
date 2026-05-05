@@ -12,13 +12,15 @@ namespace DairyIndustry.Controllers
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly ICollectionCenterRepository _centerRepository;
+        private readonly IPlantRepository _plantRepository;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository,IPlantRepository plantRepository)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
             _centerRepository = centerRepository;
+            _plantRepository = plantRepository;
         }
 
         // ════════════════════════════════════════════════════════
@@ -77,8 +79,20 @@ namespace DairyIndustry.Controllers
                     HttpContext.Session.SetInt32("CenterId", centerId);
                     return RedirectToAction("Dashboard", "CollectionCenter");
 
-                //case "Production Manager":
-                //    return RedirectToAction("Index", "Production");
+                case "Production Manager":
+                    // GetPlantIdByStaffId → returns int directly 
+                    var plantInfo = _plantRepository.GetPlantByStaffId(user.StaffId ?? 0);
+
+                    if (plantInfo.PlantId == 0)
+                    {
+                        ViewBag.Error = "You are not assigned to any plant.";
+                        return View();
+                    }
+
+                    HttpContext.Session.SetInt32("PlantId", plantInfo.PlantId);
+                    HttpContext.Session.SetString("PlantName", plantInfo.PlantName ?? "");
+                    HttpContext.Session.SetString("Name", plantInfo.StaffName ?? "");
+                    return RedirectToAction("Index", "Plant");
 
                 //case "Finance Manager":
                 //    return RedirectToAction("Index", "Finance");

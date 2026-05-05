@@ -5,14 +5,14 @@
     Layout = "_CollectionCenterLayout";
 }
 
-<div class="container mt-4">
+<div class="container mt-4" style="max-width: 700px;">
+
     <h3 class="mb-3">Edit Farmer</h3>
 
-    ```
     <form asp-action="Edit" method="post" enctype="multipart/form-data">
 
-        <!-- Hidden -->
         <input type="hidden" asp-for="FarmerId" />
+        <input type="hidden" asp-for="ProfilePhoto" />
 
         <!-- Farmer Name -->
         <div class="mb-3">
@@ -28,16 +28,19 @@
             <span asp-validation-for="Phone" class="text-danger"></span>
         </div>
 
+        <hr />
+
+        <!-- LOCATION -->
+        <h5>Location</h5>
+
         <!-- State -->
         <div class="mb-3">
             <label class="form-label">State</label>
-            <select asp-for="StateId" class="form-select" id="StateId">
+            <select asp-for="StateId" class="form-select">
                 <option value="">Select State</option>
                 @foreach (var s in Model.States)
                 {
-                    <option value="@s.StateId" selected="@(Model.StateId == s.StateId)">
-                        @s.StateName
-                    </option>
+                    <option value="@s.StateId">@s.StateName</option>
                 }
             </select>
         </div>
@@ -45,13 +48,11 @@
         <!-- City -->
         <div class="mb-3">
             <label class="form-label">City</label>
-            <select asp-for="CityId" class="form-select" id="CityId">
+            <select asp-for="CityId" class="form-select">
                 <option value="">Select City</option>
                 @foreach (var c in Model.Cities)
                 {
-                    <option value="@c.CityId" selected="@(Model.CityId == c.CityId)">
-                        @c.CityName
-                    </option>
+                    <option value="@c.CityId">@c.CityName</option>
                 }
             </select>
         </div>
@@ -59,105 +60,64 @@
         <!-- Village -->
         <div class="mb-3">
             <label class="form-label">Village</label>
-            <select asp-for="VillageId" class="form-select" id="VillageId">
+            <select asp-for="VillageId" class="form-select">
                 <option value="">Select Village</option>
                 @foreach (var v in Model.Villages)
                 {
-                    <option value="@v.VillageId" selected="@(Model.VillageId == v.VillageId)">
-                        @v.VillageName
-                    </option>
+                    <option value="@v.VillageId">@v.VillageName</option>
                 }
             </select>
-            <span asp-validation-for="VillageId" class="text-danger"></span>
         </div>
 
         <hr />
 
-        <!-- Profile Photo -->
+        <!-- BANK DETAILS -->
+        <h5>Bank Details</h5>
+
+        <div class="mb-3">
+            <label class="form-label">Bank Name</label>
+            <input asp-for="BankName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Account Number</label>
+            <input asp-for="AccountNumber" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">IFSC Code</label>
+            <input asp-for="IFSCCode" class="form-control" />
+        </div>
+
+        <hr />
+
+        <!-- Photo -->
         <div class="mb-3">
             <label class="form-label">Profile Photo</label>
 
             @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
             {
                 <div class="mb-2">
-                    <img src="@Model.ProfilePhoto"
-                         width="80"
-                         class="rounded border" />
+                    <img src="@Model.ProfilePhoto" width="80" height="80" class="border rounded" />
                 </div>
-            }
 
-            <input asp-for="PhotoFile" type="file" class="form-control" />
-            <small class="text-muted">Upload only if you want to change photo</small>
+                <small class="text-muted d-block mb-2">
+                    Current file: @System.IO.Path.GetFileName(Model.ProfilePhoto)
+                </small>
+            }
+            <input asp-for="PhotoFile" type="file" class="form-control" data-val="false" />
         </div>
 
-        <!-- Submit -->
-        <button type="submit" class="btn btn-success">
-            Update Farmer
-        </button>
-
-        <a asp-action="Index" class="btn btn-secondary ms-2">
-            Back
-        </a>
+        <!-- Buttons -->
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
 
     </form>
-
-    <!-- Alerts -->
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger mt-3">
-            @TempData["Error"]
-        </div>
-    }
-    ```
 
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
-    ```
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <script>
-        // STATE ? CITY
-        $('#StateId').change(function () {
-            var stateId = $(this).val();
-
-            if (stateId) {
-                $.get('/Farmer/GetCities', { stateId: stateId }, function (data) {
-
-                    var city = $('#CityId');
-                    city.empty();
-                    city.append('<option value="">Select City</option>');
-
-                    $.each(data, function (i, item) {
-                        city.append(`<option value="${item.cityId}">${item.cityName}</option>`);
-                    });
-
-                    $('#VillageId').empty()
-                        .append('<option value="">Select Village</option>');
-                });
-            }
-        });
-
-        // CITY ? VILLAGE
-        $('#CityId').change(function () {
-            var cityId = $(this).val();
-
-            if (cityId) {
-                $.get('/Farmer/GetVillages', { cityId: cityId }, function (data) {
-
-                    var village = $('#VillageId');
-                    village.empty();
-                    village.append('<option value="">Select Village</option>');
-
-                    $.each(data, function (i, item) {
-                        village.append(`<option value="${item.villageId}">${item.villageName}</option>`);
-                    });
-                });
-            }
-        });
-    </script>
-    ```
-
 }

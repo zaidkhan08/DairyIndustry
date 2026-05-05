@@ -1,0 +1,94 @@
+﻿@model FarmerLoginViewModel
+
+@{
+    Layout = "_DairyLayout";
+    ViewData["Title"] = "Farmer Login";
+}
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-sm" style="width: 100%; max-width: 400px; border-radius: 15px;">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-primary">Login</h3>
+
+                <p class="text-muted small">Please enter your credentials to continue</p>
+            </div>
+
+            <form method="post">
+                <!-- Farmer Code Field -->
+                <div class="mb-3">
+                    <label asp-for="FarmerCode" class="form-label fw-semibold">UserName</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                        <input asp-for="FarmerCode" class="form-control" placeholder="e.g. F-10293" />
+                    </div>
+                    <span asp-validation-for="FarmerCode" class="text-danger small"></span>
+                </div>
+
+                <!-- Password Field -->
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+
+                        <!-- Input field -->
+                        <input asp-for="Password" type="password" id="passwordInput" class="form-control" placeholder="••••••••" />
+
+                        <!-- Eye Toggle Button -->
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="bi bi-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+
+                <!-- Remember Me / Extra Options (Optional) -->
+                <div class="d-flex justify-content-between mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe">
+                        <label class="form-check-label small" for="rememberMe">Remember me</label>
+                    </div>
+                    <a href="#" class="small text-decoration-none">Forgot password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">Login</button>
+                </div>
+
+                <!-- Error Summary -->
+                <div asp-validation-summary="ModelOnly" class="text-danger mt-3 small"></div>
+            </form>
+        </div>
+        <div class="card-footer text-center py-3 bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+            <span class="text-muted small">
+                Don't have an account?
+                <a class="text-primary fw-bold" asp-controller="Farmer" asp-action="Register">Register Here</a>
+            </span>
+            <hr/>
+            <span class="text-muted small">
+                <a asp-controller="Farmer" asp-action="CheckStatus">Check your status</a>
+            </span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            // Toggle the type attribute
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle the eye icon class (requires Bootstrap Icons)
+            eyeIcon.classList.toggle('bi-eye');
+            eyeIcon.classList.toggle('bi-eye-slash');
+        });
+    </script>
+}

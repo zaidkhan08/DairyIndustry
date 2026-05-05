@@ -9,8 +9,11 @@ namespace DairyIndustry.Models.Collection
     {
         public int CollectionId { get; set; }
 
-        [Required(ErrorMessage = "Farmer is required")]
+        //[Required(ErrorMessage = "Farmer is required")]
         public int FarmerId { get; set; }
+
+        //[Required(ErrorMessage = "Farmer is required")]
+        public string? FarmerCode { get; set; }
 
         public int CenterId { get; set; }
 
@@ -37,15 +40,21 @@ namespace DairyIndustry.Models.Collection
 
         public decimal? RatePerLiter { get; set; }
 
+     
         public decimal? Amount { get; set; }
 
         public string? FarmerName { get; set; }
-        public string? FarmerCode { get; set; }
+       
+        // public string? FarmerCode { get; set; }
         public string? MilkTypeName { get; set; }
         public string? ShiftWindow { get; set; }
         public string? ReceiptNumber { get; set; }
 
         [ValidateNever]
         public List<RateChartModel> RateCharts { get; set; }
+
+
+        //for farmer todday's milk data
+        public string? CenterName { get; set; }
     }
 }

@@ -28,95 +28,92 @@
     }
     else
     {
-        <div class="row g-4">
-            @foreach (var batch in Model)
-            {
-                @* Determine badge color by status *@
-                var badgeClass = batch.BatchStatus switch
-                {
-                    "Open" => "bg-success",
-                    "Closed" => "bg-secondary",
-                    "Missed" => "bg-danger",
-                    "Not Started" => "bg-warning text-dark",
-                    _ => "bg-light text-dark border"
-                };
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Shift</th>
+                        <th>Window</th>
+                        <th>Status</th>
+                        <th>Total Milk (L)</th>
+                        <th>Entries</th>
+                        <th>Date</th>
+                        <th>Avg Fat</th>
+                        <th>Avg CLR</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
 
-                var cardBorder = batch.IsCurrentShift ? "border-success border-2" : "";
+                <tbody>
+                    @foreach (var batch in Model)
+                    {
+                        var badgeClass = batch.BatchStatus switch
+                        {
+                            "Open" => "bg-success",
+                            "Closed" => "bg-secondary",
+                            "Missed" => "bg-danger",
+                            "Not Started" => "bg-warning text-dark",
+                            _ => "bg-light text-dark border"
+                        };
 
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm @cardBorder">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="mb-0">@batch.Shift Shift</h5>
-                                <small class="text-muted">@batch.ShiftWindow</small>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                <span class="badge @badgeClass fs-6">@batch.BatchStatus</span>
+                        <tr class="@(batch.IsCurrentShift ? "table-success" : "")">
+
+                            <td>
+                                <strong>@batch.Shift</strong>
                                 @if (batch.IsCurrentShift)
                                 {
-                                    <span class="badge bg-success-subtle text-success border border-success">Active Now</span>
+                                    <div><span class="badge bg-success-subtle text-success border">Active</span></div>
                                 }
-                            </div>
-                        </div>
+                            </td>
 
-                        <div class="card-body">
-                            <div class="row text-center g-3">
-                                <div class="col-4">
-                                    <div class="fw-bold fs-5">@batch.TotalQuantity.ToString("F2") L</div>
-                                    <div class="text-muted small">Total Milk</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="fw-bold fs-5">@batch.EntryCount</div>
-                                    <div class="text-muted small">Entries</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="fw-bold fs-5">@batch.BatchDate.ToString("dd/MM")</div>
-                                    <div class="text-muted small">Date</div>
-                                </div>
-                            </div>
+                            <td>@batch.ShiftWindow</td>
 
-                            <hr />
+                            <td>
+                                <span class="badge @badgeClass">
+                                    @batch.BatchStatus
+                                </span>
+                            </td>
 
-                            <div class="row text-center g-2">
-                                <div class="col-6">
-                                    <div class="text-muted small">Avg Fat</div>
-                                    <div class="fw-semibold">
-                                        @(batch.AvgFat.HasValue? batch.AvgFat.Value.ToString("F2") : "—")
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-muted small">Avg CLR</div>
-                                    <div class="fw-semibold">
-                                        @(batch.AvgCLR.HasValue? batch.AvgCLR.Value.ToString("F2") : "—")
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            <td>@batch.TotalQuantity.ToString("F2")</td>
 
-                        <div class="card-footer bg-transparent">
-                            @if (batch.BatchId.HasValue)
-                            {
-                                <a asp-action="ViewCollectionBatch"
-                                   asp-route-shift="@batch.Shift"
-                                   asp-route-batchId="@batch.BatchId"
-                                   class="btn btn-outline-primary btn-sm w-100">
-                                    View Collection Entries
-                                </a>
-                            }
-                            else
-                            {
-                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
-                                    No Batch Available
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
-            }
+                            <td>@batch.EntryCount</td>
+
+                            <td>@batch.BatchDate.ToString("dd/MM/yyyy")</td>
+
+                            <td>
+                                @(batch.AvgFat.HasValue? batch.AvgFat.Value.ToString("F2") : "—")
+                            </td>
+
+                            <td>
+                                @(batch.AvgCLR.HasValue? batch.AvgCLR.Value.ToString("F2") : "—")
+                            </td>
+
+                            <td>
+                                @if (batch.BatchId.HasValue)
+                                {
+                                    <a asp-action="ViewCollectionBatch"
+                                       asp-route-shift="@batch.Shift"
+                                       asp-route-batchId="@batch.BatchId"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>
+                                        No Batch
+                                    </button>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     }
 
-    <div class="mt-4">
+    <div class="mt-3">
         <a asp-action="Dashboard" class="btn btn-link text-decoration-none">
             &larr; Back to Dashboard
         </a>

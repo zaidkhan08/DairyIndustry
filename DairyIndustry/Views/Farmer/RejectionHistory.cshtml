@@ -1,0 +1,99 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.FarmerRejectionViewModel>
+
+@{
+    ViewData["Title"] = "Rejection History";
+    Layout = "_FarmerLayout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Milk Rejections</h4>
+        <div class="bg-white border rounded px-3 py-2 shadow-sm">
+            <span class="text-muted small fw-bold">TOTAL REJECTED:</span>
+            <span class="text-danger fw-bold ms-1">@Model.Sum(x => x.Quantity).ToString("F2") L</span>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2 col-6">
+                    <label class="form-label small text-muted fw-bold">From Date</label>
+                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label class="form-label small text-muted fw-bold">To Date</label>
+                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-4 col-12">
+                    <button type="submit" class="btn btn-primary px-4">Filter</button>
+                    <a href="@Url.Action("RejectionHistory")" class="btn btn-light border ms-1">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info border-0 shadow-sm mb-4">@TempData["Info"]</div>
+    }
+
+    <!-- Table with Separated Columns -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (Model.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-muted small">
+                                <th class="ps-4 border-0">DATE</th>
+                                <th class="border-0 text-center">SHIFT</th>
+                                <th class="border-0">TYPE</th>
+                                <th class="border-0 text-end">QTY (L)</th>
+                                <th class="border-0 text-end">FAT</th>
+                                <th class="border-0 text-end">CLR</th>
+                                <th class="border-0">REASON</th>
+                                <th class="border-0">REMARKS</th>
+                                <th class="border-0 pe-4">CENTER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@r.RejectionDate.ToString("dd-MM-yyyy")</td>
+                                    <td class="text-center">
+                                        @if (r.Shift == "Morning")
+                                        {
+                                            <span class="badge bg-warning text-dark px-2">M</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary px-2">E</span>
+                                        }
+                                    </td>
+                                    <td><span class="small text-secondary">@r.MilkTypeName</span></td>
+                                    <td class="text-end fw-bold">@r.Quantity.ToString("F2")</td>
+                                    <td class="text-end text-muted">@(r.AppliedFat?.ToString("F1") ?? "-")</td>
+                                    <td class="text-end text-muted">@(r.AppliedCLR?.ToString("F1") ?? "-")</td>
+                                    <td><span class="text-danger fw-medium">@r.RejectionReason</span></td>
+                                    <td class="small text-muted">@(string.IsNullOrEmpty(r.Remarks) ? "-" : r.Remarks)</td>
+                                    <td class="pe-4 small">@r.CenterName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <p class="text-muted mb-0">No records found for the selected dates.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

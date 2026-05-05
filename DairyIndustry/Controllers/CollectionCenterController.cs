@@ -1,6 +1,7 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Collection;
+using DairyIndustry.Models.FarmerModel;
 using DairyIndustry.Repositories;
 using DinkToPdf;
 using DinkToPdf.Contracts;
@@ -14,13 +15,17 @@ namespace DairyIndustry.Controllers
     {
         private readonly IConverter _converter;
         private readonly ICollectionCenterRepository _collectionCenterRepo;
-        //private readonly IAdminRepository _adminRepository;
 
-        public CollectionCenterController(ICollectionCenterRepository repository, IConverter converter, IAdminRepository adminRepository)
+        private readonly IFarmerRepository _farmerRepo;
+
+     
+
+        public CollectionCenterController(ICollectionCenterRepository repository, IConverter converter, IFarmerRepository farmerRepo)
         {
             _collectionCenterRepo = repository;
             _converter = converter;
-           // _adminRepository = adminRepository;
+            _farmerRepo = farmerRepo;
+          
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -110,7 +115,8 @@ namespace DairyIndustry.Controllers
 
             return View(entries);
         }
-  
+       
+
         [HttpGet]
         public IActionResult Create()
         {
@@ -119,38 +125,31 @@ namespace DairyIndustry.Controllers
             if (staffId == null || staffId == 0)
                 return RedirectToAction("Login", "Auth");
 
-            //  GET CENTER ID
             int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
-
-            //  LOAD DROPDOWNS
-            ViewBag.Farmers = new SelectList(
-                _collectionCenterRepo.GetFarmers(centerId),
-                "FarmerId",
-                "FarmerName"
-            );
-
-            ViewBag.MilkTypes = new SelectList(
-                _collectionCenterRepo.GetMilkTypes(),
-                "MilkTypeId",
-                "MilkTypeName"
-            );
-
-            ViewBag.RateCharts = _collectionCenterRepo.GetRateCharts();
 
             var model = new MilkCollectionViewModel
             {
                 CollectionDate = DateTime.Today,
-                Shift = _collectionCenterRepo.GetCurrentShift()
+                Shift = _collectionCenterRepo.GetCurrentShift(),
+                CenterId = centerId,
+                CenterName = _collectionCenterRepo
+                                    .GetStaffDashboard(staffId.Value)
+                                    ?.CenterName
             };
+
+            ViewBag.Farmers = _collectionCenterRepo.GetFarmers(centerId);
+            ViewBag.MilkTypes = _collectionCenterRepo.GetMilkTypes(); //  raw list
+            ViewBag.RateCharts = _collectionCenterRepo.GetRateCharts();
 
             return View(model);
         }
-
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(MilkCollectionViewModel model)
+        public IActionResult Create(
+         MilkCollectionViewModel model,
+         string submitAction,
+         string RejectionReason,
+         string Remarks)
         {
             var staffId = HttpContext.Session.GetInt32("StaffId");
 
@@ -159,150 +158,235 @@ namespace DairyIndustry.Controllers
 
             int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
 
-            // CHECK SHIFT BEFORE INSERT
-            var shift = _collectionCenterRepo.GetCurrentShift();
+            void ReloadViewBag()
+            {
+                ViewBag.Farmers = _collectionCenterRepo.GetFarmers(centerId);
+                ViewBag.MilkTypes = _collectionCenterRepo.GetMilkTypes();
+                ViewBag.RateCharts = _collectionCenterRepo.GetRateCharts();
+            }
 
+            // RELOAD model display fields
+            void ReloadModel()
+            {
+                model.Shift = _collectionCenterRepo.GetCurrentShift();
+                model.CenterName = _collectionCenterRepo
+                                    .GetStaffDashboard(staffId.Value)
+                                    ?.CenterName;
+            }
+
+            // SHIFT CHECK
+            var shift = _collectionCenterRepo.GetCurrentShift();
             if (shift == "No Active Shift")
             {
-                TempData["Error"] = "Milk entry allowed only during Morning (10:30–11 AM) or Evening (4–7 PM).";
-
-                // reload dropdowns
-                ViewBag.Farmers = new SelectList(
-                    _collectionCenterRepo.GetFarmers(centerId),
-                    "FarmerId",
-                    "FarmerName"
-                );
-
-                ViewBag.MilkTypes = new SelectList(
-                    _collectionCenterRepo.GetMilkTypes(),
-                    "MilkTypeId",
-                    "MilkTypeName"
-                );
-
-                model.Shift = shift;
-
-                return View(model);
+                TempData["Error"] = "No active shift right now.";
+                ReloadViewBag();
+                ReloadModel();
+                return View("Create", model); //  keep data
             }
 
-            //  normal validation
-            if (!ModelState.IsValid)
+            // FARMER CHECK
+            if (model.FarmerId == 0)
             {
-                ViewBag.Farmers = new SelectList(
-                    _collectionCenterRepo.GetFarmers(centerId),
-                    "FarmerId",
-                    "FarmerName"
-                );
-
-                ViewBag.MilkTypes = new SelectList(
-                    _collectionCenterRepo.GetMilkTypes(),
-                    "MilkTypeId",
-                    "MilkTypeName"
-                );
-
-                return View(model);
+                TempData["Error"] = "Please select a farmer.";
+                ReloadViewBag();
+                ReloadModel();
+                return View("Create", model); //  keep data
             }
+
+            // ─────────────────────────────────────
+            // ACCEPT
+            // ─────────────────────────────────────
+            if (submitAction == "Accept")
+            {
+                ModelState.Remove("RejectionReason");
+                ModelState.Remove("Remarks");
+                ModelState.Remove("Shift");
+                ModelState.Remove("CollectionDate");
+
+                if (model.MilkTypeId == 0)
+                {
+                    TempData["Error"] = "Please select milk type.";
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); //  keep data
+                }
+
+                if (model.Quantity <= 0)
+                {
+                    TempData["Error"] = "Please enter valid quantity.";
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); //  keep data
+                }
+
+                try
+                {
+                    _collectionCenterRepo.AddMilkCollection(
+                        staffId: staffId.Value,
+                        farmerId: model.FarmerId,
+                        milkTypeId: model.MilkTypeId,
+                        quantity: model.Quantity,
+                        appliedFat: model.AppliedFat ?? 0,
+                        appliedCLR: model.AppliedCLR ?? 0
+                    );
+
+                    TempData["Success"] = "Milk entry saved successfully!";
+                    return RedirectToAction("Create"); // redirect on success
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); //  keep data on error
+                }
+            }
+
+            // ─────────────────────────────────────
+            // REJECT
+            // ─────────────────────────────────────
+            if (submitAction == "Reject")
+            {
+                if (model.FarmerId == 0)
+                {
+                    TempData["Error"] = "Please select a farmer.";
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); // keep data
+                }
+
+                if (string.IsNullOrEmpty(RejectionReason))
+                {
+                    TempData["Error"] = "Please select a rejection reason.";
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); // keep data
+                }
+
+                try
+                {
+                    var rejectionModel = new MilkRejectionViewModel
+                    {
+                        FarmerId = model.FarmerId,
+                        MilkTypeId = model.MilkTypeId,
+                        AppliedFat = model.AppliedFat,
+                        AppliedCLR = model.AppliedCLR,
+                        Quantity = model.Quantity,
+                        RejectionReason = RejectionReason,
+                        Remarks = Remarks
+                    };
+
+                    _collectionCenterRepo.RejectMilkEntry(rejectionModel, staffId.Value);
+
+                    TempData["RejectionSuccess"] = "Milk rejected successfully!";
+                    return RedirectToAction("Create"); // redirect on success
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                    ReloadViewBag();
+                    ReloadModel();
+                    return View("Create", model); // keep data on error
+                }
+            }
+
+            return RedirectToAction("Create");
+        }
+        [HttpGet]
+        public IActionResult RateChart()
+        {
+            ViewBag.RateCharts = _collectionCenterRepo.GetRateCharts();
+            return View();
+        }
+
+        // In CollectionCenterController.cs — add these 3 actions
+        // ─────────────────────────────────────────────
+        // REJECT MILK — GET
+        // No changes needed here
+        // ─────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult RejectMilk()
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
+
+            var model = new MilkRejectionViewModel
+            {
+                Farmers = _collectionCenterRepo.GetFarmers(centerId),
+                MilkTypes = _collectionCenterRepo.GetMilkTypes()
+            };
+
+            return View(model);
+        }
+
+
+        // ─────────────────────────────────────────────
+        // REJECT MILK — POST
+        //
+        // CHANGES:
+        // 1. Removed [FromBody]     → was for AJAX/JSON
+        // 2. Removed return Json()  → was for AJAX
+        // 3. Removed return BadRequest() → was for AJAX
+        // 4. Added [ValidateAntiForgeryToken] → form POST security
+        // 5. Added model validation
+        // 6. Added redirect to Create page after success
+        // ─────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RejectMilk(MilkRejectionViewModel model)
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
 
             try
             {
-                var collectionId = _collectionCenterRepo.AddMilkCollection(
-                    staffId: staffId.Value,
-                    farmerId: model.FarmerId,
-                    milkTypeId: model.MilkTypeId,
-                    quantity: model.Quantity,
-                    appliedFat: model.AppliedFat ?? 0,
-                    appliedCLR: model.AppliedCLR ?? 0
-                );
+                var rejectionId = _collectionCenterRepo.RejectMilkEntry(model, staffId.Value);
 
-                TempData["Success"] = $"Milk entry saved! Collection ID: {collectionId}";
-                return RedirectToAction("BatchStatus");
+                TempData["RejectionSuccess"] = $"Milk rejected successfully! Rejection ID: {rejectionId}";
+
+                // Go back to Create page
+                // Staff is ready for next farmer immediately
+                return RedirectToAction("Create");
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
 
-                ViewBag.Farmers = new SelectList(
-                    _collectionCenterRepo.GetFarmers(centerId),
-                    "FarmerId",
-                    "FarmerName"
-                );
-
-                ViewBag.MilkTypes = new SelectList(
-                    _collectionCenterRepo.GetMilkTypes(),
-                    "MilkTypeId",
-                    "MilkTypeName"
-                );
-                ViewBag.RateCharts = _collectionCenterRepo.GetRateCharts();
-                return View(model);
+                // Go back to Create page with error message
+                return RedirectToAction("Create");
             }
         }
 
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult Create(MilkCollectionViewModel model)
-        //{
-        //    var staffId = HttpContext.Session.GetInt32("StaffId");
 
-        //    if (staffId == null || staffId == 0)
-        //        return RedirectToAction("Login", "Auth");
+        [HttpGet]
+        public IActionResult RejectionHistoryCenter()
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
 
-        //    if (!ModelState.IsValid)
-        //    {
-        //        int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
 
-        //        ViewBag.Farmers = new SelectList(
-        //            _collectionCenterRepo.GetFarmers(centerId),
-        //            "FarmerId",
-        //            "FarmerName"
-        //        );
+            int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
 
-        //        ViewBag.MilkTypes = new SelectList(
-        //            _collectionCenterRepo.GetMilkTypes(),
-        //            "MilkTypeId",
-        //            "MilkTypeName"
-        //        );
+            if (centerId == 0)
+            {
+                TempData["Error"] = "You are not assigned to any center.";
+                return RedirectToAction("Dashboard");
+            }
 
-        //        return View(model);
-        //    }
+            var list = _collectionCenterRepo.GetRejectionsByCenter(centerId);
 
-        //    try
-        //    {
-        //        var collectionId = _collectionCenterRepo.AddMilkCollection(
-        //            staffId: staffId.Value,
-        //            farmerId: model.FarmerId,
-        //            milkTypeId: model.MilkTypeId,
-        //            quantity: model.Quantity,
-        //            appliedFat: model.AppliedFat ?? 0,
-        //            appliedCLR: model.AppliedCLR ?? 0
-        //        );
+            if (list.Count == 0)
+                TempData["Info"] = "No rejection entries found.";
 
-        //        TempData["Success"] = $"Milk entry saved! Collection ID: {collectionId}";
-        //        return RedirectToAction("BatchStatus");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        TempData["Error"] = ex.Message;
-
-        //        int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
-
-        //        ViewBag.Farmers = new SelectList(
-        //            _collectionCenterRepo.GetFarmers(centerId),
-        //            "FarmerId",
-        //            "FarmerName"
-        //        );
-
-        //        ViewBag.MilkTypes = new SelectList(
-        //            _collectionCenterRepo.GetMilkTypes(),
-        //            "MilkTypeId",
-        //            "MilkTypeName"
-        //        );
-
-        //        return View(model);
-        //    }
-        //}
-
-        // ─────────────────────────────────────────────────────────────
-        // ENTRY DETAIL — view a single milk entry
-        // ─────────────────────────────────────────────────────────────
+            return View(list);
+        }
 
         [HttpGet]
         public IActionResult EntryDetail(int id)
@@ -322,20 +406,35 @@ namespace DairyIndustry.Controllers
 
             return View(entry);
         }
-        public IActionResult DateWiseEntries(DateTime? date)
+
+        public IActionResult DateWiseEntries(string search, string shift, DateTime? date)
         {
             int centerId = HttpContext.Session.GetInt32("CenterId") ?? 0;
 
-            //  Default to today
-            DateTime selectedDate = date ?? DateTime.Today;
+            var data = _collectionCenterRepo.GetAllEntries(centerId);
 
-            var model = new DateFilterViewModel
+            //  Search filter
+            if (!string.IsNullOrEmpty(search))
             {
-                SelectedDate = selectedDate,
-                Entries = _collectionCenterRepo.GetEntriesByDate(selectedDate, centerId)
-            };
+                data = data.Where(x =>
+                    x.FarmerName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    x.FarmerCode.Contains(search, StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+            }
 
-            return View(model);
+            //  Shift filter
+            if (!string.IsNullOrEmpty(shift))
+            {
+                data = data.Where(x => x.Shift == shift).ToList();
+            }
+
+            //  Date filter
+            if (date.HasValue)
+            {
+                data = data.Where(x => x.CollectionDate.Date == date.Value.Date).ToList();
+            }
+
+            return View(data);
         }
 
         //inventory
@@ -406,6 +505,228 @@ namespace DairyIndustry.Controllers
             var pdf = _converter.Convert(doc);
 
             return File(pdf, "application/pdf", $"Receipt_{r.ReceiptNumber}.pdf");
+        }
+
+
+
+        // ─────────────────────────────────────────────────────────────
+        // PENDING APPROVALS — shows all pending farmers for staff's center
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult PendingApprovals()
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                var list = _farmerRepo.GetPendingApprovals(staffId.Value);
+                return View(list);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return View(new List<PendingApprovalViewModel>());
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // APPROVE FARMER — POST only (button on PendingApprovals table)
+        // On success, shows FarmerCode + Password in TempData banner
+        // so staff can hand it to the farmer.
+        // ─────────────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ApproveFarmer(int farmerId)
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                var result = _farmerRepo.ApproveFarmer(staffId.Value, farmerId);
+
+                TempData["Success"] = $"Farmer approved! " +
+                                      $"Farmer Code: {result.FarmerCode} | " +
+                                      $"Default Password: {result.DefaultPassword} " +
+                                      $"(last 4 digits of phone). Please share with the farmer.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction("PendingApprovals");
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // REJECT FARMER — GET
+        // Staff clicks Reject on PendingApprovals → comes here to
+        // enter a rejection reason before confirming.
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult RejectFarmer(int farmerId)
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            // Get farmer name + phone to show on the confirmation page
+            var pending = _farmerRepo.GetPendingApprovals(staffId.Value)
+                                     .FirstOrDefault(f => f.FarmerId == farmerId);
+
+            if (pending == null)
+            {
+                TempData["Error"] = "Farmer not found in your pending list.";
+                return RedirectToAction("PendingApprovals");
+            }
+
+            var model = new RejectFarmerViewModel
+            {
+                FarmerId = pending.FarmerId,
+                FarmerName = pending.FarmerName,
+                Phone = pending.Phone
+            };
+
+            return View(model);
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // REJECT FARMER — POST
+        // Staff submits the rejection form with remark.
+        // ─────────────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RejectFarmer(RejectFarmerViewModel model)
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                _farmerRepo.RejectFarmer(staffId.Value, model.FarmerId, model.ApprovalRemark);
+                TempData["Success"] = "Farmer registration rejected.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction("PendingApprovals");
+        }
+        // ─────────────────────────────────────────────────────────────
+        // DISPATCH — GET
+        // Shows form with batches that still have milk to dispatch.
+        // Dropdown label shows  "Remaining: 500L of 800L"  so staff
+        // can see what is already sent vs what is left.
+        // ─────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult Dispatch()
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
+            if (centerId == 0)
+            {
+                TempData["Error"] = "You are not assigned to any center.";
+                return RedirectToAction("Dashboard");
+            }
+
+            var model = new DispatchMilkViewModel
+            {
+                DispatchDate = DateTime.Today,
+                ClosedBatches = _collectionCenterRepo.GetClosedBatchesForDispatch(centerId),
+                MilkTypes = _collectionCenterRepo.GetMilkTypes(), // ✅ NEW
+                Vehicles = _collectionCenterRepo.GetActiveVehicles(),
+                Plants = _collectionCenterRepo.GetAllPlants()
+            };
+
+            if (model.ClosedBatches.Count == 0)
+                TempData["Info"] = "No batches available for dispatch right now.";
+
+            return View(model);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Dispatch(DispatchMilkViewModel model)
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
+
+            // Helper to reload dropdowns
+            void ReloadDropdowns()
+            {
+                model.ClosedBatches = _collectionCenterRepo.GetClosedBatchesForDispatch(centerId);
+                model.Vehicles = _collectionCenterRepo.GetActiveVehicles();
+                model.Plants = _collectionCenterRepo.GetAllPlants();
+                model.MilkTypes = _collectionCenterRepo.GetMilkTypes(); // ✅ NEW
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ReloadDropdowns();
+                return View(model);
+            }
+
+            try
+            {
+                var transferId = _collectionCenterRepo.DispatchMilkTransfer(
+                    batchId: model.BatchId,
+                    milkTypeId: model.MilkTypeId,  // ✅ NEW
+                    vehicleId: model.VehicleId,
+                    plantId: model.PlantId,
+                    dispatchQty: model.DispatchQty,
+                    dispatchDate: model.DispatchDate
+                );
+
+                TempData["Success"] =
+                    $"Dispatched {model.DispatchQty:F2} L successfully! " +
+                    $"Transfer ID: {transferId}. " +
+                    $"Center inventory updated.";
+
+                return RedirectToAction("DispatchHistory");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                ReloadDropdowns();
+                return View(model);
+            }
+        }
+
+        // stays exactly same
+        [HttpGet]
+        public IActionResult DispatchHistory()
+        {
+            var staffId = HttpContext.Session.GetInt32("StaffId");
+            if (staffId == null || staffId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            int centerId = _collectionCenterRepo.GetCenterIdByStaffId(staffId.Value);
+            if (centerId == 0)
+            {
+                TempData["Error"] = "You are not assigned to any center.";
+                return RedirectToAction("Dashboard");
+            }
+
+            var history = _collectionCenterRepo.GetDispatchHistory(centerId);
+
+            if (history.Count == 0)
+                TempData["Info"] = "No dispatches recorded yet.";
+
+            return View(history);
         }
 
     }

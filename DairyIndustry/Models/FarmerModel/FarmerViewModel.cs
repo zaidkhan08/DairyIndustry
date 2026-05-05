@@ -53,6 +53,7 @@ namespace DairyIndustry.Models.FarmerModel
         public string ProfilePhoto { get; set; }
 
         // FILE UPLOAD
+        [ValidateNever]
         public IFormFile PhotoFile { get; set; }
 
         public bool IsActive { get; set; }
@@ -65,14 +66,9 @@ namespace DairyIndustry.Models.FarmerModel
         public List<VillageModel> Villages { get; set; } = new();
 
 
-        // =========================
-        // LOGIN DETAILS (NEW)
-        // =========================
-        //[ValidateNever]
-        //public string Username { get; set; }
-
-        //[ValidateNever]
-        //public string GeneratedPassword { get; set; }
+        [ValidateNever]
+        public string DefaultPassword { get; set; }
+        public string? StateName { get; internal set; }
     }
 
 

@@ -299,25 +299,24 @@
     <!-- NAVBAR -->
     <nav class="site-nav">
         <div class="container">
-            <a class="nav-brand" asp-controller="Home" asp-action="Index">
+            <a class="nav-brand" asp-controller="Farmer" asp-action="LayoutIndex">
                 Dairy<em>MS</em>
             </a>
 
             <div class="nav-sep"></div>
 
             <ul class="nav-links" id="navLinks">
-                <li><a href="#"><i class="bi bi-droplet-half"></i> Collection</a></li>
+                <li>
+                    <a asp-area="" asp-controller="Admin" asp-action="Login">
+                        <i class="bi bi-droplet-half"></i> Collection Center
+                    </a>
+                </li>
+
                 <li><a href="#"><i class="bi bi-box-seam"></i> Products</a></li>
-                <li><a href="#"><i class="bi bi-people"></i> Farmers</a></li>
+                <li><a asp-area="" asp-controller="Farmer" asp-action="Login"><i class="bi bi-people"></i> Farmers</a></li>
                 <li><a href="#"><i class="bi bi-bar-chart-line"></i> Reports</a></li>
             </ul>
 
-            <div class="nav-actions" id="navActions">
-                <a class="btn-login" asp-area="" asp-controller="Admin" asp-action="Login">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                    Login
-                </a>
-            </div>
 
             <button class="nav-toggler" id="navToggle" aria-label="Menu">
                 <i class="bi bi-list" style="font-size:1.25rem;color:var(--ink)"></i>

@@ -394,46 +394,83 @@
             <div class="sidebar-brand-text">Dairy<em>MS</em></div>
         </a>
 
+
+        <!-- ONLY showing sidebar section (icons updated) -->
+
         <div class="sidebar-nav">
 
             <div class="sidebar-label">Main</div>
 
             <a class="sidebar-link active"
                asp-controller="CollectionCenter" asp-action="Dashboard">
-                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                <i class="bi bi-speedometer2"></i> Dashboard
             </a>
 
-            <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="Create">
-                <i class="bi bi-droplet-fill"></i> Milk Entry
-            </a>
-
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-label">Batch</div>
-
-            <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="BatchStatus">
-                <i class="bi bi-list-check"></i> Batch Status
-            </a>
-
-            <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="DateWiseEntries">
-                <i class="bi bi-list-check"></i>Date Wise Entries
-            </a>
-           
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-label">Management</div>
+            <div class="sidebar-label">Farmer Management</div>
 
             <a class="sidebar-link"
                asp-controller="Farmer" asp-action="Index">
-                <i class="bi bi-people-fill"></i> Farmers
+                <i class="bi bi-person-lines-fill"></i> Farmer List
+            </a>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="PendingApprovals">
+                <i class="bi bi-person-check-fill"></i> Approve/Reject
+            </a>
+
+            <div class="sidebar-label">Milk Management</div>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="Create">
+                <i class="bi bi-droplet-half"></i> Milk Entry
+            </a>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="RateChart">
+                <i class="bi bi-graph-up-arrow"></i> Rate Chart
             </a>
 
             <a class="sidebar-link"
                asp-controller="CollectionCenter" asp-action="Inventory">
-                <i class="bi bi-archive-fill"></i> Inventory
+                <i class="bi bi-box-seam"></i> Inventory
             </a>
 
+            <div class="sidebar-label">Batch Management</div>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="BatchStatus">
+                <i class="bi bi-calendar-check"></i> Batch Status
+            </a>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="DateWiseEntries">
+                <i class="bi bi-table"></i> All Entries
+            </a>
+           
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="RejectionHistoryCenter">
+                <i class="bi bi-table"></i> Rejectected Entries
+            </a>
+            <div class="sidebar-label">Transfer Management</div>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="Dispatch">
+                <i class="bi bi-truck"></i> Dispatch Milk
+            </a>
+
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="DispatchHistory">
+                <i class="bi bi-clock-history"></i> Dispatch Milk History
+            </a>
+            <a class="sidebar-link"
+               asp-controller="Plant" asp-action="IncomingTransfers">
+                <i class="bi bi-calendar-check"></i> IncomingTransfers
+            </a>
+
+            <a class="sidebar-link"
+               asp-controller="Plant" asp-action="ReceiveMilk">
+                <i class="bi bi-table"></i> All Entries
+            </a>
         </div>
 
         <!-- Sidebar bottom user info -->

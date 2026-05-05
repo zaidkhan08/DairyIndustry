@@ -1,180 +1,195 @@
+
 @model DairyIndustry.Models.Collection.MilkCollectionViewModel
 
 @{
-    ViewData["Title"] = "New Milk Entry";
+    ViewData["Title"] = "Milk Entry";
     Layout = "_CollectionCenterLayout";
-
     bool isShiftActive = Model.Shift == "Morning" || Model.Shift == "Evening";
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4" style="max-width:1100px;">
 
+    <!-- ALERTS -->
+    @foreach (var key in new[] { "Success", "Error", "RejectionSuccess" })
+    {
+        if (TempData[key] != null)
+        {
+            <div class="alert alert-@(key == "Success" ? "success" : key == "Error" ? "danger" : "warning") alert-dismissible fade show shadow-sm">
+                @TempData[key]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+    }
+
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">New Milk Entry</h4>
-        <a asp-action="BatchStatus" class="btn btn-outline-secondary btn-sm">
-            &larr; Back
+        <div>
+            <h3 class="fw-bold mb-0">Milk Entry</h3>
+            <small class="text-muted">Record farmer milk collection</small>
+        </div>
+        <a asp-action="BatchStatus" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
         </a>
     </div>
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger">@TempData["Error"]</div>
-    }
+    <!-- INFO CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm border-0">
+                <small class="text-muted">Collection Center</small>
+                <h5 class="mb-0">@Model.CenterName</h5>
+            </div>
+        </div>
 
-    @* 🔥 Current Shift Info *@
-    <div class="alert @(isShiftActive ? "alert-success" : "alert-danger") d-flex justify-content-between align-items-center">
-        <span>
-            <strong>Current Shift:</strong> @Model.Shift
-            @if (!isShiftActive)
-            {
-                <span class="ms-2 text-danger">(Entry Closed)</span>
-            }
-        </span>
-        <span class="text-muted small">@DateTime.Now.ToString("hh:mm tt")</span>
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm border-0">
+                <small class="text-muted">Current Shift</small>
+                <h5 class="mb-0">
+                    @Model.Shift
+                    @if (isShiftActive)
+                    {
+                        <span class="badge bg-success ms-2">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger ms-2">Closed</span>
+                    }
+                </h5>
+            </div>
+        </div>
     </div>
 
-    @* 🔥 Warning when shift closed *@
     @if (!isShiftActive)
     {
-        <div class="alert alert-warning">
-            Milk entry is allowed only during:
-            <br />
-            🕗 Morning: 10:30 AM – 11:00 AM<br />
-            🌆 Evening: 04:00 PM – 07:00 PM
+        <div class="alert alert-warning shadow-sm">
+             Morning: 06:20–13:00 | Evening: 16:00–19:00
         </div>
     }
 
-    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-    {
-        <div class="alert alert-danger">@error.ErrorMessage</div>
-    }
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-bold fs-5">
+            Farmer Milk Entry
+        </div>
 
-    <div class="card shadow-sm">
-       
         <div class="card-body">
-
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
 
-                @* Farmer *@
-                <div class="mb-3">
-                    <label asp-for="FarmerId" class="form-label fw-semibold">Farmer</label>
-                    <select asp-for="FarmerId"
-                            asp-items="ViewBag.Farmers"
-                            class="form-select"
-                            disabled="@(isShiftActive ? null : "disabled")">
-                        <option value="">— Select Farmer —</option>
-                    </select>
-                    <span asp-validation-for="FarmerId" class="text-danger small"></span>
-                </div>
+                <div class="row g-4">
 
-                @* Milk Type *@
-                <div class="mb-3">
-                    <label asp-for="MilkTypeId" class="form-label fw-semibold">Milk Type</label>
-                    <select asp-for="MilkTypeId"
-                            asp-items="ViewBag.MilkTypes"
-                            class="form-select"
-                            disabled="@(isShiftActive ? null : "disabled")">
-                        <option value="">— Select Milk Type —</option>
-                    </select>
-                    <span asp-validation-for="MilkTypeId" class="text-danger small"></span>
-                </div>
+                    <!-- LEFT SIDE -->
+                    <div class="col-md-6">
 
-                @* Quantity *@
-                <div class="mb-3">
-                    <label asp-for="Quantity" class="form-label fw-semibold">Quantity (Litres)</label>
-                    <input asp-for="Quantity"
-                           type="number"
-                           step="0.01"
-                           min="0.1"
-                           class="form-control"
-                           placeholder="e.g. 12.50"
-                           disabled="@(isShiftActive ? null : "disabled")" />
-                    <span asp-validation-for="Quantity" class="text-danger small"></span>
-                </div>
+                        <!-- FARMER -->
+                        <div>
+                            <label class="form-label fw-semibold">Farmer Code *</label>
+                            <select asp-for="FarmerId" class="form-select" id="farmerSelect">
+                                <option value="">Select Farmer</option>
+                                @foreach (var f in ViewBag.Farmers)
+                                {
+                                    <option value="@f.FarmerId" data-name="@f.FarmerName">
+                                        @f.FarmerCode
+                                    </option>
+                                }
+                            </select>
+                        </div>
 
-                @* Fat & CLR *@
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label asp-for="AppliedFat" class="form-label fw-semibold">Fat (%)</label>
-                        <input asp-for="AppliedFat"
-                               type="number"
-                               step="0.01"
-                               class="form-control"
-                               placeholder="e.g. 4.20"
-                               disabled="@(isShiftActive ? null : "disabled")" />
-                        <span asp-validation-for="AppliedFat" class="text-danger small"></span>
+                        <div class="mt-3">
+                            <label class="form-label fw-semibold">Farmer Name</label>
+                            <input type="text" id="farmerName" class="form-control bg-light" readonly />
+                        </div>
+
+                        <!-- MILK TYPE -->
+                        <div class="mt-3">
+                            <label class="form-label fw-semibold">Milk Type *</label>
+                            <select asp-for="MilkTypeId" class="form-select">
+                                <option value="">Select Type</option>
+                                @foreach (var mt in ViewBag.MilkTypes)
+                                {
+                                    <option value="@mt.MilkTypeId">@mt.MilkTypeName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- QUANTITY -->
+                        <div class="mt-3">
+                            <label class="form-label fw-semibold">Quantity (Liters) *</label>
+                            <input asp-for="Quantity" type="number" step="0.01" class="form-control" />
+                        </div>
+
                     </div>
-                    <div class="col-6">
-                        <label asp-for="AppliedCLR" class="form-label fw-semibold">CLR</label>
-                        <input asp-for="AppliedCLR"
-                               type="number"
-                               step="0.01"
-                               class="form-control"
-                               placeholder="e.g. 28.50"
-                               disabled="@(isShiftActive ? null : "disabled")" />
-                        <span asp-validation-for="AppliedCLR" class="text-danger small"></span>
+
+                    <!-- RIGHT SIDE -->
+                    <div class="col-md-6">
+
+                        <!-- FAT + CLR -->
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Fat %</label>
+                                <input asp-for="AppliedFat" type="number" step="0.01" class="form-control" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">CLR</label>
+                                <input asp-for="AppliedCLR" type="number" step="0.01" class="form-control" />
+                            </div>
+                        </div>
+
+                        <!-- REJECTION -->
+                        <div class="mt-4 p-3 border rounded bg-light">
+                            <small class="text-muted">Optional (only for rejection)</small>
+
+                            <div class="mt-2">
+                                <label class="form-label fw-semibold">Reason</label>
+                                <select name="RejectionReason" class="form-select">
+                                    <option value="">Select Reason</option>
+                                    <option>Adulterated</option>
+                                    <option>Low Quality</option>
+                                    <option>Wrong Temperature</option>
+                                    <option>Smell / Spoiled</option>
+                                    <option>Farmer Refused Rate</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="mt-2">
+                                <label class="form-label fw-semibold">Remarks</label>
+                                <textarea name="Remarks" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                @* Hidden fields *@
+                <!-- HIDDEN -->
                 <input type="hidden" asp-for="Shift" />
-                <input type="hidden" asp-for="CollectionDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                <input type="hidden" asp-for="CollectionDate" />
+                <input type="hidden" asp-for="CenterName" />
 
-                <div class="d-flex gap-2 mt-4">
-                    <button type="submit"
-                            class="btn btn-primary px-4"
-                            disabled="@(isShiftActive ? null : "disabled")">
-                        Save Entry
+                <!-- BUTTONS -->
+                <div class="mt-4 d-flex gap-3">
+                    <button type="submit" name="submitAction" value="Accept"
+                            class="btn btn-success flex-fill py-2"
+                            @(isShiftActive ? "" : "disabled")>
+                        <i class="bi bi-check-circle"></i> Accept
                     </button>
 
-                    <a asp-action="BatchStatus" class="btn btn-outline-secondary">
-                        Cancel
-                    </a>
+                    <button type="submit" name="submitAction" value="Reject"
+                            class="btn btn-danger flex-fill py-2"
+                            @(isShiftActive ? "" : "disabled")>
+                        <i class="bi bi-x-circle"></i> Reject
+                    </button>
                 </div>
 
             </form>
         </div>
     </div>
-
-
-    <hr class="my-4" />
-
-    <h5 class="mb-3">Rate Chart</h5>
-
-    <div style="max-height:300px; overflow-y:auto;">
-        <table class="table table-bordered table-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>Milk Type</th>
-                    <th>Fat Range</th>
-                    <th>CLR Range</th>
-                    <th>Rate (₹)</th>
-                    <th>Effective From</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (ViewBag.RateCharts != null)
-                {
-                    foreach (var item in (List<DairyIndustry.Models.Admin.RateChartModel>)ViewBag.RateCharts)
-                    {
-                        <tr>
-                            <td>@item.MilkTypeName</td>
-                            <td>@item.FatFrom - @item.FatTo</td>
-                            <td>@item.CLRFrom - @item.CLRTo</td>
-                            <td>@item.RatePerLiter</td>
-                            <td>@item.EffectiveFrom.ToString("dd-MM-yyyy")</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
-
-
-    <div class="text-muted small mt-3">
-        Rate is auto-calculated from the Fat and CLR values. Receipt is auto-generated on save.
-        Entry is only allowed during the active shift window.
-    </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('farmerSelect').addEventListener('change', function () {
+            var name = this.options[this.selectedIndex].getAttribute('data-name');
+            document.getElementById('farmerName').value = name || '';
+        });
+    </script>
+}
