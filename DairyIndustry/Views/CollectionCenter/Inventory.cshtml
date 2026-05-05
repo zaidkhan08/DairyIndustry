@@ -1,0 +1,73 @@
+﻿@model List<DairyIndustry.Models.Collection.CenterInventoryViewModel>
+
+@{
+    ViewData["Title"] = "Center Milk Inventory";
+    var centerName = Model.FirstOrDefault()?.CenterName ?? "—";
+    var totalStock = Model.Sum(x => x.AvailableQuantity);
+
+    Layout = "_CollectionCenterLayout";
+
+}
+
+<div class="container-fluid px-4 py-3">
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-semibold">Milk Inventory</h4>
+            <small class="text-muted">@centerName</small>
+        </div>
+        <span class="badge bg-primary fs-6">
+            Total Stock : @totalStock.ToString("F2") L
+        </span>
+    </div>
+
+    <!-- Table -->
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">No inventory records found for your center.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover table-bordered mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Milk Type</th>
+                            <th class="text-end">Available Qty (L)</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (item, index) in Model.Select((x, i) => (x, i + 1)))
+                        {
+                            <tr>
+                                <td>@index</td>
+                                <td>@item.MilkTypeName</td>
+                                <td class="text-end fw-semibold">@item.AvailableQuantity.ToString("F2")</td>
+                                <td class="text-muted">
+                                    @item.LastUpdated.ToString("dd MMM yyyy, hh:mm tt")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="fw-bold text-end">Total</td>
+                            <td class="text-end fw-bold">@totalStock.ToString("F2") L</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>

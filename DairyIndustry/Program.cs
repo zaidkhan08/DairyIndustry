@@ -1,11 +1,35 @@
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
 using DairyIndustry.Repositories;
-using Stripe;
+using DairyIndustry.Repository;
 using DinkToPdf;
 using DinkToPdf.Contracts;
+using System.Runtime.Loader;
+using Stripe;
 
-namespace DairyIndustry
+var builder = WebApplication.CreateBuilder(args);
+
+//  LOAD DLL
+var context = new CustomAssemblyLoadContext();
+context.LoadUnmanagedLibrary(
+    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
+);
+
+//  REGISTER DinkToPdf
+builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+
+builder.Services.AddSingleton<DbHelper>();
+builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
+builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
+
+builder.Services.AddScoped<IPlantRepository, PlantRepository>();
+builder.Services.AddScoped<ActionLogFilter>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+
+builder.Services.AddScoped<ILogisticsRepository, LogisticsRepository>();
+builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+
+builder.Services.AddControllersWithViews(options =>
 {
     public class Program
     {

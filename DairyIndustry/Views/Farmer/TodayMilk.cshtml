@@ -1,0 +1,320 @@
+﻿@* @model List<DairyIndustry.Models.Collection.MilkCollectionViewModel>
+
+@{
+    Layout = "_FarmerLayout"; 
+}
+
+<style>
+    .milk-container {
+        padding: 20px;
+        font-family: sans-serif;
+    }
+
+    .milk-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: #fff;
+    }
+
+        .milk-table th {
+            background-color: #f4f4f4;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .milk-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .milk-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+    .status-msg {
+        padding: 15px;
+        background: #e1f5fe;
+        border-radius: 4px;
+        color: #01579b;
+    }
+</style>
+
+<div class="milk-container">
+    <h2>Today's Milk Entries</h2>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="status-msg">No milk entries found for today.</div>
+    }
+    else
+    {
+        <table class="milk-table">
+            <thead>
+                <tr>
+                    <th>Shift</th>
+                    <th>Quantity (L)</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>Fat</th>
+                    <th>CLR</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Shift</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.RatePerLiter</td>
+                        <td>@item.Amount</td>
+                        <td>@(item.AppliedFat ?? (object)"-")</td>
+                        <td>@(item.AppliedCLR ?? (object)"-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div> *@
+
+
+
+@model List<DairyIndustry.Models.Collection.MilkCollectionViewModel>
+
+@{
+    Layout = "_FarmerLayout";
+    ViewData["Title"] = "Today's Milk";
+
+    var totalQty = Model?.Sum(x => x.Quantity) ?? 0;
+    var totalAmount = Model?.Sum(x => x.Amount) ?? 0;
+    var hasData = Model != null && Model.Any();
+    var today = DateTime.Today.ToString("dd MMMM yyyy");
+}
+
+<style>
+    .summary-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 22px 24px;
+    }
+
+    .summary-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+    }
+
+    .summary-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0a2540;
+    }
+
+    .milk-table-wrap {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .milk-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+        .milk-table thead th {
+            background: #f8fafc;
+            padding: 13px 18px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .milk-table tbody td {
+            padding: 14px 18px;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .milk-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .milk-table tbody tr:hover td {
+            background: #f8fafc;
+        }
+
+    .shift-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .shift-morning {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .shift-evening {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .receipt-chip {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-family: monospace;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 30px;
+        color: #94a3b8;
+    }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+            opacity: 0.4;
+        }
+
+    .date-badge {
+        background: #f0f7ff;
+        color: #1d6fce;
+        border: 1px solid #dbeafe;
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+</style>
+@* 
+{{-- Page header row --}} *@
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold m-0" style="color:#0a2540;">Today's Milk Entries</h4>
+        <div class="text-muted small mt-1">Entries recorded for today</div>
+    </div>
+    <span class="date-badge">
+        <i class="bi bi-calendar3 me-1"></i>@today
+    </span>
+</div>
+
+@* {{-- Summary Cards --}} *@
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="summary-card">
+            <div class="summary-label">Total Quantity</div>
+            <div class="summary-value">@totalQty.ToString("0.00") <span style="font-size:1rem;color:#64748b;font-weight:500;">L</span></div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="summary-card">
+            <div class="summary-label">Total Earnings</div>
+            <div class="summary-value" style="color:#16a34a;">₹@totalAmount.ToString("0.00")</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="summary-card">
+            <div class="summary-label">Shifts Covered</div>
+            <div class="summary-value">
+                @if (hasData)
+                {
+                    var shifts = Model.Select(x => x.Shift).Distinct().ToList();
+                    @string.Join(" + ", shifts)
+                }
+                else
+                {
+                    <span style="font-size:1rem;color:#94a3b8;">—</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* {{-- Table or Empty State --}} *@
+<div class="milk-table-wrap">
+    @if (!hasData)
+    {
+        <div class="empty-state">
+            <i class="bi bi-droplet"></i>
+            <div style="font-size:1rem;font-weight:600;color:#475569;margin-bottom:6px;">No entries for today</div>
+            <div style="font-size:0.85rem;">Your milk entries will appear here after the shift opens.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="milk-table">
+                <thead>
+                    <tr>
+                        <th>Shift</th>
+                        <th>Milk Type</th>
+                        <th>Quantity (L)</th>
+                        <th>Fat</th>
+                        <th>CLR</th>
+                        <th>Rate / L</th>
+                        <th>Amount</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @if (item.Shift == "Morning")
+                                {
+                                    <span class="shift-pill shift-morning">
+                                        <i class="bi bi-brightness-high" style="font-size:0.8rem;"></i> Morning
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="shift-pill shift-evening">
+                                        <i class="bi bi-moon-stars" style="font-size:0.8rem;"></i> Evening
+                                    </span>
+                                }
+                            </td>
+                            <td>@item.MilkTypeName</td>
+                            <td><strong>@item.Quantity.ToString("0.00")</strong></td>
+                            <td>@(item.AppliedFat.HasValue? item.AppliedFat.Value.ToString("0.00") : "—")</td>
+                            <td>@(item.AppliedCLR.HasValue? item.AppliedCLR.Value.ToString("0.00") : "—")</td>
+                            <td>₹@item.RatePerLiter</td>
+                            <td style="color:#16a34a;font-weight:600;">₹@item.Amount</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.ReceiptNumber))
+                                {
+                                    <span class="receipt-chip">@item.ReceiptNumber</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

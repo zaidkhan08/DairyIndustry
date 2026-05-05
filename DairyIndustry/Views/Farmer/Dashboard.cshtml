@@ -1,0 +1,252 @@
+﻿@model DairyIndustry.Models.FarmerModel.FarmerDashboardViewModel
+@{
+    ViewData["Title"] = "My Dashboard";
+    Layout = "_FarmerLayout";
+    var farmerName = Context.Session.GetString("FarmerName");
+    var farmerCode = Context.Session.GetString("FarmerCode");
+}
+
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <h4 class="mb-0 fw-bold">Hello, @farmerName</h4>
+            <span class="badge bg-secondary">ID: @farmerCode</span>
+        </div>
+        <div class="col-auto text-end text-muted small">
+            <i class="bi bi-calendar3"></i> @DateTime.Today.ToString("dd MMM yyyy")
+        </div>
+    </div>
+
+    <!-- Collection Section -->
+    <h6 class="text-uppercase text-muted fw-bold mb-3 small" style="letter-spacing: 1px;">Collection Summary</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small mb-1">Morning</p>
+                    <h5 class="mb-0">@Model.TodayMorningQty.ToString("F2") L</h5>
+                    <div class="text-success small">₹@Model.TodayMorningAmount.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small mb-1">Evening</p>
+                    <h5 class="mb-0">@Model.TodayEveningQty.ToString("F2") L</h5>
+                    <div class="text-success small">₹@Model.TodayEveningAmount.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm bg-primary text-white">
+                <div class="card-body p-3">
+                    <p class="text-white-50 small mb-1">Total Today</p>
+                    <h5 class="mb-0">@Model.TodayTotalQty.ToString("F2") L</h5>
+                    <div class="small">₹@Model.TodayTotalAmount.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm bg-white">
+                <div class="card-body p-3">
+                    <p class="text-muted small mb-1">Month Total</p>
+                    <h5 class="mb-0">@Model.MonthTotalQty.ToString("F2") L</h5>
+                    <div class="text-success small fw-bold">₹@Model.MonthTotalAmount.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments & Rejections Section -->
+    <h6 class="text-uppercase text-muted fw-bold mb-3 small" style="letter-spacing: 1px;">Status & Alerts</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Pending Payment</p>
+                    <h4 class="mb-0 text-warning fw-bold">₹@Model.PendingAmount.ToString("N2")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Last Payment</p>
+                    @if (Model.LastPaymentAmount.HasValue)
+                    {
+                        <h4 class="mb-0 text-success fw-bold">₹@Model.LastPaymentAmount.Value.ToString("N2")</h4>
+                        <small class="text-muted">Paid on @Model.LastPaymentDate?.ToString("dd MMM")</small>
+                    }
+                    else
+                    {
+                        <h4 class="mb-0 text-muted">₹0.00</h4>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-start border-danger border-4 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted small mb-1">Rejections (30 Days)</p>
+                        @if (Model.TotalRejectionsLast30Days > 0)
+                        {
+                            <h4 class="mb-0 text-danger fw-bold">@Model.TotalRejectionsLast30Days</h4>
+                            <small class="text-muted">@Model.TotalRejectedQtyLast30Days.ToString("F1") L Lost</small>
+                        }
+                        else
+                        {
+                            <h4 class="mb-0 text-muted">0</h4>
+                            <small class="text-muted">All clear</small>
+                        }
+                    </div>
+                    @if (Model.TotalRejectionsLast30Days > 0)
+                    {
+                        <a asp-action="RejectionHistory" class="btn btn-sm btn-outline-danger px-3 rounded-pill">View</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Section -->
+    <h6 class="text-uppercase text-muted fw-bold mb-3 small" style="letter-spacing: 1px;">Quick Actions</h6>
+    <div class="row g-2">
+        <div class="col-6 col-md-3">
+            <a asp-action="TodayMilk" class="btn btn-light border w-100 py-3 shadow-sm">
+                <i class="bi bi-droplet text-primary"></i><br />Today's Milk
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-action="AllMilkEntries" class="btn btn-light border w-100 py-3 shadow-sm">
+                <i class="bi bi-list-ul text-primary"></i><br />History
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-action="RejectionHistory" class="btn btn-light border w-100 py-3 shadow-sm">
+                <i class="bi bi-x-circle text-danger"></i><br />Rejections
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-action="Profile" class="btn btn-light border w-100 py-3 shadow-sm">
+                <i class="bi bi-person text-primary"></i><br />My Profile
+            </a>
+        </div>
+    </div>
+</div>
+@* @model DairyIndustry.Models.FarmerModel.FarmerDashboardViewModel
+
+@{
+    Layout = "_FarmerLayout";
+    ViewData["Title"] = "Dashboard";
+    var month = DateTime.Today.ToString("MMMM yyyy");
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm p-2">
+            <div class="card-body">
+                <div class="text-muted small fw-bold text-uppercase mb-2">Today's Milk</div>
+                <h2 class="fw-bold mb-1">@Model.TodayTotalQty.ToString("0.0") <small class="text-muted fs-6">L</small></h2>
+                <div class="text-success fw-bold">₹@Model.TodayTotalAmount.ToString("0.00")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm p-2 bg-primary text-white">
+            <div class="card-body">
+                <div class="text-white-50 small fw-bold text-uppercase mb-2">@month</div>
+                <h2 class="fw-bold mb-1">@Model.MonthTotalQty.ToString("0.0") <small class="fs-6 text-white-50">L</small></h2>
+                <div class="small">Total Supply</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm p-2">
+            <div class="card-body">
+                <div class="text-muted small fw-bold text-uppercase mb-2">Earnings</div>
+                <h2 class="fw-bold mb-1">₹@Model.MonthTotalAmount.ToString("N0")</h2>
+                <div class="text-muted small">This Month</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm p-2">
+            <div class="card-body">
+                <div class="text-muted small fw-bold text-uppercase mb-2">Last Paid</div>
+                @if (Model.LastPaymentAmount.HasValue)
+                {
+                    <h2 class="fw-bold mb-1">₹@Model.LastPaymentAmount.Value.ToString("0")</h2>
+                    <div class="text-muted small">@Model.LastPaymentDate!.Value.ToString("dd MMM")</div>
+                }
+                else
+                {
+                    <h2 class="fw-bold mb-1 text-light">-- --</h2>
+                    <div class="text-muted small">No history</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.PendingAmount > 0)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning border-0 shadow-sm d-flex justify-content-between align-items-center p-3 mb-0">
+                <div>
+                    <span class="d-block small fw-bold text-uppercase opacity-75">Pending Settlement</span>
+                    <span class="h4 fw-bold mb-0">₹@Model.PendingAmount.ToString("N2")</span>
+                </div>
+                <a asp-action="Payments" class="btn btn-warning px-4 fw-bold rounded-pill">View Details</a>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <hr class="flex-grow-1">
+            <span class="mx-3 text-muted small fw-bold text-uppercase">Daily Shift Details</span>
+            <hr class="flex-grow-1">
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card border-0 border-start border-4 border-warning shadow-sm">
+            <div class="card-body d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <span class="badge bg-warning text-dark px-3 mb-2">Morning</span>
+                    <h2 class="mb-0 fw-bold">@Model.TodayMorningQty.ToString("0.00") <small class="fs-4 text-muted">L</small></h2>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted small fw-bold text-uppercase">Rate Amt</div>
+                    <div class="h4 mb-0 fw-bold text-success">₹@Model.TodayMorningAmount.ToString("0.00")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 border-start border-4 border-info shadow-sm">
+            <div class="card-body d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <span class="badge bg-info text-white px-3 mb-2">Evening</span>
+                    <h2 class="mb-0 fw-bold">@Model.TodayEveningQty.ToString("0.00") <small class="fs-4 text-muted">L</small></h2>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted small fw-bold text-uppercase">Rate Amt</div>
+                    <div class="h4 mb-0 fw-bold text-success">₹@Model.TodayEveningAmount.ToString("0.00")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> *@

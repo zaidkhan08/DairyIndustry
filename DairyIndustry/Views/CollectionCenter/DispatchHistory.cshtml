@@ -1,0 +1,189 @@
+﻿@model List<DairyIndustry.Models.Collection.DispatchHistoryViewModel>
+@{
+    ViewData["Title"] = "Dispatch History";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-white border rounded shadow-sm d-flex align-items-center justify-content-center px-3 py-2 fs-4 text-primary">
+                &#9782;
+            </div>
+            <div>
+                <h2 class="m-0 fs-4 fw-bold text-dark">Dispatch History</h2>
+                <p class="m-0 text-secondary small">Track all milk transfers dispatched from this center</p>
+            </div>
+        </div>
+        <a class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm fw-bold" href="@Url.Action("Dispatch")">
+            <span>&#128666;</span> New Dispatch
+        </a>
+    </div>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2 shadow-sm" role="alert">
+            <span class="fw-bold px-2 border border-info rounded-circle">i</span>
+            <div>@TempData["Info"]</div>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 shadow-sm" role="alert">
+            <span class="fw-bold px-2 border border-danger rounded-circle">&excl;</span>
+            <div>@TempData["Error"]</div>
+        </div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 shadow-sm" role="alert">
+            <span class="fw-bold px-2 border border-success rounded-circle">&check;</span>
+            <div>@TempData["Success"]</div>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="table-responsive">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-secondary">
+                    <div class="display-1 mb-3 text-light">&#128230;</div>
+                    <p class="mb-0 fs-5">No dispatches recorded yet.</p>
+                    <p class="small text-muted">Close a batch and dispatch milk to a plant.</p>
+                </div>
+            }
+            else
+            {
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase small text-muted">
+                        <tr>
+                            <th class="px-3 py-3 border-0">Transfer ID</th>
+                            <th class="px-3 py-3 border-0">Batch Info</th>
+                            <th class="px-3 py-3 border-0 text-nowrap">Dispatch Date</th>
+                            <!-- Add in thead after Batch Info -->
+                            <th class="px-3 py-3 border-0">Milk Type</th>
+                            <th class="px-3 py-3 border-0">Logistics</th>
+                            <th class="px-3 py-3 border-0">Destination</th>
+                            <th class="px-3 py-3 border-0 text-nowrap">Qty Sent</th>
+                            <th class="px-3 py-3 border-0 text-nowrap">Qty Received</th>
+                            <th class="px-3 py-3 border-0 text-nowrap">Loss Qty</th>
+                            <th class="px-3 py-3 border-0 text-nowrap">Received Date</th>
+                            <th class="px-3 py-3 border-0">Inventory</th>
+                            <th class="px-3 py-3 border-0">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model)
+                        {
+                            <tr>
+                                <td class="px-3 text-muted small">#@row.TransferId</td>
+
+                                <td class="px-3">
+                                    <div class="fw-bold text-dark">@row.BatchDate.ToString("dd MMM yyyy")</div>
+                                    <div class="text-muted small">@row.Shift Shift</div>
+                                </td>
+
+                                <td class="px-3 text-dark">@row.DispatchDate.ToString("dd MMM yyyy")</td>
+                                <!-- Add in tbody after Batch Info td -->
+                                <td class="px-3">
+                                    <span class="badge bg-light text-dark border">
+                                        @row.MilkTypeName
+                                    </span>
+                                </td>
+                                <td class="px-3">
+                                    <div class="fw-bold text-dark text-nowrap">@row.VehicleNumber</div>
+                                    <div class="text-muted small mt-1">
+                                        <span class="me-1 small">&#128100;</span>
+                                        @(row.DriverName ?? "No Driver")
+                                    </div>
+                                </td>
+
+                                <td class="px-3">
+                                    <span class="fw-bold text-dark text-nowrap">@row.PlantName</span>
+                                </td>
+
+                                <td class="px-3 fw-bold text-dark">@row.DispatchQty.ToString("F2") L</td>
+
+                                <!-- Qty Received -->
+                                <td class="px-3 fw-bold">
+                                    @if (row.IsReceived && row.ReceivedQty.HasValue)
+                                    {
+                                        <span class="text-success">@row.ReceivedQty.Value.ToString("F2") L</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <!-- Loss Qty -->
+                                <td class="px-3">
+                                    @if (row.IsReceived && row.LossQty.HasValue && row.LossQty > 0)
+                                    {
+                                        <span class="text-danger fw-bold">@row.LossQty.Value.ToString("F2") L</span>
+                                    }
+                                    else if (row.IsReceived)
+                                    {
+                                        <span class="text-success small">0.00 L</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <!-- Received Date -->
+                                <td class="px-3 text-nowrap">
+                                    @if (row.IsReceived && row.ReceivedDate.HasValue)
+                                    {
+                                        <span class="text-dark">@row.ReceivedDate.Value.ToString("dd MMM yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Pending</span>
+                                    }
+                                </td>
+
+                                <!-- Inventory -->
+                                <td class="px-3">
+                                    @if (row.BatchRemainingQty == 0)
+                                    {
+                                        <span class="badge rounded-pill bg-light text-dark border fw-normal px-2 py-2">
+                                            &check; Complete
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-warning text-dark fw-normal px-2 py-2">
+                                            @row.BatchRemainingQty.ToString("F2") L Left
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-3">
+                                    @if (row.IsReceived)
+                                    {
+                                        <span class="badge rounded-pill bg-success text-white px-3 py-2">
+                                            Received
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-info text-white px-3 py-2">
+                                            In Transit
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+
+</div>

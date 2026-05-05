@@ -1,0 +1,187 @@
+﻿@model List<DairyIndustry.Models.Production.PlantTransferViewModel>
+
+@{
+    ViewData["Title"] = "Incoming Transfers";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">Incoming Milk Transfers</h3>
+            <small class="text-muted">
+                All milk dispatched to your plant
+            </small>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info">@TempData["Info"]</div>
+    }
+
+    <!-- SUMMARY -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="border rounded px-3 py-2 bg-info-subtle text-center">
+                <small class="text-muted d-block">In Transit</small>
+                <strong class="text-info">
+                    @Model.Count(x => x.IsInTransit) transfers
+                </strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded px-3 py-2 bg-success-subtle text-center">
+                <small class="text-muted d-block">Received</small>
+                <strong class="text-success">
+                    @Model.Count(x => x.IsReceived) transfers
+                </strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded px-3 py-2 bg-light text-center">
+                <small class="text-muted d-block">Total Received (L)</small>
+                <strong>
+                    @Model.Where(x => x.IsReceived)
+                    .Sum(x => x.ReceivedQty ?? 0)
+                    .ToString("F2") L
+                </strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                    No transfers found for your plant.
+                </div>
+            }
+            else
+            {
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>From Center</th>
+                            <th>Batch</th>
+                            <th>Milk Type</th>
+                            <th>Vehicle</th>
+                            <th>Driver</th>
+                            <th>Dispatch Date</th>
+                            <th>Dispatched (L)</th>
+                            <th>Received (L)</th>
+                            <th>Loss (L)</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            <tr>
+                                <td class="text-muted small">#@t.TransferId</td>
+
+                                <td>
+                                    <strong>@t.CenterName</strong>
+                                </td>
+
+                                <td>
+                                    <div>@t.BatchDate.ToString("dd MMM yyyy")</div>
+                                    <small class="text-muted">@t.Shift</small>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        @t.MilkTypeName
+                                    </span>
+                                </td>
+
+                                <td>@t.VehicleNumber</td>
+                                <td>@(t.DriverName ?? "-")</td>
+
+                                <td>@t.DispatchDate.ToString("dd MMM yyyy")</td>
+
+                                <td class="fw-bold">
+                                    @t.DispatchQty.ToString("F2") L
+                                </td>
+
+                                <td>
+                                    @if (t.IsReceived)
+                                    {
+                                        <span class="text-success fw-bold">
+                                            @t.ReceivedQty?.ToString("F2") L
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (t.IsReceived && t.LossQty > 0)
+                                    {
+                                        <span class="text-danger fw-bold">
+                                            @t.LossQty?.ToString("F2") L
+                                        </span>
+                                    }
+                                    else if (t.IsReceived)
+                                    {
+                                        <span class="text-success small">0.00 L</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (t.IsReceived)
+                                    {
+                                        <span class="badge bg-success">
+                                            ✅ Received
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-white">
+                                            🚛 In Transit
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (t.IsInTransit)
+                                    {
+                                        <a asp-action="ReceiveMilk"
+                                           asp-route-transferId="@t.TransferId"
+                                           class="btn btn-sm btn-success">
+                                            Receive
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Done</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

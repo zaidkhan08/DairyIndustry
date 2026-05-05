@@ -1,0 +1,123 @@
+@model DairyIndustry.Models.FarmerModel.FarmerViewModel
+
+@{
+    ViewData["Title"] = "Edit Farmer";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4" style="max-width: 700px;">
+
+    <h3 class="mb-3">Edit Farmer</h3>
+
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+
+        <input type="hidden" asp-for="FarmerId" />
+        <input type="hidden" asp-for="ProfilePhoto" />
+
+        <!-- Farmer Name -->
+        <div class="mb-3">
+            <label class="form-label">Farmer Name</label>
+            <input asp-for="FarmerName" class="form-control" />
+            <span asp-validation-for="FarmerName" class="text-danger"></span>
+        </div>
+
+        <!-- Phone -->
+        <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger"></span>
+        </div>
+
+        <hr />
+
+        <!-- LOCATION -->
+        <h5>Location</h5>
+
+        <!-- State -->
+        <div class="mb-3">
+            <label class="form-label">State</label>
+            <select asp-for="StateId" class="form-select">
+                <option value="">Select State</option>
+                @foreach (var s in Model.States)
+                {
+                    <option value="@s.StateId">@s.StateName</option>
+                }
+            </select>
+        </div>
+
+        <!-- City -->
+        <div class="mb-3">
+            <label class="form-label">City</label>
+            <select asp-for="CityId" class="form-select">
+                <option value="">Select City</option>
+                @foreach (var c in Model.Cities)
+                {
+                    <option value="@c.CityId">@c.CityName</option>
+                }
+            </select>
+        </div>
+
+        <!-- Village -->
+        <div class="mb-3">
+            <label class="form-label">Village</label>
+            <select asp-for="VillageId" class="form-select">
+                <option value="">Select Village</option>
+                @foreach (var v in Model.Villages)
+                {
+                    <option value="@v.VillageId">@v.VillageName</option>
+                }
+            </select>
+        </div>
+
+        <hr />
+
+        <!-- BANK DETAILS -->
+        <h5>Bank Details</h5>
+
+        <div class="mb-3">
+            <label class="form-label">Bank Name</label>
+            <input asp-for="BankName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Account Number</label>
+            <input asp-for="AccountNumber" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">IFSC Code</label>
+            <input asp-for="IFSCCode" class="form-control" />
+        </div>
+
+        <hr />
+
+        <!-- Photo -->
+        <div class="mb-3">
+            <label class="form-label">Profile Photo</label>
+
+            @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+            {
+                <div class="mb-2">
+                    <img src="@Model.ProfilePhoto" width="80" height="80" class="border rounded" />
+                </div>
+
+                <small class="text-muted d-block mb-2">
+                    Current file: @System.IO.Path.GetFileName(Model.ProfilePhoto)
+                </small>
+            }
+            <input asp-for="PhotoFile" type="file" class="form-control" data-val="false" />
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

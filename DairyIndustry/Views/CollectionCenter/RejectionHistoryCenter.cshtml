@@ -1,0 +1,110 @@
+﻿@model List<DairyIndustry.Models.Collection.MilkRejectionViewModel>
+
+@{
+    ViewData["Title"] = "Rejection History";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Milk Rejection History</h2>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            New Entry
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    No rejection records found.
+                </div>
+            }
+            else
+            {
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Batch</th>
+                            <th>Rejected Date</th>
+                            <th>Shift</th>
+                            <th>Farmer Code</th>
+                            <th>Farmer Name</th>
+                            <th>Milk Type</th>
+                            <th>Qty</th>
+                            <th>Fat/CLR</th>
+                            <th>Reason</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td>#@r.RejectionId</td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        #@r.BatchId
+                                    </span>
+                                </td>
+
+                                <td>@r.RejectionDate.ToString("dd MMM yyyy")</td>
+
+                                <td>
+                                    <span class="badge bg-info text-white">
+                                        @r.Shift
+                                    </span>
+                                </td>
+                                <td>@r.FarmerCode</td>
+                               
+                                <td>@r.FarmerName</td>
+
+                                <td>@r.MilkTypeName</td>
+
+                                <td class="fw-bold text-danger">
+                                    @r.Quantity.ToString("F2") L
+                                </td>
+
+                                <td>
+                                    @if (r.AppliedFat.HasValue && r.AppliedCLR.HasValue)
+                                    {
+                                        <span>@r.AppliedFat / @r.AppliedCLR</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-warning text-dark">
+                                        @r.RejectionReason
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrEmpty(r.Remarks))
+                                    {
+                                        @r.Remarks
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,65 @@
+@model DairyIndustry.Models.FarmerModel.RejectFarmerViewModel
+
+@{
+
+    Layout = "_CollectionCenterLayout";
+    ViewData["Title"] = "Reject Farmer Registration";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Reject Farmer Registration</h5>
+                </div>
+                <div class="card-body">
+
+                    @* Farmer summary *@
+                    <div class="alert alert-secondary">
+                        <strong>Farmer:</strong> @Model.FarmerName <br />
+                        <strong>Phone:</strong> @Model.Phone
+                    </div>
+
+                    <form method="post"
+                          asp-controller="CollectionCenter"
+                          asp-action="RejectFarmer">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="FarmerId"   value="@Model.FarmerId"   />
+                        <input type="hidden" name="FarmerName" value="@Model.FarmerName" />
+                        <input type="hidden" name="Phone"      value="@Model.Phone"      />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Rejection Reason
+                                <small class="text-muted fw-normal">(shown to farmer on status page)</small>
+                            </label>
+                            <textarea name="ApprovalRemark"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="e.g. Wrong phone number, Duplicate registration, Invalid village...">@Model.ApprovalRemark</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit"
+                                    class="btn btn-danger"
+                                    onclick="return confirm('Reject this farmer registration?')">
+                                Confirm Rejection
+                            </button>
+
+                            <a asp-controller="CollectionCenter"
+                               asp-action="PendingApprovals"
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

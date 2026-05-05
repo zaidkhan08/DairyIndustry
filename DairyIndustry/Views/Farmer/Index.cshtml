@@ -1,0 +1,152 @@
+@using DairyIndustry.Models.FarmerModel
+@model List<FarmerViewModel>
+
+@{
+    ViewData["Title"] = "Farmers";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Farmers</h2>
+        <a asp-controller="Farmer" asp-action="Create" class="btn btn-primary">
+            + Add Farmer
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Table -->
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-warning">
+            No farmers registered yet for your center.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>#</th>
+                        <th>Farmer</th>
+                        <th>Phone</th>
+                        <th>Location</th>
+                        <th>Bank Details</th>
+                        <th>Status</th>
+                        
+                        <th style="width:180px;">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @{
+                        int sr = 1;
+                    }
+
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <!-- SR NO -->
+                            <td class="text-center">@sr</td>
+
+                            <!-- Farmer Info -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+
+                                    @if (!string.IsNullOrEmpty(item.ProfilePhoto))
+                                    {
+                                        <img src="@item.ProfilePhoto"
+                                             width="40" height="40"
+                                             class="rounded-circle border" />
+                                    }
+                                    else
+                                    {
+                                        <img src="~/images/user.png"
+                                             width="40" height="40"
+                                             class="rounded-circle border" />
+                                    }
+
+                                    <div>
+                                        <strong>@item.FarmerName</strong><br />
+                                        <small class="text-muted">@item.FarmerCode</small>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Phone -->
+                            <td>@item.Phone</td>
+
+                            <!-- Location -->
+                            <td>
+                                @item.VillageName <br />
+                                <small class="text-muted">@item.CityName</small>
+                            </td>
+
+                            <td>
+
+                                <div>
+                                    <strong>@item.BankName</strong><br />
+                                    <small class="text-muted">@item.AccountNumber</small>
+                                    
+                                </div>
+                                <small class="text-muted">@item.IFSCCode</small>
+                            </td>
+                            
+                            <!-- Status -->
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-center">
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.FarmerId"
+                                   class="btn btn-sm btn-warning">
+                                    Edit
+                                </a>
+
+                                <a asp-action="ToggleStatus"
+                                   asp-route-id="@item.FarmerId"
+                                   asp-route-isActive="@(item.IsActive ? false : true)"
+                                   class="btn btn-sm @(item.IsActive ? "btn-danger" : "btn-success")">
+                                    @(item.IsActive ? "Deactivate" : "Activate")
+                                </a>
+                            </td>
+                        </tr>
+
+                        sr++;
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    }
+
+</div>

@@ -1,16 +1,123 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 
 namespace DairyIndustry.Controllers
 {
-    [ServiceFilter(typeof(ActionLogFilter))]
+    //    [ServiceFilter(typeof(ActionLogFilter))]
     public class AdminController : Controller
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly ICollectionCenterRepository _centerRepository;
+        private readonly IPlantRepository _plantRepository;
+
+
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository,IPlantRepository plantRepository)
+        {@model List<DairyIndustry.Models.FarmerModel.FarmerRejectionViewModel>
+
+@{
+    ViewData["Title"] = "Rejection History";
+    Layout = "_FarmerLayout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Milk Rejections</h4>
+        <div class="bg-white border rounded px-3 py-2 shadow-sm">
+            <span class="text-muted small fw-bold">TOTAL REJECTED:</span>
+            <span class="text-danger fw-bold ms-1">@Model.Sum(x => x.Quantity).ToString("F2") L</span>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2 col-6">
+                    <label class="form-label small text-muted fw-bold">From Date</label>
+                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label class="form-label small text-muted fw-bold">To Date</label>
+                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-4 col-12">
+                    <button type="submit" class="btn btn-primary px-4">Filter</button>
+                    <a href="@Url.Action("RejectionHistory")" class="btn btn-light border ms-1">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info border-0 shadow-sm mb-4">@TempData["Info"]</div>
+    }
+
+    <!-- Table with Separated Columns -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (Model.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-muted small">
+                                <th class="ps-4 border-0">DATE</th>
+                                <th class="border-0 text-center">SHIFT</th>
+                                <th class="border-0">TYPE</th>
+                                <th class="border-0 text-end">QTY (L)</th>
+                                <th class="border-0 text-end">FAT</th>
+                                <th class="border-0 text-end">CLR</th>
+                                <th class="border-0">REASON</th>
+                                <th class="border-0">REMARKS</th>
+                                <th class="border-0 pe-4">CENTER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@r.RejectionDate.ToString("dd-MM-yyyy")</td>
+                                    <td class="text-center">
+                                        @if (r.Shift == "Morning")
+                                        {
+                                            <span class="badge bg-warning text-dark px-2">M</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary px-2">E</span>
+                                        }
+                                    </td>
+                                    <td><span class="small text-secondary">@r.MilkTypeName</span></td>
+                                    <td class="text-end fw-bold">@r.Quantity.ToString("F2")</td>
+                                    <td class="text-end text-muted">@(r.AppliedFat?.ToString("F1") ?? "-")</td>
+                                    <td class="text-end text-muted">@(r.AppliedCLR?.ToString("F1") ?? "-")</td>
+                                    <td><span class="text-danger fw-medium">@r.RejectionReason</span></td>
+                                    <td class="small text-muted">@(string.IsNullOrEmpty(r.Remarks) ? "-" : r.Remarks)</td>
+                                    <td class="pe-4 small">@r.CenterName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <p class="text-muted mb-0">No records found for the selected dates.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+            _centerRepository = centerRepository;
+            _plantRepository = plantRepository;
         private readonly IReportRepository _reportRepo;
 
 
@@ -58,6 +165,7 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
+            HttpContext.Session.SetInt32("StaffId", user.StaffId??0);
 
             switch (user.RoleName)
             {
@@ -70,6 +178,21 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("DriverId", driver.DriverId);
                     return RedirectToAction("Index", "Logistics");
 
+                case "Collection Agent":
+                    var centerId = _centerRepository.GetCenterIdByStaffId(user.StaffId ?? 0);
+
+                    HttpContext.Session.SetInt32("CenterId", centerId);
+                    return RedirectToAction("Dashboard", "CollectionCenter");
+
+                case "Production Manager":
+                    // GetPlantIdByStaffId → returns int directly 
+                    var plantInfo = _plantRepository.GetPlantByStaffId(user.StaffId ?? 0);
+
+                    if (plantInfo.PlantId == 0)
+                    {
+                        ViewBag.Error = "You are not assigned to any plant.";
+                        return View();
+                    }
                 //Added By Zaid
                 case "Plant Manager":
                     var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
@@ -85,8 +208,10 @@ namespace DairyIndustry.Controllers
                 case "Collection Agent":
                     return RedirectToAction("Index", "Production");
 
-                //case "Production Manager":
-                //    return RedirectToAction("Index", "Production");
+                    HttpContext.Session.SetInt32("PlantId", plantInfo.PlantId);
+                    HttpContext.Session.SetString("PlantName", plantInfo.PlantName ?? "");
+                    HttpContext.Session.SetString("Name", plantInfo.StaffName ?? "");
+                    return RedirectToAction("Index", "Plant");
 
                 //case "Finance Manager":
                 //    return RedirectToAction("Index", "Finance");
@@ -112,7 +237,7 @@ namespace DairyIndustry.Controllers
         // DASHBOARD
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Index()
         {
             var vm = new AdminDashboardViewModel
@@ -131,14 +256,14 @@ namespace DairyIndustry.Controllers
         // ROLES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Roles()
         {
             var roles = _adminRepo.GetAllRoles();
             return View(roles);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult CreateRole(string roleName)
         {
@@ -150,7 +275,7 @@ namespace DairyIndustry.Controllers
         // USERS
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Users()
         {
             var users = _adminRepo.GetAllUsers();
@@ -165,7 +290,7 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult RegisterUser(string username, string password, int staffId)
         {
@@ -185,7 +310,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult UpdateUserStatus(int userId, bool isActive)
         {
@@ -193,6 +318,12 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
+        // ════════════════════════════════════════════════════════
+        // AUDIT LOGS
+        // ════════════════════════════════════════════════════════
+
+        //[SessionAuthorize("Admin")]
+        public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AssignUserToPlant()
@@ -230,7 +361,7 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AssignUserToCenter(int userId, int centerId)
         {
@@ -277,6 +408,12 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Location");
         }
 
+        // ════════════════════════════════════════════════════════
+        // LOCATION — VILLAGE
+        // ════════════════════════════════════════════════════════
+
+        //[SessionAuthorize("Admin")]
+        public IActionResult Villages()
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddCity(string cityName, int stateId)
@@ -287,7 +424,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Location");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddVillage(string villageName, int cityId)
         {
@@ -304,7 +441,7 @@ namespace DairyIndustry.Controllers
             return Json(cities);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult GetVillagesByCity(int cityId)
         {
             var villages = _adminRepo.GetVillagesByCity(cityId);
@@ -315,14 +452,14 @@ namespace DairyIndustry.Controllers
         // MILK TYPES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         public IActionResult MilkTypes()
         {
             var milkTypes = _adminRepo.GetAllMilkTypes();
             return View(milkTypes);
         }
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddMilkType(string milkTypeName)
         {
@@ -334,7 +471,7 @@ namespace DairyIndustry.Controllers
         // RATE CHART
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         public IActionResult RateChart()
         {
             var rateCharts = _adminRepo.GetAllRateCharts();
@@ -342,7 +479,7 @@ namespace DairyIndustry.Controllers
             return View(rateCharts);
         }
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddRateChart(int milkTypeId, decimal fatFrom, decimal fatTo,
                                           decimal clrFrom, decimal clrTo,
@@ -356,13 +493,14 @@ namespace DairyIndustry.Controllers
         // STAFF
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Staff()
         {
             var staffList = _adminRepo.GetAllStaff();
             return View(staffList);
         }
 
+        //[SessionAuthorize("Admin")]
         // Update GET action to pass plants and centers to view
         [SessionAuthorize("Admin")]
         [HttpGet]
@@ -385,7 +523,7 @@ namespace DairyIndustry.Controllers
             return View(staff);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         [RequestSizeLimit(5 * 1024 * 1024)]
         public IActionResult AddStaff(string firstName, string lastName,
@@ -443,7 +581,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Staff");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult ToggleStaffActive(int staffId, int isActive)
         {
@@ -579,7 +717,7 @@ namespace DairyIndustry.Controllers
         // PLANT
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpGet]
         public ActionResult AddPlant()
         {

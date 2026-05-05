@@ -1,0 +1,141 @@
+@model DairyIndustry.Models.FarmerModel.FarmerViewModel
+@{
+    ViewData["Title"] = "Farmer Registration";
+    Layout = "_CollectionCenterLayout";
+}
+<div class="container mt-4">
+    <h3 class="mb-3">Farmer Registration</h3>
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+
+        <!-- Farmer Name -->
+        <div class="mb-3">
+            <label class="form-label">Farmer Name</label>
+            <input asp-for="FarmerName" class="form-control" />
+            <span asp-validation-for="FarmerName" class="text-danger"></span>
+        </div>
+
+        <!-- Phone -->
+        <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger"></span>
+        </div>
+        <!-- State -->
+        <div class="mb-3">
+            <label class="form-label">State</label>
+            <select asp-for="StateId" class="form-select" id="StateId">
+                <option value="">Select State</option>
+                @foreach (var s in Model.States)
+                {
+                    <option value="@s.StateId">@s.StateName</option>
+                }
+            </select>
+        </div>
+
+        <!-- City -->
+        <div class="mb-3">
+            <label class="form-label">City</label>
+            <select asp-for="CityId" class="form-select" id="CityId">
+                <option value="">Select City</option>
+            </select>
+        </div>
+
+        <!-- Village -->
+        <div class="mb-3">
+            <label class="form-label">Village</label>
+            <select asp-for="VillageId" class="form-select" id="VillageId">
+                <option value="">Select Village</option>
+            </select>
+        </div>
+        <hr />
+
+        <!-- Bank Details -->
+        <h5>Bank Details</h5>
+
+        <div class="mb-3">
+            <label class="form-label">Bank Name</label>
+            <input asp-for="BankName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Account Number</label>
+            <input asp-for="AccountNumber" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">IFSC Code</label>
+            <input asp-for="IFSCCode" class="form-control" />
+        </div>
+
+        <!-- Photo -->
+        <div class="mb-3">
+            <label class="form-label">Profile Photo</label>
+            <input asp-for="PhotoFile" type="file" class="form-control" />
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn-success">Register</button>
+
+    </form>
+
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            <strong>@TempData["Success"]</strong><br />
+
+            Farmer Code: <b>@TempData["FarmerCode"]</b><br />
+            Default Password: <b>@TempData["Password"]</b>
+        </div>
+    }
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // STATE ? CITY
+        $('#StateId').change(function () {
+            var stateId = $(this).val();
+
+            if (stateId) {
+                $.get('/Farmer/GetCities', { stateId: stateId }, function (data) {
+
+                    var city = $('#CityId');
+                    city.empty();
+                    city.append('<option value="">Select City</option>');
+
+                    $.each(data, function (i, item) {
+                        city.append(`<option value="${item.cityId}">${item.cityName}</option>`);
+                    });
+
+                    $('#VillageId').empty()
+                        .append('<option value="">Select Village</option>');
+                });
+            }
+        });
+
+        // CITY ? VILLAGE
+        $('#CityId').change(function () {
+            var cityId = $(this).val();
+
+            if (cityId) {
+                $.get('/Farmer/GetVillages', { cityId: cityId }, function (data) {
+
+                    var village = $('#VillageId');
+                    village.empty();
+                    village.append('<option value="">Select Village</option>');
+
+                    $.each(data, function (i, item) {
+                        village.append(`<option value="${item.villageId}">${item.villageName}</option>`);
+                    });
+                });
+            }
+        });
+    </script>
+}
