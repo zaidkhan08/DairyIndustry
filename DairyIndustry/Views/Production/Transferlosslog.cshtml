@@ -1,0 +1,573 @@
+﻿@model List<DairyIndustry.Models.Production.TransferLossLogModel>
+@using DairyIndustry.Models.Production
+@{
+    ViewData["Title"] = "Transfer Loss Log";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
+    var summary = ViewBag.Summary as List<LossSummaryModel> ?? new List<LossSummaryModel>();
+
+    decimal totalLoss = Model.Sum(x => x.LossQty);
+    decimal totalDispatch = Model.Sum(x => x.DispatchQty);
+    decimal overallPct = totalDispatch > 0 ? Math.Round((totalLoss / totalDispatch) * 100, 2) : 0;
+    int severeCount = Model.Count(x => x.LossCategory == "Severe");
+    int moderateCount = Model.Count(x => x.LossCategory == "Moderate");
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+    .tl {
+        --c-surface: #fff;
+        --c-bg: #f5f6f8;
+        --c-border: #e2e5ea;
+        --c-text: #111827;
+        --c-text-2: #374151;
+        --c-text-3: #6b7280;
+        --c-text-4: #9ca3af;
+        --c-accent: #2563eb;
+        --c-accent-bg: #eff6ff;
+        --c-accent-text: #1d4ed8;
+        --c-green: #16a34a;
+        --c-green-bg: #f0fdf4;
+        --c-green-border: #86efac;
+        --c-red: #dc2626;
+        --c-red-bg: #fef2f2;
+        --c-red-border: #fca5a5;
+        --c-amber: #d97706;
+        --c-amber-bg: #fffbeb;
+        --c-amber-border: #fcd34d;
+        --c-row-hover: #f8faff;
+        --r: 6px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--c-text);
+    }
+
+    /* Summary */
+    .tl-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+    .tl-kpi {
+        padding: 16px 20px;
+        border-right: 1px solid var(--c-border);
+        position: relative;
+    }
+
+        .tl-kpi:last-child {
+            border-right: none;
+        }
+
+    .tl-kpi-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-text-3);
+        margin-bottom: 6px;
+    }
+
+    .tl-kpi-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--c-text);
+        letter-spacing: -1px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+        .tl-kpi-value .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--c-text-3);
+            margin-left: 2px;
+            letter-spacing: 0;
+        }
+
+    .tl-kpi-sub {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 4px;
+    }
+
+    .tl-kpi-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+    }
+
+    /* Toolbar */
+    .tl-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 16px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--c-border);
+        flex-wrap: wrap;
+    }
+
+    .tl-toolbar-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+
+    .tl-search-wrap {
+        position: relative;
+    }
+
+    .tl-search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        color: var(--c-text-4);
+        pointer-events: none;
+    }
+
+    .tl-search {
+        height: 30px;
+        padding: 0 10px 0 30px;
+        border: 1px solid var(--c-border);
+        border-radius: 5px;
+        background: var(--c-surface);
+        font-size: 12px;
+        color: var(--c-text);
+        outline: none;
+        width: 220px;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .tl-search:focus {
+            border-color: var(--c-accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+        }
+
+    /* Table */
+    .tl-table-wrap {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+    }
+
+    .tl-scroll {
+        overflow-x: auto;
+        max-height: 64vh;
+        overflow-y: auto;
+    }
+
+        .tl-scroll::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        .tl-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tl-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+    .tl-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 860px;
+    }
+
+        .tl-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--c-text-3);
+            padding: 9px 16px;
+            text-align: left;
+            background: #fafbfc;
+            border-bottom: 1px solid var(--c-border);
+            white-space: nowrap;
+        }
+
+            .tl-table thead th.r {
+                text-align: right;
+            }
+
+            .tl-table thead th.c {
+                text-align: center;
+            }
+
+        .tl-table tbody td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            color: var(--c-text-2);
+        }
+
+        .tl-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tl-table tbody tr:hover td {
+            background: var(--c-row-hover);
+        }
+
+        .tl-table td.r {
+            text-align: right;
+        }
+
+        .tl-table td.c {
+            text-align: center;
+        }
+
+    /* Cells */
+    .tl-refid {
+        font-family: 'SF Mono', 'Consolas', monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--c-accent);
+        text-decoration: none;
+    }
+
+        .tl-refid:hover {
+            text-decoration: underline;
+        }
+
+    .tl-plant {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 2px;
+    }
+
+    .tl-center {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
+    }
+
+    .tl-route-meta {
+        font-size: 11px;
+        color: var(--c-text-3);
+        margin-top: 2px;
+    }
+
+    .tl-date {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--c-text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tl-shift {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--c-text-3);
+        margin-top: 2px;
+    }
+
+    .tl-vol-received {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tl-vol-dispatch {
+        font-size: 11px;
+        color: var(--c-text-3);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tl-loss {
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        margin-top: 2px;
+    }
+
+        .tl-loss.severe {
+            color: var(--c-red);
+        }
+
+        .tl-loss.moderate {
+            color: var(--c-amber);
+        }
+
+        .tl-loss.normal {
+            color: var(--c-text-3);
+        }
+
+    /* Category badge */
+    .tl-cat {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    .tl-cat-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+    }
+
+    .tl-cat.severe {
+        background: var(--c-red-bg);
+        color: var(--c-red);
+        border: 1px solid var(--c-red-border);
+    }
+
+    .tl-cat.moderate {
+        background: var(--c-amber-bg);
+        color: var(--c-amber);
+        border: 1px solid var(--c-amber-border);
+    }
+
+    .tl-cat.minor {
+        background: var(--c-green-bg);
+        color: var(--c-green);
+        border: 1px solid var(--c-green-border);
+    }
+
+    /* Footer */
+    .tl-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-top: 1px solid var(--c-border);
+        background: #fafbfc;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .tl-footer-stats {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .tl-stat {
+        text-align: right;
+    }
+
+    .tl-stat-label {
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--c-text-4);
+        margin-bottom: 1px;
+    }
+
+    .tl-stat-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .tl-stat-value.loss {
+            color: var(--c-red);
+        }
+
+    .tl-record-count {
+        font-size: 12px;
+        color: var(--c-text-3);
+    }
+
+        .tl-record-count strong {
+            color: var(--c-text-2);
+        }
+
+    .tl-empty {
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--c-text-3);
+        font-size: 13px;
+    }
+
+    @@media (max-width: 768px) {
+        .tl-summary {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .tl-kpi:nth-child(2) {
+            border-right: none;
+        }
+
+        .tl-kpi:nth-child(3) {
+            border-top: 1px solid var(--c-border);
+        }
+
+        .tl-search {
+            width: 160px;
+        }
+    }
+</style>
+
+<div class="tl">
+
+    <!-- KPIs -->
+    <div class="tl-summary">
+        <div class="tl-kpi">
+            <div class="tl-kpi-label">Total Records</div>
+            <div class="tl-kpi-value">@Model.Count.ToString("N0")</div>
+            <div class="tl-kpi-sub">Historical entries</div>
+            <div class="tl-kpi-bar" style="background:var(--c-accent);"></div>
+        </div>
+        <div class="tl-kpi">
+            <div class="tl-kpi-label">Cumulative Loss</div>
+            <div class="tl-kpi-value" style="color:var(--c-red);">@totalLoss.ToString("N0") <span class="unit">L</span></div>
+            <div class="tl-kpi-sub">Across all transfers</div>
+            <div class="tl-kpi-bar" style="background:var(--c-red);"></div>
+        </div>
+        <div class="tl-kpi">
+            <div class="tl-kpi-label">Variance Rate</div>
+            <div class="tl-kpi-value" style="color:@(overallPct >= 5 ? "var(--c-red)" : overallPct >= 2 ? "var(--c-amber)" : "var(--c-green)");">
+                @overallPct.ToString("F2")<span class="unit">%</span>
+            </div>
+            <div class="tl-kpi-sub">Loss / dispatch ratio</div>
+            <div class="tl-kpi-bar" style="background:@(overallPct >= 5 ? "var(--c-red)" : overallPct >= 2 ? "var(--c-amber)" : "var(--c-green)");"></div>
+        </div>
+        <div class="tl-kpi">
+            <div class="tl-kpi-label">Critical Events</div>
+            <div class="tl-kpi-value" style="color:@(severeCount > 0 ? "var(--c-red)" : "var(--c-green)");">@severeCount</div>
+            <div class="tl-kpi-sub">@moderateCount moderate · @severeCount severe</div>
+            <div class="tl-kpi-bar" style="background:@(severeCount > 0 ? "var(--c-red)" : "var(--c-green)");"></div>
+        </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="tl-table-wrap">
+        <div class="tl-toolbar">
+            <span class="tl-toolbar-title">Transfer Loss Archive</span>
+            <div class="tl-search-wrap">
+                <i class="bi bi-search tl-search-icon"></i>
+                <input type="text" id="logSearch" class="tl-search" placeholder="Search ID, driver, center…">
+            </div>
+        </div>
+
+        <div class="tl-scroll">
+            <table class="tl-table" id="auditTable">
+                <thead>
+                    <tr>
+                        <th style="width:110px;">Ref ID</th>
+                        <th>Route</th>
+                        <th style="width:130px;">Date / Shift</th>
+                        <th style="width:160px;" class="r">Volume (L)</th>
+                        <th style="width:120px;" class="c">Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5"><div class="tl-empty">No loss records found.</div></td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var log in Model)
+                        {
+                            string catClass = log.LossCategory == "Severe" ? "severe" :
+                            log.LossCategory == "Moderate" ? "moderate" : "minor";
+                            string lossClass = log.LossCategory == "Severe" ? "severe" :
+                            log.LossCategory == "Moderate" ? "moderate" : "normal";
+
+                            <tr class="searchable-row">
+                                <td>
+                                    <a href="@Url.Action("Detail", new { id = log.TransferId })" class="tl-refid">T#@log.TransferId</a>
+                                    <div class="tl-plant">@log.PlantName</div>
+                                </td>
+                                <td>
+                                    <div class="tl-center">@log.CenterName</div>
+                                    <div class="tl-route-meta">@log.VehicleNumber · @log.DriverName</div>
+                                </td>
+                                <td>
+                                    <div class="tl-date">@log.DispatchDate.ToString("dd MMM yyyy")</div>
+                                    <div class="tl-shift">@log.Shift shift</div>
+                                </td>
+                                <td class="r">
+                                    <div class="tl-vol-received">@log.ReceivedQty.ToString("N0")</div>
+                                    <div class="tl-vol-dispatch">of @log.DispatchQty.ToString("N0") dispatched</div>
+                                    <div class="tl-loss @lossClass">−@log.LossQty.ToString("N1") L &nbsp;(@log.LossPct.ToString("F2")%)</div>
+                                </td>
+                                <td class="c">
+                                    <span class="tl-cat @catClass">
+                                        <span class="tl-cat-dot"></span>
+                                        @log.LossCategory
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tl-footer">
+            <span class="tl-record-count" id="recordCount">
+                <strong>@Model.Count</strong> records total
+            </span>
+            <div class="tl-footer-stats">
+                <div class="tl-stat">
+                    <div class="tl-stat-label">Gross Loss</div>
+                    <div class="tl-stat-value loss">@totalLoss.ToString("N1") L</div>
+                </div>
+                <div class="tl-stat">
+                    <div class="tl-stat-label">Variance</div>
+                    <div class="tl-stat-value">@overallPct.ToString("F2")%</div>
+                </div>
+                <div class="tl-stat">
+                    <div class="tl-stat-label">Severe</div>
+                    <div class="tl-stat-value @(severeCount > 0 ? "loss" : "")">@severeCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('logSearch');
+    const allRows = document.querySelectorAll('.searchable-row');
+    const countEl = document.getElementById('recordCount');
+
+    searchInput.addEventListener('input', function () {
+        const q = this.value.trim().toUpperCase();
+        let visible = 0;
+        allRows.forEach(row => {
+            const match = !q || row.textContent.toUpperCase().includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        countEl.innerHTML = q
+            ? `<strong>${visible}</strong> of <strong>${allRows.length}</strong> records`
+            : `<strong>${allRows.length}</strong> records total`;
+    });
+</script>

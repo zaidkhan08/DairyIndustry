@@ -1,0 +1,429 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — DMS</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 78px;
+            --navbar-height: 64px;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --primary-color: #0d6efd;
+            --transition-speed: 0.25s;
+            --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1001;
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width var(--transition-speed) var(--transition-curve);
+        }
+
+        #main-wrapper {
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: margin-left var(--transition-speed) var(--transition-curve);
+        }
+
+        /* HARD KILL for all transitions during page load/init */
+        .no-transition #sidebar,
+        .no-transition #main-wrapper,
+        .no-transition .brand-text,
+        .no-transition .nav-text,
+        .no-transition i {
+            transition: none !important;
+        }
+
+        #sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        /* Interactive Logo Header */
+        .sidebar-header {
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+            .sidebar-header:hover {
+                background-color: #f8fafc;
+            }
+
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            min-width: 40px;
+            justify-content: center;
+        }
+
+        /* Icon Swap Logic */
+        .logo-expanded {
+            display: block;
+        }
+
+        .logo-collapsed {
+            display: none;
+        }
+
+        #sidebar.collapsed .logo-expanded {
+            display: none;
+        }
+
+        #sidebar.collapsed .logo-collapsed {
+            display: block;
+        }
+
+        #sidebar.collapsed + #main-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            height: var(--navbar-height);
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        /* Nav Links */
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            margin: 0.125rem 0.75rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+        }
+
+            .nav-link-custom i {
+                font-size: 1.25rem;
+                min-width: 24px;
+                margin-right: 1.25rem;
+                text-align: center;
+                transition: margin 0.2s;
+                z-index: 2;
+            }
+
+            .nav-link-custom:hover {
+                background-color: #f1f5f9;
+                color: var(--primary-color);
+            }
+
+            .nav-link-custom.active {
+                background-color: #eef2ff;
+                color: var(--primary-color);
+            }
+
+        /* Smooth text transitions */
+        .brand-text, .nav-text {
+            opacity: 1;
+            transition: opacity 0.2s var(--transition-curve);
+        }
+
+        #sidebar.collapsed .brand-text,
+        #sidebar.collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        #sidebar.collapsed .nav-link-custom {
+            margin: 0.125rem 0.65rem;
+            padding: 0.75rem;
+            justify-content: center;
+        }
+
+            #sidebar.collapsed .nav-link-custom i {
+                margin-right: 0;
+            }
+
+        /* Footer Visibility */
+        .sidebar-footer {
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            transition: opacity 0.2s;
+        }
+
+        #sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            max-width: 400px;
+            width: 100%;
+        }
+
+            .search-container input {
+                background-color: #f1f5f9;
+                border: 1px solid transparent;
+                border-radius: 0.5rem;
+                padding-left: 2.5rem;
+                height: 40px;
+            }
+
+            .search-container i {
+                position: absolute;
+                left: 0.75rem;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+            }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .no-caret::after {
+            display: none !important;
+        }
+
+        /* Nav section divider label */
+        .nav-section-label {
+            padding: 0.35rem 1.25rem 0.2rem;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        #sidebar.collapsed .nav-section-label {
+            display: none;
+        }
+    </style>
+</head>
+<body class="no-transition">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="shadow-sm">
+        <!-- Logo Header Toggle -->
+        <div class="sidebar-header" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <div class="brand-logo-container">
+                <i class="bi bi-droplet-half text-primary fs-3 logo-expanded"></i>
+                <i class="bi bi-list text-dark fs-3 logo-collapsed"></i>
+            </div>
+            <span class="brand-text fw-bold fs-5 ms-2">DMS</span>
+            <i class="bi bi-list text-dark fs-3 ms-auto brand-text"></i>
+        </div>
+
+        <div class="flex-grow-1 mt-3" style="overflow-y:auto; overflow-x:hidden;">
+
+            <!-- Main -->
+            <div class="nav-section-label">Main</div>
+            <a asp-controller="Production" asp-action="Index" class="nav-link-custom">
+                <i class="bi bi-house-door"></i>
+                <span class="nav-text">Milk Transfers</span>
+            </a>
+
+            <!-- Production -->
+            <div class="nav-section-label">Production</div>
+            <a asp-controller="Production" asp-action="Batches" class="nav-link-custom">
+                <i class="bi bi-layers"></i>
+                <span class="nav-text">Batch Tracking</span>
+            </a>
+            <a asp-controller="Production" asp-action="RawMilkInventory" class="nav-link-custom">
+                <i class="bi bi-box-seam"></i>
+                <span class="nav-text">Plant Inventory</span>
+            </a>
+
+            <!-- Quality & Logistics -->
+            <div class="nav-section-label">Quality & Logistics</div>
+            <a asp-controller="Production" asp-action="Qualitytests" class="nav-link-custom">
+                <i class="bi bi-check2-circle"></i>
+                <span class="nav-text">Quality Tests</span>
+            </a>
+            <a asp-controller="Production" asp-action="Transferlosslog" class="nav-link-custom">
+                <i class="bi bi-activity"></i>
+                <span class="nav-text">Transfer Losses</span>
+            </a>
+
+            <!-- Finance -->
+            <div class="nav-section-label">Finance</div>
+            <a asp-controller="Finance" asp-action="Centerpayments" class="nav-link-custom">
+                <i class="bi bi-currency-rupee"></i>
+                <span class="nav-text">Pay To Center</span>
+            </a>
+
+            <!-- Wastage -->
+            <div class="nav-section-label">Wastage</div>
+            <a asp-controller="Production" asp-action="Productwastage" class="nav-link-custom">
+                <i class="bi bi-trash3"></i>
+                <span class="nav-text">Wastage Bin</span>
+            </a>
+            <a asp-controller="Production" asp-action="Milkprocesswastage" class="nav-link-custom">
+                <i class="bi bi-droplet-half"></i>
+                <span class="nav-text">Milk Process Wastage</span>
+            </a>
+
+        </div>
+
+        <!-- SIDEBAR FOOTER -->
+        <div class="sidebar-footer">
+            <div class="d-flex flex-column gap-1">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-muted fw-semibold" style="font-size: 11px; text-transform: uppercase;">Plant Load</small>
+                    <span class="badge @(Convert.ToInt32(Context.Session.GetString("PlantLoad") ?? "0") > 85 ? "bg-danger" : "bg-primary") rounded-pill">
+                        @(Context.Session.GetString("PlantLoad") ?? "0")%
+                    </span>
+                </div>
+                <div class="progress" style="height: 6px; background-color: #f1f5f9;">
+                    <div class="progress-bar @(Convert.ToInt32(Context.Session.GetString("PlantLoad") ?? "0") > 85 ? "bg-danger" : "bg-primary")"
+                         role="progressbar"
+                         style="width: @(Context.Session.GetString("PlantLoad") ?? "0")%;"
+                         aria-valuenow="@(Context.Session.GetString("PlantLoad") ?? "0")"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div id="main-wrapper">
+        <header class="navbar-custom">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-link text-dark p-0 d-md-none" onclick="toggleSidebar()">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="search-container d-none d-md-block">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control border-0" placeholder="Search data...">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                @if (Context.Session.GetString("PlantName") != null)
+                {
+                    <div class="badge bg-light text-dark border px-3 py-2 rounded-pill d-none d-sm-block">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i> @Context.Session.GetString("PlantName")
+                    </div>
+                }
+
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-circle p-0 dropdown-toggle no-caret border shadow-sm"
+                            style="width: 40px; height: 40px;" data-bs-toggle="dropdown">
+                        <span class="fw-bold">@(Context.Session.GetString("Username")?[0].ToString() ?? "U")</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 p-2">
+                        <li class="px-3 py-2 border-bottom mb-2">
+                            <div class="fw-bold">@Context.Session.GetString("Username")</div>
+                            <div class="text-muted small">@DateTime.Now.ToString("dd MMM yyyy")</div>
+                        </li>
+                        <li><a class="dropdown-item rounded" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item rounded text-danger fw-bold" asp-controller="Admin" asp-action="Logout"><i class="bi bi-power me-2"></i>Sign out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-body">
+            <div class="container-fluid p-0">
+                <div class="mb-4">
+                    <h1 class="h3 fw-bold mb-0">@ViewData["Title"]</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mt-1">
+                            <li class="breadcrumb-item small text-muted">Production</li>
+                            <li class="breadcrumb-item active small" aria-current="page">@ViewData["Title"]</li>
+                        </ol>
+                    </nav>
+                </div>
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true' || savedState === null) {
+                document.getElementById('sidebar').classList.add('collapsed');
+            } else {
+                document.getElementById('sidebar').classList.remove('collapsed');
+            }
+        })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const body = document.body;
+            setTimeout(() => { body.classList.remove('no-transition'); }, 50);
+
+            const currentPath = window.location.pathname.toLowerCase();
+            document.querySelectorAll('.nav-link-custom').forEach(link => {
+                const href = link.getAttribute('href')?.toLowerCase();
+                if (href && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

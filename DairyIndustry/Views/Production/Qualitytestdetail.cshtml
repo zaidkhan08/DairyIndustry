@@ -1,0 +1,520 @@
+﻿@model DairyIndustry.Models.Production.QualityTestModel
+@{
+    ViewData["Title"] = $"Quality Test — T-{Model.TransferId}";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var fatDiff = (Model.TestedFat.HasValue && Model.BatchAvgFat.HasValue)
+                    ? (Model.TestedFat.Value - Model.BatchAvgFat.Value) : (decimal?)null;
+    var clrDiff = (Model.TestedCLR.HasValue && Model.BatchAvgCLR.HasValue)
+                    ? (Model.TestedCLR.Value - Model.BatchAvgCLR.Value) : (decimal?)null;
+    bool passed = Model.QualityResult == "Normal";
+}
+
+<style>
+    .qtd-root {
+        --ink: #202124;
+        --ink-2: #3c4043;
+        --ink-m: #5f6368;
+        --ink-f: #9aa0a6;
+        --surface: #fff;
+        --bg: #f8f9fa;
+        --bg-3: #f1f3f4;
+        --border: #e0e0e0;
+        --accent: #1a73e8;
+        --accent-bg: #e8f0fe;
+        --green: #1e8e3e;
+        --green-bg: #e6f4ea;
+        --green-mid: #ceead6;
+        --red: #d93025;
+        --red-bg: #fce8e6;
+        --red-mid: #f5c6c2;
+        --yellow: #f29900;
+        --yellow-bg: #fef7e0;
+        --yellow-mid: #fce8b2;
+        --shadow: 0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+        --shadow-sm: 0 1px 2px rgba(60,64,67,.2);
+        --r: 8px;
+        --r-lg: 12px;
+        font-family: 'Roboto',sans-serif;
+        color: var(--ink);
+        max-width: 760px;
+    }
+
+    /* breadcrumb */
+    .qtd-bc {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--ink-f);
+        margin-bottom: 6px;
+    }
+
+        .qtd-bc a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .qtd-bc a:hover {
+                text-decoration: underline;
+            }
+
+        .qtd-bc i {
+            font-size: 10px;
+        }
+
+    .qtd-title {
+        font-size: 22px;
+        font-weight: 400;
+        color: var(--ink);
+        margin: 0 0 4px;
+    }
+
+    .qtd-sub {
+        font-size: 13px;
+        color: var(--ink-m);
+        margin: 0 0 24px;
+    }
+
+    /* result banner */
+    .qtd-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 20px;
+        border-radius: var(--r-lg);
+        border: 1px solid;
+        margin-bottom: 24px;
+    }
+
+        .qtd-banner.pass {
+            background: var(--green-bg);
+            border-color: var(--green-mid);
+            color: var(--green);
+        }
+
+        .qtd-banner.fail {
+            background: var(--red-bg);
+            border-color: var(--red-mid);
+            color: var(--red);
+        }
+
+    .qtd-banner-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .qtd-banner-title {
+        font-size: 15px;
+        font-weight: 500;
+        margin-bottom: 3px;
+    }
+
+    .qtd-banner-sub {
+        font-size: 13px;
+        opacity: .85;
+    }
+
+    /* section card */
+    .qtd-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 16px;
+    }
+
+    .qtd-card-hd {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink-2);
+    }
+
+        .qtd-card-hd i {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+    .qtd-card-body {
+        padding: 20px;
+    }
+
+    /* readings grid */
+    .qtd-readings {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .qtd-reading-box {
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        transition: box-shadow .2s;
+    }
+
+        .qtd-reading-box:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .qtd-reading-box.ok {
+            border-color: var(--green-mid);
+        }
+
+        .qtd-reading-box.bad {
+            border-color: var(--red-mid);
+        }
+
+    .qtd-reading-top {
+        padding: 16px 20px 12px;
+        text-align: center;
+    }
+
+        .qtd-reading-top.ok {
+            background: var(--green-bg);
+        }
+
+        .qtd-reading-top.bad {
+            background: var(--red-bg);
+        }
+
+    .qtd-reading-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        margin-bottom: 6px;
+    }
+
+        .qtd-reading-label.ok {
+            color: var(--green);
+        }
+
+        .qtd-reading-label.bad {
+            color: var(--red);
+        }
+
+    .qtd-reading-value {
+        font-size: 36px;
+        font-weight: 300;
+        line-height: 1;
+    }
+
+        .qtd-reading-value.ok {
+            color: var(--green);
+        }
+
+        .qtd-reading-value.bad {
+            color: var(--red);
+        }
+
+    .qtd-reading-unit {
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .qtd-reading-bottom {
+        padding: 12px 20px;
+        background: var(--bg);
+    }
+
+    .qtd-reading-compare {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--ink-m);
+        margin-bottom: 6px;
+    }
+
+        .qtd-reading-compare b {
+            color: var(--ink);
+        }
+
+    .qtd-variance {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+        .qtd-variance.ok {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .qtd-variance.bad {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+    .qtd-deviated {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--red);
+        margin-top: 8px;
+        padding: 6px 10px;
+        background: var(--red-bg);
+        border-radius: 6px;
+    }
+
+    /* transfer info table */
+    .qtd-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .qtd-info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 10px 14px;
+        background: var(--bg);
+        border-radius: var(--r);
+        border: 1px solid var(--border);
+    }
+
+    .qtd-info-key {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--ink-f);
+    }
+
+    .qtd-info-val {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+    }
+
+        .qtd-info-val.mono {
+            font-family: 'Roboto Mono','Courier New',monospace;
+        }
+
+    .qtd-transfer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    /* back btn */
+    .qtd-btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 16px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-2);
+        text-decoration: none;
+        cursor: pointer;
+        transition: background .2s, border-color .2s;
+    }
+
+        .qtd-btn-back:hover {
+            background: var(--bg-3);
+            border-color: #c0c0c0;
+            color: var(--ink);
+        }
+
+    @@media(max-width:600px) {
+        .qtd-readings, .qtd-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="qtd-root">
+
+    <!-- Breadcrumb -->
+    <div class="qtd-bc">
+        <a asp-action="Qualitytests">Quality Tests</a>
+        <i class="bi bi-chevron-right"></i>
+        <span>Transfer #@Model.TransferId</span>
+    </div>
+
+    <!-- Title + back -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
+        <div>
+            <h1 class="qtd-title">Quality Test Detail</h1>
+            <p class="qtd-sub">Transfer #@Model.TransferId &nbsp;·&nbsp; Tested @Model.TestDate.ToString("dd MMM yyyy")</p>
+        </div>
+        <a asp-action="Qualitytests" class="qtd-btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Result banner -->
+    <div class="qtd-banner @(passed ? "pass" : "fail")">
+        <i class="bi @(passed ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") qtd-banner-icon"></i>
+        <div>
+            <div class="qtd-banner-title">Quality Result: @Model.QualityResult</div>
+            <div class="qtd-banner-sub">
+                @if (passed)
+                {
+                    <span>All readings are within acceptable range compared to batch averages.</span>
+                }
+                else
+                {
+                    <span>
+                        One or more readings deviate from batch averages.
+                        @if (Model.IsFatDeviated)
+                        {
+                            <span>Fat is outside ±0.5% tolerance. </span>
+                        }
+                        @if (Model.IsCLRDeviated)
+                        {
+                            <span>CLR is outside ±2 tolerance.</span>
+                        }
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Readings -->
+    <div class="qtd-card">
+        <div class="qtd-card-hd">
+            <i class="bi bi-graph-up"></i> Quality Readings vs Batch Averages
+        </div>
+        <div class="qtd-card-body">
+            <div class="qtd-readings">
+
+                <!-- FAT -->
+                @{
+                    string fatClass = Model.IsFatDeviated ? "bad" : "ok";
+                }
+                <div class="qtd-reading-box @fatClass">
+                    <div class="qtd-reading-top @fatClass">
+                        <div class="qtd-reading-label @fatClass">Fat</div>
+                        <div class="qtd-reading-value @fatClass">
+                            @(Model.TestedFat?.ToString("F2") ?? "—")<span class="qtd-reading-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="qtd-reading-bottom">
+                        <div class="qtd-reading-compare">
+                            <span>Batch Average</span>
+                            <b>@(Model.BatchAvgFat?.ToString("F2") ?? "—")%</b>
+                        </div>
+                        @if (fatDiff.HasValue)
+                        {
+                            <span class="qtd-variance @fatClass">
+                                <i class="bi @(fatDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
+                                @(fatDiff.Value >= 0 ? "+" : "")@fatDiff.Value.ToString("F2") variance
+                            </span>
+                        }
+                        @if (Model.IsFatDeviated)
+                        {
+                            <div class="qtd-deviated"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±0.5% tolerance</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- CLR -->
+                @{
+                    string clrClass = Model.IsCLRDeviated ? "bad" : "ok";
+                }
+                <div class="qtd-reading-box @clrClass">
+                    <div class="qtd-reading-top @clrClass">
+                        <div class="qtd-reading-label @clrClass">CLR</div>
+                        <div class="qtd-reading-value @clrClass">
+                            @(Model.TestedCLR?.ToString("F2") ?? "—")
+                        </div>
+                    </div>
+                    <div class="qtd-reading-bottom">
+                        <div class="qtd-reading-compare">
+                            <span>Batch Average</span>
+                            <b>@(Model.BatchAvgCLR?.ToString("F2") ?? "—")</b>
+                        </div>
+                        @if (clrDiff.HasValue)
+                        {
+                            <span class="qtd-variance @clrClass">
+                                <i class="bi @(clrDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
+                                @(clrDiff.Value >= 0 ? "+" : "")@clrDiff.Value.ToString("F2") variance
+                            </span>
+                        }
+                        @if (Model.IsCLRDeviated)
+                        {
+                            <div class="qtd-deviated"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±2 tolerance</div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer info -->
+    <div class="qtd-card">
+        <div class="qtd-card-hd">
+            <i class="bi bi-truck"></i> Transfer Information
+        </div>
+        <div class="qtd-card-body">
+            <div class="qtd-info-grid">
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Transfer ID</span>
+                    <span class="qtd-transfer-badge"><i class="bi bi-arrow-left-right"></i> T-@Model.TransferId</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Test Date</span>
+                    <span class="qtd-info-val">@Model.TestDate.ToString("dd MMM yyyy")</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">From (Center)</span>
+                    <span class="qtd-info-val">@Model.CenterName</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">To (Plant)</span>
+                    <span class="qtd-info-val">@Model.PlantName</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Vehicle</span>
+                    <span class="qtd-info-val mono">@Model.VehicleNumber</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Driver</span>
+                    <span class="qtd-info-val">@Model.DriverName</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Dispatch Date</span>
+                    <span class="qtd-info-val">@Model.DispatchDate.ToString("dd MMM yyyy")</span>
+                </div>
+                <div class="qtd-info-row">
+                    <span class="qtd-info-key">Dispatched Qty</span>
+                    <span class="qtd-info-val mono">@Model.DispatchQty.ToString("F2") L</span>
+                </div>
+                <div class="qtd-info-row" style="grid-column:1/-1;">
+                    <span class="qtd-info-key">Received Qty</span>
+                    <span class="qtd-info-val mono">@(Model.ReceivedQty?.ToString("F2") ?? "—") L</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

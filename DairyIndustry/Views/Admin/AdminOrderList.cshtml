@@ -1,0 +1,184 @@
+﻿@using DairyIndustry.Models.Admin
+@model DairyIndustry.Models.Admin.AdminOrderListModel
+@{
+    ViewData["Title"] = "All Orders";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid mt-4 px-4">
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Order Management</h5>
+            <a asp-action="AdminOrder" asp-controller="Admin" class="btn btn-sm btn-outline-light">
+                + New Order
+            </a>
+        </div>
+
+        <div class="card-body border-bottom">
+            <form method="post" asp-action="AdminOrderList" asp-controller="Admin">
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-semibold">Distributor</label>
+                        <select asp-for="DistributorId" class="form-select form-select-sm">
+                            <option value="">All Distributors</option>
+                            @foreach (var d in Model.DistributorList)
+                            {
+                                <option value="@d.DistributorId"
+                                        selected="@(Model.DistributorId == d.DistributorId ? "selected" : null)">
+                                    @d.DistributorName
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small fw-semibold">Status</label>
+                        <select asp-for="OrderStatus" class="form-select form-select-sm">
+                            <option value="">All Statuses</option>
+                            @foreach (var s in AdminOrderListModel.StatusOptions)
+                            {
+                                <option value="@s" selected="@(Model.OrderStatus == s ? "selected" : null)">
+                                    @s
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small fw-semibold">From Date</label>
+                        <input asp-for="FromDate" type="date" class="form-control form-control-sm"
+                               value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small fw-semibold">To Date</label>
+                        <input asp-for="ToDate" type="date" class="form-control form-control-sm"
+                               value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-dark btn-sm flex-grow-1">
+                            Apply Filter
+                        </button>
+                        <a asp-action="AdminOrderList" asp-controller="Admin"
+                           class="btn btn-outline-secondary btn-sm">
+                            Reset
+                        </a>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (!Model.Orders.Any())
+            {
+                <div class="text-center text-muted py-5">
+                    <p class="mb-0">No orders found for the selected filters.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Order ID</th>
+                                <th>Distributor</th>
+                                <th>Location</th>
+                                <th>Contact</th>
+                                <th>Order Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th class="text-center">Update Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int sr = 1;
+                            }
+                            @foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td class="ps-4 text-muted small">@sr</td>
+                                    <td>
+                                        <span class="fw-semibold text-dark">#@order.OrderId</span>
+                                    </td>
+                                    <td>@order.DistributorName</td>
+                                    <td class="text-muted small">@(order.Location ?? "—")</td>
+                                    <td class="text-muted small">@(order.ContactNumber ?? "—")</td>
+                                    <td class="small">@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="fw-semibold">₹@order.TotalAmount.ToString("N2")</td>
+                                    <td>
+                                        @{
+                                            var badgeClass = order.OrderStatus switch
+                                            {
+                                                "Pending" => "bg-warning text-dark",
+                                                "Confirmed" => "bg-info text-dark",
+                                                "Dispatched" => "bg-primary",
+                                                "Delivered" => "bg-success",
+                                                "Cancelled" => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">@order.OrderStatus</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <form method="post" asp-action="UpdateOrderStatus" asp-controller="Admin"
+                                              class="d-inline-flex gap-1 align-items-center">
+                                            <input type="hidden" name="orderId" value="@order.OrderId" />
+                                            <input type="hidden" name="distributorId" value="@Model.DistributorId" />
+                                            <input type="hidden" name="orderStatus" value="@Model.OrderStatus" />
+                                            <input type="hidden" name="fromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                                            <input type="hidden" name="toDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+
+                                            <select name="status" class="form-select form-select-sm" style="width:130px;">
+                                                @foreach (var s in AdminOrderListModel.StatusOptions)
+                                                {
+                                                    if (s == order.OrderStatus)
+                                                    {
+                                                        <option value="@s" selected>@s</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@s">@s</option>
+                                                    }
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-dark"
+                                                    title="Update status">
+                                                &#10003;
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                sr++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top">
+                    <span class="text-muted small">
+                        Showing <strong>@Model.Orders.Count</strong> order(s)
+                    </span>
+                    <span class="fw-semibold">
+                        Total: ₹@Model.Orders.Sum(o => o.TotalAmount).ToString("N2")
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

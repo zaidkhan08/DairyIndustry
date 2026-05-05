@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Record Product Wastage";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+}
+
+<h4 class="mb-4">🗑️ Record Product Wastage</h4>
+
+<div class="card shadow-sm" style="max-width: 550px;">
+    <div class="card-header bg-danger text-white">
+        <strong>New Wastage Entry</strong>
+    </div>
+    <div class="card-body">
+        <form asp-action="AddWastage" method="post">
+
+            <div class="mb-3">
+                <label class="form-label">Production Batch</label>
+                <select name="batchId" class="form-select" required>
+                    <option value="">-- Select Batch --</option>
+                    @foreach (var b in (IEnumerable<DairyIndustry.Models.Production.BatchForWastageModel>)ViewBag.Batches)
+                    {
+                        <option value="@b.BatchId">@b.DisplayText</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Product</label>
+                <select name="productId" class="form-select" required>
+                    <option value="">-- Select Product --</option>
+                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
+                    {
+                        <option value="@p.ProductId">@p.ProductName (@p.Unit)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Wasted Quantity</label>
+                <input type="number" name="quantity" class="form-control"
+                       step="0.01" min="0.01" placeholder="e.g. 5.00" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Reason <span class="text-muted">(optional)</span></label>
+                <select name="reason" class="form-select">
+                    <option value="">-- Select Reason --</option>
+                    <option value="Packaging damage">Packaging damage</option>
+                    <option value="Quality check failed">Quality check failed</option>
+                    <option value="Spillage">Spillage</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Contamination">Contamination</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-action="ProductWastage" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-danger fw-bold">Record Wastage</button>
+            </div>
+
+        </form>
+    </div>
+</div>

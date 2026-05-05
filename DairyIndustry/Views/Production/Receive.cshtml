@@ -1,0 +1,70 @@
+﻿@model DairyIndustry.Models.Production.MilkTransferModel
+
+@{
+    ViewData["Title"] = "Receive Transfer";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+
+}
+
+<h4 class="mb-4">📥 Receive Milk Transfer</h4>
+
+<div class="card shadow-sm mb-4" style="max-width: 600px;">
+    <div class="card-header bg-secondary text-white">
+        <strong>Transfer Info — TR-@Model.TransferId</strong>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-5">Batch</dt>
+            <dd class="col-sm-7">@Model.BatchRef</dd>
+
+            <dt class="col-sm-5">From Center</dt>
+            <dd class="col-sm-7">@Model.CenterName</dd>
+
+            <dt class="col-sm-5">To Plant</dt>
+            <dd class="col-sm-7">@Model.PlantName</dd>
+
+            <dt class="col-sm-5">Vehicle</dt>
+            <dd class="col-sm-7">@Model.VehicleNumber @(Model.DriverName != null ? "/ " + Model.DriverName : "")</dd>
+
+            <dt class="col-sm-5">Dispatched Qty</dt>
+            <dd class="col-sm-7"><strong>@Model.DispatchQty.ToString("N2") L</strong></dd>
+
+            <dt class="col-sm-5">Dispatch Date</dt>
+            <dd class="col-sm-7">@Model.DispatchDate.ToString("dd-MMM-yyyy")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+    <div class="card-header bg-success text-white">
+        <strong>Enter Received Details</strong>
+    </div>
+    <div class="card-body">
+
+        <form asp-action="Receive" method="post">
+            <input type="hidden" name="transferId" value="@Model.TransferId" />
+
+            <div class="mb-3">
+                <label class="form-label">Received Quantity (Litres)</label>
+                <input type="number" name="receivedQty" class="form-control"
+                       step="0.01" min="1" max="@Model.DispatchQty"
+                       placeholder="e.g. 498.50" required />
+                <small class="text-muted">Cannot exceed dispatched quantity (@Model.DispatchQty.ToString("N2") L)</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Received Date</label>
+                <input type="date" name="receivedDate" class="form-control"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success fw-bold">
+                    ✅ Confirm Received
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>

@@ -1,0 +1,320 @@
+﻿@model List<DairyIndustry.Models.Production.MilkTransferModel>
+
+@{
+    ViewData["Title"] = "Milk Transfers";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    var RoleName = Context.Session.GetString("RoleName");
+}
+
+<style>
+    .glass-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .table-custom thead {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .table-custom th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #495057;
+        padding: 1rem;
+    }
+
+    .table-custom td {
+        vertical-align: middle;
+        padding: 1rem;
+        border-color: #f1f3f5;
+    }
+
+    .status-badge {
+        padding: 0.5em 0.85em;
+        font-weight: 500;
+        border-radius: 6px;
+    }
+
+    .id-pill {
+        background: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.85rem;
+    }
+
+    .numeric-val {
+        font-weight: 600;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .btn-action {
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+
+    .tr-dispatched {
+        border-left: 4px solid #ffc107;
+    }
+
+    .tr-received {
+        border-left: 4px solid #198754;
+    }
+
+    .btn-group-custom {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .btn-table-action {
+        background-color: #ffffff;
+        border: 1px solid #ced4da !important;
+        color: #495057 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        height: 32px;
+        border-radius: 6px !important;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+        .btn-table-action i {
+            margin-right: 4px;
+        }
+
+        .btn-table-action:hover {
+            background-color: #f8f9fa;
+            border-color: #adb5bd !important;
+            color: #212529 !important;
+        }
+
+    .btn-table-success {
+        background-color: #198754;
+        border-color: #198754 !important;
+        color: white !important;
+    }
+
+        .btn-table-success:hover {
+            background-color: #157347;
+        }
+
+    /* ── NEW: QC Test button ─────────────────────────────── */
+    .btn-table-qc {
+        background-color: #0d6efd;
+        border-color: #0d6efd !important;
+        color: white !important;
+    }
+
+        .btn-table-qc:hover {
+            background-color: #0b5ed7;
+            border-color: #0b5ed7 !important;
+            color: white !important;
+        }
+
+    /* Already-tested muted button */
+    .btn-table-qc-done {
+        background-color: #e9ecef;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    /* QC Pending — yellow */
+    .btn-table-qc-pending {
+        background-color: #ffc107;
+        border-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+        .btn-table-qc-pending:hover {
+            background-color: #e0a800;
+            border-color: #e0a800 !important;
+            color: #000 !important;
+        }
+
+    /* QC Done — muted grey, not clickable for add */
+    .btn-table-qc-done {
+        background-color: #e9ecef;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+    }
+
+        .btn-table-qc-done:hover {
+            background-color: #dee2e6;
+            color: #495057 !important;
+        }
+</style>
+
+<div class="d-flex justify-content-end mb-4 pt-2">
+    @if (RoleName == "Collection Agent")
+    {
+        <a asp-action="Create" class="btn btn-primary px-4 btn-action shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>Create New Batch
+        </a>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show glass-card mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+            <div>@TempData["Success"]</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show glass-card mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <div>@TempData["Error"]</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card glass-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-custom mb-0">
+                <thead>
+                    <tr>
+                        <th>Transfer Ref</th>
+                        <th>Batch</th>
+                        <th>Route (From-To)</th>
+                        <th>Logistics</th>
+                        <th class="text-end">Dispatch (L)</th>
+                        <th class="text-end">Received (L)</th>
+                        <th class="text-end">Loss (L)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        @if (RoleName == "Plant Manager")
+                        {
+                            <th class="text-center">Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                                No transfer records found in the system.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var t in Model)
+                    {
+                        <tr class="@(t.Status == "Received" ? "tr-received" : "tr-dispatched")">
+                            <td><span class="id-pill">TR-@t.TransferId</span></td>
+                            <td><span class="text-muted small fw-bold">#@t.BatchRef</span></td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-semibold text-dark">@t.PlantName</span>
+                                    <span class="text-muted small">from @t.CenterName</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="small text-dark"><i class="bi bi-truck me-1"></i>@t.VehicleNumber</span>
+                                    <span class="text-muted small">@(t.DriverName ?? "No Driver Assigned")</span>
+                                </div>
+                            </td>
+                            <td class="text-end numeric-val">@t.DispatchQty.ToString("N2")</td>
+                            <td class="text-end numeric-val">@(t.ReceivedQty.HasValue? t.ReceivedQty.Value.ToString("N2") : "-")</td>
+                            <td class="text-end">
+                                @if (t.LossQty.HasValue)
+                                {
+                                    <span class="numeric-val @(t.LossQty > 0 ? "text-danger" : "text-success")">
+                                        @(t.LossQty > 0 ? "-" : "")@Math.Abs(t.LossQty.Value).ToString("N2")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="small text-dark">@t.DispatchDate.ToString("dd MMM yyyy")</div>
+                            </td>
+                            <td>
+                                @if (t.Status == "Received")
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle status-badge">
+                                        <i class="bi bi-check2-all me-1"></i> Received
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle status-badge">
+                                        <i class="bi bi-clock-history me-1"></i> Dispatched
+                                    </span>
+                                }
+                            </td>
+                            @if (RoleName == "Plant Manager")
+                            {
+                                <td class="text-center text-nowrap">
+                                    <div class="btn-group-custom">
+
+                                   
+                                        <a asp-action="Detail" asp-route-id="@t.TransferId"
+                                           class="btn-table-action" title="View Details">
+                                            <i class="bi bi-eye"></i> Detail
+                                        </a>
+
+                                        
+                                        @if (t.Status == "Dispatched")
+                                        {
+                                            <a asp-action="Receive" asp-route-id="@t.TransferId"
+                                               class="btn-table-action btn-table-success" title="Confirm Receipt">
+                                                <i class="bi bi-download"></i> Receive
+                                            </a>
+                                        }
+
+
+                                        @if (t.Status == "Received")
+                                        {
+                                            @if (!t.HasQualityTest)
+                                            {
+                                                <a asp-action="AddQualityTest" asp-route-id="@t.TransferId"
+                                                   class="btn-table-action btn-table-qc-pending" title="QC Test Pending">
+                                                    <i class="bi bi-clock me-1"></i> QC Test
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a asp-action="QualityTestDetail" asp-route-id="@t.TransferId"
+                                                   class="btn-table-action btn-table-qc-done" title="QC Done">
+                                                    <i class="bi bi-clipboard2-check me-1"></i> QC Done
+                                                </a>
+                                            }
+                                        }
+
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

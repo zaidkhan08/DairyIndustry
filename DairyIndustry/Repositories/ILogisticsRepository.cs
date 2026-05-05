@@ -1,4 +1,5 @@
-﻿using DairyIndustry.Models.Logistics;
+﻿using DairyIndustry.Models.Admin;
+using DairyIndustry.Models.Logistics;
 
 namespace DairyIndustry.Repositories
 {
@@ -10,6 +11,11 @@ namespace DairyIndustry.Repositories
 
         int AddVehicle(int driverId, string vehicleNumber, decimal capacity);
         List<VehiclesModel> GetVehiclesByDriverId(int driverId);
+        List<DriversModel> GetAllDrivers();
+        void UpdateDriverStatus(int driverId, string status);
+        List<VehiclesModel> GetAllVehicles();
+        void UpdateVehicleStatus(int vehicleId, string status);
+        List<MilkTransferModel> GetDriverTransfers(int userId);
 
     }
 }
