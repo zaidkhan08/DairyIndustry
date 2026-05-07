@@ -5,9 +5,9 @@
     var orders = ViewBag.Orders as List<DairyIndustry.Models.SalesOrderModel> ?? new();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h4 class="fw-bold mb-0">@Model.DistributorName</h4>
+        <h4 class="fw-bold mb-1">@Model.DistributorName</h4>
         <small class="text-muted">Distributor Profile</small>
     </div>
     <div class="d-flex gap-2">
@@ -21,8 +21,8 @@
 
     <!-- Profile Card -->
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header text-white fw-semibold" style="background:#1a2e4a;">
+        <div class="card">
+            <div class="card-header text-white fw-semibold" style="background:#0f2040; color:#f0f4ff;">
                 🏪 Distributor Info
             </div>
             <div class="card-body">
@@ -106,7 +106,7 @@
 
     <!-- Orders -->
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm">
+        <div class="card">
             <div class="card-header bg-white border-bottom fw-semibold text-primary">
                 Orders
                 @if (orders.Any())

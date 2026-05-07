@@ -18,9 +18,9 @@
     string pctColor = pct == 100 ? "success" : pct >= 50 ? "warning" : "danger";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h4 class="fw-bold mb-0">My Details</h4>
+        <h4 class="fw-bold mb-1">My Details</h4>
         <small class="text-muted">Your registration information</small>
     </div>
     <div class="d-flex gap-2">
@@ -66,9 +66,9 @@ else
 
 <div class="row justify-content-center">
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm">
+        <div class="card">
             <div class="card-header text-white d-flex justify-content-between align-items-center"
-                 style="background:#1a2e4a;">
+                 style="background:#0f2040; color:#f0f4ff;">
                 <span class="fw-semibold">👤 Distributor Profile</span>
                 @{
                     string badgeColor = Model.Status switch

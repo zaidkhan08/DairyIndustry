@@ -19,7 +19,7 @@
 
     // ── Profile completeness (for sidebar indicator) ────────────────────
     int profileComplete = 0;
-    int profileTotal = 6;  // Name, Location, Contact, Email, Address, GSTIN
+    int profileTotal = 5;  // Name, Location, Contact, Email, GSTIN
     if (isDist)
     {
         int distId = Context.Session.GetInt32("DistributorId") ?? 0;
@@ -30,7 +30,6 @@
             if (!string.IsNullOrEmpty(Context.Session.GetString("DistributorLocation"))) profileComplete++;
             if (!string.IsNullOrEmpty(Context.Session.GetString("DistributorContact"))) profileComplete++;
             if (!string.IsNullOrEmpty(Context.Session.GetString("DistributorEmail"))) profileComplete++;
-            if (!string.IsNullOrEmpty(Context.Session.GetString("DistributorAddress"))) profileComplete++;
             if (!string.IsNullOrEmpty(Context.Session.GetString("DistributorGSTIN"))) profileComplete++;
 
             string notifJson = Context.Session.GetString($"NotifOrders_{distId}") ?? "[]";
@@ -64,18 +63,18 @@
     }
 }
 
-<div id="sales-sidebar" style="background:#1a2e4a; display:flex; flex-direction:column;">
+<div id="sales-sidebar" style="background:#0a1628; display:flex; flex-direction:column;">
 
     <!-- ── Header ── -->
-    <div style="background:#16263e; padding:14px 16px; border-bottom:1px solid #2a4060; flex-shrink:0;">
-        <div style="font-size:.6rem; color:#8fa8c8; text-transform:uppercase; letter-spacing:.12em;">
+    <div style="background:#060d18; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06); flex-shrink:0;">
+        <div style="font-size:.6rem; color:#64748b; text-transform:uppercase; letter-spacing:.12em;">
             Sales Module
         </div>
         <div style="font-size:.85rem; color:#fff; font-weight:600; margin-top:3px;
                     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             @dispName
         </div>
-        <div style="font-size:.68rem; color:#4a9eda; margin-top:2px; font-weight:500;">
+        <div style="font-size:.68rem; color:#3b82f6; margin-top:2px; font-weight:500;">
             @roleName
         </div>
         @if (isDist && profileTotal > 0)
@@ -83,18 +82,18 @@
             int pct = profileComplete * 100 / profileTotal;
             string pctColor = pct == 100 ? "#2ecc71" : pct >= 50 ? "#f39c12" : "#e74c3c";
             <div style="margin-top:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:.6rem; color:#8fa8c8; margin-bottom:3px;">
+                <div style="display:flex; justify-content:space-between; font-size:.6rem; color:#64748b; margin-bottom:3px;">
                     <span>Profile</span>
                     <span style="color:@pctColor; font-weight:600;">@profileComplete/@profileTotal complete</span>
                 </div>
                 <div style="background:#0f1e30; border-radius:4px; height:4px; overflow:hidden;">
                     <div style="width:@pct%; height:100%; background:@pctColor; border-radius:4px;
-                                    transition:width .3s;"></div>
+                                            transition:width .3s;"></div>
                 </div>
                 @if (pct < 100)
                 {
                     <a asp-controller="Sales" asp-action="MyProfile"
-                       style="font-size:.6rem; color:#8fa8c8; text-decoration:none; display:block; margin-top:3px;">
+                       style="font-size:.6rem; color:#64748b; text-decoration:none; display:block; margin-top:3px;">
                         Complete profile →
                     </a>
                 }
@@ -138,19 +137,19 @@
                 <span class="sb-icon">🏪</span> All Distributors
             </a>
 
-            
+
             int pendingCount = ViewBag.PendingCount != null ? (int)ViewBag.PendingCount : 0;
-            
+
             <a asp-controller="Sales" asp-action="Distributors" asp-route-status="Pending"
                class="sb-link @(Active("Distributors") && Context.Request.Query["status"] == "Pending" ? "active" : "")">
                 <span class="sb-icon">⏳</span> Pending Approvals
                 @if (pendingCount > 0)
                 {
                     <span style="margin-left:auto; background:#e74c3c; color:#fff;
-                                 font-size:.62rem; font-weight:700; min-width:18px;
-                                 height:18px; border-radius:9px; display:inline-flex;
-                                 align-items:center; justify-content:center; padding:0 5px;
-                                 flex-shrink:0;">
+                                                 font-size:.62rem; font-weight:700; min-width:18px;
+                                                 height:18px; border-radius:9px; display:inline-flex;
+                                                 align-items:center; justify-content:center; padding:0 5px;
+                                                 flex-shrink:0;">
                         @(pendingCount > 9 ? "9+" : pendingCount.ToString())
                     </span>
                 }
@@ -198,10 +197,10 @@
                     <span id="sb-notif-badge"
                           onclick="toggleNotifPanel(event)"
                           style="margin-left:auto; background:#e74c3c; color:#fff;
-                                                                                         font-size:.62rem; font-weight:700; min-width:18px;
-                                                                                         height:18px; border-radius:9px; display:inline-flex;
-                                                                                         align-items:center; justify-content:center; padding:0 5px;
-                                                                                         cursor:pointer; flex-shrink:0;"
+                                                                                                         font-size:.62rem; font-weight:700; min-width:18px;
+                                                                                                         height:18px; border-radius:9px; display:inline-flex;
+                                                                                                         align-items:center; justify-content:center; padding:0 5px;
+                                                                                                         cursor:pointer; flex-shrink:0;"
                           title="Click to see which orders were updated">
                         @(notifCount > 9 ? "9+" : notifCount.ToString())
                     </span>
@@ -212,12 +211,12 @@
             @if (notifCount > 0 && notifOrders != null)
             {
                 <div id="sb-notif-panel"
-                     style="display:none; margin:0 10px 6px; background:#16263e;
-                                                                                    border:1px solid #2a4060; border-radius:6px; overflow:hidden;">
+                     style="display:none; margin:0 10px 6px; background:#060d18;
+                                                                                                    border:1px solid #2a4060; border-radius:6px; overflow:hidden;">
 
-                    <div style="padding:8px 12px; font-size:.65rem; color:#8fa8c8;
-                                                                                        text-transform:uppercase; letter-spacing:.08em;
-                                                                                        border-bottom:1px solid #2a4060; background:#0f1e30;">
+                    <div style="padding:8px 12px; font-size:.65rem; color:#64748b;
+                                                                                                        text-transform:uppercase; letter-spacing:.08em;
+                                                                                                        border-bottom:1px solid rgba(255,255,255,.06); background:#0f1e30;">
                         🔔 Admin updated these orders
                     </div>
 
@@ -228,22 +227,22 @@
                         "#f39c12";
                         <a href="/Sales/Details/@o.OrderId"
                            style="display:flex; align-items:center; justify-content:space-between;
-                                                                                                                      padding:8px 12px; text-decoration:none; color:#b8cfe8;
-                                                                                                                      font-size:.78rem; border-bottom:1px solid #1e3450;
-                                                                                                                      transition:background .13s;"
+                                                                                                                                              padding:8px 12px; text-decoration:none; color:#94a3b8;
+                                                                                                                                              font-size:.78rem; border-bottom:1px solid #1e3450;
+                                                                                                                                              transition:background .13s;"
                            onmouseover="this.style.background='rgba(255,255,255,.05)'"
                            onmouseout="this.style.background='transparent'">
                             <div>
                                 <div style="font-weight:600; color:#e8f2ff;">
                                     Order #@o.OrderId
                                 </div>
-                                <div style="font-size:.7rem; color:#8fa8c8; margin-top:1px;">
+                                <div style="font-size:.7rem; color:#64748b; margin-top:1px;">
                                     @o.Date · ₹@((o.Amount).ToString("N0"))
                                 </div>
                             </div>
                             <span style="font-size:.65rem; font-weight:700; color:@statusColor;
-                                                                                                                             background:rgba(255,255,255,.08); border-radius:4px;
-                                                                                                                             padding:2px 7px; flex-shrink:0;">
+                                                                                                                                                     background:rgba(255,255,255,.08); border-radius:4px;
+                                                                                                                                                     padding:2px 7px; flex-shrink:0;">
                                 @o.Status
                             </span>
                         </a>
@@ -251,16 +250,16 @@
 
                     <div style="padding:7px 12px; display:flex; justify-content:space-between; align-items:center;">
                         <a asp-controller="Sales" asp-action="MyOrders"
-                           style="font-size:.72rem; color:#4a9eda; text-decoration:none;">
+                           style="font-size:.72rem; color:#3b82f6; text-decoration:none;">
                             View all orders →
                         </a>
                         <form asp-controller="Sales" asp-action="DismissNotif"
                               method="post" style="margin:0;">
                             @Html.AntiForgeryToken()
                             <button type="submit"
-                                    style="background:none;border:none;color:#8fa8c8;
-                                                                                           font-size:.68rem;cursor:pointer;padding:0;
-                                                                                           text-decoration:underline;">
+                                    style="background:none;border:none;color:#64748b;
+                                                                                                           font-size:.68rem;cursor:pointer;padding:0;
+                                                                                                           text-decoration:underline;">
                                 ✓ Mark as seen
                             </button>
                         </form>
@@ -277,9 +276,9 @@
     </nav>
 
     <!-- ── Footer ── -->
-    <div style="padding:12px 16px; border-top:1px solid #2a4060; font-size:.74rem; flex-shrink:0;">
+    <div style="padding:12px 16px; border-top:1px solid rgba(255,255,255,.06); font-size:.74rem; flex-shrink:0;">
         <a asp-controller="DistributorRegister" asp-action="Index"
-           style="color:#8fa8c8; text-decoration:none; display:flex; align-items:center; gap:8px;
+           style="color:#64748b; text-decoration:none; display:flex; align-items:center; gap:8px;
                   transition:color .13s;">
             <span>🔗</span> Distributor Register Page
         </a>
@@ -289,7 +288,7 @@
 <style>
     .sb-section-label {
         font-size: .6rem;
-        color: #5a7a9a;
+        color: #334155;
         text-transform: uppercase;
         letter-spacing: .12em;
         padding: 12px 18px 4px;
@@ -300,10 +299,10 @@
         align-items: center;
         gap: 10px;
         padding: 9px 18px;
-        color: #b8cfe8;
+        color: #64748b;
         text-decoration: none;
         font-size: .82rem;
-        border-left: 3px solid transparent;
+        border-left: 2px solid transparent;
         transition: background .13s, color .13s, border-left-color .13s;
         white-space: nowrap;
     }
@@ -311,13 +310,13 @@
         .sb-link:hover {
             background: rgba(255,255,255,.07);
             color: #e8f2ff;
-            border-left-color: #4a9eda;
+            border-left-color: rgba(59,130,246,.5);
         }
 
         .sb-link.active {
-            background: rgba(74,158,218,.18);
+            background: rgba(59,130,246,.12);
             color: #ffffff;
-            border-left-color: #4a9eda;
+            border-left-color: rgba(59,130,246,.5);
             font-weight: 600;
         }
 

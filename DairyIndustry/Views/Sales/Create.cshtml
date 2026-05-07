@@ -6,9 +6,9 @@
     var productList = ViewBag.ProductList as List<DairyIndustry.Models.ProductSalesModel> ?? new();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h4 class="fw-bold mb-0">Create New Order</h4>
+        <h4 class="fw-bold mb-1">Create New Order</h4>
         <small class="text-muted">
             @(isDistributor ? "Select a plant and product — price is set automatically." : "Select distributor and plant, then add products on the next step.")
         </small>
@@ -33,8 +33,8 @@
 
 <div class="row justify-content-center">
     <div class="col-md-@(isDistributor ? "8" : "6")">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header text-white fw-semibold" style="background:#1a2e4a;">
+        <div class="card">
+            <div class="card-header text-white fw-semibold" style="background:#0f2040; color:#f0f4ff;">
                 📋 @(isDistributor ? "Place Your Order" : "Order Details")
             </div>
             <div class="card-body p-4">

@@ -105,6 +105,7 @@ namespace DairyIndustry.Controllers
                 //    else
                 //        return RedirectToAction("NotApproved", "Sales");
 
+                // Added by Mohit
                 case "Distributor":
                     var distLogin = _salesRepo.GetDistributorForLogin(username);
                     if (distLogin == null || !distLogin.IsActive)
@@ -114,6 +115,12 @@ namespace DairyIndustry.Controllers
                     }
                     HttpContext.Session.SetInt32("DistributorId", distLogin.DistributorId);
                     HttpContext.Session.SetString("DistributorName", distLogin.DistributorName ?? username);
+                    // Profile completeness session keys — used by sidebar indicator
+                    HttpContext.Session.SetString("DistributorLocation", distLogin.Location ?? "");
+                    HttpContext.Session.SetString("DistributorContact", distLogin.ContactNumber ?? "");
+                    HttpContext.Session.SetString("DistributorEmail", distLogin.Email ?? "");
+                    HttpContext.Session.SetString("DistributorAddress", ""); // not in login result model
+                    HttpContext.Session.SetString("DistributorGSTIN", distLogin.GSTIN ?? "");
                     return RedirectToAction("MyOrders", "Sales");
 
                 case "HR Manager":

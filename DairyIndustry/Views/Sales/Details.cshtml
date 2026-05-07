@@ -12,9 +12,9 @@
     int currentStep = Array.IndexOf(steps, Model.OrderStatus);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h4 class="fw-bold mb-0">Order #@Model.OrderId</h4>
+        <h4 class="fw-bold mb-1">Order #@Model.OrderId</h4>
         <small class="text-muted">@Model.DistributorName — @Model.OrderDate.ToString("dd MMM yyyy")</small>
     </div>
     <div class="d-flex gap-2">
@@ -85,11 +85,11 @@ else
             <div class="d-flex align-items-center justify-content-between position-relative">
                 <!-- connecting line -->
                 <div style="position:absolute; top:18px; left:10%; right:10%;
-                                             height:3px; background:#dee2e6; z-index:0;"></div>
+                                                 height:3px; background:#dee2e6; z-index:0;"></div>
                 <div style="position:absolute; top:18px; left:10%;
-                                             height:3px; background:#0d6efd; z-index:1;
-                                             width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
-                                             transition:width .4s;"></div>
+                                                 height:3px; background:#0d6efd; z-index:1;
+                                                 width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
+                                                 transition:width .4s;"></div>
 
                 @for (int i = 0; i < steps.Length; i++)
                 {
@@ -100,8 +100,8 @@ else
                     "background:#fff; border-color:#dee2e6; color:#adb5bd;";
                     <div class="d-flex flex-column align-items-center" style="z-index:2; flex:1;">
                         <div style="width:36px; height:36px; border-radius:50%; border:2px solid;
-                                                                    display:flex; align-items:center; justify-content:center;
-                                                                    font-size:.8rem; font-weight:700; @circleStyle">
+                                                                            display:flex; align-items:center; justify-content:center;
+                                                                            font-size:.8rem; font-weight:700; @circleStyle">
                             @if (done)
                             {
                                 <span>✓</span>
@@ -127,9 +127,9 @@ else
 
     <!-- ── Order Info Card ── -->
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card h-100">
             <div class="card-header text-white d-flex justify-content-between align-items-center"
-                 style="background:#1a2e4a;">
+                 style="background:#0f2040; color:#f0f4ff;">
                 <span class="fw-semibold">Order Info</span>
                 <span class="badge bg-@Model.StatusBadgeClass">@Model.OrderStatus</span>
             </div>
@@ -358,7 +358,7 @@ else
         <!-- Add Product Form — Pending orders only, Admin + Distributor -->
         @if (Model.CanAddItems)
         {
-            <div class="card border-0 shadow-sm">
+            <div class="card">
                 <div class="card-header bg-white border-bottom fw-semibold text-primary">
                     ➕ Add Product to Order
                 </div>
@@ -415,10 +415,10 @@ else
         const mrpMap = {};
         @if (ViewBag.ProductList != null)
         {
-                            foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
-                            {
-                                                @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
-                            }
+                                foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
+                                {
+                                                        @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
+                                }
         }
 
         function setMRP(sel) {
@@ -787,7 +787,7 @@ else
     @if (!string.IsNullOrEmpty(Model.Notes))
     {
         <div style="margin-bottom:16px; padding:10px 14px; background:#fffbea;
-                        border-left:4px solid #f39c12; border-radius:0 4px 4px 0; font-size:12px;">
+                            border-left:4px solid #f39c12; border-radius:0 4px 4px 0; font-size:12px;">
             <strong>Order Note:</strong> @Model.Notes
         </div>
     }

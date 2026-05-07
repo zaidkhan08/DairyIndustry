@@ -933,6 +933,8 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════════════
         //  HASH PASSWORD — SHA-256 hex, lowercase
         // ═══════════════════════════════════════════════════════════════════
+        //
+        //
         public static string HashPassword(string password)
         {
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(password));

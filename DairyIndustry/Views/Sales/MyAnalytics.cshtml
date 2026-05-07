@@ -5,9 +5,9 @@
     string distName = Context.Session.GetString("DistributorName") ?? "Distributor";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h4 class="fw-bold mb-0">My Analytics</h4>
+        <h4 class="fw-bold mb-1">My Analytics</h4>
         <small class="text-muted">Order insights for <strong>@distName</strong></small>
     </div>
     <div class="d-flex gap-2">
@@ -19,25 +19,25 @@
 <!-- ── Summary Cards ── -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
+        <div class="stat-card text-center">
             <div class="fs-3 fw-bold text-primary">@Model.TotalOrders</div>
             <div class="small text-muted">Total Orders</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
+        <div class="stat-card text-center">
             <div class="fs-3 fw-bold text-success">@Model.CompletionRate%</div>
             <div class="small text-muted">Completion Rate</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
+        <div class="stat-card text-center">
             <div class="fs-3 fw-bold text-primary">₹@Model.TotalSpent.ToString("N0")</div>
             <div class="small text-muted">Total Spent</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
+        <div class="stat-card text-center">
             <div class="fs-3 fw-bold @(Model.MonthOnMonthChange >= 0 ? "text-success" : "text-danger")">
                 @(Model.MonthOnMonthChange >= 0 ? "▲" : "▼") @Math.Abs(Model.MonthOnMonthChange)%
             </div>
@@ -50,8 +50,8 @@
 
     <!-- ── Monthly Spend Trend ── -->
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header fw-semibold" style="background:#f8f9fa;">
+        <div class="card h-100">
+            <div class="card-header fw-semibold" style="background:#f8fafc;">
                 📈 Monthly Spend — Last 6 Months
             </div>
             <div class="card-body">
@@ -69,8 +69,8 @@
 
     <!-- ── Order Status Breakdown ── -->
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header fw-semibold" style="background:#f8f9fa;">
+        <div class="card h-100">
+            <div class="card-header fw-semibold" style="background:#f8fafc;">
                 🥧 Order Status Breakdown
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
@@ -91,8 +91,8 @@
 <!-- ── This Month vs Last Month ── -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header fw-semibold" style="background:#f8f9fa;">
+        <div class="card">
+            <div class="card-header fw-semibold" style="background:#f8fafc;">
                 💰 This Month
             </div>
             <div class="card-body text-center py-3">
@@ -113,8 +113,8 @@
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header fw-semibold" style="background:#f8f9fa;">
+        <div class="card">
+            <div class="card-header fw-semibold" style="background:#f8fafc;">
                 📅 Last Month
             </div>
             <div class="card-body text-center py-3">
@@ -124,8 +124,8 @@
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header fw-semibold" style="background:#f8f9fa;">
+        <div class="card">
+            <div class="card-header fw-semibold" style="background:#f8fafc;">
                 ❌ Cancelled Orders
             </div>
             <div class="card-body text-center py-3">
@@ -142,8 +142,8 @@
 <!-- ── Top Products ── -->
 @if (Model.TopProducts.Any())
 {
-    <div class="card border-0 shadow-sm">
-        <div class="card-header fw-semibold" style="background:#f8f9fa;">
+    <div class="card">
+        <div class="card-header fw-semibold" style="background:#f8fafc;">
             🏆 Top 5 Most Ordered Products
         </div>
         <div class="table-responsive">
