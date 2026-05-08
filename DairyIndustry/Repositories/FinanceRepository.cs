@@ -20,25 +20,29 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         public FarmerPaymentPreviewModel PreviewFarmerPayment(int farmerId, int centerId,
-                                                              DateTime fromDate, DateTime toDate)
+                                                           DateTime fromDate, DateTime toDate)
         {
             string query = @"
-                SELECT
-                    f.FarmerName,
-                    cc.CenterName,
-                    COUNT(mc.CollectionId)  AS UnpaidCollections,
-                    ISNULL(SUM(mc.Quantity), 0)  AS TotalQty,
-                    ISNULL(SUM(mc.Amount),   0)  AS TotalAmount
-                FROM Collection.MilkCollection mc
-                INNER JOIN Farmer.Farmers              f  ON f.FarmerId  = mc.FarmerId
-                INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = mc.CenterId
-                WHERE mc.FarmerId  = @FarmerId
-                  AND mc.CenterId  = @CenterId
-                  AND mc.CollectionDate BETWEEN @FromDate AND @ToDate
-                  AND mc.CollectionId NOT IN (
-                      SELECT CollectionId FROM Finance.PaymentDetails
-                  )
-                GROUP BY f.FarmerName, cc.CenterName";
+        SELECT
+            f.FarmerName,
+            cc.CenterName,
+            COUNT(mc.CollectionId)       AS UnpaidCollections,
+            ISNULL(SUM(mc.Quantity), 0)  AS TotalQty,
+            ISNULL(SUM(mc.Amount),   0)  AS TotalAmount
+        FROM Collection.MilkCollection mc
+        INNER JOIN Farmer.Farmers               f  ON f.FarmerId  = mc.FarmerId
+        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = mc.CenterId
+        WHERE mc.FarmerId  = @FarmerId
+          AND mc.CenterId  = @CenterId
+          AND mc.CollectionDate BETWEEN @FromDate AND @ToDate
+          AND mc.CollectionId NOT IN (
+              SELECT pd.CollectionId
+              FROM   Finance.PaymentDetails pd
+              INNER JOIN Finance.FarmerPayments fp ON fp.PaymentId = pd.PaymentId
+              WHERE  pd.CollectionId IS NOT NULL
+                AND  fp.PaymentStatus NOT IN ('Cancelled')
+          )
+        GROUP BY f.FarmerName, cc.CenterName";
 
             using (SqlConnection con = _db.GetConnection())
             {
@@ -111,44 +115,47 @@ namespace DairyIndustry.Repositories
         // GET ALL FARMER PAYMENTS
         // ════════════════════════════════════════════════════════
 
-        public List<FarmerPaymentModel> GetAllFarmerPayments()
+        // AFTER
+        public List<FarmerPaymentModel> GetAllFarmerPayments(int? centerId = null)
         {
             var list = new List<FarmerPaymentModel>();
 
             string query = @"
-                SELECT
-                    fp.PaymentId,
-                    fp.CenterId,
-                    fp.FarmerId,
-                    fp.FromDate,
-                    fp.ToDate,
-                    fp.TotalQty,
-                    fp.TotalAmount,
-                    fp.PaymentDate,
-                    fp.PaymentStatus,
-                    fp.PaidByUserId,
-                    f.FarmerName,
-                    cc.CenterName,
-                    pt.BankStatus,
-                    pt.TransactionReference,
-                    ba.BankName,
-                    ba.AccountNumber,
-                    ba.IFSCCode,
-                    u.Username AS PaidBy
-                FROM Finance.FarmerPayments fp
-                INNER JOIN Farmer.Farmers               f  ON f.FarmerId      = fp.FarmerId
-                INNER JOIN Collection.CollectionCenters cc ON cc.CenterId     = fp.CenterId
-                LEFT  JOIN Finance.PaymentTransactions  pt ON pt.PaymentId    = fp.PaymentId
-                                                          AND pt.PaymentType  = 'Farmer'
-                LEFT  JOIN Finance.BankAccounts         ba ON ba.BankAccountId = f.BankAccountId
-                LEFT  JOIN Admin.Users                  u  ON u.UserId        = fp.PaidByUserId
-                ORDER BY fp.PaymentDate DESC";
+        SELECT
+            fp.PaymentId,
+            fp.CenterId,
+            fp.FarmerId,
+            fp.FromDate,
+            fp.ToDate,
+            fp.TotalQty,
+            fp.TotalAmount,
+            fp.PaymentDate,
+            fp.PaymentStatus,
+            fp.PaidByUserId,
+            f.FarmerName,
+            cc.CenterName,
+            pt.BankStatus,
+            pt.TransactionReference,
+            ba.BankName,
+            ba.AccountNumber,
+            ba.IFSCCode,
+            u.Username AS PaidBy
+        FROM Finance.FarmerPayments fp
+        INNER JOIN Farmer.Farmers               f  ON f.FarmerId      = fp.FarmerId
+        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId     = fp.CenterId
+        LEFT  JOIN Finance.PaymentTransactions  pt ON pt.PaymentId    = fp.PaymentId
+                                                  AND pt.PaymentType  = 'Farmer'
+        LEFT  JOIN Finance.BankAccounts         ba ON ba.BankAccountId = f.BankAccountId
+        LEFT  JOIN Admin.Users                  u  ON u.UserId        = fp.PaidByUserId
+        WHERE (@CenterId IS NULL OR fp.CenterId = @CenterId)
+        ORDER BY fp.PaymentDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
                     con.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -157,7 +164,6 @@ namespace DairyIndustry.Repositories
                     }
                 }
             }
-
             return list;
         }
 
@@ -533,62 +539,25 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         public int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate)
         {
-            // Step 1 — resolve TransferId into the exact fields the SP expects
-            string lookupSql = @"
-                SELECT mt.BatchId,
-                       cb.CenterId,
-                       mt.PlantId,
-                       mt.ReceivedQty,
-                       COALESCE(tqt.TestedFat, cb.AvgFat) AS TestedFat,
-                       COALESCE(tqt.TestedCLR, cb.AvgCLR) AS TestedCLR
-                FROM   Production.MilkTransfers             mt
-                INNER JOIN Collection.CollectionBatches     cb  ON cb.BatchId     = mt.BatchId
-                LEFT  JOIN Production.TransferQualityTests  tqt ON tqt.TransferId = mt.TransferId
-                WHERE  mt.TransferId = @TransferId";
-
-            int batchId; int centerId; int plantId;
-            decimal receivedQty;
-            decimal? testedFat; decimal? testedCLR;
-
-            using (SqlConnection con = _db.GetConnection())
-            using (SqlCommand cmd = new SqlCommand(lookupSql, con))
-            {
-                cmd.CommandType = CommandType.Text;
-                cmd.Parameters.AddWithValue("@TransferId", transferId);
-                con.Open();
-                using (SqlDataReader r = cmd.ExecuteReader())
-                {
-                    if (!r.Read())
-                        throw new Exception($"Transfer T-{transferId} not found.");
-                    batchId = Convert.ToInt32(r["BatchId"]);
-                    centerId = Convert.ToInt32(r["CenterId"]);
-                    plantId = Convert.ToInt32(r["PlantId"]);
-                    receivedQty = Convert.ToDecimal(r["ReceivedQty"]);
-                    testedFat = r["TestedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedFat"]);
-                    testedCLR = r["TestedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TestedCLR"]);
-                }
-            }
-
-            // Step 2 — call SP with exactly the 8 declared parameters
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessCenterPayment", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@BatchId", batchId);
-                cmd.Parameters.AddWithValue("@CenterId", centerId);
-                cmd.Parameters.AddWithValue("@PlantId", plantId);
-                cmd.Parameters.AddWithValue("@ReceivedQty", receivedQty);
+
+                // ✅ Only 3 params (match SP)
+                cmd.Parameters.AddWithValue("@TransferId", transferId);
                 cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
-                cmd.Parameters.AddWithValue("@TestedFat", (object?)testedFat ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@TestedCLR", (object?)testedCLR ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
+
                 con.Open();
+
                 using (SqlDataReader r = cmd.ExecuteReader())
                 {
                     if (r.Read())
                         return Convert.ToInt32(r["NewCenterPaymentId"]);
                 }
             }
+
             return 0;
         }
 
@@ -721,6 +690,26 @@ namespace DairyIndustry.Repositories
             };
         }
 
+        public void CancelFarmerPayment(int paymentId)
+        {
+            using var conn = _db.GetConnection();
+            conn.Open();
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE Finance.FarmerPayments SET PaymentStatus = 'Cancelled' WHERE PaymentId = @id";
+            cmd.Parameters.AddWithValue("@id", paymentId);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void ReactivateFarmerPayment(int paymentId)
+        {
+            using var conn = _db.GetConnection();
+            conn.Open();
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE Finance.FarmerPayments SET PaymentStatus = 'Pending' WHERE PaymentId = @id";
+            cmd.Parameters.AddWithValue("@id", paymentId);
+            cmd.ExecuteNonQuery();
+        }
+
         private CenterPaymentModel MapCenterPayment(SqlDataReader r)
         {
             return new CenterPaymentModel
@@ -779,5 +768,270 @@ namespace DairyIndustry.Repositories
                 cmd.ExecuteNonQuery();
             }
         }
+
+        // ════════════════════════════════════════════════════════
+        // GET CENTER WALLET
+        // Returns summary + full transaction list for a center.
+        // If centerId is null → Admin sees everything (all centers).
+        // Collection Agent sees only their own center via session.
+        // ════════════════════════════════════════════════════════
+
+
+        public CenterWalletViewModel GetCenterWallet(int? centerId = null)
+        {
+            var vm = new CenterWalletViewModel();
+
+            // ── 1. Summary ────────────────────────────────────────────────
+            string summaryQuery = @"
+        SELECT
+            cc.CenterId,
+            cc.CenterName,
+            ISNULL(SUM(CASE WHEN cp.PaymentStatus = 'Processed' THEN cp.TotalAmount ELSE 0 END), 0) AS TotalReceived,
+            ISNULL(SUM(CASE WHEN cp.PaymentStatus = 'Pending'   THEN cp.TotalAmount ELSE 0 END), 0) AS TotalPending,
+            COUNT(cp.CenterPaymentId) AS TotalTxns,
+            -- Staff cost: sum of ALL StaffPayments for staff whose CenterId matches
+            ISNULL((
+                SELECT SUM(sp.TotalAmount)
+                FROM Finance.StaffPayments sp
+                INNER JOIN HR.Staffs s ON s.StaffId = sp.StaffId
+                WHERE s.CenterId = cc.CenterId
+            ), 0) AS TotalStaffCost,
+            -- Staff count at this center
+            ISNULL((
+                SELECT COUNT(*)
+                FROM HR.Staffs s
+                WHERE s.CenterId = cc.CenterId AND s.IsActive = 1
+            ), 0) AS TotalStaffCount,
+            -- NEW: bonus totals from CenterWallet
+            ISNULL((
+                SELECT SUM(cw.BonusAmount)
+                FROM Finance.CenterWallet cw
+                WHERE cw.CenterId = cc.CenterId
+            ), 0) AS TotalBonusEarned,
+            ISNULL((
+                SELECT SUM(cw.BaseAmount)
+                FROM Finance.CenterWallet cw
+                WHERE cw.CenterId = cc.CenterId
+            ), 0) AS TotalBaseEarned
+        FROM Collection.CollectionCenters cc
+        LEFT JOIN Finance.CenterPayments cp ON cp.CenterId = cc.CenterId
+        WHERE (@CenterId IS NULL OR cc.CenterId = @CenterId)
+        GROUP BY cc.CenterId, cc.CenterName";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(summaryQuery, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    decimal totalReceived = 0, totalPending = 0, totalStaffCost = 0;
+                    decimal totalBonusEarned = 0, totalBaseEarned = 0;
+                    int totalTxns = 0, totalStaffCount = 0;
+                    string centerName = "All Centers";
+                    int cId = 0;
+
+                    while (r.Read())
+                    {
+                        totalReceived += Convert.ToDecimal(r["TotalReceived"]);
+                        totalPending += Convert.ToDecimal(r["TotalPending"]);
+                        totalStaffCost += Convert.ToDecimal(r["TotalStaffCost"]);
+                        totalTxns += Convert.ToInt32(r["TotalTxns"]);
+                        totalStaffCount += Convert.ToInt32(r["TotalStaffCount"]);
+                        totalBonusEarned += Convert.ToDecimal(r["TotalBonusEarned"]);
+                        totalBaseEarned += Convert.ToDecimal(r["TotalBaseEarned"]);
+
+                        if (centerId.HasValue)
+                        {
+                            cId = Convert.ToInt32(r["CenterId"]);
+                            centerName = r["CenterName"].ToString();
+                        }
+                    }
+
+                    vm.Summary = new CenterWalletSummary
+                    {
+                        CenterId = cId,
+                        CenterName = centerName,
+                        TotalReceived = totalReceived,
+                        TotalPending = totalPending,
+                        TotalStaffCost = totalStaffCost,
+                        TotalTxns = totalTxns,
+                        TotalStaffCount = totalStaffCount,
+                        TotalBonusEarned = totalBonusEarned,
+                        TotalBaseEarned = totalBaseEarned
+                    };
+                }
+            }
+
+            // ── 2. Inflow transactions (unchanged) ─────────────────────────
+            string txnQuery = @"
+        SELECT
+            cp.CenterPaymentId,
+            cc.CenterName,
+            pp.PlantName,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            cp.ReceivedQty,
+            cp.RatePerLiter,
+            cp.TotalAmount,
+            cp.PaymentDate,
+            cp.PaymentStatus,
+            pt.BankStatus,
+            pt.TransactionReference
+        FROM Finance.CenterPayments cp
+        INNER JOIN Collection.CollectionCenters  cc ON cc.CenterId = cp.CenterId
+        INNER JOIN Production.ProcessingPlants   pp ON pp.PlantId  = cp.PlantId
+        LEFT  JOIN Production.MilkTransfers      mt ON mt.BatchId  = cp.BatchId
+                                                   AND mt.PlantId  = cp.PlantId
+        LEFT  JOIN Finance.PaymentTransactions   pt ON pt.PaymentId   = cp.CenterPaymentId
+                                                   AND pt.PaymentType = 'Center'
+        WHERE (@CenterId IS NULL OR cp.CenterId = @CenterId)
+        ORDER BY cp.PaymentDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(txnQuery, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        vm.Transactions.Add(new CenterWalletTransaction
+                        {
+                            CenterPaymentId = Convert.ToInt32(r["CenterPaymentId"]),
+                            CenterName = r["CenterName"].ToString(),
+                            PlantName = r["PlantName"].ToString(),
+                            BatchRef = r["BatchRef"].ToString(),
+                            ReceivedQty = Convert.ToDecimal(r["ReceivedQty"]),
+                            RatePerLiter = Convert.ToDecimal(r["RatePerLiter"]),
+                            TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                            PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                            PaymentStatus = r["PaymentStatus"].ToString(),
+                            BankStatus = r["BankStatus"] == DBNull.Value ? null : r["BankStatus"].ToString(),
+                            TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString()
+                        });
+                    }
+                }
+            }
+
+            // ── 3. Outflow: staff payments (unchanged) ─────────────────────
+            string staffQuery = @"
+        SELECT
+            sp.PaymentId,
+            s.FirstName + ' ' + s.LastName  AS StaffName,
+            ISNULL(r.RoleName, '')           AS RoleName,
+            ISNULL(s.Salary, 0)             AS MonthlySalary,
+            sp.FromDate,
+            sp.ToDate,
+            sp.TotalAmount,
+            sp.PaymentDate,
+            sp.PaymentStatus
+        FROM Finance.StaffPayments sp
+        INNER JOIN HR.Staffs  s  ON s.StaffId  = sp.StaffId
+        LEFT  JOIN Admin.Roles r ON r.RoleId    = s.RoleId
+        WHERE (@CenterId IS NULL OR s.CenterId = @CenterId)
+        ORDER BY sp.PaymentDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(staffQuery, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        vm.StaffPayments.Add(new CenterStaffPayment
+                        {
+                            PaymentId = Convert.ToInt32(r["PaymentId"]),
+                            StaffName = r["StaffName"].ToString(),
+                            RoleName = r["RoleName"].ToString(),
+                            MonthlySalary = Convert.ToDecimal(r["MonthlySalary"]),
+                            FromDate = Convert.ToDateTime(r["FromDate"]),
+                            ToDate = Convert.ToDateTime(r["ToDate"]),
+                            TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                            PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                            PaymentStatus = r["PaymentStatus"].ToString()
+                        });
+                    }
+                }
+            }
+
+            // ── 4. NEW: Wallet bonus entries ───────────────────────────────
+            vm.WalletEntries = GetCenterWalletEntries(centerId);
+
+            return vm;
+        }
+
+        public List<CenterWalletEntry> GetCenterWalletEntries(int? centerId = null)
+        {
+            var list = new List<CenterWalletEntry>();
+
+            string query = @"
+        SELECT
+            cw.WalletId,
+            cw.CenterPaymentId,
+            cc.CenterName,
+            pp.PlantName,
+            CONCAT('T-', mt.TransferId, ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS BatchRef,
+            cw.ReceivedQty,
+            cw.BonusRatePerLiter,
+            cw.BaseRatePerLiter,
+            cw.FullRatePerLiter,
+            cw.BaseAmount,
+            cw.BonusAmount,
+            cw.TotalEarned,
+            cw.PaymentDate,
+            cp.PaymentStatus,
+            cw.CreatedAt
+        FROM Finance.CenterWallet cw
+        INNER JOIN Finance.CenterPayments          cp ON cp.CenterPaymentId = cw.CenterPaymentId
+        INNER JOIN Collection.CollectionCenters    cc ON cc.CenterId        = cw.CenterId
+        INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId         = cw.PlantId
+        LEFT  JOIN Production.MilkTransfers        mt ON mt.BatchId         = cp.BatchId
+                                                     AND mt.PlantId         = cp.PlantId
+        WHERE (@CenterId IS NULL OR cw.CenterId = @CenterId)
+        ORDER BY cw.PaymentDate DESC, cw.WalletId DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        list.Add(new CenterWalletEntry
+                        {
+                            WalletId = Convert.ToInt32(r["WalletId"]),
+                            CenterPaymentId = Convert.ToInt32(r["CenterPaymentId"]),
+                            CenterName = r["CenterName"].ToString(),
+                            PlantName = r["PlantName"].ToString(),
+                            BatchRef = r["BatchRef"].ToString(),
+                            ReceivedQty = Convert.ToDecimal(r["ReceivedQty"]),
+                            BonusRatePerLiter = Convert.ToDecimal(r["BonusRatePerLiter"]),
+                            BaseRatePerLiter = Convert.ToDecimal(r["BaseRatePerLiter"]),          
+                            FullRatePerLiter = Convert.ToDecimal(r["FullRatePerLiter"]),
+                            BaseAmount = Convert.ToDecimal(r["BaseAmount"]),
+                            BonusAmount = Convert.ToDecimal(r["BonusAmount"]),
+                            TotalEarned = Convert.ToDecimal(r["TotalEarned"]),
+                            PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                            PaymentStatus = r["PaymentStatus"].ToString(),
+                            CreatedAt = Convert.ToDateTime(r["CreatedAt"])
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+      
+
     }
 }

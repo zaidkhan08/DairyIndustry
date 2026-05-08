@@ -33,6 +33,13 @@
             --icon-box-bg: #f3f4f6;
             --border-color: #f3f4f6;
             --font: 'Geist', system-ui, sans-serif;
+            /* Finance section accent */
+            --finance-section-bg: #f8faff;
+            --finance-border: #e8eef8;
+            --finance-icon-bg: #eff4ff;
+            --finance-icon-color: #3b5bdb;
+            --finance-active-bg: #e8eef8;
+            --finance-active-icon-bg: #3b5bdb;
         }
 
         body {
@@ -66,10 +73,11 @@
         .sidebar-brand {
             display: flex;
             align-items: center;
-            padding: 24px 20px;
+            padding: 20px;
             text-decoration: none;
             gap: 10px;
             border-bottom: 1px solid var(--sidebar-border);
+            flex-shrink: 0;
         }
 
         .brand-logo-icon {
@@ -102,21 +110,46 @@
             border-radius: 12px;
         }
 
+        /* ─── SIDEBAR SCROLL AREA ─────────────────── */
+        /* The nav area is split: production on top, finance pinned to bottom */
         .sidebar-nav {
             flex: 1;
-            padding: 0 12px;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
+        /* Production section scrolls if content overflows */
+        .sidebar-section-production {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px;
+        }
+
+        /* Finance section: fixed at bottom of nav, never scrolls away */
+        .sidebar-section-finance {
+            flex-shrink: 0;
+            padding: 0 12px 12px;
+            border-top: 1px solid var(--finance-border);
+            background: var(--finance-section-bg);
+        }
+
+        /* ─── NAV LABELS ──────────────────────────── */
         .nav-section-label {
             font-size: 11px;
             font-weight: 600;
             color: var(--text-muted);
-            padding: 20px 12px 8px;
+            padding: 16px 12px 6px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
+            .nav-section-label.finance-label {
+                color: var(--finance-icon-color);
+                opacity: 0.75;
+            }
+
+        /* ─── NAV ITEMS ───────────────────────────── */
         .nav-item-link {
             display: flex;
             align-items: center;
@@ -166,10 +199,39 @@
                     color: #ffffff;
                 }
 
+        /* ─── FINANCE NAV ITEM OVERRIDES ──────────── */
+        /* Finance items get blue-tinted icons and hover states */
+        .finance-nav-item .nav-icon-box {
+            background: var(--finance-icon-bg);
+        }
+
+            .finance-nav-item .nav-icon-box i {
+                color: var(--finance-icon-color);
+            }
+
+        .finance-nav-item:hover {
+            background: #eef2ff;
+            color: #3b5bdb;
+        }
+
+        .finance-nav-item.active {
+            background: var(--finance-active-bg);
+            color: var(--finance-icon-color);
+        }
+
+            .finance-nav-item.active .nav-icon-box {
+                background: var(--finance-active-icon-bg);
+            }
+
+                .finance-nav-item.active .nav-icon-box i {
+                    color: #ffffff;
+                }
+
         /* ─── SIDEBAR FOOTER ──────────────────────── */
         .sidebar-footer {
-            padding: 20px 16px;
+            padding: 16px;
             border-top: 1px solid var(--sidebar-border);
+            flex-shrink: 0;
         }
 
         .plant-load-header {
@@ -596,84 +658,119 @@
     <!-- ─── SIDEBAR ──────────────────────────────── -->
     <div id="sidebar">
 
+        <!-- Brand -->
         <a class="sidebar-brand" asp-controller="Production" asp-action="Dashboard">
             <div class="brand-logo-icon"><i class="bi bi-feather"></i></div>
             <span class="brand-text-main">DairyManage</span>
             <span class="trial-badge">Trial</span>
         </a>
 
+        <!-- Nav: split into top (Production) and bottom (Finance) -->
         <div class="sidebar-nav">
+
             @{
                 var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
                 var act = ViewContext.RouteData.Values["action"]?.ToString();
                 Func<string, string, string> isActive = (c, a) =>
                 ctrl == c && act == a ? "active" : "";
+                Func<string, string> isActiveCtrl = (c) =>
+                ctrl == c ? "active" : "";
             }
 
-            <div class="nav-section-label">Main</div>
+            <!-- ══════════════════════════════════════
+                 TOP SECTION — PRODUCTION
+            ══════════════════════════════════════ -->
+            <div class="sidebar-section-production">
 
-            <a asp-controller="Production" asp-action="Dashboard"
-               class="nav-item-link @isActive("Production", "Dashboard")">
-                <div class="nav-icon-box"><i class="bi bi-grid-1x2-fill"></i></div>
-                <span>Dashboard</span>
-            </a>
+                <div class="nav-section-label">Overview</div>
 
-            <a asp-controller="Production" asp-action="Index"
-               class="nav-item-link @isActive("Production", "Index")">
-                <div class="nav-icon-box"><i class="bi bi-droplet-fill"></i></div>
-                <span>Receive Milk</span>
-            </a>
+                <a asp-controller="Production" asp-action="Dashboard"
+                   class="nav-item-link @isActive("Production", "Dashboard")">
+                    <div class="nav-icon-box"><i class="bi bi-grid-1x2-fill"></i></div>
+                    <span>Dashboard</span>
+                </a>
 
-            <a asp-controller="Production" asp-action="Qualitytests"
-               class="nav-item-link @isActive("Production", "Qualitytests")">
-                <div class="nav-icon-box"><i class="bi bi-check2-circle"></i></div>  
-                <span>Quality Tests</span>
-            </a>
+                <div class="nav-section-label">Milk Transfers</div>
 
-            <a asp-controller="Production" asp-action="Transferlosslog"
-               class="nav-item-link @isActive("Production", "Transferlosslog")">
-                <div class="nav-icon-box"><i class="bi bi-activity"></i></div>
-                <span>Transfer Losses</span>
-            </a>
+                <a asp-controller="Production" asp-action="Index"
+                   class="nav-item-link @isActive("Production", "Index")">
+                    <div class="nav-icon-box"><i class="bi bi-droplet-fill"></i></div>
+                    <span>Receive Milk</span>
+                </a>
 
-            <div class="nav-section-label">Production</div>
+                <a asp-controller="Production" asp-action="QualityTests"
+                   class="nav-item-link @isActive("Production", "QualityTests")">
+                    <div class="nav-icon-box"><i class="bi bi-check2-circle"></i></div>
+                    <span>Quality Tests</span>
+                </a>
 
-            <a asp-controller="Production" asp-action="Batches"
-               class="nav-item-link @isActive("Production", "Batches")">
-                <div class="nav-icon-box"><i class="bi bi-layers-fill"></i></div>
-                <span>Product Batch</span>
-            </a>
+                <a asp-controller="Production" asp-action="TransferLossLog"
+                   class="nav-item-link @isActive("Production", "TransferLossLog")">
+                    <div class="nav-icon-box"><i class="bi bi-activity"></i></div>
+                    <span>Transfer Losses</span>
+                </a>
 
-            <a asp-controller="Production" asp-action="RawMilkInventory"
-               class="nav-item-link @isActive("Production", "RawMilkInventory")">
-                <div class="nav-icon-box"><i class="bi bi-box-seam-fill"></i></div>
-                <span>Plant Inventory</span>
-            </a>
+                <div class="nav-section-label">Production</div>
 
-            <div class="nav-section-label">Finance</div>
+                <a asp-controller="Production" asp-action="Batches"
+                   class="nav-item-link @isActive("Production", "Batches")">
+                    <div class="nav-icon-box"><i class="bi bi-layers-fill"></i></div>
+                    <span>Product Batches</span>
+                </a>
 
-            <a asp-controller="Finance" asp-action="Centerpayments"
-               class="nav-item-link @isActive("Finance", "Centerpayments")">
-                <div class="nav-icon-box"><i class="bi bi-currency-rupee"></i></div>
-                <span>Pay To Center</span>
-            </a>
+                <a asp-controller="Production" asp-action="RawMilkInventory"
+                   class="nav-item-link @isActive("Production", "RawMilkInventory")">
+                    <div class="nav-icon-box"><i class="bi bi-box-seam-fill"></i></div>
+                    <span>Plant Inventory</span>
+                </a>
 
-            <div class="nav-section-label">Wastage</div>
+                <div class="nav-section-label">Wastage</div>
 
-            <a asp-controller="Production" asp-action="Productwastage"
-               class="nav-item-link @isActive("Production", "Productwastage")">
-                <div class="nav-icon-box"><i class="bi bi-trash3-fill"></i></div>
-                <span>Wastage Bin</span>
-            </a>
+                <a asp-controller="Production" asp-action="ProductWastage"
+                   class="nav-item-link @isActive("Production", "ProductWastage")">
+                    <div class="nav-icon-box"><i class="bi bi-trash3-fill"></i></div>
+                    <span>Wastage Bin</span>
+                </a>
 
-            <a asp-controller="Production" asp-action="Milkprocesswastage"
-               class="nav-item-link @isActive("Production", "Milkprocesswastage")">
-                <div class="nav-icon-box"><i class="bi bi-droplet-half"></i></div>
-                <span>Milk Process Wastage</span>
-            </a>
+                <a asp-controller="Production" asp-action="MilkProcessWastage"
+                   class="nav-item-link @isActive("Production", "MilkProcessWastage")">
+                    <div class="nav-icon-box"><i class="bi bi-droplet-half"></i></div>
+                    <span>Milk Process Wastage</span>
+                </a>
+
+            </div>
+            <!-- END production section -->
+            <!-- ══════════════════════════════════════
+                 BOTTOM SECTION — FINANCE
+                 Pinned at the bottom, blue-accented
+            ══════════════════════════════════════ -->
+            <div class="sidebar-section-finance">
+
+                <div class="nav-section-label finance-label">Finance</div>
+
+                <a asp-controller="Finance" asp-action="CenterPayments"
+                   class="nav-item-link finance-nav-item @isActive("Finance", "CenterPayments")">
+                    <div class="nav-icon-box"><i class="bi bi-currency-rupee"></i></div>
+                    <span>Pay to Center</span>
+                </a>
+
+                <a asp-controller="Finance" asp-action="CenterWallet"
+                   class="nav-item-link finance-nav-item @isActive("Finance", "CenterWallet")">
+                    <div class="nav-icon-box"><i class="bi bi-wallet2"></i></div>
+                    <span>Center Wallet</span>
+                </a>
+
+                <a asp-controller="Finance" asp-action="Index"
+                   class="nav-item-link finance-nav-item @isActiveCtrl("Finance")">
+                    <div class="nav-icon-box"><i class="bi bi-people-fill"></i></div>
+                    <span>Farmer Payments</span>
+                </a>
+
+            </div>
+            <!-- END finance section -->
 
         </div>
-
+        <!-- END sidebar-nav -->
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
             @{
@@ -698,9 +795,9 @@
                 </div>
             </div>
         </div>
+
     </div>
-
-
+    <!-- END sidebar -->
     <!-- ─── TOPBAR ────────────────────────────────── -->
     <div id="topbar">
 
@@ -710,7 +807,9 @@
 
         <div class="top-title-group">
             <h1>@ViewData["Title"]</h1>
-            <span class="top-subtitle">Production &rsaquo; @ViewData["Title"]</span>
+            <span class="top-subtitle">
+                @(ctrl == "Finance" ? "Finance" : "Production") &rsaquo; @ViewData["Title"]
+            </span>
         </div>
 
         <div class="topbar-right">

@@ -27,6 +27,12 @@
         --green-border: #a7f3d0;
         --red: #b91c1c;
         --red-bg: #fee2e2;
+        --amber: #92400e;
+        --amber-bg: #fef3c7;
+        --amber-border: #fde68a;
+        --purple: #5b21b6;
+        --purple-bg: #ede9fe;
+        --purple-border: #c4b5fd;
         --font: 'DM Sans', sans-serif;
         --mono: 'DM Mono', monospace;
         --radius: 10px;
@@ -104,6 +110,7 @@
             color: var(--ink);
         }
 
+    /* ── Step Indicator ── */
     .cp-steps {
         display: flex;
         align-items: center;
@@ -162,6 +169,7 @@
         max-width: 40px;
     }
 
+    /* ── Layout ── */
     .cp-grid {
         display: grid;
         grid-template-columns: 420px 1fr;
@@ -221,6 +229,113 @@
         padding: 1.4rem;
     }
 
+    /* ── Payment Mode Toggle ── */
+    .mode-toggle-wrap {
+        margin-bottom: 1.25rem;
+    }
+
+    .mode-toggle-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-bottom: 0.5rem;
+    }
+
+    .mode-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface-1);
+    }
+
+    .mode-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        font-family: var(--font);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ink-3);
+        background: var(--surface-1);
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        position: relative;
+    }
+
+        .mode-btn:first-child {
+            border-right: 1px solid var(--border-strong);
+        }
+
+        .mode-btn.active {
+            background: var(--surface-0);
+            color: var(--accent);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+            .mode-btn.active .mode-icon-wrap {
+                color: var(--accent);
+            }
+
+    .mode-btn-desc {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 400;
+        color: var(--ink-4);
+        margin-top: 0.1rem;
+        text-align: left;
+    }
+
+    .mode-btn.active .mode-btn-desc {
+        color: var(--accent);
+        opacity: 0.7;
+    }
+
+    .mode-btn-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mode-icon-wrap {
+        color: var(--ink-4);
+        flex-shrink: 0;
+    }
+
+    /* ── Mode info banner ── */
+    .mode-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.6rem 0.85rem;
+        border-radius: 6px;
+        font-size: 0.77rem;
+        font-weight: 500;
+        margin-bottom: 1.1rem;
+        transition: all 0.2s;
+    }
+
+        .mode-info.daily-info {
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-border);
+            color: var(--amber);
+        }
+
+        .mode-info.monthly-info {
+            background: var(--purple-bg);
+            border: 1px solid var(--purple-border);
+            color: var(--purple);
+        }
+
+    /* ── Date Fields ── */
     .field-group {
         margin-bottom: 1.1rem;
     }
@@ -282,6 +397,47 @@
             cursor: not-allowed;
         }
 
+    /* Date row: Daily = single date | Monthly = two-col */
+    .date-row-monthly {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .date-row-daily {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    /* Month picker helper row */
+    .month-quick-row {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+
+    .month-chip {
+        padding: 0.2rem 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--ink-3);
+        background: var(--surface-1);
+        cursor: pointer;
+        font-family: var(--font);
+        transition: all 0.12s;
+    }
+
+        .month-chip:hover {
+            background: var(--accent-bg);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+    /* ── Farmer Code lookup ── */
     .lookup-row {
         display: grid;
         grid-template-columns: 130px 1fr;
@@ -388,12 +544,7 @@
                 color: var(--red);
             }
 
-    .date-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
-
+    /* ── Buttons ── */
     .btn-preview {
         width: 100%;
         padding: 0.6rem 1rem;
@@ -431,15 +582,14 @@
         animation: spin 0.6s linear infinite;
         display: none;
     }
+
     @@keyframes spin {
-        to
-
-    {
-        transform: rotate(360deg);
+        to {
+            transform: rotate(360deg);
+        }
     }
 
-    }
-
+    /* ── Preview Panel ── */
     .preview-placeholder {
         display: flex;
         flex-direction: column;
@@ -525,6 +675,31 @@
             .summary-kpi.highlight .kpi-lbl {
                 color: var(--green);
             }
+
+    /* Mode badge in preview */
+    .mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+        .mode-badge.daily {
+            background: var(--amber-bg);
+            color: var(--amber);
+            border: 1px solid var(--amber-border);
+        }
+
+        .mode-badge.monthly {
+            background: var(--purple-bg);
+            color: var(--purple);
+            border: 1px solid var(--purple-border);
+        }
 
     .summary-dl {
         background: var(--surface-1);
@@ -636,6 +811,13 @@
         font-size: 0.78rem;
         font-weight: 600;
     }
+
+    /* ── Divider ── */
+    .field-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 1.1rem 0;
+    }
 </style>
 
 <div class="cp-wrap">
@@ -644,8 +826,8 @@
     <div class="cp-topbar">
         <div>
             <div class="cp-breadcrumb">Finance <span>/ Farmer Disbursements <span>/ New Payment</span></span></div>
-            <h1 class="cp-title">Create Batch Payment</h1>
-            <p class="cp-subtitle">Generate a disbursement for unpaid milk collections</p>
+            <h1 class="cp-title">Create Farmer Payment</h1>
+            <p class="cp-subtitle">Pay a farmer for their milk collections — daily or monthly basis</p>
         </div>
         <a asp-action="Index" class="btn-ghost">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
@@ -673,45 +855,66 @@
                 </div>
                 <div>
                     <div class="cp-card-title">Payment Details</div>
-                    <div class="cp-card-subtitle">Select center first, then enter farmer code</div>
+                    <div class="cp-card-subtitle">Choose payment mode, then select center and farmer</div>
                 </div>
             </div>
             <div class="cp-card-body">
 
+                <!-- ── Payment Mode Toggle ── -->
+                <div class="mode-toggle-wrap">
+                    <span class="mode-toggle-label">Payment Mode</span>
+                    <div class="mode-toggle">
+                        <button type="button" class="mode-btn active" id="btnDaily" onclick="setMode('daily')">
+                            <svg class="mode-icon-wrap" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="8" y1="14" x2="8.01" y2="14" /></svg>
+                            <div class="mode-btn-content">
+                                Daily Payment
+                                <span class="mode-btn-desc">Pay for a single day's collection</span>
+                            </div>
+                        </button>
+                        <button type="button" class="mode-btn" id="btnMonthly" onclick="setMode('monthly')">
+                            <svg class="mode-icon-wrap" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><polyline points="8 14 10 16 14 12" /></svg>
+                            <div class="mode-btn-content">
+                                Monthly Payment
+                                <span class="mode-btn-desc">Aggregate an entire month's collections</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode info banner -->
+                <div class="mode-info daily-info" id="modeInfoBanner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    <span id="modeInfoText">Pays for today's collections only. The date is automatically set to today and cannot be changed.</span>
+                </div>
+
+                <div class="field-divider"></div>
+
                 <!-- 1. Center -->
-                @if (ViewBag.IsAgent != null && ViewBag.IsAgent == true)
-                {
-                    <!-- Hidden center id -->
-                    <input type="hidden" id="centerId" value="@ViewBag.CenterId" />
-
-                    <!-- Auto-filled readonly -->
-                    <input type="text"
-                           class="cp-input"
-                           value="@ViewBag.CenterName"
-                           readonly />
-
-                    <script>
-                        // 🔥 Auto trigger center selection
-                        document.addEventListener("DOMContentLoaded", function () {
-                            const centerId = "@ViewBag.CenterId";
-                            if (centerId) {
-                                onCenterChange(centerId);
+                <div class="field-group">
+                    <label class="field-label field-required">Collection Center</label>
+                    @if (ViewBag.IsAgent != null && ViewBag.IsAgent == true)
+                    {
+                        <input type="hidden" id="centerId" value="@ViewBag.CenterId" />
+                        <input type="text" class="cp-input" value="@ViewBag.CenterName" readonly />
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function () {
+                                onCenterChange("@ViewBag.CenterId");
+                            });
+                        </script>
+                    }
+                    else
+                    {
+                        <select id="centerSelect" class="cp-select" required onchange="onCenterChange(this.value)">
+                            <option value="">— Select a center —</option>
+                            @foreach (var c in (IEnumerable<DairyIndustry.Models.Admin.CenterDropdownModel>)ViewBag.Centers)
+                            {
+                                <option value="@c.CenterId" data-name="@c.CenterName">@c.CenterName</option>
                             }
-                        });
-                    </script>
-                }
-                else
-                {
-                    <select id="centerSelect" class="cp-select" required onchange="onCenterChange(this.value)">
-                        <option value="">— Select a center —</option>
-                        @foreach (var c in (IEnumerable<DairyIndustry.Models.Admin.CenterDropdownModel>)ViewBag.Centers)
-                        {
-                            <option value="@c.CenterId" data-name="@c.CenterName">@c.CenterName</option>
-                        }
-                    </select>
-                }
+                        </select>
+                    }
+                </div>
 
-                <!-- 2. Farmer Code (locked until center chosen) -->
+                <!-- 2. Farmer Code -->
                 <div class="field-group">
                     <label class="field-label field-required">Farmer Code</label>
                     <div class="lookup-row">
@@ -726,27 +929,48 @@
                         </div>
                     </div>
                     <p class="field-hint">Only farmers with collections at the selected center are accepted.</p>
-                    <!-- Hidden fields -->
                     <input type="hidden" id="farmerId" />
                     <input type="hidden" id="centerId" />
                 </div>
 
-                <!-- 3. Date Range (default: last 1 month) -->
-                <div class="field-group">
-                    <label class="field-label field-required">Collection Period</label>
-                    <div class="date-row">
-                        <div>
-                            <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">From</label>
-                            <input type="date" id="fromDate" class="cp-input" required />
+                <div class="field-divider"></div>
+
+                <!-- 3. Date section — switches between Daily and Monthly -->
+                <div class="field-group" id="dateSection">
+
+                    <!-- DAILY: current date (read-only, no picker) -->
+                    <div id="dailyDateSection">
+                        <label class="field-label field-required">Collection Date</label>
+                        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                            <span id="todayLabel" style="font-size:0.85rem;font-weight:600;color:var(--ink);font-family:var(--font);"></span>
+                            <span style="margin-left:auto;font-size:0.7rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--green);background:var(--green-bg);border:1px solid var(--green-border);padding:0.1rem 0.5rem;border-radius:20px;">Today</span>
                         </div>
-                        <div>
-                            <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">To</label>
-                            <input type="date" id="toDate" class="cp-input" required />
-                        </div>
+                        <p class="field-hint">Daily payments always use today's date. Only today's collections will be included.</p>
+                        <input type="hidden" id="singleDate" />
                     </div>
+
+                    <!-- MONTHLY: from/to with quick-month chips -->
+                    <div id="monthlyDateSection" style="display:none;">
+                        <label class="field-label field-required">Collection Period</label>
+                        <div class="date-row-monthly">
+                            <div>
+                                <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">From</label>
+                                <input type="date" id="fromDate" class="cp-input" required />
+                            </div>
+                            <div>
+                                <label class="field-label" style="font-size:0.68rem;color:var(--ink-4);margin-bottom:0.3rem;">To</label>
+                                <input type="date" id="toDate" class="cp-input" required />
+                            </div>
+                        </div>
+                        <!-- Quick month chips -->
+                        <div class="month-quick-row" id="monthChips"></div>
+                        <p class="field-hint">All unpaid collections within this range will be included.</p>
+                    </div>
+
                 </div>
 
-                <!-- Preview button -->
+                <!-- Preview Button -->
                 <button type="button" class="btn-preview" id="previewBtn" onclick="previewPayment()">
                     <div class="spinner" id="previewSpinner"></div>
                     <svg id="previewIcon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -774,7 +998,7 @@
                     <div class="placeholder-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a8b3c0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                     </div>
-                    <p><strong>No Preview Yet</strong>Select a center, enter a farmer code, set the date range, then click Preview Collections.</p>
+                    <p><strong>No Preview Yet</strong>Select a mode, center, farmer, and date — then click Preview Collections.</p>
                 </div>
 
                 <!-- Error -->
@@ -802,6 +1026,10 @@
                     </div>
 
                     <div class="summary-dl">
+                        <div class="summary-dl-row">
+                            <span class="summary-dl-label">Mode</span>
+                            <span class="summary-dl-value"><span id="prev_mode_badge" class="mode-badge daily">Daily</span></span>
+                        </div>
                         <div class="summary-dl-row">
                             <span class="summary-dl-label">Farmer</span>
                             <span class="summary-dl-value" id="prev_farmer">—</span>
@@ -835,6 +1063,7 @@
                         <input type="hidden" name="centerId" id="hf_centerId" />
                         <input type="hidden" name="fromDate" id="hf_fromDate" />
                         <input type="hidden" name="toDate" id="hf_toDate" />
+                        <input type="hidden" name="paymentMode" id="hf_paymentMode" />
                         <div class="form-actions">
                             <a asp-action="Index" class="btn-cancel">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -855,28 +1084,104 @@
 
 @section Scripts {
     <script>
-        // ── Default: From = 1 month ago, To = today ──────────────────────────────
-        (function () {
-            const today = new Date();
-            const from  = new Date(today);
-            from.setMonth(from.getMonth() - 1);
-            const fmt = d => d.toISOString().split('T')[0];
-            document.getElementById('fromDate').value = fmt(from);
-            document.getElementById('toDate').value   = fmt(today);
-        })();
-
-        // ── State ────────────────────────────────────────────────────────────────
+        // ── State ─────────────────────────────────────────────────────────────────
+        let currentMode      = 'daily';   // 'daily' | 'monthly'
         let selectedCenterId = null;
         let farmerTimer      = null;
 
-        // ── Center changed ───────────────────────────────────────────────────────
+        // ── Init ──────────────────────────────────────────────────────────────────
+        (function () {
+            const today = new Date();
+            const todayStr = fmtDate(today);
+            // Daily: hidden field = today, show human-readable label
+            document.getElementById('singleDate').value = todayStr;
+            document.getElementById('todayLabel').textContent = today.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            // Monthly range default = 1st of current month → today
+            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('fromDate').value = fmtDate(firstOfMonth);
+            document.getElementById('toDate').value   = todayStr;
+            // Build quick month chips
+            buildMonthChips();
+        })();
+
+        function fmtDate(d) {
+            return d.toISOString().split('T')[0];
+        }
+
+        // ── Payment Mode ──────────────────────────────────────────────────────────
+        function setMode(mode) {
+            currentMode = mode;
+
+            document.getElementById('btnDaily').classList.toggle('active',   mode === 'daily');
+            document.getElementById('btnMonthly').classList.toggle('active', mode === 'monthly');
+
+            const dailySec   = document.getElementById('dailyDateSection');
+            const monthlySec = document.getElementById('monthlyDateSection');
+            const infoBanner = document.getElementById('modeInfoBanner');
+            const infoText   = document.getElementById('modeInfoText');
+
+            if (mode === 'daily') {
+                dailySec.style.display   = '';
+                monthlySec.style.display = 'none';
+                infoBanner.className = 'mode-info daily-info';
+                infoText.textContent = 'Pays for today\'s collections only. The date is automatically set to today and cannot be changed.';
+            } else {
+                dailySec.style.display   = 'none';
+                monthlySec.style.display = '';
+                infoBanner.className = 'mode-info monthly-info';
+                infoText.textContent = 'Choose a date range — all unpaid collections in that period will be bundled into one payment.';
+            }
+
+            resetPreview();
+        }
+
+        // ── Quick Month Chips (last 6 months) ─────────────────────────────────────
+        function buildMonthChips() {
+            const container = document.getElementById('monthChips');
+            const today = new Date();
+            container.innerHTML = '';
+
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const label = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+                const chip  = document.createElement('button');
+                chip.type        = 'button';
+                chip.className   = 'month-chip';
+                chip.textContent = label;
+                chip.onclick     = () => applyMonthChip(d);
+                container.appendChild(chip);
+            }
+        }
+
+        function applyMonthChip(d) {
+            const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+            const lastDay  = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+            document.getElementById('fromDate').value = fmtDate(firstDay);
+            document.getElementById('toDate').value   = fmtDate(lastDay);
+            resetPreview();
+        }
+
+        // ── Date helpers ──────────────────────────────────────────────────────────
+        function getFromDate() {
+            if (currentMode === 'daily') {
+                return document.getElementById('singleDate').value;
+            }
+            return document.getElementById('fromDate').value;
+        }
+
+        function getToDate() {
+            if (currentMode === 'daily') {
+                return document.getElementById('singleDate').value;   // same date = single day
+            }
+            return document.getElementById('toDate').value;
+        }
+
+        // ── Center changed ────────────────────────────────────────────────────────
         function onCenterChange(val) {
             selectedCenterId = val || null;
-
             const codeInput = document.getElementById('farmerCodeInput');
             const chip      = document.getElementById('farmerChip');
 
-            // Reset farmer state
             codeInput.value = '';
             codeInput.classList.remove('valid', 'invalid');
             document.getElementById('farmerId').value = '';
@@ -893,7 +1198,7 @@
             resetPreview();
         }
 
-        // ── Farmer code lookup — scoped to selected center ───────────────────────
+        // ── Farmer code lookup ────────────────────────────────────────────────────
         function lookupFarmerByCode(val) {
             const chip      = document.getElementById('farmerChip');
             const codeInput = document.getElementById('farmerCodeInput');
@@ -934,12 +1239,12 @@
             }, 350);
         }
 
-        // ── Step indicator ───────────────────────────────────────────────────────
+        // ── Step indicator ────────────────────────────────────────────────────────
         function setStep(n) {
             [1, 2, 3].forEach(i => {
                 const el = document.getElementById('step' + i);
                 el.classList.remove('active', 'done');
-                if (i < n) el.classList.add('done');
+                if (i < n)  el.classList.add('done');
                 if (i === n) el.classList.add('active');
             });
         }
@@ -951,16 +1256,29 @@
             setStep(1);
         }
 
-        // ── Preview ──────────────────────────────────────────────────────────────
+        // ── Preview ───────────────────────────────────────────────────────────────
         async function previewPayment() {
             const farmerId = document.getElementById('farmerId').value;
             const centerId = document.getElementById('centerId').value;
-            const fromDate = document.getElementById('fromDate').value;
-            const toDate   = document.getElementById('toDate').value;
+            const fromDate = getFromDate();
+            const toDate   = getToDate();
 
             if (!centerId) { alert('Please select a collection center.'); return; }
             if (!farmerId) { alert('Please enter a valid farmer code.'); return; }
-            if (!fromDate || !toDate) { alert('Please set the collection period dates.'); return; }
+            if (!fromDate) {
+                alert(currentMode === 'daily'
+                    ? 'Please select a collection date.'
+                    : 'Please set the collection period dates.');
+                return;
+            }
+            if (currentMode === 'monthly' && !toDate) {
+                alert('Please set the end date for the collection period.');
+                return;
+            }
+            if (currentMode === 'monthly' && fromDate > toDate) {
+                alert('"From" date cannot be after "To" date.');
+                return;
+            }
 
             const btn = document.getElementById('previewBtn');
             btn.disabled = true;
@@ -983,21 +1301,40 @@
                     document.getElementById('previewError').style.display = 'flex';
                     setStep(1);
                 } else {
+                    // KPIs
                     document.getElementById('prev_collections').textContent = data.unpaidCollections;
                     document.getElementById('prev_qty').textContent         = data.totalQty.toFixed(2);
                     document.getElementById('prev_amount').textContent      = '₹' + data.totalAmount.toFixed(2);
-                    document.getElementById('prev_farmer').textContent      = data.farmerName;
-                    document.getElementById('prev_center').textContent      = data.centerName;
 
-                    const fmt = d => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    document.getElementById('prev_period').textContent = fmt(fromDate) + ' → ' + fmt(toDate);
-                    document.getElementById('prev_date').textContent   = fmt(new Date());
-                    document.getElementById('prev_paidby_text').textContent = data.paidBy || '—';
+                    // Mode badge
+                    const badge = document.getElementById('prev_mode_badge');
+                    if (currentMode === 'daily') {
+                        badge.className   = 'mode-badge daily';
+                        badge.textContent = 'Daily';
+                    } else {
+                        badge.className   = 'mode-badge monthly';
+                        badge.textContent = 'Monthly';
+                    }
 
-                    document.getElementById('hf_farmerId').value = farmerId;
-                    document.getElementById('hf_centerId').value = centerId;
-                    document.getElementById('hf_fromDate').value = fromDate;
-                    document.getElementById('hf_toDate').value   = toDate;
+                    // Detail rows
+                    document.getElementById('prev_farmer').textContent = data.farmerName;
+                    document.getElementById('prev_center').textContent = data.centerName;
+
+                    const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    document.getElementById('prev_period').textContent =
+                        currentMode === 'daily'
+                            ? fmt(fromDate)
+                            : fmt(fromDate) + ' → ' + fmt(toDate);
+
+                    document.getElementById('prev_date').textContent         = fmt(new Date().toISOString().split('T')[0]);
+                    document.getElementById('prev_paidby_text').textContent  = data.paidBy || '—';
+
+                    // Hidden form fields
+                    document.getElementById('hf_farmerId').value    = farmerId;
+                    document.getElementById('hf_centerId').value    = centerId;
+                    document.getElementById('hf_fromDate').value    = fromDate;
+                    document.getElementById('hf_toDate').value      = toDate;
+                    document.getElementById('hf_paymentMode').value = currentMode;
 
                     document.getElementById('previewSummary').style.display = 'block';
                     setStep(2);

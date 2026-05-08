@@ -40,22 +40,19 @@ namespace DairyIndustry.Repositories
                 ORDER BY cb.BatchDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new BatchDropdownModel
                         {
-                            list.Add(new BatchDropdownModel
-                            {
-                                BatchId = Convert.ToInt32(reader["BatchId"]),
-                                DisplayText = reader["DisplayText"].ToString()
-                            });
-                        }
+                            BatchId = Convert.ToInt32(reader["BatchId"]),
+                            DisplayText = reader["DisplayText"].ToString()
+                        });
                     }
                 }
             }
@@ -84,26 +81,23 @@ namespace DairyIndustry.Repositories
                 ORDER BY v.VehicleNumber";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new VehiclesModel
                         {
-                            list.Add(new VehiclesModel
-                            {
-                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
-                                VehicleNumber = reader["VehicleNumber"].ToString(),
-                                Capacity = reader["Capacity"] == DBNull.Value ? 0m : Convert.ToDecimal(reader["Capacity"]),
-                                DriverId = reader["DriverId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["DriverId"]),
-                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
-                                DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString()
-                            });
-                        }
+                            VehicleId = Convert.ToInt32(reader["VehicleId"]),
+                            VehicleNumber = reader["VehicleNumber"].ToString(),
+                            Capacity = reader["Capacity"] == DBNull.Value ? 0m : Convert.ToDecimal(reader["Capacity"]),
+                            DriverId = reader["DriverId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["DriverId"]),
+                            DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                            DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString()
+                        });
                     }
                 }
             }
@@ -112,33 +106,36 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // DISPATCH — calls SP 6.2
+        // DISPATCH — calls SP usp_Production_DispatchMilkTransfer
+        // MilkTypeId is now a required parameter (no more guessing)
         // ════════════════════════════════════════════════════════
 
-        public int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
+        public int DispatchMilkTransfer(int batchId, int milkTypeId, int vehicleId, int plantId,
                                         decimal dispatchQty, DateTime dispatchDate)
         {
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_DispatchMilkTransfer", con))
             {
-                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_DispatchMilkTransfer", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                    cmd.Parameters.AddWithValue("@BatchId", batchId);
-                    cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
-                    cmd.Parameters.AddWithValue("@PlantId", plantId);
-                    cmd.Parameters.AddWithValue("@DispatchQty", dispatchQty);
-                    cmd.Parameters.AddWithValue("@DispatchDate", dispatchDate);
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);   // ← FIXED: was missing
+                cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
+                cmd.Parameters.AddWithValue("@PlantId", plantId);
+                cmd.Parameters.AddWithValue("@DispatchQty", dispatchQty);
+                cmd.Parameters.AddWithValue("@DispatchDate", dispatchDate);
 
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
-                }
+                con.Open();
+                var result = cmd.ExecuteScalar();
+                return Convert.ToInt32(result);
             }
         }
 
         // ════════════════════════════════════════════════════════
         // RECEIVE — updates transfer, upserts RawMilkInventory
+        // FIX: MilkTypeId now read directly from MilkTransfers
+        //      (previously used ISNULL(mc.MilkTypeId, 1) which
+        //       always fell back to type 1 = Cow milk)
         // ════════════════════════════════════════════════════════
 
         public void ReceiveMilkTransfer(int transferId, decimal receivedQty, DateTime receivedDate)
@@ -151,15 +148,14 @@ namespace DairyIndustry.Repositories
                 int milkTypeId = 0;
                 decimal lossQty = 0;
 
+                // ── FIXED lookup: read MilkTypeId straight from MilkTransfers ──
                 string lookupQuery = @"
-    SELECT TOP 1
-        mt.PlantId,
-        mt.DispatchQty,
-        ISNULL(mc.MilkTypeId, 1) AS MilkTypeId
-    FROM Production.MilkTransfers mt
-    INNER JOIN Collection.CollectionBatches cb ON cb.BatchId  = mt.BatchId
-    LEFT  JOIN Collection.MilkCollection   mc ON mc.BatchId  = cb.BatchId
-    WHERE mt.TransferId = @TransferId";
+                    SELECT
+                        mt.PlantId,
+                        mt.DispatchQty,
+                        mt.MilkTypeId
+                    FROM Production.MilkTransfers mt
+                    WHERE mt.TransferId = @TransferId";
 
                 using (SqlCommand cmd = new SqlCommand(lookupQuery, con))
                 {
@@ -180,12 +176,13 @@ namespace DairyIndustry.Repositories
                     }
                 }
 
+                // ── Update transfer record ──────────────────────
                 string updateTransfer = @"
-            UPDATE Production.MilkTransfers
-            SET ReceivedQty  = @ReceivedQty,
-                LossQty      = @LossQty,
-                ReceivedDate = @ReceivedDate
-            WHERE TransferId = @TransferId";
+                    UPDATE Production.MilkTransfers
+                    SET ReceivedQty  = @ReceivedQty,
+                        LossQty      = @LossQty,
+                        ReceivedDate = @ReceivedDate
+                    WHERE TransferId = @TransferId";
 
                 using (SqlCommand cmd = new SqlCommand(updateTransfer, con))
                 {
@@ -196,20 +193,21 @@ namespace DairyIndustry.Repositories
                     cmd.ExecuteNonQuery();
                 }
 
+                // ── Upsert RawMilkInventory with correct MilkTypeId ─
                 string upsertInventory = @"
-            IF EXISTS (
-                SELECT 1 FROM Production.RawMilkInventory
-                WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId
-            )
-                UPDATE Production.RawMilkInventory
-                SET Quantity    = Quantity + @ReceivedQty,
-                    LastUpdated = GETDATE()
-                WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId
-            ELSE
-                INSERT INTO Production.RawMilkInventory
-                    (PlantId, MilkTypeId, Quantity, LastUpdated)
-                VALUES
-                    (@PlantId, @MilkTypeId, @ReceivedQty, GETDATE())";
+                    IF EXISTS (
+                        SELECT 1 FROM Production.RawMilkInventory
+                        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId
+                    )
+                        UPDATE Production.RawMilkInventory
+                        SET Quantity    = Quantity + @ReceivedQty,
+                            LastUpdated = GETDATE()
+                        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId
+                    ELSE
+                        INSERT INTO Production.RawMilkInventory
+                            (PlantId, MilkTypeId, Quantity, LastUpdated)
+                        VALUES
+                            (@PlantId, @MilkTypeId, @ReceivedQty, GETDATE())";
 
                 using (SqlCommand cmd = new SqlCommand(upsertInventory, con))
                 {
@@ -219,12 +217,13 @@ namespace DairyIndustry.Repositories
                     cmd.ExecuteNonQuery();
                 }
 
+                // ── Mark batch as Dispatched ────────────────────
                 string updateBatch = @"
-            UPDATE Collection.CollectionBatches
-            SET Status = 'Dispatched'
-            FROM Collection.CollectionBatches cb
-            INNER JOIN Production.MilkTransfers mt ON mt.BatchId = cb.BatchId
-            WHERE mt.TransferId = @TransferId";
+                    UPDATE Collection.CollectionBatches
+                    SET Status = 'Dispatched'
+                    FROM Collection.CollectionBatches cb
+                    INNER JOIN Production.MilkTransfers mt ON mt.BatchId = cb.BatchId
+                    WHERE mt.TransferId = @TransferId";
 
                 using (SqlCommand cmd = new SqlCommand(updateBatch, con))
                 {
@@ -235,7 +234,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // GET ALL TRANSFERS  (plantId = null → all, plantId = X → scoped)
+        // GET ALL TRANSFERS
         // ════════════════════════════════════════════════════════
 
         public List<MilkTransferModel> GetAllTransfers(int? plantId = null)
@@ -243,57 +242,52 @@ namespace DairyIndustry.Repositories
             var list = new List<MilkTransferModel>();
 
             string query = @"
-        SELECT
-            mt.TransferId,
-            mt.BatchId,
-            mt.VehicleId,
-            mt.PlantId,
-            mt.DispatchQty,
-            mt.ReceivedQty,
-            mt.LossQty,
-            mt.DispatchDate,
-            mt.ReceivedDate,
+                SELECT
+                    mt.TransferId,
+                    mt.BatchId,
+                    mt.VehicleId,
+                    mt.PlantId,
+                    mt.MilkTypeId,
+                    mt.DispatchQty,
+                    mt.ReceivedQty,
+                    mt.LossQty,
+                    mt.DispatchDate,
+                    mt.ReceivedDate,
 
-            'B-' + CAST(cb.BatchId AS VARCHAR) AS BatchRef,
-            cc.CenterName,
-            pp.PlantName,
-            v.VehicleNumber,
-            d.DriverName,
+                    'B-' + CAST(cb.BatchId AS VARCHAR) AS BatchRef,
+                    cc.CenterName,
+                    pp.PlantName,
+                    v.VehicleNumber,
+                    d.DriverName,
+                    mtp.MilkTypeName,
 
-            CASE
-                WHEN qt.TransferId IS NOT NULL THEN 1
-                ELSE 0
-            END AS HasQualityTest
+                    CASE
+                        WHEN qt.TransferId IS NOT NULL THEN 1
+                        ELSE 0
+                    END AS HasQualityTest
 
-        FROM Production.MilkTransfers mt
-        INNER JOIN Collection.CollectionBatches cb ON cb.BatchId = mt.BatchId
-        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = cb.CenterId
-        INNER JOIN Production.ProcessingPlants pp ON pp.PlantId = mt.PlantId
-        INNER JOIN Logistics.VehiclesNew v ON v.VehicleId = mt.VehicleId
-        LEFT JOIN Logistics.DriversNew d ON d.DriverId = v.DriverId
-        LEFT JOIN Production.TransferQualityTests qt
-            ON qt.TransferId = mt.TransferId
+                FROM Production.MilkTransfers mt
+                INNER JOIN Collection.CollectionBatches  cb  ON cb.BatchId   = mt.BatchId
+                INNER JOIN Collection.CollectionCenters  cc  ON cc.CenterId  = cb.CenterId
+                INNER JOIN Production.ProcessingPlants   pp  ON pp.PlantId   = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew         v   ON v.VehicleId  = mt.VehicleId
+                LEFT  JOIN Logistics.DriversNew          d   ON d.DriverId   = v.DriverId
+                LEFT  JOIN Finance.MilkTypes             mtp ON mtp.MilkTypeId = mt.MilkTypeId
+                LEFT  JOIN Production.TransferQualityTests qt ON qt.TransferId = mt.TransferId
 
-        WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
-
-        ORDER BY mt.DispatchDate DESC";
+                WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
+                ORDER BY mt.DispatchDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            list.Add(MapTransfer(reader));
-                        }
-                    }
+                    while (reader.Read())
+                        list.Add(MapTransfer(reader));
                 }
             }
 
@@ -314,6 +308,7 @@ namespace DairyIndustry.Repositories
                     mt.BatchId,
                     mt.VehicleId,
                     mt.PlantId,
+                    mt.MilkTypeId,
                     mt.DispatchQty,
                     mt.ReceivedQty,
                     mt.LossQty,
@@ -323,28 +318,27 @@ namespace DairyIndustry.Repositories
                     cc.CenterName,
                     pp.PlantName,
                     v.VehicleNumber,
-                    d.DriverName
+                    d.DriverName,
+                    mtp.MilkTypeName
                 FROM Production.MilkTransfers mt
-                INNER JOIN Collection.CollectionBatches    cb ON cb.BatchId  = mt.BatchId
-                INNER JOIN Collection.CollectionCenters    cc ON cc.CenterId = cb.CenterId
-                INNER JOIN Production.ProcessingPlants     pp ON pp.PlantId  = mt.PlantId
-                INNER JOIN Logistics.VehiclesNew               v  ON v.VehicleId = mt.VehicleId
-                LEFT  JOIN Logistics.DriversNew                d  ON d.DriverId  = v.DriverId
+                INNER JOIN Collection.CollectionBatches  cb  ON cb.BatchId   = mt.BatchId
+                INNER JOIN Collection.CollectionCenters  cc  ON cc.CenterId  = cb.CenterId
+                INNER JOIN Production.ProcessingPlants   pp  ON pp.PlantId   = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew         v   ON v.VehicleId  = mt.VehicleId
+                LEFT  JOIN Logistics.DriversNew          d   ON d.DriverId   = v.DriverId
+                LEFT  JOIN Finance.MilkTypes             mtp ON mtp.MilkTypeId = mt.MilkTypeId
                 WHERE mt.TransferId = @TransferId";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@TransferId", transferId);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@TransferId", transferId);
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            transfer = MapTransfer(reader);
-                    }
+                    if (reader.Read())
+                        transfer = MapTransfer(reader);
                 }
             }
 
@@ -367,6 +361,7 @@ namespace DairyIndustry.Repositories
                 BatchId = Convert.ToInt32(reader["BatchId"]),
                 VehicleId = Convert.ToInt32(reader["VehicleId"]),
                 PlantId = Convert.ToInt32(reader["PlantId"]),
+                MilkTypeId = reader["MilkTypeId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["MilkTypeId"]),
                 DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
                 ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
                 LossQty = reader["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["LossQty"]),
@@ -377,6 +372,7 @@ namespace DairyIndustry.Repositories
                 PlantName = reader["PlantName"].ToString(),
                 VehicleNumber = reader["VehicleNumber"].ToString(),
                 DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                MilkTypeName = reader["MilkTypeName"] == DBNull.Value ? null : reader["MilkTypeName"].ToString(),
                 HasQualityTest = HasColumn("HasQualityTest") && Convert.ToInt32(reader["HasQualityTest"]) == 1
             };
         }
@@ -394,19 +390,16 @@ namespace DairyIndustry.Repositories
                 SELECT SCOPE_IDENTITY();";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@ProductName", productName);
-                    cmd.Parameters.AddWithValue("@ProductType", productType);
-                    cmd.Parameters.AddWithValue("@MRP", mrp);
-                    cmd.Parameters.AddWithValue("@Unit", unit);
-                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
-                }
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@ProductName", productName);
+                cmd.Parameters.AddWithValue("@ProductType", productType);
+                cmd.Parameters.AddWithValue("@MRP", mrp);
+                cmd.Parameters.AddWithValue("@Unit", unit);
+                cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)shelfLifeDays ?? DBNull.Value);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
@@ -416,16 +409,14 @@ namespace DairyIndustry.Repositories
             string query = "SELECT ProductId, ProductName, ProductType, MRP, Unit, ShelfLifeDays FROM Production.Products ORDER BY ProductName";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            list.Add(MapProduct(reader));
-                    }
+                    while (reader.Read())
+                        list.Add(MapProduct(reader));
                 }
             }
             return list;
@@ -437,17 +428,15 @@ namespace DairyIndustry.Repositories
             string query = "SELECT ProductId, ProductName, ProductType, MRP, Unit, ShelfLifeDays FROM Production.Products WHERE ProductId = @ProductId";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@ProductId", productId);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@ProductId", productId);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            product = MapProduct(reader);
-                    }
+                    if (reader.Read())
+                        product = MapProduct(reader);
                 }
             }
             return product;
@@ -465,19 +454,17 @@ namespace DairyIndustry.Repositories
                 WHERE ProductId = @ProductId";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@ProductId", product.ProductId);
-                    cmd.Parameters.AddWithValue("@ProductName", product.ProductName);
-                    cmd.Parameters.AddWithValue("@ProductType", product.ProductType);
-                    cmd.Parameters.AddWithValue("@MRP", product.MRP);
-                    cmd.Parameters.AddWithValue("@Unit", product.Unit);
-                    cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)product.ShelfLifeDays ?? DBNull.Value);
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                }
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@ProductId", product.ProductId);
+                cmd.Parameters.AddWithValue("@ProductName", product.ProductName);
+                cmd.Parameters.AddWithValue("@ProductType", product.ProductType);
+                cmd.Parameters.AddWithValue("@MRP", product.MRP);
+                cmd.Parameters.AddWithValue("@Unit", product.Unit);
+                cmd.Parameters.AddWithValue("@ShelfLifeDays", (object?)product.ShelfLifeDays ?? DBNull.Value);
+                con.Open();
+                cmd.ExecuteNonQuery();
             }
         }
 
@@ -486,14 +473,12 @@ namespace DairyIndustry.Repositories
             string query = "DELETE FROM Production.Products WHERE ProductId = @ProductId";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@ProductId", productId);
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                }
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@ProductId", productId);
+                con.Open();
+                cmd.ExecuteNonQuery();
             }
         }
 
@@ -534,27 +519,25 @@ namespace DairyIndustry.Repositories
                 ORDER BY pp.PlantName, mt.MilkTypeName";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new RawMilkInventoryModel
                         {
-                            list.Add(new RawMilkInventoryModel
-                            {
-                                RawMilkInventoryId = Convert.ToInt32(reader["RawMilkInventoryId"]),
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
-                                Quantity = Convert.ToDecimal(reader["Quantity"]),
-                                LastUpdated = Convert.ToDateTime(reader["LastUpdated"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                MilkTypeName = reader["MilkTypeName"].ToString()
-                            });
-                        }
+                            RawMilkInventoryId = Convert.ToInt32(reader["RawMilkInventoryId"]),
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
+                            Quantity = Convert.ToDecimal(reader["Quantity"]),
+                            LastUpdated = Convert.ToDateTime(reader["LastUpdated"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            MilkTypeName = reader["MilkTypeName"].ToString()
+                        });
                     }
                 }
             }
@@ -563,28 +546,30 @@ namespace DairyIndustry.Repositories
         }
 
         // ════════════════════════════════════════════════════════
-        // PRODUCTION BATCHES
+        // PRODUCTION BATCHES — START
+        // MilkTypeId is now stored on ProductionBatches row
         // ════════════════════════════════════════════════════════
 
         public int StartProductionBatch(int plantId, int productId,
-                                decimal milkUsedQuantity, DateTime productionDate,
-                                int milkTypeId)
+                                        decimal milkUsedQuantity, DateTime productionDate,
+                                        int milkTypeId)
         {
             string checkQuery = @"
-        SELECT ISNULL(Quantity, 0)
-        FROM Production.RawMilkInventory
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
+                SELECT ISNULL(Quantity, 0)
+                FROM Production.RawMilkInventory
+                WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
+            // MilkTypeId stored so UpdateBatchStatus can read it directly
             string insertQuery = @"
-        INSERT INTO Production.ProductionBatches
-            (PlantId, ProductId, MilkUsedQuantity, ProductionDate, BatchStatus)
-        VALUES (@PlantId, @ProductId, @MilkUsedQuantity, @ProductionDate, 'InProgress');
-        SELECT SCOPE_IDENTITY();";
+                INSERT INTO Production.ProductionBatches
+                    (PlantId, ProductId, MilkUsedQuantity, ProductionDate, BatchStatus, MilkTypeId)
+                VALUES (@PlantId, @ProductId, @MilkUsedQuantity, @ProductionDate, 'InProgress', @MilkTypeId);
+                SELECT SCOPE_IDENTITY();";
 
             string deductQuery = @"
-        UPDATE Production.RawMilkInventory
-        SET Quantity = Quantity - @MilkUsedQuantity, LastUpdated = GETDATE()
-        WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
+                UPDATE Production.RawMilkInventory
+                SET Quantity = Quantity - @MilkUsedQuantity, LastUpdated = GETDATE()
+                WHERE PlantId = @PlantId AND MilkTypeId = @MilkTypeId";
 
             using (SqlConnection con = _db.GetConnection())
             {
@@ -607,6 +592,7 @@ namespace DairyIndustry.Repositories
                     ins.Parameters.AddWithValue("@ProductId", productId);
                     ins.Parameters.AddWithValue("@MilkUsedQuantity", milkUsedQuantity);
                     ins.Parameters.AddWithValue("@ProductionDate", productionDate);
+                    ins.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
                     newId = Convert.ToInt32(ins.ExecuteScalar());
                 }
 
@@ -624,8 +610,9 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // UPDATE BATCH STATUS
-        // If status = 'QCFailed', automatically logs the full
-        // MilkUsedQuantity into Production.MilkProcessWastage.
+        // FIX: MilkTypeId now read directly from ProductionBatches
+        //      (previously guessed from inventory ORDER BY MilkTypeId
+        //       which always picked type 1)
         // ════════════════════════════════════════════════════════
 
         public void UpdateBatchStatus(int productionBatchId, string batchStatus)
@@ -634,19 +621,13 @@ namespace DairyIndustry.Repositories
             {
                 con.Open();
 
-                // Step 1 — fetch batch details (needed for QCFailed wastage log)
                 int plantId = 0;
-                int milkTypeId = 1; // default fallback
+                int milkTypeId = 0;
                 decimal milkUsedQty = 0;
 
+                // ── FIXED: read MilkTypeId directly from the batch row ──
                 string batchQuery = @"
-                    SELECT pb.PlantId, pb.MilkUsedQuantity,
-                           ISNULL(
-                               (SELECT TOP 1 MilkTypeId
-                                FROM Production.RawMilkInventory
-                                WHERE PlantId = pb.PlantId
-                                ORDER BY MilkTypeId),
-                           1) AS MilkTypeId
+                    SELECT pb.PlantId, pb.MilkUsedQuantity, pb.MilkTypeId
                     FROM Production.ProductionBatches pb
                     WHERE pb.ProductionBatchId = @ProductionBatchId
                       AND pb.BatchStatus = 'InProgress'";
@@ -665,7 +646,7 @@ namespace DairyIndustry.Repositories
                     }
                 }
 
-                // Step 2 — update the batch status
+                // ── Update the batch status ─────────────────────
                 string updateQuery = @"
                     UPDATE Production.ProductionBatches
                     SET BatchStatus = @BatchStatus
@@ -679,7 +660,7 @@ namespace DairyIndustry.Repositories
                     cmd.ExecuteNonQuery();
                 }
 
-                // Step 3 — if QCFailed, auto-log the entire milk quantity as wastage
+                // ── If QCFailed, auto-log entire milk qty as wastage ─
                 if (batchStatus == "QCFailed" && plantId > 0 && milkUsedQty > 0)
                 {
                     string wastageQuery = @"
@@ -712,28 +693,29 @@ namespace DairyIndustry.Repositories
                     pb.MilkUsedQuantity,
                     pb.ProductionDate,
                     pb.BatchStatus,
+                    pb.MilkTypeId,
                     pp.PlantName,
                     p.ProductName,
                     p.ProductType,
-                    p.Unit
+                    p.Unit,
+                    mt.MilkTypeName
                 FROM Production.ProductionBatches pb
                 INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = pb.PlantId
                 INNER JOIN Production.Products         p  ON p.ProductId = pb.ProductId
+                LEFT  JOIN Finance.MilkTypes           mt ON mt.MilkTypeId = pb.MilkTypeId
                 WHERE (@PlantId IS NULL OR pb.PlantId = @PlantId)
                 ORDER BY pb.ProductionDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            list.Add(MapProductionBatch(reader));
-                    }
+                    while (reader.Read())
+                        list.Add(MapProductionBatch(reader));
                 }
             }
             return list;
@@ -750,27 +732,28 @@ namespace DairyIndustry.Repositories
                     pb.MilkUsedQuantity,
                     pb.ProductionDate,
                     pb.BatchStatus,
+                    pb.MilkTypeId,
                     pp.PlantName,
                     p.ProductName,
                     p.ProductType,
-                    p.Unit
+                    p.Unit,
+                    mt.MilkTypeName
                 FROM Production.ProductionBatches pb
                 INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = pb.PlantId
                 INNER JOIN Production.Products         p  ON p.ProductId = pb.ProductId
+                LEFT  JOIN Finance.MilkTypes           mt ON mt.MilkTypeId = pb.MilkTypeId
                 WHERE pb.ProductionBatchId = @ProductionBatchId";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@ProductionBatchId", productionBatchId);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@ProductionBatchId", productionBatchId);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            batch = MapProductionBatch(reader);
-                    }
+                    if (reader.Read())
+                        batch = MapProductionBatch(reader);
                 }
             }
             return batch;
@@ -786,10 +769,12 @@ namespace DairyIndustry.Repositories
                 MilkUsedQuantity = Convert.ToDecimal(reader["MilkUsedQuantity"]),
                 ProductionDate = Convert.ToDateTime(reader["ProductionDate"]),
                 BatchStatus = reader["BatchStatus"].ToString(),
+                MilkTypeId = reader["MilkTypeId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["MilkTypeId"]),
                 PlantName = reader["PlantName"].ToString(),
                 ProductName = reader["ProductName"].ToString(),
                 ProductType = reader["ProductType"].ToString(),
-                Unit = reader["Unit"].ToString()
+                Unit = reader["Unit"].ToString(),
+                MilkTypeName = reader["MilkTypeName"] == DBNull.Value ? null : reader["MilkTypeName"].ToString()
             };
         }
 
@@ -815,21 +800,19 @@ namespace DairyIndustry.Repositories
                 ORDER BY pb.ProductionDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new BatchForWastageModel
                         {
-                            list.Add(new BatchForWastageModel
-                            {
-                                BatchId = Convert.ToInt32(reader["ProductionBatchId"]),
-                                DisplayText = reader["DisplayText"].ToString()
-                            });
-                        }
+                            BatchId = Convert.ToInt32(reader["ProductionBatchId"]),
+                            DisplayText = reader["DisplayText"].ToString()
+                        });
                     }
                 }
             }
@@ -845,18 +828,15 @@ namespace DairyIndustry.Repositories
                 SELECT SCOPE_IDENTITY();";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@BatchId", batchId);
-                    cmd.Parameters.AddWithValue("@ProductId", productId);
-                    cmd.Parameters.AddWithValue("@Quantity", quantity);
-                    cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
-                }
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                cmd.Parameters.AddWithValue("@ProductId", productId);
+                cmd.Parameters.AddWithValue("@Quantity", quantity);
+                cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
@@ -885,17 +865,15 @@ namespace DairyIndustry.Repositories
                 ORDER BY pw.RecordedDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            list.Add(MapWastage(reader));
-                    }
+                    while (reader.Read())
+                        list.Add(MapWastage(reader));
                 }
             }
 
@@ -927,17 +905,15 @@ namespace DairyIndustry.Repositories
                 ORDER BY pw.RecordedDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@BatchId", batchId);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            list.Add(MapWastage(reader));
-                    }
+                    while (reader.Read())
+                        list.Add(MapWastage(reader));
                 }
             }
 
@@ -966,36 +942,24 @@ namespace DairyIndustry.Repositories
         // MILK PROCESS WASTAGE  (raw-milk lost during production)
         // ════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Manually records a partial raw-milk process wastage.
-        /// Calls the existing SP usp_Production_RecordMilkProcessWastage.
-        /// WastageType is always 'ProcessWastage' for manual entries.
-        /// </summary>
         public int AddMilkProcessWastage(int productionBatchId, int plantId, int milkTypeId,
                                           decimal wastageQuantity, string reason)
         {
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Production.usp_Production_RecordMilkProcessWastage", con))
             {
-                using (SqlCommand cmd = new SqlCommand("Production.usp_Production_RecordMilkProcessWastage", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@ProductionBatchId", productionBatchId);
-                    cmd.Parameters.AddWithValue("@PlantId", plantId);
-                    cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
-                    cmd.Parameters.AddWithValue("@WastageQuantity", wastageQuantity);
-                    cmd.Parameters.AddWithValue("@WastageType", "ProcessWastage");
-                    cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
-                }
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@ProductionBatchId", productionBatchId);
+                cmd.Parameters.AddWithValue("@PlantId", plantId);
+                cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
+                cmd.Parameters.AddWithValue("@WastageQuantity", wastageQuantity);
+                cmd.Parameters.AddWithValue("@WastageType", "ProcessWastage");
+                cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
-        /// <summary>
-        /// Returns all MilkProcessWastage records (QCFailed + ProcessWastage),
-        /// optionally scoped to a plant.
-        /// </summary>
         public List<MilkProcessWastageModel> GetAllMilkProcessWastage(int? plantId = null)
         {
             var list = new List<MilkProcessWastageModel>();
@@ -1015,39 +979,37 @@ namespace DairyIndustry.Repositories
                     pb.BatchStatus,
                     pb.ProductionDate
                 FROM Production.MilkProcessWastage mpw
-                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId    = mpw.PlantId
-                INNER JOIN Finance.MilkTypes           mt ON mt.MilkTypeId = mpw.MilkTypeId
+                INNER JOIN Production.ProcessingPlants  pp ON pp.PlantId           = mpw.PlantId
+                INNER JOIN Finance.MilkTypes            mt ON mt.MilkTypeId        = mpw.MilkTypeId
                 INNER JOIN Production.ProductionBatches pb ON pb.ProductionBatchId = mpw.ProductionBatchId
                 WHERE (@PlantId IS NULL OR mpw.PlantId = @PlantId)
                 ORDER BY mpw.RecordedDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
             {
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        list.Add(new MilkProcessWastageModel
                         {
-                            list.Add(new MilkProcessWastageModel
-                            {
-                                WastageId = Convert.ToInt32(reader["WastageId"]),
-                                ProductionBatchId = Convert.ToInt32(reader["ProductionBatchId"]),
-                                PlantId = Convert.ToInt32(reader["PlantId"]),
-                                MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
-                                WastageQuantity = Convert.ToDecimal(reader["WastageQuantity"]),
-                                WastageType = reader["WastageType"].ToString(),
-                                Reason = reader["Reason"] == DBNull.Value ? null : reader["Reason"].ToString(),
-                                RecordedDate = Convert.ToDateTime(reader["RecordedDate"]),
-                                PlantName = reader["PlantName"].ToString(),
-                                MilkTypeName = reader["MilkTypeName"].ToString(),
-                                BatchStatus = reader["BatchStatus"].ToString(),
-                                ProductionDate = Convert.ToDateTime(reader["ProductionDate"])
-                            });
-                        }
+                            WastageId = Convert.ToInt32(reader["WastageId"]),
+                            ProductionBatchId = Convert.ToInt32(reader["ProductionBatchId"]),
+                            PlantId = Convert.ToInt32(reader["PlantId"]),
+                            MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
+                            WastageQuantity = Convert.ToDecimal(reader["WastageQuantity"]),
+                            WastageType = reader["WastageType"].ToString(),
+                            Reason = reader["Reason"] == DBNull.Value ? null : reader["Reason"].ToString(),
+                            RecordedDate = Convert.ToDateTime(reader["RecordedDate"]),
+                            PlantName = reader["PlantName"].ToString(),
+                            MilkTypeName = reader["MilkTypeName"].ToString(),
+                            BatchStatus = reader["BatchStatus"].ToString(),
+                            ProductionDate = Convert.ToDateTime(reader["ProductionDate"])
+                        });
                     }
                 }
             }
@@ -1064,30 +1026,30 @@ namespace DairyIndustry.Repositories
             var list = new List<QualityTestModel>();
 
             string query = @"
-        SELECT
-            tqt.TestId,
-            tqt.TransferId,
-            tqt.TestedFat,
-            tqt.TestedCLR,
-            tqt.TestDate,
-            mt.DispatchQty,
-            mt.ReceivedQty,
-            mt.DispatchDate,
-            pp.PlantName,
-            cc.CenterName,
-            v.VehicleNumber,
-            d.DriverName,
-            cb.AvgFat   AS BatchAvgFat,
-            cb.AvgCLR   AS BatchAvgCLR
-        FROM Production.TransferQualityTests tqt
-        INNER JOIN Production.MilkTransfers          mt  ON mt.TransferId  = tqt.TransferId
-        INNER JOIN Production.ProcessingPlants        pp  ON pp.PlantId     = mt.PlantId
-        INNER JOIN Logistics.VehiclesNew              v   ON v.VehicleId    = mt.VehicleId
-        INNER JOIN Logistics.DriversNew               d   ON d.DriverId     = v.DriverId
-        INNER JOIN Collection.CollectionBatches       cb  ON cb.BatchId     = mt.BatchId
-        INNER JOIN Collection.CollectionCenters       cc  ON cc.CenterId    = cb.CenterId
-        WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
-        ORDER BY tqt.TestDate DESC";
+                SELECT
+                    tqt.TestId,
+                    tqt.TransferId,
+                    tqt.TestedFat,
+                    tqt.TestedCLR,
+                    tqt.TestDate,
+                    mt.DispatchQty,
+                    mt.ReceivedQty,
+                    mt.DispatchDate,
+                    pp.PlantName,
+                    cc.CenterName,
+                    v.VehicleNumber,
+                    d.DriverName,
+                    cb.AvgFat   AS BatchAvgFat,
+                    cb.AvgCLR   AS BatchAvgCLR
+                FROM Production.TransferQualityTests tqt
+                INNER JOIN Production.MilkTransfers         mt  ON mt.TransferId  = tqt.TransferId
+                INNER JOIN Production.ProcessingPlants       pp  ON pp.PlantId     = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew             v   ON v.VehicleId    = mt.VehicleId
+                INNER JOIN Logistics.DriversNew              d   ON d.DriverId     = v.DriverId
+                INNER JOIN Collection.CollectionBatches      cb  ON cb.BatchId     = mt.BatchId
+                INNER JOIN Collection.CollectionCenters      cc  ON cc.CenterId    = cb.CenterId
+                WHERE (@PlantId IS NULL OR mt.PlantId = @PlantId)
+                ORDER BY tqt.TestDate DESC";
 
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand(query, con))
@@ -1108,29 +1070,29 @@ namespace DairyIndustry.Repositories
         public QualityTestModel GetQualityTestByTransfer(int transferId)
         {
             string query = @"
-        SELECT
-            tqt.TestId,
-            tqt.TransferId,
-            tqt.TestedFat,
-            tqt.TestedCLR,
-            tqt.TestDate,
-            mt.DispatchQty,
-            mt.ReceivedQty,
-            mt.DispatchDate,
-            pp.PlantName,
-            cc.CenterName,
-            v.VehicleNumber,
-            d.DriverName,
-            cb.AvgFat   AS BatchAvgFat,
-            cb.AvgCLR   AS BatchAvgCLR
-        FROM Production.TransferQualityTests tqt
-        INNER JOIN Production.MilkTransfers          mt  ON mt.TransferId  = tqt.TransferId
-        INNER JOIN Production.ProcessingPlants        pp  ON pp.PlantId     = mt.PlantId
-        INNER JOIN Logistics.VehiclesNew              v   ON v.VehicleId    = mt.VehicleId
-        INNER JOIN Logistics.DriversNew               d   ON d.DriverId     = v.DriverId
-        INNER JOIN Collection.CollectionBatches       cb  ON cb.BatchId     = mt.BatchId
-        INNER JOIN Collection.CollectionCenters       cc  ON cc.CenterId    = cb.CenterId
-        WHERE tqt.TransferId = @TransferId";
+                SELECT
+                    tqt.TestId,
+                    tqt.TransferId,
+                    tqt.TestedFat,
+                    tqt.TestedCLR,
+                    tqt.TestDate,
+                    mt.DispatchQty,
+                    mt.ReceivedQty,
+                    mt.DispatchDate,
+                    pp.PlantName,
+                    cc.CenterName,
+                    v.VehicleNumber,
+                    d.DriverName,
+                    cb.AvgFat   AS BatchAvgFat,
+                    cb.AvgCLR   AS BatchAvgCLR
+                FROM Production.TransferQualityTests tqt
+                INNER JOIN Production.MilkTransfers         mt  ON mt.TransferId  = tqt.TransferId
+                INNER JOIN Production.ProcessingPlants       pp  ON pp.PlantId     = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew             v   ON v.VehicleId    = mt.VehicleId
+                INNER JOIN Logistics.DriversNew              d   ON d.DriverId     = v.DriverId
+                INNER JOIN Collection.CollectionBatches      cb  ON cb.BatchId     = mt.BatchId
+                INNER JOIN Collection.CollectionCenters      cc  ON cc.CenterId    = cb.CenterId
+                WHERE tqt.TransferId = @TransferId";
 
             using (SqlConnection con = _db.GetConnection())
             using (SqlCommand cmd = new SqlCommand(query, con))
@@ -1151,15 +1113,15 @@ namespace DairyIndustry.Repositories
         public int AddQualityTest(int transferId, decimal testedFat, decimal testedCLR, DateTime testDate)
         {
             string checkQuery = @"
-        SELECT COUNT(1) FROM Production.TransferQualityTests
-        WHERE TransferId = @TransferId";
+                SELECT COUNT(1) FROM Production.TransferQualityTests
+                WHERE TransferId = @TransferId";
 
             string insertQuery = @"
-        INSERT INTO Production.TransferQualityTests
-            (TransferId, TestedFat, TestedCLR, TestDate)
-        VALUES
-            (@TransferId, @TestedFat, @TestedCLR, @TestDate);
-        SELECT SCOPE_IDENTITY();";
+                INSERT INTO Production.TransferQualityTests
+                    (TransferId, TestedFat, TestedCLR, TestDate)
+                VALUES
+                    (@TransferId, @TestedFat, @TestedCLR, @TestDate);
+                SELECT SCOPE_IDENTITY();";
 
             using (SqlConnection con = _db.GetConnection())
             {
@@ -1181,8 +1143,7 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@TestedFat", testedFat);
                     cmd.Parameters.AddWithValue("@TestedCLR", testedCLR);
                     cmd.Parameters.AddWithValue("@TestDate", testDate.Date);
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
         }
