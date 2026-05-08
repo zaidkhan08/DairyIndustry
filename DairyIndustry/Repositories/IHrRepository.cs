@@ -7,8 +7,8 @@ namespace DairyIndustry.Repositories
         // ── STAFF CRUD ─────────────────────────────────────────
         List<StaffModel> GetAllStaff(int? roleId, bool? isActive);
         StaffModel? GetStaffById(int staffId);
-        int AddStaff(StaffFormModel model);       // inline INSERT
-        bool UpdateStaff(StaffFormModel model);   // inline UPDATE
+        int AddStaff(StaffFormModel model);
+        bool UpdateStaff(StaffFormModel model);
         bool ToggleActive(int staffId, bool isActive);
         bool UpdateProfilePhoto(int staffId, string photoPath);
 

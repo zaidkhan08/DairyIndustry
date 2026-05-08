@@ -1,10 +1,20 @@
-﻿using DairyIndustry.Models;
+﻿using DairyIndustry.Filters;
+using DairyIndustry.Models;
 using DairyIndustry.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
+    // ═══════════════════════════════════════════════════════════
+    //  FIX 1 — SESSION GUARD
+    //  [SessionAuthorize("HR Manager")] applied at controller
+    //  level so every action is protected automatically.
+    //  No action can be accessed without a valid session with
+    //  RoleName = "HR Manager". Unauthenticated users are
+    //  redirected to Admin/Login. Wrong-role users see AccessDenied.
+    // ═══════════════════════════════════════════════════════════
+    [SessionAuthorize("HR Manager")]
     public class HRController : Controller
     {
         private readonly IHRRepository _repo;
@@ -90,13 +100,14 @@ namespace DairyIndustry.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(StaffFormModel model)
         {
-            // Both Plant and Center selected — add error before IsValid check
+            // Cannot assign to both Plant and Center
             if (model.PlantId != null && model.CenterId != null)
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX: Remove PhotoFile from ModelState — IFormFile cannot be validated
-            // by standard model validation and will cause IsValid = false
+            // FIX 6 — PhotoFile (IFormFile) cannot be validated by standard
+            // model validation. Remove it from ModelState to prevent false
+            // IsValid = false. File is read directly from Request.Form.Files below.
             ModelState.Remove("PhotoFile");
 
             if (!ModelState.IsValid)
@@ -107,8 +118,7 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX: Read the uploaded file directly from Request.Form.Files
-                // because IFormFile on a bound model is unreliable without [FromForm]
+                // FIX 6 — Read photo directly from Request (reliable across all scenarios)
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
@@ -116,6 +126,13 @@ namespace DairyIndustry.Controllers
                 int newId = _repo.AddStaff(model);
                 TempData["Success"] = "Staff member added successfully.";
                 return RedirectToAction("Details", new { id = newId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // FIX 5 — Duplicate phone/email errors from repo surface here cleanly
+                TempData["Error"] = ex.Message;
+                LoadFormDropdowns(model.RoleId);
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -175,7 +192,7 @@ namespace DairyIndustry.Controllers
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX: Remove PhotoFile from ModelState validation
+            // FIX 6 — same as Create POST
             ModelState.Remove("PhotoFile");
 
             if (!ModelState.IsValid)
@@ -186,7 +203,7 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX: Read photo from Request directly
+                // FIX 6 — read photo directly from Request
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
@@ -194,6 +211,13 @@ namespace DairyIndustry.Controllers
                 _repo.UpdateStaff(model);
                 TempData["Success"] = "Staff member updated successfully.";
                 return RedirectToAction("Details", new { id = model.StaffId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // FIX 5 — Duplicate phone/email errors from repo surface here cleanly
+                TempData["Error"] = ex.Message;
+                LoadFormDropdowns(model.RoleId);
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -212,7 +236,8 @@ namespace DairyIndustry.Controllers
             {
                 _repo.ToggleActive(id, !currentStatus);
                 TempData["Success"] = !currentStatus
-                    ? "Staff member activated." : "Staff member deactivated.";
+                    ? "Staff member activated."
+                    : "Staff member deactivated.";
             }
             catch (Exception ex)
             {
@@ -301,22 +326,22 @@ namespace DairyIndustry.Controllers
             }).ToList();
         }
 
-        // FIX: Use async-safe synchronous save; validate extension; create folder safely
+        // FIX 6 — Validate extension, create folder safely, synchronous copy
         private string SavePhoto(IFormFile photo)
         {
-            // Allowed image extensions only
             var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
             var ext = Path.GetExtension(photo.FileName).ToLowerInvariant();
+
             if (!allowed.Contains(ext))
-                throw new InvalidOperationException("Only image files (JPG, PNG, GIF, WEBP) are allowed.");
+                throw new InvalidOperationException(
+                    "Only image files (JPG, PNG, GIF, WEBP) are allowed.");
 
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
-            Directory.CreateDirectory(uploadsFolder);  // safe if already exists
+            Directory.CreateDirectory(uploadsFolder);
 
             string uniqueFileName = Guid.NewGuid().ToString() + ext;
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            // FIX: Use a proper using block with synchronous copy
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
                 photo.CopyTo(stream);

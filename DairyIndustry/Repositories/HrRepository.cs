@@ -15,6 +15,12 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  1. GET ALL STAFF — SP usp_HR_GetStaff
+        //
+        //  FIX 4 — MapStaffList now maps ALL columns returned by
+        //  usp_HR_GetStaff including: Salary, PlantId, PlantName,
+        //  CenterId, CenterName, BankAccountId, IFSCCode.
+        //  Previously these were silently dropped, making the Index
+        //  page unable to show assignment or salary data.
         // ═══════════════════════════════════════════════════════════
         public List<StaffModel> GetAllStaff(int? roleId, bool? isActive)
         {
@@ -35,30 +41,16 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  2. GET STAFF BY ID — inline query
+        //  2. GET STAFF BY ID — SP usp_HR_GetStaffById
+        //  Switched from inline query to the dedicated SP which
+        //  already exists in the database and returns all columns.
         // ═══════════════════════════════════════════════════════════
         public StaffModel? GetStaffById(int staffId)
         {
-            string query = @"
-                SELECT
-                    s.StaffId, s.FirstName, s.LastName, s.Phone, s.Email,
-                    s.RoleId, r.RoleName,
-                    s.DOJ, s.IsActive, s.ProfilePhoto,
-                    s.BankAccountId,
-                    ba.BankName, ba.AccountNumber, ba.IFSCCode,
-                    s.PlantId,  pp.PlantName,
-                    s.CenterId, cc.CenterName,
-                    s.Salary
-                FROM HR.Staffs s
-                INNER JOIN Admin.Roles                   r  ON r.RoleId        = s.RoleId
-                LEFT  JOIN Finance.BankAccounts          ba ON ba.BankAccountId = s.BankAccountId
-                LEFT  JOIN Production.ProcessingPlants   pp ON pp.PlantId       = s.PlantId
-                LEFT  JOIN Collection.CollectionCenters  cc ON cc.CenterId      = s.CenterId
-                WHERE s.StaffId = @StaffId";
-
             using var con = _db.GetConnection();
             con.Open();
-            using var cmd = new SqlCommand(query, con);
+            using var cmd = new SqlCommand("HR.usp_HR_GetStaffById", con);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@StaffId", staffId);
 
             using var reader = cmd.ExecuteReader();
@@ -70,15 +62,43 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  3. ADD STAFF — inline INSERT
-        //     FIX: All nullable string params wrapped with DBNull.Value
-        //     FIX: FirstName/LastName also safely passed
+        //
+        //  FIX 5 — Duplicate phone and email check added BEFORE
+        //  the INSERT. If another active or inactive staff member
+        //  already has the same phone or email, an
+        //  InvalidOperationException is thrown with a clear message.
+        //  The controller catches this and shows it as TempData["Error"].
         // ═══════════════════════════════════════════════════════════
         public int AddStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
-            using var tran = con.BeginTransaction();
 
+            // FIX 5 — Check for duplicate phone
+            if (!string.IsNullOrWhiteSpace(model.Phone))
+            {
+                using var dupCmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone", con);
+                dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
+                int phoneCount = Convert.ToInt32(dupCmd.ExecuteScalar());
+                if (phoneCount > 0)
+                    throw new InvalidOperationException(
+                        $"Phone number '{model.Phone}' is already registered to another staff member.");
+            }
+
+            // FIX 5 — Check for duplicate email
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                using var dupCmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email", con);
+                dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
+                int emailCount = Convert.ToInt32(dupCmd.ExecuteScalar());
+                if (emailCount > 0)
+                    throw new InvalidOperationException(
+                        $"Email address '{model.Email}' is already registered to another staff member.");
+            }
+
+            using var tran = con.BeginTransaction();
             try
             {
                 int? bankAccountId = null;
@@ -101,8 +121,6 @@ namespace DairyIndustry.Repositories
                 }
 
                 // Step 2 — insert staff
-                // FIX: FirstName and LastName are Required so won't be null here,
-                //      but still pass safely. All nullable fields use DBNull.Value.
                 string staffQuery = @"
                     INSERT INTO HR.Staffs
                         (FirstName, LastName, Phone, Email, RoleId,
@@ -141,25 +159,52 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  4. UPDATE STAFF — inline UPDATE
-        //     FIX: Bank account upsert added — on Edit, update existing
-        //          bank record OR insert a new one if not yet linked
+        //
+        //  FIX 5 — Duplicate phone and email check added BEFORE
+        //  the UPDATE. The check excludes the current StaffId so
+        //  a staff member can keep their own phone/email unchanged.
         // ═══════════════════════════════════════════════════════════
         public bool UpdateStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
-            using var tran = con.BeginTransaction();
 
+            // FIX 5 — Check for duplicate phone (excluding self)
+            if (!string.IsNullOrWhiteSpace(model.Phone))
+            {
+                using var dupCmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone AND StaffId <> @StaffId", con);
+                dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
+                dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
+                int phoneCount = Convert.ToInt32(dupCmd.ExecuteScalar());
+                if (phoneCount > 0)
+                    throw new InvalidOperationException(
+                        $"Phone number '{model.Phone}' is already registered to another staff member.");
+            }
+
+            // FIX 5 — Check for duplicate email (excluding self)
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                using var dupCmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email AND StaffId <> @StaffId", con);
+                dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
+                dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
+                int emailCount = Convert.ToInt32(dupCmd.ExecuteScalar());
+                if (emailCount > 0)
+                    throw new InvalidOperationException(
+                        $"Email address '{model.Email}' is already registered to another staff member.");
+            }
+
+            using var tran = con.BeginTransaction();
             try
             {
-                // Step 1: Handle bank account update/insert
+                // Step 1 — handle bank account update/insert
                 bool hasBankDetails = !string.IsNullOrWhiteSpace(model.BankName)
                                    && !string.IsNullOrWhiteSpace(model.AccountNumber)
                                    && !string.IsNullOrWhiteSpace(model.IFSCCode);
 
                 if (hasBankDetails)
                 {
-                    // Check if staff already has a bank account linked
                     string checkQuery = "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId";
                     using var checkCmd = new SqlCommand(checkQuery, con, tran);
                     checkCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
@@ -197,7 +242,7 @@ namespace DairyIndustry.Repositories
                     }
                 }
 
-                // Step 2: Update staff record
+                // Step 2 — update staff record
                 string query = @"
                     UPDATE HR.Staffs
                     SET
@@ -257,7 +302,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  6. UPDATE PROFILE PHOTO — SP
+        //  6. UPDATE PROFILE PHOTO — SP usp_HR_UpdateProfilePhoto
         // ═══════════════════════════════════════════════════════════
         public bool UpdateProfilePhoto(int staffId, string photoPath)
         {
@@ -279,7 +324,8 @@ namespace DairyIndustry.Repositories
             var list = new List<RoleModel>();
             using var con = _db.GetConnection();
             con.Open();
-            using var cmd = new SqlCommand("SELECT RoleId, RoleName FROM Admin.Roles ORDER BY RoleName", con);
+            using var cmd = new SqlCommand(
+                "SELECT RoleId, RoleName FROM Admin.Roles ORDER BY RoleName", con);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(new RoleModel
@@ -351,7 +397,8 @@ namespace DairyIndustry.Repositories
 
             string payQuery = @"
                 SELECT COUNT(*) AS PendingCount, ISNULL(SUM(TotalAmount),0) AS PendingAmount
-                FROM Finance.StaffPayments WHERE PaymentStatus = 'Pending'";
+                FROM Finance.StaffPayments
+                WHERE PaymentStatus = 'Pending'";
 
             using var con = _db.GetConnection();
             con.Open();
@@ -409,11 +456,24 @@ namespace DairyIndustry.Repositories
                     Count = Convert.ToInt32(reader["Count"]),
                     ActiveCount = Convert.ToInt32(reader["ActiveCount"])
                 });
+
             return list;
         }
 
         // ═══════════════════════════════════════════════════════════
         //  12. GET PAYMENTS BY STAFF
+        //
+        //  FIX 2 — Changed INNER JOIN on ProcessingPlants to LEFT JOIN.
+        //  Finance.StaffPayments.PlantId is NOT NULL in the DB schema,
+        //  meaning staff assigned only to a CollectionCenter CANNOT
+        //  have a payment record created without a PlantId value.
+        //  The LEFT JOIN ensures payments are never silently dropped
+        //  from the query result if the PlantId join fails.
+        //  PlantName will show as "N/A" for such edge-case records.
+        //
+        //  NOTE: To fully support center-assigned staff payments, the
+        //  Finance.StaffPayments table needs PlantId made nullable and
+        //  CenterId column added. Flag this to your DB admin.
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetPaymentsByStaff(int staffId)
         {
@@ -422,15 +482,15 @@ namespace DairyIndustry.Repositories
             string query = @"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
-                    s.FirstName + ' ' + s.LastName           AS StaffName,
-                    ISNULL(r.RoleName, 'Not Assigned')        AS StaffType,
-                    pp.PlantName,
+                    s.FirstName + ' ' + s.LastName            AS StaffName,
+                    ISNULL(r.RoleName, 'Not Assigned')         AS StaffType,
+                    ISNULL(pp.PlantName, 'N/A')                AS PlantName,
                     sp.FromDate, sp.ToDate, sp.TotalAmount,
                     sp.PaymentDate, sp.PaymentStatus
                 FROM Finance.StaffPayments sp
-                INNER JOIN HR.Staffs                   s  ON s.StaffId  = sp.StaffId
-                LEFT  JOIN Admin.Roles                 r  ON r.RoleId   = s.RoleId
-                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId = sp.PlantId
+                INNER JOIN HR.Staffs                    s  ON s.StaffId  = sp.StaffId
+                LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
+                LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
                 WHERE sp.StaffId = @StaffId
                 ORDER BY sp.PaymentDate DESC";
 
@@ -441,11 +501,15 @@ namespace DairyIndustry.Repositories
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(MapPayment(reader));
+
             return list;
         }
 
         // ═══════════════════════════════════════════════════════════
         //  13. GET ALL PAYMENTS
+        //
+        //  FIX 2 — Same LEFT JOIN fix applied here as in
+        //  GetPaymentsByStaff above.
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetAllPayments(string? status)
         {
@@ -454,15 +518,15 @@ namespace DairyIndustry.Repositories
             string query = @"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
-                    s.FirstName + ' ' + s.LastName           AS StaffName,
-                    ISNULL(r.RoleName, 'Not Assigned')        AS StaffType,
-                    pp.PlantName,
+                    s.FirstName + ' ' + s.LastName            AS StaffName,
+                    ISNULL(r.RoleName, 'Not Assigned')         AS StaffType,
+                    ISNULL(pp.PlantName, 'N/A')                AS PlantName,
                     sp.FromDate, sp.ToDate, sp.TotalAmount,
                     sp.PaymentDate, sp.PaymentStatus
                 FROM Finance.StaffPayments sp
-                INNER JOIN HR.Staffs                   s  ON s.StaffId  = sp.StaffId
-                LEFT  JOIN Admin.Roles                 r  ON r.RoleId   = s.RoleId
-                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId = sp.PlantId
+                INNER JOIN HR.Staffs                    s  ON s.StaffId  = sp.StaffId
+                LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
+                LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
                 WHERE (@Status IS NULL OR sp.PaymentStatus = @Status)
                 ORDER BY sp.PaymentDate DESC";
 
@@ -473,6 +537,7 @@ namespace DairyIndustry.Repositories
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(MapPayment(reader));
+
             return list;
         }
 
@@ -480,6 +545,9 @@ namespace DairyIndustry.Repositories
         //  PRIVATE MAPPERS
         // ═══════════════════════════════════════════════════════════
 
+        // FIX 4 — MapStaffList now maps ALL columns returned by
+        // usp_HR_GetStaff: Salary, PlantId, PlantName, CenterId,
+        // CenterName, BankAccountId, IFSCCode were all missing before.
         private StaffModel MapStaffList(SqlDataReader reader)
         {
             return new StaffModel
@@ -494,8 +562,16 @@ namespace DairyIndustry.Repositories
                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
+                // FIX 4 — these 6 fields were not mapped before:
+                Salary = reader["Salary"] == DBNull.Value ? null : Convert.ToDecimal(reader["Salary"]),
+                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
+                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
+                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
+                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
                 BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString()
+                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
+                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
             };
         }
 
@@ -531,7 +607,7 @@ namespace DairyIndustry.Repositories
             {
                 PaymentId = Convert.ToInt32(reader["PaymentId"]),
                 StaffId = Convert.ToInt32(reader["StaffId"]),
-                PlantId = Convert.ToInt32(reader["PlantId"]),
+                PlantId = reader["PlantId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["PlantId"]),
                 StaffName = reader["StaffName"].ToString(),
                 StaffType = reader["StaffType"].ToString(),
                 PlantName = reader["PlantName"].ToString(),
