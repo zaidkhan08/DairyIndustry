@@ -4,16 +4,24 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">All Distributors</h4>
-    <div class="d-flex gap-2">
-        <a asp-action="PendingDistributors" class="btn btn-outline-warning btn-sm">
-            Pending Approvals
-        </a>
-        <a asp-action="AddDistributor" class="btn btn-primary btn-sm">
-            + Add Distributor
-        </a>
-    </div>
+<div class="d-flex gap-2">
+
+    <a asp-action="DownloadDistributorsPdf"
+       class="btn btn-danger btn-sm">
+        <i class="bi bi-file-earmark-pdf me-1"></i>
+        Download PDF
+    </a>
+
+    <a asp-action="PendingDistributors"
+       class="btn btn-outline-warning btn-sm">
+        Pending Approvals
+    </a>
+
+    <a asp-action="RegisterDistributor"
+       class="btn btn-primary btn-sm">
+        + Add Distributor
+    </a>
+
 </div>
 
 @if (TempData["success"] != null)

@@ -24,6 +24,7 @@ namespace DairyIndustry
             builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
             builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
         

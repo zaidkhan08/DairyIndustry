@@ -3,9 +3,12 @@ using DairyIndustry.Interfaces;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Finance;
 using DairyIndustry.Repositories;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualBasic;
+using System.Text;
 
 namespace DairyIndustry.Controllers
 {
@@ -19,8 +22,8 @@ namespace DairyIndustry.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly EmailSettings _settings;
         private readonly IAuthRepository _authRepo;
-
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo, IAuthRepository authRepo, IOptions<EmailSettings> settings)
+        private readonly IConverter _pdfConverter;
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo, IAuthRepository authRepo, IOptions<EmailSettings> settings, IConverter pdfConverter)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
@@ -29,6 +32,7 @@ namespace DairyIndustry.Controllers
             _env = env;
             _authRepo = authRepo;
             _settings = settings.Value;
+            _pdfConverter = pdfConverter;
         }
 
         // ════════════════════════════════════════════════════════
@@ -535,6 +539,77 @@ namespace DairyIndustry.Controllers
 
             return View(users);
         }
+
+        private string BuildUsersHtml(List<User> users)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(@"
+    <html>
+    <head>
+        <style>
+            body{font-family:Arial;font-size:12px;}
+            table{width:100%;border-collapse:collapse;}
+            th,td{
+                border:1px solid #ccc;
+                padding:8px;
+                text-align:left;
+            }
+            th{
+                background:#f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+    ");
+
+            sb.Append("<h2>Users List</h2>");
+
+            sb.Append(@"
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    ");
+
+            foreach (var item in users)
+            {
+                sb.Append($@"
+        <tr>
+            <td>{item.Username}</td>
+            <td>{item.RoleName}</td>
+            <td>{(item.IsActive ? "Active" : "Inactive")}</td>
+        </tr>
+        ");
+            }
+
+            sb.Append("</tbody></table></body></html>");
+
+            return sb.ToString();
+        }
+
+        public IActionResult DownloadUsersPdf()
+        {
+            var users = _adminRepo.GetAllUsers()
+                                  .Take(50)
+                                  .ToList();
+
+            string html = BuildUsersHtml(users);
+
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"UsersList_{DateTime.Now:yyyyMMdd}.pdf"
+            );
+        }
+
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult RegisterUser()
@@ -753,7 +828,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         [SessionAuthorize("Admin")]
-        public IActionResult Staff(int page=1,int pageSize=10)
+        public IActionResult Staff(int page = 1, int pageSize = 10)
         {
             var staffList = _adminRepo.GetAllStaff();
             var totalStaff = staffList.Count();
@@ -770,8 +845,132 @@ namespace DairyIndustry.Controllers
 
             return View(staff);
         }
+        [SessionAuthorize("Admin")]
+        private string BuildStaffHtml(List<StaffModel> staff)
+        {
+            var sb = new StringBuilder();
 
-        // Update GET action to pass plants and centers to view
+            sb.Append(@"
+        <html>
+        <head>
+            <style>
+                body{
+                    font-family:Arial;
+                    font-size:12px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                th,td{
+                    border:1px solid #ccc;
+                    padding:8px;
+                    text-align:left;
+                }
+
+                th{
+                    background:#f2f2f2;
+                }
+
+                h2{
+                    text-align:center;
+                }
+            </style>
+        </head>
+        <body>
+    ");
+
+            sb.Append("<h2>Staff List</h2>");
+
+            sb.Append(@"
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    ");
+
+            foreach (var item in staff)
+            {
+                sb.Append($@"
+            <tr>
+                <td>{item.FirstName} {item.LastName}</td>
+                <td>{item.RoleName}</td>
+                <td>{item.Email}</td>
+                <td>{item.Phone}</td>
+                <td>{(item.IsActive ? "Active" : "Inactive")}</td>
+            </tr>
+        ");
+            }
+
+            sb.Append(@"
+            </tbody>
+        </table>
+        </body>
+        </html>
+    ");
+
+            return sb.ToString();
+        }
+
+        private byte[] GeneratePdfFromHtml(string html)
+        {
+            var doc = new HtmlToPdfDocument
+            {
+                GlobalSettings = new GlobalSettings
+                {
+                    ColorMode = ColorMode.Color,
+                    Orientation = Orientation.Landscape,
+                    PaperSize = PaperKind.A4,
+                    Margins = new MarginSettings
+                    {
+                        Top = 10,
+                        Bottom = 10,
+                        Left = 10,
+                        Right = 10
+                    }
+                },
+
+                Objects =
+        {
+            new ObjectSettings
+            {
+                HtmlContent = html,
+                WebSettings =
+                {
+                    DefaultEncoding = "utf-8"
+                }
+            }
+        }
+            };
+
+            return _pdfConverter.Convert(doc);
+        }
+        public IActionResult DownloadStaffPdf()
+        {
+            var staffList = _adminRepo.GetAllStaff()
+                                      .Take(50)
+                                      .ToList();
+
+            string html = BuildStaffHtml(staffList);
+
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"StaffList_{DateTime.Now:yyyyMMdd}.pdf"
+            );
+        }
+
         [SessionAuthorize("Admin")]
         [HttpGet]
         public IActionResult AddStaff()
@@ -943,7 +1142,7 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public ActionResult AddPlant(string PlantName, string Location,string City,string State)
+        public ActionResult AddPlant(string PlantName, string Location, string City, string State)
         {
             string loc = $"{Location}, {City}, {State}";
             _adminRepo.AddPlant(PlantName, loc);
@@ -956,6 +1155,75 @@ namespace DairyIndustry.Controllers
         {
             var plants = _adminRepo.GetAllPlants(isActive: null);
             return View(plants);
+        }
+
+        private string BuildPlantsHtml(List<PlantModel> plants)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(@"
+    <html>
+    <head>
+        <style>
+            body{font-family:Arial;}
+            table{
+                width:100%;
+                border-collapse:collapse;
+            }
+            th,td{
+                border:1px solid #ccc;
+                padding:8px;
+            }
+        </style>
+    </head>
+    <body>
+    ");
+
+            sb.Append("<h2>Plants List</h2>");
+
+            sb.Append(@"
+    <table>
+        <thead>
+            <tr>
+                <th>Plant</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    ");
+
+            foreach (var item in plants)
+            {
+                sb.Append($@"
+        <tr>
+            <td>{item.PlantName}</td>
+            <td>{item.Location}</td>
+            <td>{(item.IsActive ? "Active" : "Inactive")}</td>
+        </tr>
+        ");
+            }
+
+            sb.Append("</tbody></table></body></html>");
+
+            return sb.ToString();
+        }
+
+        public IActionResult DownloadPlantsPdf()
+        {
+            var plants = _adminRepo.GetAllPlants()
+                                   .Take(50)
+                                   .ToList();
+
+            string html = BuildPlantsHtml(plants);
+
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"PlantsList_{DateTime.Now:yyyyMMdd}.pdf"
+            );
         }
 
         [SessionAuthorize("Admin")]
@@ -1021,6 +1289,99 @@ namespace DairyIndustry.Controllers
             var collection = _adminRepo.GetAllCollection(isActive);
             return View(collection);
         }
+
+        private string BuildCollectionHtml(List<CollectionCenterModel> collections)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(@"
+    <html>
+    <head>
+        <style>
+            body{
+                font-family:Arial;
+                font-size:12px;
+            }
+
+            table{
+                width:100%;
+                border-collapse:collapse;
+            }
+
+            th,td{
+                border:1px solid #ccc;
+                padding:8px;
+                text-align:left;
+            }
+
+            th{
+                background:#f2f2f2;
+            }
+
+            h2{
+                text-align:center;
+            }
+        </style>
+    </head>
+    <body>
+    ");
+
+            sb.Append("<h2>Collection Centers List</h2>");
+
+            sb.Append(@"
+    <table>
+        <thead>
+            <tr>
+                <th>Center Name</th>
+                <th>Village</th>
+                <th>Capacity</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    ");
+
+            foreach (var item in collections)
+            {
+                sb.Append($@"
+        <tr>
+            <td>{item.CenterName}</td>
+            <td>{item.VillageName}</td>
+            <td>{item.Capacity}</td>
+            <td>{item.Location}</td>
+            <td>{(item.IsActive ? "Active" : "Inactive")}</td>
+        </tr>
+        ");
+            }
+
+            sb.Append(@"
+        </tbody>
+    </table>
+    </body>
+    </html>
+    ");
+
+            return sb.ToString();
+        }
+
+        public IActionResult DownloadCollectionsPdf()
+        {
+            var collections = _adminRepo.GetAllCollection(true)
+                                        .Take(50)
+                                        .ToList();
+
+            string html = BuildCollectionHtml(collections);
+
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"Collections_{DateTime.Now:yyyyMMdd}.pdf"
+            );
+        }
+
         [SessionAuthorize("Admin")]
         [HttpPost]
         public ActionResult ToggleCollection(int id, bool isActive)
@@ -1213,7 +1574,99 @@ namespace DairyIndustry.Controllers
             var distributors = _adminRepo.GetDistributors();
             return View(distributors);
         }
-        
+
+        private string BuildDistributorHtml(List<Distributor> distributors)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(@"
+    <html>
+    <head>
+        <style>
+            body{
+                font-family:Arial;
+                font-size:12px;
+            }
+
+            table{
+                width:100%;
+                border-collapse:collapse;
+            }
+
+            th,td{
+                border:1px solid #ccc;
+                padding:8px;
+                text-align:left;
+            }
+
+            th{
+                background:#f2f2f2;
+            }
+
+            h2{
+                text-align:center;
+            }
+        </style>
+    </head>
+    <body>
+    ");
+
+            sb.Append("<h2>Distributors List</h2>");
+
+            sb.Append(@"
+    <table>
+        <thead>
+            <tr>
+                <th>Distributor Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    ");
+
+            foreach (var item in distributors)
+            {
+                sb.Append($@"
+        <tr>
+            <td>{item.DistributorName}</td>
+            <td>{item.ContactNumber}</td>
+            <td>{item.Email}</td>
+            <td>{item.Location}</td>
+            <td>{item.Status}</td>
+        </tr>
+        ");
+            }
+
+            sb.Append(@"
+        </tbody>
+    </table>
+    </body>
+    </html>
+    ");
+
+            return sb.ToString();
+        }
+
+        public IActionResult DownloadDistributorsPdf()
+        {
+            var distributors = _adminRepo.GetDistributors()
+                                         .Take(50)
+                                         .ToList();
+
+            string html = BuildDistributorHtml(distributors);
+
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+
+            return File(
+                pdfBytes,
+                "application/pdf",
+                $"Distributors_{DateTime.Now:yyyyMMdd}.pdf"
+            );
+        }
+
         [HttpGet]
         [SessionAuthorize("Admin")]
         public IActionResult RegisterDistributor()
