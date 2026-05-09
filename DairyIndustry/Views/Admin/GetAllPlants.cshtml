@@ -92,7 +92,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-3">#</th>
-                                    <th>Plant ID</th>
+                                    @* <th>Plant ID</th> *@
                                     <th>Plant Name</th>
                                     <th>Location</th>
                                     <th class="text-center">Status</th>
@@ -118,9 +118,9 @@
                                         <tr class="@(!plant.IsActive ? "table-secondary" : "")">
                                             <td class="ps-3 text-muted small">@sr</td>
 
-                                            <td>
+                                          @*   <td>
                                                 <span class="badge bg-secondary">#@plant.PlantId</span>
-                                            </td>
+                                            </td> *@
 
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">

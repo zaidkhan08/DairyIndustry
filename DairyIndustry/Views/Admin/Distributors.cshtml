@@ -44,7 +44,7 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>#</th>
+                    @* <th>#</th> *@
                     <th>Name</th>
                     <th>Contact</th>
                     <th>Location</th>
@@ -58,7 +58,7 @@
                 @foreach (var d in Model)
                 {
                     <tr>
-                        <td>@d.DistributorId</td>
+                        @* <td>@d.DistributorId</td> *@
                         <td>
                             <div class="fw-semibold">@d.DistributorName</div>
                             <small class="text-muted">@d.Email</small>
