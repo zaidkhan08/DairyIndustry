@@ -6,14 +6,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
-    // ═══════════════════════════════════════════════════════════
-    //  FIX 1 — SESSION GUARD
-    //  [SessionAuthorize("HR Manager")] applied at controller
-    //  level so every action is protected automatically.
-    //  No action can be accessed without a valid session with
-    //  RoleName = "HR Manager". Unauthenticated users are
-    //  redirected to Admin/Login. Wrong-role users see AccessDenied.
-    // ═══════════════════════════════════════════════════════════
+    // FIX 1 — Session guard on entire controller
     [SessionAuthorize("HR Manager")]
     public class HRController : Controller
     {
@@ -27,20 +20,50 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── DASHBOARD ────────────────────────────────────────────────
+        // FEATURE 4 — Work Anniversary & New Joining Alerts
+        // All staff loaded once and reused for multiple computations.
+        // Zero new repository methods or DB queries added.
         public IActionResult Dashboard()
         {
             try
             {
+                var allStaff = _repo.GetAllStaff(null, null);
+                int thisMonth = DateTime.Today.Month;
+                int thisYear = DateTime.Today.Year;
+
                 var model = new HRDashboardViewModel
                 {
                     Summary = _repo.GetDashboardSummary(),
                     StaffByType = _repo.GetStaffByType(),
-                    RecentJoinings = _repo.GetAllStaff(null, null)
-                                         .OrderByDescending(s => s.DOJ)
-                                         .Take(5).ToList(),
+
+                    // Top 5 most recently joined
+                    RecentJoinings = allStaff
+                        .OrderByDescending(s => s.DOJ)
+                        .Take(5)
+                        .ToList(),
+
                     RecentPayments = _repo.GetAllPayments(null)
-                                         .Take(5).ToList()
+                        .Take(5)
+                        .ToList(),
+
+                    // FEATURE 4A — Work anniversaries this month
+                    // Staff whose DOJ month = this month but joined a PREVIOUS year
+                    AnniversariesThisMonth = allStaff
+                        .Where(s => s.DOJ.HasValue
+                                 && s.DOJ.Value.Month == thisMonth
+                                 && s.DOJ.Value.Year != thisYear)
+                        .OrderBy(s => s.DOJ!.Value.Day)
+                        .ToList(),
+
+                    // FEATURE 4B — Staff who newly joined this month this year
+                    NewJoiningsThisMonth = allStaff
+                        .Where(s => s.DOJ.HasValue
+                                 && s.DOJ.Value.Month == thisMonth
+                                 && s.DOJ.Value.Year == thisYear)
+                        .OrderBy(s => s.DOJ!.Value.Day)
+                        .ToList()
                 };
+
                 return View(model);
             }
             catch (Exception ex)
@@ -100,14 +123,11 @@ namespace DairyIndustry.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(StaffFormModel model)
         {
-            // Cannot assign to both Plant and Center
             if (model.PlantId != null && model.CenterId != null)
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX 6 — PhotoFile (IFormFile) cannot be validated by standard
-            // model validation. Remove it from ModelState to prevent false
-            // IsValid = false. File is read directly from Request.Form.Files below.
+            // FIX 6 — IFormFile cannot be validated by standard model validation
             ModelState.Remove("PhotoFile");
 
             if (!ModelState.IsValid)
@@ -118,7 +138,6 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX 6 — Read photo directly from Request (reliable across all scenarios)
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
@@ -129,7 +148,7 @@ namespace DairyIndustry.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // FIX 5 — Duplicate phone/email errors from repo surface here cleanly
+                // FIX 5 — Duplicate phone/email surfaces as clean error
                 TempData["Error"] = ex.Message;
                 LoadFormDropdowns(model.RoleId);
                 return View(model);
@@ -192,7 +211,6 @@ namespace DairyIndustry.Controllers
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX 6 — same as Create POST
             ModelState.Remove("PhotoFile");
 
             if (!ModelState.IsValid)
@@ -203,7 +221,6 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX 6 — read photo directly from Request
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
@@ -214,7 +231,7 @@ namespace DairyIndustry.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // FIX 5 — Duplicate phone/email errors from repo surface here cleanly
+                // FIX 5 — Duplicate phone/email surfaces as clean error
                 TempData["Error"] = ex.Message;
                 LoadFormDropdowns(model.RoleId);
                 return View(model);

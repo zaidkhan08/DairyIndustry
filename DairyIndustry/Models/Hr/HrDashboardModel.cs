@@ -26,5 +26,15 @@
         public List<StaffTypeCountModel> StaffByType { get; set; } = new();
         public List<StaffModel> RecentJoinings { get; set; } = new();
         public List<StaffPaymentModel> RecentPayments { get; set; } = new();
+
+        // ── FEATURE 4 — Work Anniversaries this month ──────────────
+        // Staff whose DOJ month = current month but year != this year.
+        // Computed in controller from GetAllStaff() — zero new DB calls.
+        public List<StaffModel> AnniversariesThisMonth { get; set; } = new();
+
+        // ── FEATURE 4 — New joinings this month (with names) ────────
+        // Staff whose DOJ month AND year = current month/year.
+        // Different from Summary.NewJoiningThisMonth which is count only.
+        public List<StaffModel> NewJoiningsThisMonth { get; set; } = new();
     }
 }

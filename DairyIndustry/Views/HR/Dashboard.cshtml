@@ -2,6 +2,7 @@
 @{
     Layout = "~/Views/Shared/_HRLayout.cshtml";
     ViewData["Title"] = "HR Dashboard";
+    int thisYear = DateTime.Today.Year;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -31,7 +32,7 @@
     </div>
 }
 
-<!-- Summary Cards -->
+<!-- ── Summary Cards ── -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100">
@@ -87,7 +88,138 @@
     </div>
 </div>
 
-<!-- Staff by Role + Recent Joinings -->
+<!-- ══════════════════════════════════════════════════════════════
+     FEATURE 4 — ALERTS SECTION
+     Shown only when there is anniversary or new joining data.
+     Both cards are responsive — if only one has data, it goes full
+     width. If both have data they sit side by side (col-md-6 each).
+═══════════════════════════════════════════════════════════════ -->
+@if (Model.AnniversariesThisMonth.Any() || Model.NewJoiningsThisMonth.Any())
+{
+    <div class="row g-3 mb-4">
+
+        @if (Model.AnniversariesThisMonth.Any())
+        {
+            string colClass = Model.NewJoiningsThisMonth.Any() ? "col-md-6" : "col-12";
+            <div class="@colClass">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-left:4px solid #f59e0b !important;">
+                    <div class="card-header d-flex align-items-center gap-2 fw-semibold"
+                         style="background:#fffbeb; border-bottom:1px solid #fde68a; color:#92400e;">
+                        <i class="bi bi-award-fill text-warning fs-5"></i>
+                        Work Anniversaries — @DateTime.Today.ToString("MMMM yyyy")
+                        <span class="badge ms-auto rounded-pill"
+                              style="background:#f59e0b; color:#fff;">
+                            @Model.AnniversariesThisMonth.Count
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var s in Model.AnniversariesThisMonth)
+                            {
+                                int years = thisYear - s.DOJ!.Value.Year;
+                                <li class="list-group-item px-3 py-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                        {
+                                            <img src="@s.ProfilePhoto" class="rounded-circle"
+                                                 style="width:40px;height:40px;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle d-flex align-items-center
+                                                                        justify-content-center"
+                                                 style="width:40px;height:40px;background:#fef3c7;">
+                                                <i class="bi bi-person-fill" style="color:#f59e0b;"></i>
+                                            </div>
+                                        }
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold">@s.FullName</div>
+                                            <small class="text-muted">@s.RoleName</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge rounded-pill fw-semibold"
+                                                  style="background:#fef3c7;color:#92400e;">
+                                                <i class="bi bi-award-fill me-1"></i>
+                                                @years yr@(years > 1 ? "s" : "")
+                                            </span>
+                                            <div class="text-muted small mt-1">
+                                                since @s.DOJ.Value.ToString("dd MMM yyyy")
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (Model.NewJoiningsThisMonth.Any())
+        {
+            string colClass = Model.AnniversariesThisMonth.Any() ? "col-md-6" : "col-12";
+            <div class="@colClass">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-left:4px solid #22c55e !important;">
+                    <div class="card-header d-flex align-items-center gap-2 fw-semibold"
+                         style="background:#f0fdf4; border-bottom:1px solid #bbf7d0; color:#166534;">
+                        <i class="bi bi-person-plus-fill text-success fs-5"></i>
+                        New Joinings — @DateTime.Today.ToString("MMMM yyyy")
+                        <span class="badge ms-auto rounded-pill bg-success">
+                            @Model.NewJoiningsThisMonth.Count
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var s in Model.NewJoiningsThisMonth)
+                            {
+                                <li class="list-group-item px-3 py-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                        {
+                                            <img src="@s.ProfilePhoto" class="rounded-circle"
+                                                 style="width:40px;height:40px;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle d-flex align-items-center
+                                                                        justify-content-center"
+                                                 style="width:40px;height:40px;background:#dcfce7;">
+                                                <i class="bi bi-person-fill text-success"></i>
+                                            </div>
+                                        }
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold">@s.FullName</div>
+                                            <small class="text-muted">@s.RoleName</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge rounded-pill fw-semibold"
+                                                  style="background:#dcfce7;color:#166534;">
+                                                <i class="bi bi-stars me-1"></i>New
+                                            </span>
+                                            <div class="text-muted small mt-1">
+                                                joined @s.DOJ!.Value.ToString("dd MMM yyyy")
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <a asp-action="Index" class="btn btn-outline-success btn-sm w-100">
+                            View All Staff <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+}
+
+<!-- ── Staff by Role + Recent Joinings ── -->
 <div class="row g-3 mb-4">
     <div class="col-md-5">
         <div class="card border-0 shadow-sm h-100">
@@ -177,7 +309,7 @@
     </div>
 </div>
 
-<!-- Pending Payments + Quick Nav -->
+<!-- ── Pending Payments + Quick Nav ── -->
 <div class="row g-3">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
