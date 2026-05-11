@@ -4,7 +4,7 @@ namespace DairyIndustry.Repositories
 {
     public interface IHRRepository
     {
-        // ── STAFF CRUD ─────────────────────────────────────────
+        // ── STAFF CRUD ─────────────────────────────────────────────
         List<StaffModel> GetAllStaff(int? roleId, bool? isActive);
         StaffModel? GetStaffById(int staffId);
         int AddStaff(StaffFormModel model);
@@ -12,16 +12,21 @@ namespace DairyIndustry.Repositories
         bool ToggleActive(int staffId, bool isActive);
         bool UpdateProfilePhoto(int staffId, string photoPath);
 
-        // ── DROPDOWNS ──────────────────────────────────────────
+        // ── USER REGISTRATION ──────────────────────────────────────
+        // Called after AddStaff when HR provides login credentials.
+        // BCrypt hash is generated in the controller before calling this.
+        void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId);
+
+        // ── DROPDOWNS ──────────────────────────────────────────────
         List<RoleModel> GetRoles();
         List<PlantAssignModel> GetPlants();
         List<CenterAssignModel> GetCenters();
 
-        // ── DASHBOARD ──────────────────────────────────────────
+        // ── DASHBOARD ──────────────────────────────────────────────
         HRDashboardSummaryModel GetDashboardSummary();
         List<StaffTypeCountModel> GetStaffByType();
 
-        // ── PAYMENTS ───────────────────────────────────────────
+        // ── PAYMENTS ───────────────────────────────────────────────
         List<StaffPaymentModel> GetPaymentsByStaff(int staffId);
         List<StaffPaymentModel> GetAllPayments(string? status);
     }

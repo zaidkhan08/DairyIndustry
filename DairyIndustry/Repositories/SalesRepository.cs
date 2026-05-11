@@ -17,7 +17,7 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════════════
         public int RegisterDistributor(DistributorRegisterModel model)
         {
-            string passwordHash = HashPassword(model.Password!);
+            string passwordHash = model.Password;
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand("Sales.usp_Sales_RegisterDistributor", con);

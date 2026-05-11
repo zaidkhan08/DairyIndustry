@@ -16,7 +16,6 @@
     </a>
 </div>
 
-@* FIX: enctype="multipart/form-data" is required for file upload to work *@
 <form asp-action="Create" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
@@ -141,7 +140,7 @@
             </div>
 
             <!-- Bank Details -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-primary text-white fw-semibold">
                     <i class="bi bi-bank2 me-2"></i>Bank Account Details
                     <small class="fw-normal ms-2">(optional — fill all 3 or leave all blank)</small>
@@ -173,9 +172,94 @@
                 </div>
             </div>
 
+            <!-- ══════════════════════════════════════════════════════
+                 LOGIN CREDENTIALS SECTION — NEW
+                 Optional: if HR fills Username + Password, a login
+                 account is created for this staff member automatically.
+                 If left blank, no login account is created.
+                 Passwords are BCrypt hashed before storing.
+            ═══════════════════════════════════════════════════════ -->
+            <div class="card border-0 shadow-sm mb-4"
+                 style="border-left: 4px solid #6366f1 !important;">
+                <div class="card-header fw-semibold d-flex align-items-center gap-2"
+                     style="background:#eef2ff; border-bottom:1px solid #c7d2fe; color:#3730a3;">
+                    <i class="bi bi-shield-lock-fill fs-5" style="color:#6366f1;"></i>
+                    Login Credentials
+                    <span class="badge ms-auto fw-normal"
+                          style="background:#e0e7ff; color:#4338ca; font-size:.7rem;">
+                        Optional
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info border-0 py-2 mb-3" style="font-size:.82rem;">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Fill both fields to create a login account for this staff member.
+                        Leave both blank if no login is needed.
+                        Passwords are securely hashed using BCrypt.
+                    </div>
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="Username" class="form-label fw-semibold">
+                                Username
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="bi bi-person-circle text-muted"></i>
+                                </span>
+                                <input asp-for="Username" class="form-control"
+                                       placeholder="e.g. raj.patel"
+                                       autocomplete="new-password"
+                                       oninput="checkCredentials()" />
+                            </div>
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                            <div id="usernameHint" class="text-muted small mt-1" style="display:none;">
+                                Username must be unique. Use letters, numbers, dots or underscores.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label fw-semibold">
+                                Password
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="bi bi-lock-fill text-muted"></i>
+                                </span>
+                                <input asp-for="Password" class="form-control"
+                                       type="password"
+                                       placeholder="Min. 6 characters"
+                                       autocomplete="new-password"
+                                       oninput="checkCredentials()" />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        onclick="togglePassword(this)" tabindex="-1">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <div id="passwordStrength" class="mt-1" style="display:none;">
+                                <div class="progress" style="height:4px;">
+                                    <div id="strengthBar" class="progress-bar" style="width:0%;"></div>
+                                </div>
+                                <small id="strengthLabel" class="text-muted"></small>
+                            </div>
+                        </div>
+
+                        <!-- Live warning if only one field is filled -->
+                        <div class="col-12" id="credentialWarning" style="display:none;">
+                            <div class="alert alert-warning border-0 py-2 mb-0" style="font-size:.82rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <span id="credentialWarningText"></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- RIGHT COLUMN — Photo -->
+        <!-- RIGHT COLUMN — Photo + Tips -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-primary text-white fw-semibold">
@@ -183,8 +267,6 @@
                 </div>
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        @* FIX: Replaced external placeholder URL (often blocked) with
-                           an inline SVG data URI — always works without internet *@
                         <img id="photoPreview"
                              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23e9ecef' rx='75'/%3E%3Ccircle cx='75' cy='60' r='28' fill='%23adb5bd'/%3E%3Cellipse cx='75' cy='130' rx='45' ry='35' fill='%23adb5bd'/%3E%3C/svg%3E"
                              class="rounded-circle border border-2 border-primary"
@@ -193,14 +275,14 @@
                     <label asp-for="PhotoFile" class="form-label fw-semibold d-block">
                         Upload Photo
                     </label>
-                    @* FIX: name="PhotoFile" must exactly match what Request.Form.Files["PhotoFile"] reads *@
                     <input type="file" name="PhotoFile" id="PhotoFile" class="form-control"
                            accept="image/*" onchange="previewPhoto(this)" />
                     <small class="text-muted d-block mt-2">Optional — JPG or PNG, max 5MB</small>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mt-3 border-start border-4 border-info">
+            <div class="card border-0 shadow-sm mt-3"
+                 style="border-left:4px solid #0dcaf0 !important;">
                 <div class="card-body">
                     <h6 class="fw-bold text-info mb-2">
                         <i class="bi bi-info-circle-fill me-1"></i> Tips
@@ -218,9 +300,13 @@
                             <i class="bi bi-dot text-primary"></i>
                             For bank details, fill all 3 or leave all blank
                         </li>
-                        <li>
+                        <li class="mb-1">
                             <i class="bi bi-dot text-primary"></i>
                             Staff will be Active by default
+                        </li>
+                        <li>
+                            <i class="bi bi-dot text-indigo"></i>
+                            For login access, fill both Username and Password
                         </li>
                     </ul>
                 </div>
@@ -246,11 +332,10 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        // Live photo preview — reads the selected file and shows it in the img tag
+        // ── Photo preview ──
         function previewPhoto(input) {
             if (input.files && input.files[0]) {
                 var file = input.files[0];
-                // Basic client-side size check (5 MB)
                 if (file.size > 5 * 1024 * 1024) {
                     alert('Photo must be smaller than 5MB.');
                     input.value = '';
@@ -264,10 +349,75 @@
             }
         }
 
-        // Auto-clear the other dropdown when one assignment is chosen
+        // ── Auto-clear the other assignment dropdown ──
         function clearOther(otherId) {
             var other = document.getElementById(otherId);
             if (other) other.value = '';
+        }
+
+        // ── Show/hide password toggle ──
+        function togglePassword(btn) {
+            var input = btn.closest('.input-group').querySelector('input');
+            var icon  = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        // ── Credential validation + password strength ──
+        function checkCredentials() {
+            var username  = document.getElementById('Username').value.trim();
+            var password  = document.getElementById('Password').value;
+            var warning   = document.getElementById('credentialWarning');
+            var warnText  = document.getElementById('credentialWarningText');
+            var strength  = document.getElementById('passwordStrength');
+            var bar       = document.getElementById('strengthBar');
+            var label     = document.getElementById('strengthLabel');
+            var uHint     = document.getElementById('usernameHint');
+
+            // Show username hint when typing
+            uHint.style.display = username.length > 0 ? '' : 'none';
+
+            // Warning: one filled without the other
+            if (username && !password) {
+                warning.style.display = '';
+                warnText.textContent  = 'Please enter a password to go with this username.';
+            } else if (password && !username) {
+                warning.style.display = '';
+                warnText.textContent  = 'Please enter a username to go with this password.';
+            } else {
+                warning.style.display = 'none';
+            }
+
+            // Password strength indicator
+            if (password.length > 0) {
+                strength.style.display = '';
+                var score = 0;
+                if (password.length >= 6)  score++;
+                if (password.length >= 10) score++;
+                if (/[A-Z]/.test(password)) score++;
+                if (/[0-9]/.test(password)) score++;
+                if (/[^A-Za-z0-9]/.test(password)) score++;
+
+                var levels = [
+                    { pct: '20%',  cls: 'bg-danger',  text: 'Very Weak' },
+                    { pct: '40%',  cls: 'bg-warning',  text: 'Weak' },
+                    { pct: '60%',  cls: 'bg-info',     text: 'Fair' },
+                    { pct: '80%',  cls: 'bg-primary',  text: 'Strong' },
+                    { pct: '100%', cls: 'bg-success',  text: 'Very Strong' }
+                ];
+                var lvl = levels[Math.min(score, 4)];
+                bar.style.width     = lvl.pct;
+                bar.className       = 'progress-bar ' + lvl.cls;
+                label.textContent   = lvl.text;
+                label.className     = 'text-muted small';
+            } else {
+                strength.style.display = 'none';
+            }
         }
     </script>
 }

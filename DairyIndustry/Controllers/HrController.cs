@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
-    // FIX 1 — Session guard on entire controller
     [SessionAuthorize("HR Manager")]
     public class HRController : Controller
     {
@@ -20,9 +19,6 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── DASHBOARD ────────────────────────────────────────────────
-        // FEATURE 4 — Work Anniversary & New Joining Alerts
-        // All staff loaded once and reused for multiple computations.
-        // Zero new repository methods or DB queries added.
         public IActionResult Dashboard()
         {
             try
@@ -36,7 +32,6 @@ namespace DairyIndustry.Controllers
                     Summary = _repo.GetDashboardSummary(),
                     StaffByType = _repo.GetStaffByType(),
 
-                    // Top 5 most recently joined
                     RecentJoinings = allStaff
                         .OrderByDescending(s => s.DOJ)
                         .Take(5)
@@ -46,8 +41,7 @@ namespace DairyIndustry.Controllers
                         .Take(5)
                         .ToList(),
 
-                    // FEATURE 4A — Work anniversaries this month
-                    // Staff whose DOJ month = this month but joined a PREVIOUS year
+                    // Feature 4A — Work anniversaries this month
                     AnniversariesThisMonth = allStaff
                         .Where(s => s.DOJ.HasValue
                                  && s.DOJ.Value.Month == thisMonth
@@ -55,7 +49,7 @@ namespace DairyIndustry.Controllers
                         .OrderBy(s => s.DOJ!.Value.Day)
                         .ToList(),
 
-                    // FEATURE 4B — Staff who newly joined this month this year
+                    // Feature 4B — New joinings this month
                     NewJoiningsThisMonth = allStaff
                         .Where(s => s.DOJ.HasValue
                                  && s.DOJ.Value.Month == thisMonth
@@ -123,12 +117,35 @@ namespace DairyIndustry.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(StaffFormModel model)
         {
+            // Cannot assign to both Plant and Center
             if (model.PlantId != null && model.CenterId != null)
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX 6 — IFormFile cannot be validated by standard model validation
+            // FIX — Username and Password must both be filled or both be empty
+            // Prevents partial credential entry
+            bool hasUsername = !string.IsNullOrWhiteSpace(model.Username);
+            bool hasPassword = !string.IsNullOrWhiteSpace(model.Password);
+
+            if (hasUsername && !hasPassword)
+                ModelState.AddModelError("Password",
+                    "Password is required when a username is provided.");
+
+            if (hasPassword && !hasUsername)
+                ModelState.AddModelError("Username",
+                    "Username is required when a password is provided.");
+
+            if (hasPassword && model.Password!.Length < 6)
+                ModelState.AddModelError("Password",
+                    "Password must be at least 6 characters.");
+
+            // IFormFile cannot be validated by standard model validation
             ModelState.Remove("PhotoFile");
+
+            // Remove credential validation from ModelState —
+            // they are optional fields handled manually above
+            ModelState.Remove("Username");
+            ModelState.Remove("Password");
 
             if (!ModelState.IsValid)
             {
@@ -138,17 +155,33 @@ namespace DairyIndustry.Controllers
 
             try
             {
+                // Read photo directly from Request (reliable across all scenarios)
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
 
+                // FIX — AddStaff now uses usp_HR_AddStaff SP which handles
+                // bank account creation and StaffId return in one transaction
                 int newId = _repo.AddStaff(model);
-                TempData["Success"] = "Staff member added successfully.";
+
+                // ── CREATE LOGIN ACCOUNT (if credentials provided) ──
+                // Uses BCrypt to hash the password before storing.
+                // usp_Admin_RegisterUser already checks for duplicate username.
+                if (hasUsername && hasPassword)
+                {
+                    string passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                    _repo.RegisterStaffUser(model.Username!.Trim(), passwordHash, model.RoleId, newId);
+                }
+
+                TempData["Success"] = hasUsername
+                    ? $"Staff member added successfully and login account created for '{model.Username}'."
+                    : "Staff member added successfully.";
+
                 return RedirectToAction("Details", new { id = newId });
             }
             catch (InvalidOperationException ex)
             {
-                // FIX 5 — Duplicate phone/email surfaces as clean error
+                // Duplicate phone, email, or username surfaces here cleanly
                 TempData["Error"] = ex.Message;
                 LoadFormDropdowns(model.RoleId);
                 return View(model);
@@ -162,6 +195,8 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── EDIT GET ─────────────────────────────────────────────────
+        // NOTE: Username/Password are intentionally NOT loaded here.
+        // Login credentials are managed via the Admin panel — not here.
         public IActionResult Edit(int id)
         {
             try
@@ -190,6 +225,7 @@ namespace DairyIndustry.Controllers
                     BankName = staff.BankName,
                     AccountNumber = staff.AccountNumber,
                     IFSCCode = staff.IFSCCode
+                    // Username and Password deliberately NOT set here
                 };
 
                 LoadFormDropdowns(staff.RoleId);
@@ -212,6 +248,8 @@ namespace DairyIndustry.Controllers
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
             ModelState.Remove("PhotoFile");
+            ModelState.Remove("Username");
+            ModelState.Remove("Password");
 
             if (!ModelState.IsValid)
             {
@@ -231,7 +269,6 @@ namespace DairyIndustry.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // FIX 5 — Duplicate phone/email surfaces as clean error
                 TempData["Error"] = ex.Message;
                 LoadFormDropdowns(model.RoleId);
                 return View(model);
@@ -343,7 +380,6 @@ namespace DairyIndustry.Controllers
             }).ToList();
         }
 
-        // FIX 6 — Validate extension, create folder safely, synchronous copy
         private string SavePhoto(IFormFile photo)
         {
             var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };

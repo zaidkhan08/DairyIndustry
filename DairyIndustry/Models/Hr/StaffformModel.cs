@@ -23,7 +23,6 @@ namespace DairyIndustry.Models
         [Display(Name = "Email")]
         public string? Email { get; set; }
 
-        // RoleId — NOT NULL in DB — must be selected
         [Required(ErrorMessage = "Role is required.")]
         [Range(1, int.MaxValue, ErrorMessage = "Please select a valid role.")]
         [Display(Name = "Role")]
@@ -36,14 +35,12 @@ namespace DairyIndustry.Models
         [Display(Name = "Active Staff Member")]
         public bool IsActive { get; set; } = true;
 
-        // Assignment — directly on HR.Staffs, fill only one
         [Display(Name = "Plant")]
         public int? PlantId { get; set; }
 
         [Display(Name = "Collection Center")]
         public int? CenterId { get; set; }
 
-        // New column
         [Range(0, 9999999.99, ErrorMessage = "Enter a valid salary.")]
         [Display(Name = "Salary")]
         public decimal? Salary { get; set; }
@@ -64,5 +61,21 @@ namespace DairyIndustry.Models
 
         [Display(Name = "Upload New Photo")]
         public IFormFile? PhotoFile { get; set; }
+
+        // ── LOGIN CREDENTIALS (Create only — optional) ──────────────
+        // If Username is provided, Password is required and vice versa.
+        // If both are blank, no login account is created for this staff.
+        // On Edit page these fields are NOT shown — credentials are
+        // managed separately from the Admin panel.
+
+        [Display(Name = "Username")]
+        [StringLength(50, ErrorMessage = "Username cannot exceed 50 characters.")]
+        public string? Username { get; set; }
+
+        [Display(Name = "Password")]
+        [StringLength(100, MinimumLength = 6,
+            ErrorMessage = "Password must be at least 6 characters.")]
+        [DataType(DataType.Password)]
+        public string? Password { get; set; }
     }
 }

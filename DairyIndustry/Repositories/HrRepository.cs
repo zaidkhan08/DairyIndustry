@@ -15,12 +15,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  1. GET ALL STAFF — SP usp_HR_GetStaff
-        //
-        //  FIX 4 — MapStaffList now maps ALL columns returned by
-        //  usp_HR_GetStaff including: Salary, PlantId, PlantName,
-        //  CenterId, CenterName, BankAccountId, IFSCCode.
-        //  Previously these were silently dropped, making the Index
-        //  page unable to show assignment or salary data.
         // ═══════════════════════════════════════════════════════════
         public List<StaffModel> GetAllStaff(int? roleId, bool? isActive)
         {
@@ -42,8 +36,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  2. GET STAFF BY ID — SP usp_HR_GetStaffById
-        //  Switched from inline query to the dedicated SP which
-        //  already exists in the database and returns all columns.
         // ═══════════════════════════════════════════════════════════
         public StaffModel? GetStaffById(int staffId)
         {
@@ -61,136 +53,119 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  3. ADD STAFF — inline INSERT
+        //  3. ADD STAFF — SP usp_HR_AddStaff
         //
-        //  FIX 5 — Duplicate phone and email check added BEFORE
-        //  the INSERT. If another active or inactive staff member
-        //  already has the same phone or email, an
-        //  InvalidOperationException is thrown with a clear message.
-        //  The controller catches this and shows it as TempData["Error"].
+        //  FIX — Bank details bug root cause:
+        //  The previous inline INSERT created the bank account and
+        //  staff record in two separate steps. If the second step
+        //  failed silently or the BankAccountId was not linked back,
+        //  the staff record had BankAccountId = NULL.
+        //
+        //  Now uses usp_HR_AddStaff SP which:
+        //  - Creates bank account + inserts staff in ONE transaction
+        //  - Rolls back both if anything fails
+        //  - Returns the new StaffId via SELECT SCOPE_IDENTITY()
+        //  - Validates RoleId, PlantId, CenterId before inserting
+        //
+        //  FIX 5 — Duplicate phone/email check before calling SP
         // ═══════════════════════════════════════════════════════════
         public int AddStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
 
-            // FIX 5 — Check for duplicate phone
+            // Duplicate phone check
             if (!string.IsNullOrWhiteSpace(model.Phone))
             {
                 using var dupCmd = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone", con);
                 dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
-                int phoneCount = Convert.ToInt32(dupCmd.ExecuteScalar());
-                if (phoneCount > 0)
+                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Phone number '{model.Phone}' is already registered to another staff member.");
             }
 
-            // FIX 5 — Check for duplicate email
+            // Duplicate email check
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
                 using var dupCmd = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email", con);
                 dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
-                int emailCount = Convert.ToInt32(dupCmd.ExecuteScalar());
-                if (emailCount > 0)
+                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Email address '{model.Email}' is already registered to another staff member.");
             }
 
-            using var tran = con.BeginTransaction();
-            try
-            {
-                int? bankAccountId = null;
+            // Use the SP — handles bank + staff in one atomic transaction
+            using var cmd = new SqlCommand("HR.usp_HR_AddStaff", con);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-                // Step 1 — create bank account if all 3 fields provided
-                if (!string.IsNullOrWhiteSpace(model.BankName) &&
-                    !string.IsNullOrWhiteSpace(model.AccountNumber) &&
-                    !string.IsNullOrWhiteSpace(model.IFSCCode))
-                {
-                    string bankQuery = @"
-                        INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
-                        VALUES (@BankName, @AccountNumber, @IFSCCode);
-                        SELECT SCOPE_IDENTITY();";
+            cmd.Parameters.AddWithValue("@FirstName", (object?)model.FirstName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastName", (object?)model.LastName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Email", (object?)model.Email ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@RoleId", model.RoleId);
+            cmd.Parameters.AddWithValue("@DOJ", (object?)model.DOJ ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)model.ProfilePhoto ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)model.PlantId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@CenterId", (object?)model.CenterId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Salary", (object?)model.Salary ?? DBNull.Value);
 
-                    using var bankCmd = new SqlCommand(bankQuery, con, tran);
-                    bankCmd.Parameters.AddWithValue("@BankName", model.BankName.Trim());
-                    bankCmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber.Trim());
-                    bankCmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode.Trim());
-                    bankAccountId = Convert.ToInt32(bankCmd.ExecuteScalar());
-                }
+            // Bank details — pass all 3 or none (SP handles the condition)
+            bool hasBankDetails = !string.IsNullOrWhiteSpace(model.BankName)
+                                && !string.IsNullOrWhiteSpace(model.AccountNumber)
+                                && !string.IsNullOrWhiteSpace(model.IFSCCode);
 
-                // Step 2 — insert staff
-                string staffQuery = @"
-                    INSERT INTO HR.Staffs
-                        (FirstName, LastName, Phone, Email, RoleId,
-                         BankAccountId, DOJ, IsActive, ProfilePhoto,
-                         PlantId, CenterId, Salary)
-                    VALUES
-                        (@FirstName, @LastName, @Phone, @Email, @RoleId,
-                         @BankAccountId, @DOJ, @IsActive, @ProfilePhoto,
-                         @PlantId, @CenterId, @Salary);
-                    SELECT SCOPE_IDENTITY();";
+            cmd.Parameters.AddWithValue("@BankName",
+                hasBankDetails ? model.BankName!.Trim() : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountNumber",
+                hasBankDetails ? model.AccountNumber!.Trim() : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@IFSCCode",
+                hasBankDetails ? model.IFSCCode!.Trim() : (object)DBNull.Value);
 
-                using var staffCmd = new SqlCommand(staffQuery, con, tran);
-                staffCmd.Parameters.AddWithValue("@FirstName", (object?)model.FirstName ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@LastName", (object?)model.LastName ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@Email", (object?)model.Email ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@RoleId", model.RoleId);
-                staffCmd.Parameters.AddWithValue("@BankAccountId", (object?)bankAccountId ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@DOJ", (object?)model.DOJ ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@IsActive", model.IsActive);
-                staffCmd.Parameters.AddWithValue("@ProfilePhoto", (object?)model.ProfilePhoto ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@PlantId", (object?)model.PlantId ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@CenterId", (object?)model.CenterId ?? DBNull.Value);
-                staffCmd.Parameters.AddWithValue("@Salary", (object?)model.Salary ?? DBNull.Value);
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+                return Convert.ToInt32(reader["NewStaffId"]);
 
-                int newId = Convert.ToInt32(staffCmd.ExecuteScalar());
-                tran.Commit();
-                return newId;
-            }
-            catch
-            {
-                tran.Rollback();
-                throw;
-            }
+            throw new Exception("Failed to retrieve new StaffId after insert.");
         }
 
         // ═══════════════════════════════════════════════════════════
         //  4. UPDATE STAFF — inline UPDATE
         //
-        //  FIX 5 — Duplicate phone and email check added BEFORE
-        //  the UPDATE. The check excludes the current StaffId so
-        //  a staff member can keep their own phone/email unchanged.
+        //  usp_HR_UpdateStaff SP is intentionally NOT used here
+        //  because it only updates 6 fields and misses DOJ, IsActive,
+        //  Salary, PlantId, CenterId, and bank details entirely.
+        //  The inline approach covers all fields correctly.
+        //
+        //  Bank account: upsert — updates if exists, creates if not.
+        //  FIX 5 — Duplicate phone/email check excludes current StaffId.
         // ═══════════════════════════════════════════════════════════
         public bool UpdateStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
 
-            // FIX 5 — Check for duplicate phone (excluding self)
+            // Duplicate phone check (excluding self)
             if (!string.IsNullOrWhiteSpace(model.Phone))
             {
                 using var dupCmd = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone AND StaffId <> @StaffId", con);
                 dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
                 dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                int phoneCount = Convert.ToInt32(dupCmd.ExecuteScalar());
-                if (phoneCount > 0)
+                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Phone number '{model.Phone}' is already registered to another staff member.");
             }
 
-            // FIX 5 — Check for duplicate email (excluding self)
+            // Duplicate email check (excluding self)
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
                 using var dupCmd = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email AND StaffId <> @StaffId", con);
                 dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
                 dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                int emailCount = Convert.ToInt32(dupCmd.ExecuteScalar());
-                if (emailCount > 0)
+                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Email address '{model.Email}' is already registered to another staff member.");
             }
@@ -198,26 +173,25 @@ namespace DairyIndustry.Repositories
             using var tran = con.BeginTransaction();
             try
             {
-                // Step 1 — handle bank account update/insert
                 bool hasBankDetails = !string.IsNullOrWhiteSpace(model.BankName)
                                    && !string.IsNullOrWhiteSpace(model.AccountNumber)
                                    && !string.IsNullOrWhiteSpace(model.IFSCCode);
 
                 if (hasBankDetails)
                 {
-                    string checkQuery = "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId";
-                    using var checkCmd = new SqlCommand(checkQuery, con, tran);
+                    // Check if staff already has a bank account linked
+                    using var checkCmd = new SqlCommand(
+                        "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId", con, tran);
                     checkCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
                     var existingBankId = checkCmd.ExecuteScalar();
 
                     if (existingBankId != null && existingBankId != DBNull.Value)
                     {
-                        // Update existing bank account
-                        string updateBank = @"
+                        // Update existing bank account record
+                        using var updBankCmd = new SqlCommand(@"
                             UPDATE Finance.BankAccounts
                             SET BankName = @BankName, AccountNumber = @AccountNumber, IFSCCode = @IFSCCode
-                            WHERE BankAccountId = @BankAccountId";
-                        using var updBankCmd = new SqlCommand(updateBank, con, tran);
+                            WHERE BankAccountId = @BankAccountId", con, tran);
                         updBankCmd.Parameters.AddWithValue("@BankAccountId", Convert.ToInt32(existingBankId));
                         updBankCmd.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
                         updBankCmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
@@ -226,14 +200,14 @@ namespace DairyIndustry.Repositories
                     }
                     else
                     {
-                        // Insert new bank account and link to staff
-                        string insertBank = @"
+                        // Create new bank account and link it to staff
+                        using var insBankCmd = new SqlCommand(@"
                             DECLARE @NewBankId INT;
                             INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
                             VALUES (@BankName, @AccountNumber, @IFSCCode);
                             SET @NewBankId = SCOPE_IDENTITY();
-                            UPDATE HR.Staffs SET BankAccountId = @NewBankId WHERE StaffId = @StaffId;";
-                        using var insBankCmd = new SqlCommand(insertBank, con, tran);
+                            UPDATE HR.Staffs SET BankAccountId = @NewBankId WHERE StaffId = @StaffId;",
+                            con, tran);
                         insBankCmd.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
                         insBankCmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
                         insBankCmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode!.Trim());
@@ -242,8 +216,8 @@ namespace DairyIndustry.Repositories
                     }
                 }
 
-                // Step 2 — update staff record
-                string query = @"
+                // Update all staff fields — covers everything the SP misses
+                using var staffCmd = new SqlCommand(@"
                     UPDATE HR.Staffs
                     SET
                         FirstName    = @FirstName,
@@ -257,25 +231,24 @@ namespace DairyIndustry.Repositories
                         CenterId     = @CenterId,
                         Salary       = @Salary,
                         ProfilePhoto = CASE WHEN @ProfilePhoto IS NOT NULL
-                                            THEN @ProfilePhoto
-                                            ELSE ProfilePhoto END
-                    WHERE StaffId = @StaffId";
+                                           THEN @ProfilePhoto
+                                           ELSE ProfilePhoto END
+                    WHERE StaffId = @StaffId", con, tran);
 
-                using var cmd = new SqlCommand(query, con, tran);
-                cmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                cmd.Parameters.AddWithValue("@FirstName", (object?)model.FirstName ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@LastName", (object?)model.LastName ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Email", (object?)model.Email ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@RoleId", model.RoleId);
-                cmd.Parameters.AddWithValue("@DOJ", (object?)model.DOJ ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@IsActive", model.IsActive);
-                cmd.Parameters.AddWithValue("@PlantId", (object?)model.PlantId ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@CenterId", (object?)model.CenterId ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Salary", (object?)model.Salary ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)model.ProfilePhoto ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
+                staffCmd.Parameters.AddWithValue("@FirstName", (object?)model.FirstName ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@LastName", (object?)model.LastName ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@Email", (object?)model.Email ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@RoleId", model.RoleId);
+                staffCmd.Parameters.AddWithValue("@DOJ", (object?)model.DOJ ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@IsActive", model.IsActive);
+                staffCmd.Parameters.AddWithValue("@PlantId", (object?)model.PlantId ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@CenterId", (object?)model.CenterId ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@Salary", (object?)model.Salary ?? DBNull.Value);
+                staffCmd.Parameters.AddWithValue("@ProfilePhoto", (object?)model.ProfilePhoto ?? DBNull.Value);
 
-                bool result = cmd.ExecuteNonQuery() > 0;
+                bool result = staffCmd.ExecuteNonQuery() > 0;
                 tran.Commit();
                 return result;
             }
@@ -287,7 +260,37 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  5. TOGGLE ACTIVE — SP usp_HR_ToggleActive
+        //  5. REGISTER STAFF USER — SP usp_Admin_RegisterUser
+        //
+        //  NEW — Called after AddStaff if HR provides credentials.
+        //  BCrypt hash is generated in the controller and passed here.
+        //  SP already checks for duplicate username and throws if found.
+        //  Links the new Admin.Users record to the StaffId via FK.
+        // ═══════════════════════════════════════════════════════════
+        public void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand("Admin.usp_Admin_RegisterUser", con);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Username", username);
+            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (SqlException ex) when (ex.Message.Contains("Username already exists"))
+            {
+                throw new InvalidOperationException(
+                    $"Username '{username}' is already taken. Please choose a different username.");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  6. TOGGLE ACTIVE
         // ═══════════════════════════════════════════════════════════
         public bool ToggleActive(int staffId, bool isActive)
         {
@@ -302,7 +305,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  6. UPDATE PROFILE PHOTO — SP usp_HR_UpdateProfilePhoto
+        //  7. UPDATE PROFILE PHOTO
         // ═══════════════════════════════════════════════════════════
         public bool UpdateProfilePhoto(int staffId, string photoPath)
         {
@@ -317,7 +320,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  7. GET ROLES
+        //  8. GET ROLES
         // ═══════════════════════════════════════════════════════════
         public List<RoleModel> GetRoles()
         {
@@ -337,7 +340,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  8. GET PLANTS
+        //  9. GET PLANTS
         // ═══════════════════════════════════════════════════════════
         public List<PlantAssignModel> GetPlants()
         {
@@ -358,7 +361,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  9. GET CENTERS
+        //  10. GET CENTERS
         // ═══════════════════════════════════════════════════════════
         public List<CenterAssignModel> GetCenters()
         {
@@ -379,7 +382,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  10. DASHBOARD SUMMARY
+        //  11. DASHBOARD SUMMARY
         // ═══════════════════════════════════════════════════════════
         public HRDashboardSummaryModel GetDashboardSummary()
         {
@@ -387,12 +390,11 @@ namespace DairyIndustry.Repositories
 
             string staffQuery = @"
                 SELECT
-                    COUNT(*)                                                        AS TotalStaff,
-                    SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END)                  AS ActiveStaff,
-                    SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END)                  AS InactiveStaff,
+                    COUNT(*)                                                      AS TotalStaff,
+                    SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END)                AS ActiveStaff,
+                    SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END)                AS InactiveStaff,
                     SUM(CASE WHEN MONTH(DOJ) = MONTH(GETDATE())
-                              AND YEAR(DOJ)  = YEAR(GETDATE())
-                              THEN 1 ELSE 0 END)                                   AS NewJoiningThisMonth
+                              AND YEAR(DOJ)  = YEAR(GETDATE()) THEN 1 ELSE 0 END) AS NewJoiningThisMonth
                 FROM HR.Staffs";
 
             string payQuery = @"
@@ -429,13 +431,15 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  11. STAFF BY TYPE
+        //  12. STAFF BY TYPE
         // ═══════════════════════════════════════════════════════════
         public List<StaffTypeCountModel> GetStaffByType()
         {
             var list = new List<StaffTypeCountModel>();
 
-            string query = @"
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
                 SELECT
                     ISNULL(r.RoleName, 'Not Assigned')               AS StaffType,
                     COUNT(*)                                          AS Count,
@@ -443,11 +447,8 @@ namespace DairyIndustry.Repositories
                 FROM HR.Staffs s
                 LEFT JOIN Admin.Roles r ON r.RoleId = s.RoleId
                 GROUP BY r.RoleName
-                ORDER BY Count DESC";
+                ORDER BY Count DESC", con);
 
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(query, con);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(new StaffTypeCountModel
@@ -461,25 +462,15 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  12. GET PAYMENTS BY STAFF
-        //
-        //  FIX 2 — Changed INNER JOIN on ProcessingPlants to LEFT JOIN.
-        //  Finance.StaffPayments.PlantId is NOT NULL in the DB schema,
-        //  meaning staff assigned only to a CollectionCenter CANNOT
-        //  have a payment record created without a PlantId value.
-        //  The LEFT JOIN ensures payments are never silently dropped
-        //  from the query result if the PlantId join fails.
-        //  PlantName will show as "N/A" for such edge-case records.
-        //
-        //  NOTE: To fully support center-assigned staff payments, the
-        //  Finance.StaffPayments table needs PlantId made nullable and
-        //  CenterId column added. Flag this to your DB admin.
+        //  13. GET PAYMENTS BY STAFF — LEFT JOIN fix applied
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetPaymentsByStaff(int staffId)
         {
             var list = new List<StaffPaymentModel>();
 
-            string query = @"
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
                     s.FirstName + ' ' + s.LastName            AS StaffName,
@@ -492,11 +483,8 @@ namespace DairyIndustry.Repositories
                 LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
                 LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
                 WHERE sp.StaffId = @StaffId
-                ORDER BY sp.PaymentDate DESC";
+                ORDER BY sp.PaymentDate DESC", con);
 
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(query, con);
             cmd.Parameters.AddWithValue("@StaffId", staffId);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -506,16 +494,15 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  13. GET ALL PAYMENTS
-        //
-        //  FIX 2 — Same LEFT JOIN fix applied here as in
-        //  GetPaymentsByStaff above.
+        //  14. GET ALL PAYMENTS — LEFT JOIN fix applied
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetAllPayments(string? status)
         {
             var list = new List<StaffPaymentModel>();
 
-            string query = @"
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
                     s.FirstName + ' ' + s.LastName            AS StaffName,
@@ -528,11 +515,8 @@ namespace DairyIndustry.Repositories
                 LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
                 LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
                 WHERE (@Status IS NULL OR sp.PaymentStatus = @Status)
-                ORDER BY sp.PaymentDate DESC";
+                ORDER BY sp.PaymentDate DESC", con);
 
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(query, con);
             cmd.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -544,10 +528,6 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════
         //  PRIVATE MAPPERS
         // ═══════════════════════════════════════════════════════════
-
-        // FIX 4 — MapStaffList now maps ALL columns returned by
-        // usp_HR_GetStaff: Salary, PlantId, PlantName, CenterId,
-        // CenterName, BankAccountId, IFSCCode were all missing before.
         private StaffModel MapStaffList(SqlDataReader reader)
         {
             return new StaffModel
@@ -562,7 +542,6 @@ namespace DairyIndustry.Repositories
                 DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
                 ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
-                // FIX 4 — these 6 fields were not mapped before:
                 Salary = reader["Salary"] == DBNull.Value ? null : Convert.ToDecimal(reader["Salary"]),
                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
                 PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
