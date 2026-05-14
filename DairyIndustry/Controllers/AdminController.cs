@@ -153,7 +153,7 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index", "Production");
 
                 case "Collection Agent":
-                    return RedirectToAction("Receive", "Production");
+                    return RedirectToAction("Index", "Production");
 
                 default:
                     return RedirectToAction("Login", "Admin");
@@ -476,16 +476,116 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Admin")]
         public IActionResult Index()
         {
+            // ── Core entity lists ──────────────────────────────────────────
+            var users = _adminRepo.GetAllUsers();
+            var staff = _adminRepo.GetAllStaff();
+            var plants = _adminRepo.GetAllPlants(isActive: null);
+            var centers = _adminRepo.GetAllCollection(isActive: null);
+            var products = _adminRepo.GetAllProducts(isActive: null);
+            var batches = _adminRepo.GetProductionBatches();
+            var transfers = _adminRepo.GetMilkTransfers();
+
+            // ── Chart / summary data ───────────────────────────────────────
+            var collectionSummary = _adminRepo.GetCollectionSummary();
+            var financeSummary = _adminRepo.GetFinanceSummary();
+            var milkLast7Days = _adminRepo.GetMilkCollectedLast7Days();
+            var topProducts = _adminRepo.GetTopProductsByMilkUsed(5);
+            var ordersByStatus = _adminRepo.GetOrdersByStatus();
+
+            // ── Transfer chart series — last 5 received transfers ─────────
+            var recentReceived = transfers
+                .Where(t => t.ReceivedQty.HasValue)
+                .OrderByDescending(t => t.DispatchDate)
+                .Take(5)
+                .Reverse()
+                .ToList();
+
+            var transferDispatch = recentReceived.Select(t => new ChartPoint
+            { Label = $"T-{t.TransferId}", Value = t.DispatchQty }).ToList();
+
+            var transferReceived = recentReceived.Select(t => new ChartPoint
+            { Label = $"T-{t.TransferId}", Value = t.ReceivedQty ?? 0 }).ToList();
+
+            var transferLoss = recentReceived.Select(t => new ChartPoint
+            { Label = $"T-{t.TransferId}", Value = t.LossQty ?? 0 }).ToList();
+
+            // ── Production summary ─────────────────────────────────────────
+            var prodSummary = new DashboardProductionSummary
+            {
+                InProgress = batches.Count(b => b.BatchStatus == "InProgress"),
+                Completed = batches.Count(b => b.BatchStatus == "Completed"),
+                QCFailed = batches.Count(b => b.BatchStatus == "QCFailed"),
+                Cancelled = batches.Count(b => b.BatchStatus == "Cancelled"),
+                TotalMilkUsed = batches.Sum(b => b.MilkUsedQuantity)
+            };
+
+            // ── Transfer summary ───────────────────────────────────────────
+            var totalDispatch = transfers.Sum(t => t.DispatchQty);
+            var totalLoss = transfers.Sum(t => t.LossQty ?? 0);
+            var transferSummary = new DashboardTransferSummary
+            {
+                TotalDispatched = totalDispatch,
+                TotalReceived = transfers.Sum(t => t.ReceivedQty ?? 0),
+                TotalLoss = totalLoss,
+                LossPercent = totalDispatch > 0 ? Math.Round((totalLoss / totalDispatch) * 100, 2) : 0,
+                PendingCount = transfers.Count(t => t.TransferStatus == "Pending"),
+                ReceivedCount = transfers.Count(t => t.TransferStatus == "Received")
+            };
+
+            // ── Payment bar chart series ───────────────────────────────────
+            var payPaid = new List<ChartPoint>
+    {
+        new() { Label = "Farmers", Value = financeSummary.TotalFarmerPaid    },
+        new() { Label = "Staff",   Value = financeSummary.TotalStaffPaid     },
+        new() { Label = "Centers", Value = financeSummary.TotalCenterPaid    }
+    };
+            var payPending = new List<ChartPoint>
+    {
+        new() { Label = "Farmers", Value = financeSummary.TotalFarmerPending },
+        new() { Label = "Staff",   Value = financeSummary.TotalStaffPending  },
+        new() { Label = "Centers", Value = financeSummary.TotalCenterPending }
+    };
+
+            // ── Batch status chart ─────────────────────────────────────────
+            var batchByStatus = new List<ChartPoint>
+    {
+        new() { Label = "In Progress", Value = prodSummary.InProgress },
+        new() { Label = "Completed",   Value = prodSummary.Completed  },
+        new() { Label = "QC Failed",   Value = prodSummary.QCFailed   },
+        new() { Label = "Cancelled",   Value = prodSummary.Cancelled  }
+    };
+
+            // ── Compose VM ─────────────────────────────────────────────────
             var vm = new AdminDashboardViewModel
             {
-                Users = _adminRepo.GetAllUsers(),
-                Staff = _adminRepo.GetAllStaff(),
-                Plants = _adminRepo.GetAllPlants(isActive: null),
-                Centers = _adminRepo.GetAllCollection(isActive: null),
-                Products = _adminRepo.GetAllProducts(isActive: null),
-                Batches = _adminRepo.GetProductionBatches(),
-                Transfers = _adminRepo.GetMilkTransfers()
+                Users = users,
+                Staff = staff,
+                Plants = plants,
+                Centers = centers,
+                Products = products,
+                Batches = batches,
+                Transfers = transfers,
+
+                Collection = collectionSummary,
+                Production = prodSummary,
+                Transfer = transferSummary,
+                Finance = financeSummary,
+
+                MilkLast7Days = milkLast7Days,
+                BatchByStatus = batchByStatus,
+                TopProductsByMilkUsed = topProducts,
+                TransferDispatchSeries = transferDispatch,
+                TransferReceivedSeries = transferReceived,
+                TransferLossSeries = transferLoss,
+                PaymentPaidSeries = payPaid,
+                PaymentPendingSeries = payPending,
+                OrdersByStatus = ordersByStatus,
+
+                RecentUsers = users.OrderByDescending(u => u.CreatedDate).Take(5).ToList(),
+                RecentBatches = batches.OrderByDescending(b => b.ProductionDate).Take(5).ToList(),
+                RecentTransfers = transfers.OrderByDescending(t => t.DispatchDate).Take(5).ToList()
             };
+
             return View(vm);
         }
         // ════════════════════════════════════════════════════════
@@ -981,86 +1081,127 @@ namespace DairyIndustry.Controllers
         }
         [HttpPost]
         [SessionAuthorize("Admin")]
-        [RequestSizeLimit(5 * 1024 * 1024)] // 5MB Request Limit
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> AddStaff(string firstName, string lastName,
-                           string phone, string email,
-                           int roleId, DateTime? doj,
-                           string bankName, string accountNumber,
-                           string ifscCode, IFormFile profilePhoto, decimal Salary,
-                           int? centerId, int? plantId)
+            string phone, string email,
+            int roleId, DateTime? doj,
+            string bankName, string accountNumber,
+            string ifscCode, IFormFile profilePhoto, decimal Salary,
+            int? centerId, int? plantId,
+            string username, string password)
         {
-            // 1. Validation — cannot assign both
-            if (centerId.HasValue && plantId.HasValue)
+            // Helper to reload dropdowns on error
+            void ReloadViewBag()
             {
-                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
                 ViewBag.Plants = _adminRepo.GetAllPlants();
                 ViewBag.Centers = _adminRepo.GetAllCenters();
-                return View(_adminRepo.GetAllRoles());
             }
 
-            string photoPath = null;
-
-            // 2. Handle File Upload
-            if (profilePhoto != null && profilePhoto.Length > 0)
+            try
             {
-                try
+                // Get role name to enforce business rules
+                var allRoles = _adminRepo.GetAllRoles();
+                var selectedRole = allRoles.FirstOrDefault(r => r.RoleId == roleId);
+                string roleName = selectedRole?.RoleName ?? "";
+
+                // ── Business rule: can't assign both ────────────────
+                if (centerId.HasValue && plantId.HasValue)
                 {
-                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                    var extension = Path.GetExtension(profilePhoto.FileName).ToLower();
+                    ViewBag.Error = "Assign staff to either a Collection Center or a Plant — not both.";
+                    ReloadViewBag();
+                    return View(allRoles);
+                }
 
-                    if (!allowedExtensions.Contains(extension))
+                // ── Business rule: Plant Manager must have a plant ──
+                if (roleName == "Plant Manager" && !plantId.HasValue)
+                {
+                    ViewBag.Error = "Plant Manager must be assigned to a Plant.";
+                    ReloadViewBag();
+                    return View(allRoles);
+                }
+
+                // ── Business rule: Collection Agent must have center─
+                if (roleName == "Collection Agent" && !centerId.HasValue)
+                {
+                    ViewBag.Error = "Collection Agent must be assigned to a Collection Center.";
+                    ReloadViewBag();
+                    return View(allRoles);
+                }
+
+                // ── Business rule: login roles need credentials ──────
+                var loginRoles = new[] { "Administrator", "Plant Manager", "Collection Agent", "HR Manager" };
+                bool needsLogin = loginRoles.Contains(roleName);
+
+                if (needsLogin && (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password)))
+                {
+                    ViewBag.Error = $"{roleName} requires a username and password.";
+                    ReloadViewBag();
+                    return View(allRoles);
+                }
+
+                // ── Photo upload ─────────────────────────────────────
+                string photoPath = null;
+                if (profilePhoto != null && profilePhoto.Length > 0)
+                {
+                    var extension = Path.GetExtension(profilePhoto.FileName).ToLowerInvariant();
+                    if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
                     {
-                        ViewBag.Error = "Only .jpg, .jpeg, .png allowed";
-                        ViewBag.Plants = _adminRepo.GetAllPlants();
-                        ViewBag.Centers = _adminRepo.GetAllCenters();
-                        return View(_adminRepo.GetAllRoles());
+                        ViewBag.Error = "Only .jpg, .jpeg, .png allowed.";
+                        ReloadViewBag();
+                        return View(allRoles);
+                    }
+                    if (profilePhoto.Length > 2 * 1024 * 1024)
+                    {
+                        ViewBag.Error = "Max photo size is 2MB.";
+                        ReloadViewBag();
+                        return View(allRoles);
                     }
 
-                    if (profilePhoto.Length > 2 * 1024 * 1024) // 2MB Limit
-                    {
-                        ViewBag.Error = "Max size 2MB";
-                        ViewBag.Plants = _adminRepo.GetAllPlants();
-                        ViewBag.Centers = _adminRepo.GetAllCenters();
-                        return View(_adminRepo.GetAllRoles());
-                    }
+                    string uploadFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
+                    Directory.CreateDirectory(uploadFolder);
+                    string fileName = Guid.NewGuid() + extension;
+                    string filePath = Path.Combine(uploadFolder, fileName);
 
-                    string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
-
-                    if (!Directory.Exists(uploadsFolder))
-                    {
-                        Directory.CreateDirectory(uploadsFolder);
-                    }
-
-                    string fileName = Guid.NewGuid().ToString() + extension;
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    // Use FileStream with 'await' to prevent Visual Studio from hanging
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await profilePhoto.CopyToAsync(stream);
-                    }
-
+                    using var ms = new MemoryStream();
+                    await profilePhoto.CopyToAsync(ms);
+                    await System.IO.File.WriteAllBytesAsync(filePath, ms.ToArray());
                     photoPath = "/uploads/staff/" + fileName;
                 }
-                catch (Exception ex)
+
+                // ── Save ─────────────────────────────────────────────
+                if (needsLogin)
                 {
-                    ViewBag.Error = "Upload failed: " + ex.Message;
-                    ViewBag.Plants = _adminRepo.GetAllPlants();
-                    ViewBag.Centers = _adminRepo.GetAllCenters();
-                    return View(_adminRepo.GetAllRoles());
+                    string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+                    await _adminRepo.AddStaffWithUserAsync(
+                        firstName, lastName, phone, email, roleId, doj,
+                        bankName, accountNumber, ifscCode, Salary, photoPath,
+                        centerId, plantId, username, passwordHash);
+
+                    TempData["Success"] = $"{roleName} added with login account successfully.";
                 }
+                else
+                {
+                    await _adminRepo.AddStaffAsync(
+                        firstName, lastName, phone, email, roleId, doj,
+                        bankName, accountNumber, ifscCode, Salary, photoPath,
+                        centerId, plantId);
+
+                    TempData["Success"] = "Staff member added successfully.";
+                }
+
+                return RedirectToAction("Staff");
             }
-
-            // 3. Save to Database
-            // Note: If your Repo method is also async, use: await _adminRepo.AddStaffAsync(...)
-            await _adminRepo.AddStaffAsync(firstName, lastName, phone, email,
-                    roleId, doj, bankName, accountNumber,
-                    ifscCode, Salary, photoPath,
-                    centerId, plantId);
-
-            TempData["Success"] = "Staff member added successfully.";
-            return RedirectToAction("Staff");
+            catch (Exception ex)
+            {
+                var allRoles = _adminRepo.GetAllRoles();
+                ViewBag.Error = ex.Message.Contains("Username already exists")
+                    ? "That username is already taken. Please choose another."
+                    : "Error: " + ex.Message;
+                ReloadViewBag();
+                return View(allRoles);
+            }
         }
+
         [SessionAuthorize("Admin")]
         public IActionResult GetStaffById(int id)
         {

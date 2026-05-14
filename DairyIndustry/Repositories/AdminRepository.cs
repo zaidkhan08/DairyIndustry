@@ -752,7 +752,43 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public async Task<int> AddStaffWithUserAsync(string firstName, string lastName, string phone, string email,
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null,
+     string username = null,
+     string passwordHash = null)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_AddStaffWithUser", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FirstName", firstName);
+                    cmd.Parameters.AddWithValue("@LastName", lastName);
+                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
+                    cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Salary", salary);
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Username", (object?)username ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PasswordHash", (object?)passwordHash ?? DBNull.Value);
 
+                    await con.OpenAsync();
+                    var result = await cmd.ExecuteScalarAsync();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
         public List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null)
         {
             var list = new List<StaffModel>();
@@ -1975,5 +2011,154 @@ namespace DairyIndustry.Repositories
             cmd.ExecuteNonQuery();
         }
 
+        //Index
+
+        public List<ChartPoint> GetMilkCollectedLast7Days()
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT
+                    FORMAT(CollectionDate, 'dd MMM') AS Label,
+                    ISNULL(SUM(Quantity), 0)          AS Value
+                FROM Collection.MilkCollection
+                WHERE CollectionDate >= CAST(DATEADD(DAY, -6, GETDATE()) AS DATE)
+                GROUP BY CollectionDate, FORMAT(CollectionDate, 'dd MMM')
+                ORDER BY CollectionDate";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
+
+        // ── Collection summary scalars ───────────────────────────────
+        public DashboardCollectionSummary GetCollectionSummary()
+        {
+            const string sql = @"
+                SELECT
+                    ISNULL((SELECT SUM(Quantity) FROM Collection.MilkCollection), 0)
+                        AS TotalMilkCollected,
+                    ISNULL((SELECT SUM(Quantity) FROM Collection.MilkCollection
+                             WHERE CollectionDate = CAST(GETDATE() AS DATE)), 0)
+                        AS TodayMilkCollected,
+                    (SELECT COUNT(*) FROM Farmer.Farmers)                        AS TotalFarmers,
+                    (SELECT COUNT(*) FROM Farmer.Farmers WHERE IsActive = 1)     AS ActiveFarmers,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Open')       AS OpenBatches,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Closed')     AS ClosedBatches,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Dispatched') AS DispatchedBatches";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+
+            if (!dr.Read()) return new DashboardCollectionSummary();
+
+            return new DashboardCollectionSummary
+            {
+                TotalMilkCollected = Convert.ToDecimal(dr["TotalMilkCollected"]),
+                TodayMilkCollected = Convert.ToDecimal(dr["TodayMilkCollected"]),
+                TotalFarmers = Convert.ToInt32(dr["TotalFarmers"]),
+                ActiveFarmers = Convert.ToInt32(dr["ActiveFarmers"]),
+                OpenBatches = Convert.ToInt32(dr["OpenBatches"]),
+                ClosedBatches = Convert.ToInt32(dr["ClosedBatches"]),
+                DispatchedBatches = Convert.ToInt32(dr["DispatchedBatches"])
+            };
+        }
+
+        // ── Finance summary ─────────────────────────────────────────
+        public DashboardFinanceSummary GetFinanceSummary()
+        {
+            const string sql = @"
+                SELECT
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.FarmerPayments WHERE PaymentStatus = 'Processed'), 0) AS FarmerPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.FarmerPayments WHERE PaymentStatus = 'Pending'),   0) AS FarmerPending,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.StaffPayments  WHERE PaymentStatus = 'Processed'), 0) AS StaffPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.StaffPayments  WHERE PaymentStatus = 'Pending'),   0) AS StaffPending,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.CenterPayments WHERE PaymentStatus = 'Processed'), 0) AS CenterPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.CenterPayments WHERE PaymentStatus = 'Pending'),   0) AS CenterPending,
+                    ISNULL((SELECT SUM(sod.Quantity * sod.UnitPrice)
+                             FROM Sales.SalesOrderDetails sod
+                             INNER JOIN Sales.SalesOrders so ON so.OrderId = sod.OrderId
+                             WHERE so.OrderStatus IN ('Delivered','Dispatched')), 0) AS SalesRevenue";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+
+            if (!dr.Read()) return new DashboardFinanceSummary();
+
+            return new DashboardFinanceSummary
+            {
+                TotalFarmerPaid = Convert.ToDecimal(dr["FarmerPaid"]),
+                TotalFarmerPending = Convert.ToDecimal(dr["FarmerPending"]),
+                TotalStaffPaid = Convert.ToDecimal(dr["StaffPaid"]),
+                TotalStaffPending = Convert.ToDecimal(dr["StaffPending"]),
+                TotalCenterPaid = Convert.ToDecimal(dr["CenterPaid"]),
+                TotalCenterPending = Convert.ToDecimal(dr["CenterPending"]),
+                TotalSalesRevenue = Convert.ToDecimal(dr["SalesRevenue"])
+            };
+        }
+
+        // ── Top N products by milk used ──────────────────────────────
+        public List<ChartPoint> GetTopProductsByMilkUsed(int top = 5)
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT TOP (@top)
+                    p.ProductName                  AS Label,
+                    ISNULL(SUM(pb.MilkUsedQuantity), 0) AS Value
+                FROM Production.ProductionBatches pb
+                INNER JOIN Production.Products p ON p.ProductId = pb.ProductId
+                WHERE pb.BatchStatus = 'Completed'
+                GROUP BY p.ProductName
+                ORDER BY Value DESC";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@top", top);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
+
+        // ── Orders by status ────────────────────────────────────────
+        public List<ChartPoint> GetOrdersByStatus()
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT OrderStatus AS Label, COUNT(*) AS Value
+                FROM Sales.SalesOrders
+                GROUP BY OrderStatus";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
     }
 }

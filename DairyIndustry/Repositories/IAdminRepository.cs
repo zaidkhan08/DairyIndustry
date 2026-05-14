@@ -69,6 +69,15 @@ namespace DairyIndustry.Repositories
         string profilePhoto = null,
         int? centerId = null,
         int? plantId = null);
+        Task<int> AddStaffWithUserAsync(string firstName, string lastName, string phone, string email,
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null,
+     string username = null,
+     string passwordHash = null);
         Task UpdateStaffAsync(int staffId, string firstName, string lastName,
                         string phone, string email, int roleId, DateTime? doj,
                         string bankName, string accountNumber, string ifscCode,
@@ -162,6 +171,32 @@ namespace DairyIndustry.Repositories
 
         void SendOtpEmail(string toEmail, string toName, string otp, string purpose);
         void ChangePassword(int userId, string newPasswordHash);
+
+        //Index
+
+        List<ChartPoint> GetMilkCollectedLast7Days();
+
+        /// <summary>
+        /// Returns (TotalMilkCollected, TodayMilkCollected, TotalFarmers,
+        ///          ActiveFarmers, OpenBatches, ClosedBatches, DispatchedBatches)
+        /// </summary>
+        DashboardCollectionSummary GetCollectionSummary();
+
+        /// <summary>
+        /// Returns aggregated finance totals for farmer / staff / center payments
+        /// and total sales revenue.
+        /// </summary>
+        DashboardFinanceSummary GetFinanceSummary();
+
+        /// <summary>
+        /// Returns top 5 products ranked by total milk used in production.
+        /// </summary>
+        List<ChartPoint> GetTopProductsByMilkUsed(int top = 5);
+
+        /// <summary>
+        /// Returns count of sales orders grouped by status.
+        /// </summary>
+        List<ChartPoint> GetOrdersByStatus();
     }
 
 }
