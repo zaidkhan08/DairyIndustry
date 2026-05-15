@@ -55,6 +55,14 @@ namespace DairyIndustry.Controllers
                                  && s.DOJ.Value.Month == thisMonth
                                  && s.DOJ.Value.Year == thisYear)
                         .OrderBy(s => s.DOJ!.Value.Day)
+                        .ToList(),
+
+                    // FEATURE 2 — Inactive staff alert
+                    // All staff with IsActive = false, ordered by name.
+                    // Reuses already-loaded allStaff — zero extra DB call.
+                    InactiveStaffList = allStaff
+                        .Where(s => !s.IsActive)
+                        .OrderBy(s => s.FullName)
                         .ToList()
                 };
 
@@ -96,6 +104,11 @@ namespace DairyIndustry.Controllers
                     TempData["Error"] = "Staff member not found.";
                     return RedirectToAction("Index");
                 }
+
+                // FEATURE 3 — Load salary history for this staff member
+                // Passed via ViewBag to avoid changing StaffModel further
+                ViewBag.SalaryHistory = _repo.GetSalaryHistory(id);
+
                 return View(staff);
             }
             catch (Exception ex)
@@ -195,8 +208,6 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── EDIT GET ─────────────────────────────────────────────────
-        // NOTE: Username/Password are intentionally NOT loaded here.
-        // Login credentials are managed via the Admin panel — not here.
         public IActionResult Edit(int id)
         {
             try
@@ -222,10 +233,12 @@ namespace DairyIndustry.Controllers
                     PlantId = staff.PlantId,
                     CenterId = staff.CenterId,
                     Salary = staff.Salary,
+                    // FEATURE 3 — store current salary so Edit POST can
+                    // detect whether it changed and log history accordingly
+                    CurrentSalary = staff.Salary,
                     BankName = staff.BankName,
                     AccountNumber = staff.AccountNumber,
                     IFSCCode = staff.IFSCCode
-                    // Username and Password deliberately NOT set here
                 };
 
                 LoadFormDropdowns(staff.RoleId);
@@ -250,6 +263,7 @@ namespace DairyIndustry.Controllers
             ModelState.Remove("PhotoFile");
             ModelState.Remove("Username");
             ModelState.Remove("Password");
+            ModelState.Remove("SalaryChangeReason");
 
             if (!ModelState.IsValid)
             {
@@ -263,7 +277,40 @@ namespace DairyIndustry.Controllers
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
 
+                // FEATURE 3 — Detect salary change BEFORE updating
+                // Compare submitted Salary with CurrentSalary (hidden field)
+                // Only log if salary actually changed and new salary has a value
+                bool salaryChanged = model.Salary.HasValue
+                    && model.Salary != model.CurrentSalary;
+
+                // Save staff first
                 _repo.UpdateStaff(model);
+
+                // Log salary history AFTER successful save
+                // Wrapped in try/catch — history failure must never
+                // prevent the staff update from completing
+                if (salaryChanged)
+                {
+                    try
+                    {
+                        string? changedBy = HttpContext.Session.GetString("Username");
+                        _repo.AddSalaryHistory(
+                            model.StaffId,
+                            model.CurrentSalary,
+                            model.Salary!.Value,
+                            string.IsNullOrWhiteSpace(model.SalaryChangeReason)
+                                ? null
+                                : model.SalaryChangeReason.Trim(),
+                            changedBy
+                        );
+                    }
+                    catch
+                    {
+                        // Silently ignore — salary history logging is
+                        // supplementary and must never block the main save
+                    }
+                }
+
                 TempData["Success"] = "Staff member updated successfully.";
                 return RedirectToAction("Details", new { id = model.StaffId });
             }

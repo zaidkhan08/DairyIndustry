@@ -589,19 +589,6 @@ namespace DairyIndustry.Controllers
         }
 
 
-        // ════════════════════════════════════════════════════════════════════
-        //  MY ANALYTICS — Distributor personal order analytics
-        //  GET /Sales/MyAnalytics
-        // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Distributor")]
-        public IActionResult MyAnalytics()
-        {
-            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
-            var analytics = _repo.GetDistributorAnalytics(distId);
-            SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
-            return View(analytics);
-        }
-
 
         // ════════════════════════════════════════════════════════════════════
         //  EXPORT ORDERS — Download distributor order history as CSV

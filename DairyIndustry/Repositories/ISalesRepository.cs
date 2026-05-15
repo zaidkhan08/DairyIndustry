@@ -75,8 +75,6 @@ namespace DairyIndustry.Repositories
         List<ProductSalesModel> GetProducts();
         List<PlantModel> GetPlants();
 
-        // ── DISTRIBUTOR ANALYTICS ─────────────────────────────────────────
-        DistributorAnalyticsModel GetDistributorAnalytics(int distributorId);
 
         // ── NOTIFICATION SEEN (DB-persisted across logins) ────────────────
         // Returns (OrderId, Status) pairs the distributor has already seen.

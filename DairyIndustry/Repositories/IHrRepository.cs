@@ -13,9 +13,16 @@ namespace DairyIndustry.Repositories
         bool UpdateProfilePhoto(int staffId, string photoPath);
 
         // ── USER REGISTRATION ──────────────────────────────────────
-        // Called after AddStaff when HR provides login credentials.
-        // BCrypt hash is generated in the controller before calling this.
         void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId);
+
+        // ── SALARY HISTORY ─────────────────────────────────────────
+        // Called from HrController.Edit POST when salary has changed.
+        // changedBy = session Username of the HR Manager making the change.
+        void AddSalaryHistory(int staffId, decimal? oldSalary, decimal newSalary,
+                              string? reason, string? changedBy);
+
+        // Called from HrController.Details to show salary timeline.
+        List<SalaryHistoryModel> GetSalaryHistory(int staffId);
 
         // ── DROPDOWNS ──────────────────────────────────────────────
         List<RoleModel> GetRoles();

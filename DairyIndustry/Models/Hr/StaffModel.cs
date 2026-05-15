@@ -1,7 +1,6 @@
 ﻿namespace DairyIndustry.Models
 {
     // Used for: Index page, Details page
-    // Filled by: usp_HR_GetStaff, GetStaffById inline query
     public class StaffModel
     {
         public int StaffId { get; set; }
@@ -10,7 +9,6 @@
         public string? Phone { get; set; }
         public string? Email { get; set; }
 
-        // RoleId — NOT NULL in DB — FK to Admin.Roles
         public int RoleId { get; set; }
         public string? RoleName { get; set; }
 
@@ -22,16 +20,23 @@
         public string? AccountNumber { get; set; }
         public string? IFSCCode { get; set; }
 
-        // Directly on HR.Staffs — no separate assignment table
         public int? PlantId { get; set; }
         public string? PlantName { get; set; }
         public int? CenterId { get; set; }
         public string? CenterName { get; set; }
 
-        // New column in latest DB
         public decimal? Salary { get; set; }
 
-        // Computed — shows where staff is assigned
+        // ── FEATURE 1 — Login Account Status ───────────────────────
+        // Populated only on GetStaffById (Details page).
+        // Left null on GetAllStaff (Index page) for performance —
+        // no join on Admin.Users for list queries.
+        public bool HasLoginAccount { get; set; } = false;
+        public string? LoginUsername { get; set; }
+        public bool IsLoginActive { get; set; } = false;
+        public DateTime? LoginCreatedDate { get; set; }
+
+        // Computed helpers
         public string AssignmentDisplay
         {
             get

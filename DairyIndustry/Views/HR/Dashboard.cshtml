@@ -88,12 +88,7 @@
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     FEATURE 4 — ALERTS SECTION
-     Shown only when there is anniversary or new joining data.
-     Both cards are responsive — if only one has data, it goes full
-     width. If both have data they sit side by side (col-md-6 each).
-═══════════════════════════════════════════════════════════════ -->
+<!-- ── Feature 4 — Anniversaries + New Joinings Alerts ── -->
 @if (Model.AnniversariesThisMonth.Any() || Model.NewJoiningsThisMonth.Any())
 {
     <div class="row g-3 mb-4">
@@ -216,6 +211,94 @@
             </div>
         }
 
+    </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     FEATURE 2 — INACTIVE STAFF ALERT
+     Shown only when there are inactive staff members.
+     Hidden completely when all staff are active — no empty card.
+     Each row links to Details page for quick action.
+═══════════════════════════════════════════════════════════════ -->
+@if (Model.InactiveStaffList.Any())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm"
+                 style="border-left:4px solid #ef4444 !important;">
+                <div class="card-header d-flex align-items-center gap-2 fw-semibold"
+                     style="background:#fef2f2; border-bottom:1px solid #fecaca; color:#991b1b;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    Inactive Staff
+                    <span class="badge ms-auto rounded-pill bg-danger">
+                        @Model.InactiveStaffList.Count
+                    </span>
+                </div>
+                <div class="card-body p-0">
+
+                    @* Show max 5 inline, rest hidden behind "Show All" toggle *@
+                    <ul class="list-group list-group-flush" id="inactive-list">
+                        @for (int i = 0; i < Model.InactiveStaffList.Count; i++)
+                        {
+                            var s = Model.InactiveStaffList[i];
+                            <li class="list-group-item px-3 py-2 @(i >= 5 ? "inactive-extra d-none" : "")">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                    {
+                                        <img src="@s.ProfilePhoto" class="rounded-circle"
+                                             style="width:38px;height:38px;object-fit:cover;
+                                                                filter:grayscale(100%); opacity:.7;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle d-flex align-items-center
+                                                                justify-content-center"
+                                             style="width:38px;height:38px;background:#fee2e2;">
+                                            <i class="bi bi-person-fill" style="color:#ef4444;"></i>
+                                        </div>
+                                    }
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold text-muted">@s.FullName</div>
+                                        <small class="text-muted">@s.RoleName</small>
+                                    </div>
+                                    <div class="text-end d-flex align-items-center gap-2">
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        <a asp-action="Details" asp-route-id="@s.StaffId"
+                                           class="btn btn-outline-primary btn-sm"
+                                           title="View Details">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+
+                    @if (Model.InactiveStaffList.Count > 5)
+                    {
+                        <div class="px-3 py-2 border-top text-center">
+                            <button class="btn btn-link btn-sm text-danger text-decoration-none"
+                                    id="show-all-inactive"
+                                    onclick="toggleInactive()">
+                                <i class="bi bi-chevron-down me-1"></i>
+                                Show all @Model.InactiveStaffList.Count inactive staff
+                            </button>
+                        </div>
+                    }
+
+                </div>
+                <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Review these staff members and activate or remove as needed.
+                    </small>
+                    <a asp-action="Index" asp-route-isActive="false"
+                       class="btn btn-outline-danger btn-sm">
+                        View All Inactive <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
@@ -365,3 +448,21 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleInactive() {
+            var extras = document.querySelectorAll('.inactive-extra');
+            var btn    = document.getElementById('show-all-inactive');
+            var hidden = extras[0].classList.contains('d-none');
+
+            extras.forEach(function (el) {
+                el.classList.toggle('d-none', !hidden);
+            });
+
+            btn.innerHTML = hidden
+                ? '<i class="bi bi-chevron-up me-1"></i> Show less'
+                : '<i class="bi bi-chevron-down me-1"></i> Show all @Model.InactiveStaffList.Count inactive staff';
+        }
+    </script>
+}

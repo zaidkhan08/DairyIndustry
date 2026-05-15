@@ -36,20 +36,60 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  2. GET STAFF BY ID — SP usp_HR_GetStaffById
+        //  FEATURE 1 — Also fetches login account status from
+        //  Admin.Users by StaffId. Uses a second query on the same
+        //  open connection — no extra connection overhead.
+        //  This is only done on Details page (single record) so
+        //  performance impact is negligible.
         // ═══════════════════════════════════════════════════════════
         public StaffModel? GetStaffById(int staffId)
         {
             using var con = _db.GetConnection();
             con.Open();
-            using var cmd = new SqlCommand("HR.usp_HR_GetStaffById", con);
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
 
-            using var reader = cmd.ExecuteReader();
-            if (reader.Read())
-                return MapStaffFull(reader);
+            // Step 1 — get full staff record via SP
+            StaffModel? staff = null;
+            using (var cmd = new SqlCommand("HR.usp_HR_GetStaffById", con))
+            {
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@StaffId", staffId);
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                    staff = MapStaffFull(reader);
+            }
 
-            return null;
+            if (staff == null) return null;
+
+            // Step 2 — FEATURE 1: check if this staff has a login account
+            // Queries Admin.Users where StaffId matches.
+            // Never throws — if Admin.Users is unavailable, login info
+            // stays at default (HasLoginAccount = false).
+            try
+            {
+                using var loginCmd = new SqlCommand(@"
+                    SELECT TOP 1
+                        Username, IsActive, CreatedDate
+                    FROM Admin.Users
+                    WHERE StaffId = @StaffId", con);
+                loginCmd.Parameters.AddWithValue("@StaffId", staffId);
+                using var lr = loginCmd.ExecuteReader();
+                if (lr.Read())
+                {
+                    staff.HasLoginAccount = true;
+                    staff.LoginUsername = lr["Username"].ToString();
+                    staff.IsLoginActive = Convert.ToBoolean(lr["IsActive"]);
+                    staff.LoginCreatedDate = lr["CreatedDate"] == DBNull.Value
+                                                ? null
+                                                : Convert.ToDateTime(lr["CreatedDate"]);
+                }
+            }
+            catch
+            {
+                // Silently ignore — login status is supplementary info
+                // Staff details page still loads fully without it
+            }
+
+            return staff;
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -521,6 +561,75 @@ namespace DairyIndustry.Repositories
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(MapPayment(reader));
+
+            return list;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  FEATURE 3 — ADD SALARY HISTORY
+        //  Called from HrController.Edit POST when salary changes.
+        //  Inserts one row into HR.SalaryHistory with old salary,
+        //  new salary, reason and who changed it.
+        //  If this fails, the staff update is NOT rolled back —
+        //  history logging is supplementary and must never block
+        //  the main save operation.
+        // ═══════════════════════════════════════════════════════════
+        public void AddSalaryHistory(int staffId, decimal? oldSalary, decimal newSalary,
+                                     string? reason, string? changedBy)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO HR.SalaryHistory
+                    (StaffId, OldSalary, NewSalary, ChangedDate, Reason, ChangedBy)
+                VALUES
+                    (@StaffId, @OldSalary, @NewSalary, GETDATE(), @Reason, @ChangedBy)",
+                con);
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            cmd.Parameters.AddWithValue("@OldSalary", (object?)oldSalary ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@NewSalary", newSalary);
+            cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ChangedBy", (object?)changedBy ?? DBNull.Value);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  FEATURE 3 — GET SALARY HISTORY
+        //  Returns full salary timeline for a staff member,
+        //  ordered most recent first.
+        // ═══════════════════════════════════════════════════════════
+        public List<SalaryHistoryModel> GetSalaryHistory(int staffId)
+        {
+            var list = new List<SalaryHistoryModel>();
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                SELECT
+                    HistoryId, StaffId, OldSalary, NewSalary,
+                    ChangedDate, Reason, ChangedBy
+                FROM HR.SalaryHistory
+                WHERE StaffId = @StaffId
+                ORDER BY ChangedDate DESC",
+                con);
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new SalaryHistoryModel
+                {
+                    HistoryId = Convert.ToInt32(reader["HistoryId"]),
+                    StaffId = Convert.ToInt32(reader["StaffId"]),
+                    OldSalary = reader["OldSalary"] == DBNull.Value ? null : Convert.ToDecimal(reader["OldSalary"]),
+                    NewSalary = Convert.ToDecimal(reader["NewSalary"]),
+                    ChangedDate = Convert.ToDateTime(reader["ChangedDate"]),
+                    Reason = reader["Reason"] == DBNull.Value ? null : reader["Reason"].ToString(),
+                    ChangedBy = reader["ChangedBy"] == DBNull.Value ? null : reader["ChangedBy"].ToString()
+                });
+            }
 
             return list;
         }

@@ -21,6 +21,9 @@
     <input type="hidden" asp-for="StaffId" />
     <input type="hidden" asp-for="ProfilePhoto" />
 
+    @* FEATURE 3 — Hidden field to carry original salary for comparison in POST *@
+    <input type="hidden" asp-for="CurrentSalary" />
+
     <div class="row g-4">
 
         <!-- LEFT COLUMN -->
@@ -78,10 +81,21 @@
                             <span asp-validation-for="DOJ" class="text-danger small"></span>
                         </div>
 
+                        <!-- ── FEATURE 3 — Salary + Change Reason ── -->
                         <div class="col-md-6">
-                            <label asp-for="Salary" class="form-label fw-semibold">Salary (₹)</label>
-                            <input asp-for="Salary" class="form-control" type="number" step="0.01" />
+                            <label asp-for="Salary" class="form-label fw-semibold">
+                                Salary (₹)
+                            </label>
+                            <input asp-for="Salary" class="form-control" type="number"
+                                   step="0.01" id="salaryInput"
+                                   oninput="checkSalaryChange()" />
                             <span asp-validation-for="Salary" class="text-danger small"></span>
+                            @if (Model.CurrentSalary.HasValue)
+                            {
+                                <small class="text-muted">
+                                    Current: ₹@Model.CurrentSalary.Value.ToString("N2")
+                                </small>
+                            }
                         </div>
 
                         <div class="col-md-6 d-flex align-items-end pb-1">
@@ -93,6 +107,27 @@
                                 </label>
                             </div>
                         </div>
+
+                        @* Salary Change Reason — hidden by default,
+                           shown via JS when salary value is changed *@
+                        <div class="col-12" id="salaryReasonBox" style="display:none;">
+                            <div class="card border-0 p-3"
+                                 style="background:#f0fdf4; border-left:4px solid #22c55e !important;">
+                                <label asp-for="SalaryChangeReason"
+                                       class="form-label fw-semibold text-success mb-1">
+                                    <i class="bi bi-chat-left-text-fill me-1"></i>
+                                    Reason for Salary Change
+                                    <span class="fw-normal text-muted small">(optional)</span>
+                                </label>
+                                <input asp-for="SalaryChangeReason" class="form-control"
+                                       placeholder="e.g. Annual Increment, Promotion, Correction..." />
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    This reason will be saved in the salary history log.
+                                </small>
+                            </div>
+                        </div>
+                        @* ── END FEATURE 3 ── *@
 
                     </div>
                 </div>
@@ -183,7 +218,7 @@
                     else
                     {
                         <img id="photoPreview"
-                             src="https://via.placeholder.com/150?text=No+Photo"
+                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23e9ecef' rx='75'/%3E%3Ccircle cx='75' cy='60' r='28' fill='%23adb5bd'/%3E%3Cellipse cx='75' cy='130' rx='45' ry='35' fill='%23adb5bd'/%3E%3C/svg%3E"
                              class="rounded-circle border border-2 border-primary mb-3"
                              style="width:150px;height:150px;object-fit:cover;" />
                     }
@@ -215,6 +250,7 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        // ── Photo preview ──
         function previewPhoto(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -224,5 +260,33 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        // ── FEATURE 3 — Show salary reason box when salary is changed ──
+        var originalSalary = @(Model.CurrentSalary.HasValue
+                    ? Model.CurrentSalary.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                : "null");
+
+    function checkSalaryChange() {
+        var input     = document.getElementById('salaryInput');
+        var reasonBox = document.getElementById('salaryReasonBox');
+        var newVal    = parseFloat(input.value);
+
+            if (!input.value) {
+                reasonBox.style.display = 'none';
+                return;
+            }
+
+            // Show reason box if value differs from original salary
+            var changed = (originalSalary === null)
+                ? true
+                : (Math.abs(newVal - originalSalary) > 0.001);
+
+            reasonBox.style.display = changed ? '' : 'none';
+        }
+
+        // Run on page load in case form is re-rendered after validation error
+        document.addEventListener('DOMContentLoaded', function () {
+            checkSalaryChange();
+        });
     </script>
 }

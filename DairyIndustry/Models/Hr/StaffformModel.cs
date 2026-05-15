@@ -45,6 +45,20 @@ namespace DairyIndustry.Models
         [Display(Name = "Salary")]
         public decimal? Salary { get; set; }
 
+        // ── FEATURE 3 — Salary History ──────────────────────────────
+        // Holds the salary value BEFORE editing — sent as a hidden field
+        // from Edit.cshtml. Controller compares this with the submitted
+        // Salary to detect a change and log it to HR.SalaryHistory.
+        // Never shown to the user — purely a comparison mechanism.
+        public decimal? CurrentSalary { get; set; }
+
+        // Optional reason HR provides when changing salary.
+        // Only shown on Edit form when salary field is changed.
+        [Display(Name = "Reason for Salary Change")]
+        [StringLength(255, ErrorMessage = "Reason cannot exceed 255 characters.")]
+        public string? SalaryChangeReason { get; set; }
+        // ── END FEATURE 3 ───────────────────────────────────────────
+
         // Bank details
         [Display(Name = "Bank Name")]
         public string? BankName { get; set; }
@@ -62,12 +76,7 @@ namespace DairyIndustry.Models
         [Display(Name = "Upload New Photo")]
         public IFormFile? PhotoFile { get; set; }
 
-        // ── LOGIN CREDENTIALS (Create only — optional) ──────────────
-        // If Username is provided, Password is required and vice versa.
-        // If both are blank, no login account is created for this staff.
-        // On Edit page these fields are NOT shown — credentials are
-        // managed separately from the Admin panel.
-
+        // ── Login Credentials (Create only — optional) ───────────────
         [Display(Name = "Username")]
         [StringLength(50, ErrorMessage = "Username cannot exceed 50 characters.")]
         public string? Username { get; set; }
