@@ -66,15 +66,23 @@ namespace DairyIndustry.Repositories
         // Returns a single product (used for MRP auto-fill).
         ProductSalesModel? GetProductById(int productId);
 
-        // ── DASHBOARD (inline queries) ─────────────────────────────────────
+        // ── ADMIN DASHBOARD (inline queries) ──────────────────────────────
         SalesDashboardSummaryModel GetDashboardSummary();
         List<OrderStatusCountModel> GetOrdersByStatus();
         List<DistributorSalesModel> GetDistributorSales();
 
+        // ── DISTRIBUTOR DASHBOARD (inline queries) ─────────────────────────
+        // Last 6 full calendar months of spend for this distributor.
+        // Only orders with status Delivered or Received are counted.
+        List<MonthlySpendModel> GetDistributorMonthlySpend(int distributorId);
+
+        // Top 5 products this distributor has ever ordered, ranked by total
+        // quantity across all orders (any status except Cancelled).
+        List<TopProductModel> GetDistributorTopProducts(int distributorId);
+
         // ── DROPDOWNS (inline queries) ─────────────────────────────────────
         List<ProductSalesModel> GetProducts();
         List<PlantModel> GetPlants();
-
 
         // ── NOTIFICATION SEEN (DB-persisted across logins) ────────────────
         // Returns (OrderId, Status) pairs the distributor has already seen.

@@ -105,9 +105,11 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // FEATURE 3 — Load salary history for this staff member
-                // Passed via ViewBag to avoid changing StaffModel further
+                // Feature 3 — Salary history
                 ViewBag.SalaryHistory = _repo.GetSalaryHistory(id);
+
+                // Feature 4 — Performance notes
+                ViewBag.StaffNotes = _repo.GetStaffNotes(id);
 
                 return View(staff);
             }
@@ -367,6 +369,67 @@ namespace DairyIndustry.Controllers
             {
                 TempData["Error"] = "Failed to update photo: " + ex.Message;
             }
+            return RedirectToAction("Details", new { id = staffId });
+        }
+
+        // ─── ADD NOTE — /HR/AddNote ────────────────────────────────────
+        // FEATURE 4 — Adds a performance note for a staff member.
+        // Called via POST from the Details page note form.
+        // NoteText is required — returns error if blank.
+        // CreatedBy pulled from session Username.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddNote(int staffId, string noteText, string noteType)
+        {
+            if (string.IsNullOrWhiteSpace(noteText))
+            {
+                TempData["Error"] = "Note text cannot be empty.";
+                return RedirectToAction("Details", new { id = staffId });
+            }
+
+            // Validate noteType against allowed values
+            var allowedTypes = new[]
+            {
+                "General", "Warning", "Appreciation", "Feedback", "Observation"
+            };
+
+            if (!allowedTypes.Contains(noteType))
+                noteType = "General";
+
+            try
+            {
+                string? createdBy = HttpContext.Session.GetString("Username");
+                _repo.AddStaffNote(staffId, noteText, noteType, createdBy);
+                TempData["Success"] = "Note added successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Failed to add note: " + ex.Message;
+            }
+
+            return RedirectToAction("Details", new { id = staffId });
+        }
+
+        // ─── DELETE NOTE — /HR/DeleteNote ──────────────────────────────
+        // FEATURE 4 — Deletes a note by NoteId.
+        // StaffId is passed and verified in the repo to prevent
+        // cross-staff deletion via URL tampering.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteNote(int noteId, int staffId)
+        {
+            try
+            {
+                bool deleted = _repo.DeleteStaffNote(noteId, staffId);
+                TempData[deleted ? "Success" : "Error"] = deleted
+                    ? "Note deleted successfully."
+                    : "Note not found or already deleted.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Failed to delete note: " + ex.Message;
+            }
+
             return RedirectToAction("Details", new { id = staffId });
         }
 

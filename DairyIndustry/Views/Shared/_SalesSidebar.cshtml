@@ -88,7 +88,7 @@
                 </div>
                 <div style="background:#0f1e30; border-radius:4px; height:4px; overflow:hidden;">
                     <div style="width:@pct%; height:100%; background:@pctColor; border-radius:4px;
-                                                transition:width .3s;"></div>
+                                                        transition:width .3s;"></div>
                 </div>
                 @if (pct < 100)
                 {
@@ -146,10 +146,10 @@
                 @if (pendingCount > 0)
                 {
                     <span style="margin-left:auto; background:#e74c3c; color:#fff;
-                                                         font-size:.62rem; font-weight:700; min-width:18px;
-                                                         height:18px; border-radius:9px; display:inline-flex;
-                                                         align-items:center; justify-content:center; padding:0 5px;
-                                                         flex-shrink:0;">
+                                                                         font-size:.62rem; font-weight:700; min-width:18px;
+                                                                         height:18px; border-radius:9px; display:inline-flex;
+                                                                         align-items:center; justify-content:center; padding:0 5px;
+                                                                         flex-shrink:0;">
                         @(pendingCount > 9 ? "9+" : pendingCount.ToString())
                     </span>
                 }
@@ -175,9 +175,9 @@
                 <span class="sb-icon">✏️</span> Edit Profile
             </a>
 
-            <a asp-controller="Sales" asp-action="MyAnalytics"
-               class="sb-link @(Active("MyAnalytics") ? "active" : "")">
-                <span class="sb-icon">📊</span> My Analytics
+            <a asp-controller="Sales" asp-action="Dashboard"
+               class="sb-link @(Active("Dashboard") ? "active" : "")">
+                <span class="sb-icon">📊</span> My Dashboard
             </a>
 
             <a asp-controller="Sales" asp-action="ProductCatalogue"
@@ -197,10 +197,10 @@
                     <span id="sb-notif-badge"
                           onclick="toggleNotifPanel(event)"
                           style="margin-left:auto; background:#e74c3c; color:#fff;
-                                                                                                                 font-size:.62rem; font-weight:700; min-width:18px;
-                                                                                                                 height:18px; border-radius:9px; display:inline-flex;
-                                                                                                                 align-items:center; justify-content:center; padding:0 5px;
-                                                                                                                 cursor:pointer; flex-shrink:0;"
+                                                                                                                                 font-size:.62rem; font-weight:700; min-width:18px;
+                                                                                                                                 height:18px; border-radius:9px; display:inline-flex;
+                                                                                                                                 align-items:center; justify-content:center; padding:0 5px;
+                                                                                                                                 cursor:pointer; flex-shrink:0;"
                           title="Click to see which orders were updated">
                         @(notifCount > 9 ? "9+" : notifCount.ToString())
                     </span>
@@ -212,11 +212,11 @@
             {
                 <div id="sb-notif-panel"
                      style="display:none; margin:0 10px 6px; background:#060d18;
-                                                                                                            border:1px solid #2a4060; border-radius:6px; overflow:hidden;">
+                                                                                                                            border:1px solid #2a4060; border-radius:6px; overflow:hidden;">
 
                     <div style="padding:8px 12px; font-size:.65rem; color:#64748b;
-                                                                                                                text-transform:uppercase; letter-spacing:.08em;
-                                                                                                                border-bottom:1px solid rgba(255,255,255,.06); background:#0f1e30;">
+                                                                                                                                text-transform:uppercase; letter-spacing:.08em;
+                                                                                                                                border-bottom:1px solid rgba(255,255,255,.06); background:#0f1e30;">
                         🔔 Admin updated these orders
                     </div>
 
@@ -227,9 +227,9 @@
                         "#f39c12";
                         <a href="/Sales/Details/@o.OrderId"
                            style="display:flex; align-items:center; justify-content:space-between;
-                                                                                                                                                          padding:8px 12px; text-decoration:none; color:#94a3b8;
-                                                                                                                                                          font-size:.78rem; border-bottom:1px solid #1e3450;
-                                                                                                                                                          transition:background .13s;"
+                                                                                                                                                                                  padding:8px 12px; text-decoration:none; color:#94a3b8;
+                                                                                                                                                                                  font-size:.78rem; border-bottom:1px solid #1e3450;
+                                                                                                                                                                                  transition:background .13s;"
                            onmouseover="this.style.background='rgba(255,255,255,.05)'"
                            onmouseout="this.style.background='transparent'">
                             <div>
@@ -241,8 +241,8 @@
                                 </div>
                             </div>
                             <span style="font-size:.65rem; font-weight:700; color:@statusColor;
-                                                                                                                                                                 background:rgba(255,255,255,.08); border-radius:4px;
-                                                                                                                                                                 padding:2px 7px; flex-shrink:0;">
+                                                                                                                                                                                         background:rgba(255,255,255,.08); border-radius:4px;
+                                                                                                                                                                                         padding:2px 7px; flex-shrink:0;">
                                 @o.Status
                             </span>
                         </a>
@@ -258,8 +258,8 @@
                             @Html.AntiForgeryToken()
                             <button type="submit"
                                     style="background:none;border:none;color:#64748b;
-                                                                                                                   font-size:.68rem;cursor:pointer;padding:0;
-                                                                                                                   text-decoration:underline;">
+                                                                                                                                   font-size:.68rem;cursor:pointer;padding:0;
+                                                                                                                                   text-decoration:underline;">
                                 ✓ Mark as seen
                             </button>
                         </form>

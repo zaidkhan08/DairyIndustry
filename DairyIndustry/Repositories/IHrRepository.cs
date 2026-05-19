@@ -13,16 +13,25 @@ namespace DairyIndustry.Repositories
         bool UpdateProfilePhoto(int staffId, string photoPath);
 
         // ── USER REGISTRATION ──────────────────────────────────────
-        void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId);
+        void RegisterStaffUser(string username, string passwordHash,
+                               int roleId, int staffId);
 
         // ── SALARY HISTORY ─────────────────────────────────────────
-        // Called from HrController.Edit POST when salary has changed.
-        // changedBy = session Username of the HR Manager making the change.
         void AddSalaryHistory(int staffId, decimal? oldSalary, decimal newSalary,
                               string? reason, string? changedBy);
-
-        // Called from HrController.Details to show salary timeline.
         List<SalaryHistoryModel> GetSalaryHistory(int staffId);
+
+        // ── PERFORMANCE NOTES ──────────────────────────────────────
+        // Add a note against a staff member from the Details page.
+        void AddStaffNote(int staffId, string noteText,
+                          string noteType, string? createdBy);
+
+        // Get all notes for a staff member — newest first.
+        List<StaffNoteModel> GetStaffNotes(int staffId);
+
+        // Delete a note — only if it belongs to the given StaffId
+        // (prevents cross-staff deletion via URL tampering).
+        bool DeleteStaffNote(int noteId, int staffId);
 
         // ── DROPDOWNS ──────────────────────────────────────────────
         List<RoleModel> GetRoles();

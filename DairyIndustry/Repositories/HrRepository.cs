@@ -635,6 +635,92 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
+        //  FEATURE 4 — ADD STAFF NOTE
+        //  Inserts one note into HR.StaffNotes.
+        //  NoteType is validated by DB CHECK constraint so no
+        //  extra validation needed here.
+        // ═══════════════════════════════════════════════════════════
+        public void AddStaffNote(int staffId, string noteText,
+                                 string noteType, string? createdBy)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO HR.StaffNotes
+                    (StaffId, NoteText, NoteType, CreatedDate, CreatedBy)
+                VALUES
+                    (@StaffId, @NoteText, @NoteType, GETDATE(), @CreatedBy)",
+                con);
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            cmd.Parameters.AddWithValue("@NoteText", noteText.Trim());
+            cmd.Parameters.AddWithValue("@NoteType", noteType);
+            cmd.Parameters.AddWithValue("@CreatedBy", (object?)createdBy ?? DBNull.Value);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  FEATURE 4 — GET STAFF NOTES
+        //  Returns all notes for a staff member, newest first.
+        // ═══════════════════════════════════════════════════════════
+        public List<StaffNoteModel> GetStaffNotes(int staffId)
+        {
+            var list = new List<StaffNoteModel>();
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                SELECT NoteId, StaffId, NoteText, NoteType,
+                       CreatedDate, CreatedBy
+                FROM HR.StaffNotes
+                WHERE StaffId = @StaffId
+                ORDER BY CreatedDate DESC",
+                con);
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new StaffNoteModel
+                {
+                    NoteId = Convert.ToInt32(reader["NoteId"]),
+                    StaffId = Convert.ToInt32(reader["StaffId"]),
+                    NoteText = reader["NoteText"].ToString()!,
+                    NoteType = reader["NoteType"].ToString()!,
+                    CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                    CreatedBy = reader["CreatedBy"] == DBNull.Value
+                                    ? null
+                                    : reader["CreatedBy"].ToString()
+                });
+            }
+
+            return list;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  FEATURE 4 — DELETE STAFF NOTE
+        //  Deletes a note only if it belongs to the given StaffId.
+        //  This prevents a malicious HR user from deleting notes
+        //  of other staff by tampering with the NoteId in the URL.
+        //  Returns true if a row was actually deleted.
+        // ═══════════════════════════════════════════════════════════
+        public bool DeleteStaffNote(int noteId, int staffId)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                DELETE FROM HR.StaffNotes
+                WHERE NoteId = @NoteId AND StaffId = @StaffId",
+                con);
+
+            cmd.Parameters.AddWithValue("@NoteId", noteId);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        // ═══════════════════════════════════════════════════════════
         //  PRIVATE MAPPERS
         // ═══════════════════════════════════════════════════════════
         private StaffModel MapStaffList(SqlDataReader reader)

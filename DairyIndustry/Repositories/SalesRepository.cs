@@ -448,19 +448,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════════════
         //  PLACE DISTRIBUTOR ORDER — inline (smart merge, auto-MRP)
-        //
-        //  Called for ALL distributor order placements (from Create page
-        //  and from MyOrders quick-order panel).
-        //  NEVER calls usp_Sales_CreateOrder — that SP has an Approved check
-        //  that throws "Distributor not found or not yet approved".
-        //
-        //  Logic (all in one transaction):
-        //  1. Fetch MRP from Production.Products
-        //  2. Find existing Pending order for this distributor on TODAY
-        //  3. If none → inline INSERT a new order
-        //  4. If same ProductId already in that order → UPDATE qty (merge)
-        //     Else → INSERT new detail row
-        //  5. Recalculate TotalAmount on the order
         // ═══════════════════════════════════════════════════════════════════
         public int PlaceDistributorOrder(int distributorId, int plantId, int productId, decimal quantity, string? notes = null)
         {
@@ -512,7 +499,6 @@ namespace DairyIndustry.Repositories
                 }
                 else if (!string.IsNullOrWhiteSpace(notes))
                 {
-                    // Order already existed today — update its Notes if a new one was provided
                     using var cmd = new SqlCommand(
                         "UPDATE Sales.SalesOrders SET Notes=@Notes WHERE OrderId=@OrderId", con, tx);
                     cmd.Parameters.AddWithValue("@Notes", notes);
@@ -712,6 +698,95 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════════════
+        //  GET DISTRIBUTOR MONTHLY SPEND — inline
+        //
+        //  Returns spend for the last 6 full calendar months for this
+        //  distributor (orders with status Delivered or Received only).
+        //  Results are ordered oldest → newest so Chart.js renders left→right.
+        // ═══════════════════════════════════════════════════════════════════
+        public List<MonthlySpendModel> GetDistributorMonthlySpend(int distributorId)
+        {
+            var list = new List<MonthlySpendModel>();
+            const string sql = @"
+                SELECT TOP 6
+                    YEAR(OrderDate)                          AS Yr,
+                    MONTH(OrderDate)                         AS Mo,
+                    ISNULL(SUM(TotalAmount), 0)              AS TotalSpent,
+                    COUNT(*)                                 AS OrderCount
+                FROM Sales.SalesOrders
+                WHERE DistributorId = @DistributorId
+                  AND OrderStatus   IN ('Delivered', 'Received')
+                  AND OrderDate     < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
+                GROUP BY YEAR(OrderDate), MONTH(OrderDate)
+                ORDER BY Yr DESC, Mo DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(new MonthlySpendModel
+                {
+                    MonthLabel = new DateTime(
+                        Convert.ToInt32(reader["Yr"]),
+                        Convert.ToInt32(reader["Mo"]), 1)
+                        .ToString("MMM yy"),
+                    TotalSpent = Convert.ToDecimal(reader["TotalSpent"]),
+                    OrderCount = Convert.ToInt32(reader["OrderCount"])
+                });
+
+            // Reverse so the chart shows oldest on the left
+            list.Reverse();
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET DISTRIBUTOR TOP PRODUCTS — inline
+        //
+        //  Returns the top 5 products this distributor has ordered (any status
+        //  except Cancelled), ranked by total quantity descending.
+        // ═══════════════════════════════════════════════════════════════════
+        public List<TopProductModel> GetDistributorTopProducts(int distributorId)
+        {
+            var list = new List<TopProductModel>();
+            const string sql = @"
+                SELECT TOP 5
+                    p.ProductId,
+                    p.ProductName,
+                    p.ProductType,
+                    p.Unit,
+                    SUM(d.Quantity)               AS TotalQuantity,
+                    SUM(d.Quantity * d.UnitPrice)  AS TotalValue
+                FROM Sales.SalesOrderDetails d
+                INNER JOIN Sales.SalesOrders     o ON o.OrderId   = d.OrderId
+                INNER JOIN Production.Products   p ON p.ProductId = d.ProductId
+                WHERE o.DistributorId = @DistributorId
+                  AND o.OrderStatus  <> 'Cancelled'
+                GROUP BY p.ProductId, p.ProductName, p.ProductType, p.Unit
+                ORDER BY TotalQuantity DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@DistributorId", distributorId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(new TopProductModel
+                {
+                    ProductId = Convert.ToInt32(reader["ProductId"]),
+                    ProductName = reader["ProductName"].ToString()!,
+                    ProductType = reader["ProductType"].ToString()!,
+                    Unit = reader["Unit"].ToString()!,
+                    TotalQuantity = Convert.ToDecimal(reader["TotalQuantity"]),
+                    TotalValue = Convert.ToDecimal(reader["TotalValue"])
+                });
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
         //  GET PRODUCTS — inline (active only)
         // ═══════════════════════════════════════════════════════════════════
         public List<ProductSalesModel> GetProducts()
@@ -763,15 +838,9 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════════════
         //  NOTIFICATION SEEN — DB-persisted, survives logout/login
-        //  Table: Sales.DistributorNotifSeen
-        //         (DistributorId, OrderId, SeenStatus, SeenOn)
-        //  PK is (DistributorId, OrderId, SeenStatus) so if admin moves an
-        //  order from Confirmed→Dispatched, the Dispatched entry is NEW and
-        //  the badge re-appears even though Confirmed was already seen.
         // ═══════════════════════════════════════════════════════════════════
         public HashSet<string> GetSeenOrderKeys(int distributorId)
         {
-            // Returns "OrderId_Status" composite keys e.g. "46_Confirmed"
             var keys = new HashSet<string>();
             const string sql = @"
                 SELECT OrderId, SeenStatus
@@ -818,8 +887,6 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════════════
         //  HASH PASSWORD — SHA-256 hex, lowercase
         // ═══════════════════════════════════════════════════════════════════
-        //
-        //
         public static string HashPassword(string password)
         {
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(password));
@@ -842,8 +909,6 @@ namespace DairyIndustry.Repositories
                 TotalAmount = r["TotalAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalAmount"]),
                 OrderStatus = r["OrderStatus"].ToString()
             };
-            // These columns are present in all our inline queries but not in the old SP —
-            // safe to read because we no longer call the SP for GetOrders / GetOrderById.
             if (HasColumn(r, "DistributorId"))
                 m.DistributorId = Convert.ToInt32(r["DistributorId"]);
             if (HasColumn(r, "PlantId") && r["PlantId"] != DBNull.Value)

@@ -18,20 +18,64 @@ namespace DairyIndustry.Controllers
 
 
         // ════════════════════════════════════════════════════════════════════
-        //  DASHBOARD — Admin only
+        //  DASHBOARD — serves Admin and Distributor from one action/view
+        //  Admin       → SalesDashboardViewModel        → admin layout in view
+        //  Distributor → DistributorDashboardViewModel  → dist layout in view
+        //  GET /Sales/Dashboard
         // ════════════════════════════════════════════════════════════════════
-        [SessionAuthorize("Admin")]
+        [SessionAuthorize("Admin", "Distributor")]
         public IActionResult Dashboard()
         {
-            SetPendingCount();
-            var vm = new SalesDashboardViewModel
+            string role = HttpContext.Session.GetString("RoleName") ?? "";
+
+            // ── ADMIN ─────────────────────────────────────────────────────
+            if (role == "Admin")
             {
-                Summary = _repo.GetDashboardSummary(),
-                OrdersByStatus = _repo.GetOrdersByStatus(),
-                RecentOrders = _repo.GetOrders(null, null, null, null).Take(5).ToList(),
-                TopDistributors = _repo.GetDistributorSales().Take(5).ToList()
+                SetPendingCount();
+                var vm = new SalesDashboardViewModel
+                {
+                    Summary = _repo.GetDashboardSummary(),
+                    OrdersByStatus = _repo.GetOrdersByStatus(),
+                    RecentOrders = _repo.GetOrders(null, null, null, null).Take(5).ToList(),
+                    TopDistributors = _repo.GetDistributorSales().Take(5).ToList()
+                };
+                return View(vm);
+            }
+
+            // ── DISTRIBUTOR ───────────────────────────────────────────────
+            int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+            var allOrders = _repo.GetOrders(distId, null, null, null);
+
+            var distVm = new DistributorDashboardViewModel
+            {
+                TotalOrders = allOrders.Count,
+                PendingOrders = allOrders.Count(o => o.OrderStatus == "Pending"),
+                DeliveredOrders = allOrders.Count(o => o.OrderStatus == "Delivered"
+                                                     || o.OrderStatus == "Received"),
+                CancelledOrders = allOrders.Count(o => o.OrderStatus == "Cancelled"),
+                TotalSpent = allOrders
+                                    .Where(o => o.OrderStatus == "Delivered"
+                                             || o.OrderStatus == "Received")
+                                    .Sum(o => o.TotalAmount),
+                MonthlySpend = _repo.GetDistributorMonthlySpend(distId),
+                OrdersByStatus = _repo.GetOrdersByStatus()
+                                       .Select(s => new OrderStatusCountModel
+                                       {
+                                           OrderStatus = s.OrderStatus,
+                                           Count = allOrders.Count(o => o.OrderStatus == s.OrderStatus),
+                                           TotalAmount = allOrders
+                                               .Where(o => o.OrderStatus == s.OrderStatus)
+                                               .Sum(o => o.TotalAmount)
+                                       })
+                                       .Where(s => s.Count > 0)
+                                       .ToList(),
+                TopProducts = _repo.GetDistributorTopProducts(distId),
+                RecentOrders = allOrders.Take(5).ToList()
             };
-            return View(vm);
+
+            SetNotifBadge(distId, allOrders);
+            ViewBag.DistributorName = HttpContext.Session.GetString("DistributorName") ?? "";
+            return View(distVm);
         }
 
 
@@ -163,7 +207,7 @@ namespace DairyIndustry.Controllers
                 {
                     string? notes = Request.Form["SelectedNotes"].ToString();
                     int orderId = _repo.PlaceDistributorOrder(distId, model.PlantId, productId, quantity,
-                                    string.IsNullOrWhiteSpace(notes) ? null : notes);
+                                        string.IsNullOrWhiteSpace(notes) ? null : notes);
                     TempData["Success"] = "Order placed! Unit price set automatically from product rate.";
                     return RedirectToAction("Details", new { id = orderId });
                 }
@@ -589,7 +633,6 @@ namespace DairyIndustry.Controllers
         }
 
 
-
         // ════════════════════════════════════════════════════════════════════
         //  EXPORT ORDERS — Download distributor order history as CSV
         //  GET /Sales/ExportOrders
@@ -677,6 +720,7 @@ namespace DairyIndustry.Controllers
             });
         }
 
+
         // ════════════════════════════════════════════════════════════════════
         //  MY ORDERS — Distributor portal, own order list
         // ════════════════════════════════════════════════════════════════════
@@ -739,10 +783,9 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ════════════════════════════════════════════════════════════════════
-        // ════════════════════════════════════════════════════════════════════
-        //  PROFILE COMPLETENESS — stores session keys for sidebar indicator
-        //  Called whenever we load a distributor's profile data.
-        // ════════════════════════════════════════════════════════════════════
+
+        // PROFILE COMPLETENESS — stores session keys for sidebar indicator
+        // Called whenever we load a distributor's profile data.
         private void SetProfileSession(DistributorModel dist)
         {
             HttpContext.Session.SetString("DistributorName", dist.DistributorName ?? "");
@@ -754,13 +797,7 @@ namespace DairyIndustry.Controllers
         }
 
 
-        // ════════════════════════════════════════════════════════════════════
-        //  NOTIFICATION BADGE — auto-set on every page for Distributor
-        //  Counts orders with status Confirmed, Dispatched, or Delivered
-        //  (i.e. admin has acted on them). Badge shows on the My Orders
-        //  sidebar link so distributor always knows something needs attention.
-        //  Resets to 0 when distributor opens MyOrders (all orders are seen).
-        // ════════════════════════════════════════════════════════════════════
+        // NOTIFICATION BADGE — auto-set on every page for Distributor
         public override void OnActionExecuting(
             Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
         {
@@ -773,8 +810,6 @@ namespace DairyIndustry.Controllers
         // Sidebar reads "NotifOrders_<distId>" from session — no ViewBag needed.
         private void SetNotifBadge(int distributorId, List<SalesOrderModel> orders)
         {
-            // Read seen (OrderId+Status) composite keys from DB
-            // e.g. "46_Confirmed" — so status change makes it new again
             var seenKeys = _repo.GetSeenOrderKeys(distributorId);
 
             var notifOrders = orders
@@ -796,8 +831,6 @@ namespace DairyIndustry.Controllers
         }
 
         // Mark actioned orders as seen in DB with their current status.
-        // Uses (OrderId, Status) so re-seeing after status change works.
-        // Called from DismissNotif when distributor clicks Mark as seen.
         private void MarkNotifSeen(int distributorId, List<SalesOrderModel> orders)
         {
             var pairs = orders
@@ -806,7 +839,6 @@ namespace DairyIndustry.Controllers
                             o.OrderStatus == "Delivered")
                 .Select(o => (o.OrderId, o.OrderStatus));
             _repo.MarkOrdersSeen(distributorId, pairs);
-            // Clear session cache so sidebar refreshes on next page load
             HttpContext.Session.Remove($"NotifOrders_{distributorId}");
         }
 

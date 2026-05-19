@@ -4,6 +4,12 @@
     string _role = Context.Session.GetString("RoleName") ?? "HR Manager";
     char _initial = (_username.Length > 0) ? char.ToUpper(_username[0]) : 'H';
     bool Active(string a) => string.Equals(_action, a, StringComparison.OrdinalIgnoreCase);
+
+    // Read TempData here so toasts fire from the layout — no view changes needed
+    string? _success = TempData["Success"]?.ToString();
+    string? _error = TempData["Error"]?.ToString();
+    string? _warning = TempData["Warning"]?.ToString();
+    string? _info = TempData["Info"]?.ToString();
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +55,6 @@
                 width: 64px;
             }
 
-        /* ── Sidebar top brand bar ── */
         .sb-brand {
             display: flex;
             align-items: center;
@@ -103,7 +108,6 @@
             pointer-events: none;
         }
 
-        /* ── Nav scroll area ── */
         .sb-nav {
             flex: 1;
             padding: 6px 0;
@@ -122,7 +126,6 @@
                 border-radius: 2px;
             }
 
-        /* ── Section label ── */
         .sb-section-label {
             font-size: .58rem;
             color: #334155;
@@ -141,7 +144,6 @@
             overflow: hidden;
         }
 
-        /* ── Nav link ── */
         .sb-link {
             position: relative;
             display: flex;
@@ -182,8 +184,7 @@
                 transition: color .15s;
             }
 
-            .sb-link:hover .sb-icon,
-            .sb-link.active .sb-icon {
+            .sb-link:hover .sb-icon, .sb-link.active .sb-icon {
                 color: #3b82f6;
             }
 
@@ -206,7 +207,6 @@
             border-radius: 8px;
         }
 
-            /* Tooltip when collapsed */
             #hr-sidebar.collapsed .sb-link::after {
                 content: attr(data-tip);
                 position: absolute;
@@ -231,14 +231,12 @@
                 opacity: 1;
             }
 
-        /* ── Divider ── */
         .sb-divider {
             border: none;
             border-top: 1px solid rgba(255,255,255,.05);
             margin: 6px 16px;
         }
 
-        /* ── Footer / Logout ── */
         .sb-footer {
             padding: 10px 8px 14px;
             border-top: 1px solid rgba(255,255,255,.06);
@@ -251,7 +249,7 @@
             align-items: center;
             gap: 10px;
             padding: 9px 16px;
-            margin: 0 0;
+            margin: 0;
             border-radius: 7px;
             width: 100%;
             background: none;
@@ -318,7 +316,7 @@
             }
 
         /* ════════════════════════════════
-                   MAIN WRAPPER
+                   MAIN
                 ════════════════════════════════ */
         #hr-main {
             margin-left: 240px;
@@ -350,7 +348,6 @@
             box-shadow: 0 1px 6px rgba(0,0,0,.05);
         }
 
-        /* Toggle button — in topbar */
         #sb-toggle-btn {
             display: flex;
             align-items: center;
@@ -375,7 +372,6 @@
 
             #sb-toggle-btn i {
                 font-size: 1.05rem;
-                transition: transform .24s;
             }
 
         .topbar-left {
@@ -410,7 +406,6 @@
             gap: 12px;
         }
 
-        /* Role pill */
         .tb-role-pill {
             font-size: .68rem;
             font-weight: 700;
@@ -422,14 +417,12 @@
             white-space: nowrap;
         }
 
-        /* Divider line */
         .tb-vdiv {
             width: 1px;
             height: 22px;
             background: #e2e8f0;
         }
 
-        /* User info in topbar */
         .tb-user {
             display: flex;
             align-items: center;
@@ -470,17 +463,11 @@
             flex-shrink: 0;
         }
 
-        /* ════════════════════════════════
-                   CONTENT
-                ════════════════════════════════ */
         #hr-content {
             flex: 1;
             padding: 24px 26px 40px;
         }
 
-        /* ════════════════════════════════
-                   MOBILE
-                ════════════════════════════════ */
         #hr-overlay {
             display: none;
             position: fixed;
@@ -516,33 +503,295 @@
                     pointer-events: auto;
                 }
         }
+
+        /* ════════════════════════════════
+                   TOAST NOTIFICATION SYSTEM
+                   Built into the layout — no
+                   extra file in Shared needed.
+                ════════════════════════════════ */
+        #hr-toast-container {
+            position: fixed;
+            top: 72px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            width: calc(100vw - 40px);
+            pointer-events: none;
+        }
+
+        .hr-toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 40px 14px 14px;
+            border-radius: 12px;
+            border: 1px solid;
+            position: relative;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateX(calc(100% + 30px));
+            transition: opacity .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
+        }
+
+            .hr-toast.hr-toast-in {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            .hr-toast.hr-toast-out {
+                opacity: 0;
+                transform: translateX(calc(100% + 30px));
+            }
+
+        .hr-toast-success {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+        }
+
+        .hr-toast-error {
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .hr-toast-warning {
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        .hr-toast-info {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .hr-toast-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .hr-toast-success .hr-toast-icon {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .hr-toast-error .hr-toast-icon {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .hr-toast-warning .hr-toast-icon {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .hr-toast-info .hr-toast-icon {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .hr-toast-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hr-toast-title {
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            margin-bottom: 3px;
+        }
+
+        .hr-toast-success .hr-toast-title {
+            color: #15803d;
+        }
+
+        .hr-toast-error .hr-toast-title {
+            color: #b91c1c;
+        }
+
+        .hr-toast-warning .hr-toast-title {
+            color: #b45309;
+        }
+
+        .hr-toast-info .hr-toast-title {
+            color: #1d4ed8;
+        }
+
+        .hr-toast-body {
+            font-size: .78rem;
+            line-height: 1.5;
+            color: #475569;
+            word-break: break-word;
+        }
+
+        .hr-toast-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,.06);
+            color: #64748b;
+            font-size: .7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s, color .15s;
+        }
+
+            .hr-toast-close:hover {
+                background: rgba(0,0,0,.12);
+                color: #1e293b;
+            }
+
+        @@media (max-width: 480px) {
+            #hr-toast-container {
+                right: 12px;
+                left: 12px;
+                width: auto;
+                max-width: none;
+            }
+        }
+
+        /* ════════════════════════════════
+                   CUSTOM LOGOUT MODAL
+                ════════════════════════════════ */
+        #hr-logout-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,22,40,.55);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+            #hr-logout-overlay.open {
+                display: flex;
+            }
+
+        #hr-logout-modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 28px 24px;
+            max-width: 360px;
+            width: calc(100vw - 40px);
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,.2);
+            transform: scale(.92);
+            opacity: 0;
+            transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+        }
+
+        #hr-logout-overlay.open #hr-logout-modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .logout-modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 1.6rem;
+            color: #dc2626;
+        }
+
+        .logout-modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .logout-modal-body {
+            font-size: .83rem;
+            color: #64748b;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .logout-modal-user {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .logout-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+            .logout-modal-actions button,
+            .logout-modal-actions a {
+                flex: 1;
+                padding: 10px 16px;
+                border-radius: 9px;
+                font-size: .83rem;
+                font-weight: 600;
+                cursor: pointer;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                transition: background .15s, color .15s, border-color .15s;
+            }
+
+        .logout-cancel-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+            .logout-cancel-btn:hover {
+                background: #e2e8f0;
+                color: #1e293b;
+            }
+
+        .logout-confirm-btn {
+            background: #dc2626;
+            border: 1px solid #dc2626;
+            color: #fff;
+        }
+
+            .logout-confirm-btn:hover {
+                background: #b91c1c;
+                border-color: #b91c1c;
+            }
     </style>
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
 
-    <!-- ══════════════════════════════════════════
-         SIDEBAR
-    ══════════════════════════════════════════ -->
+    <!-- ═══════════ SIDEBAR ═══════════ -->
     <div id="hr-sidebar">
-
-        <!-- Brand -->
         <div class="sb-brand">
-            <div class="sb-brand-icon">
-                <i class="bi bi-people-fill"></i>
-            </div>
+            <div class="sb-brand-icon"><i class="bi bi-people-fill"></i></div>
             <div class="sb-brand-text">
                 <strong>DairyIndustry</strong>
                 <span>HR Module</span>
             </div>
         </div>
 
-        <!-- Navigation -->
         <nav class="sb-nav">
-
             <div class="sb-section-label">Overview</div>
-
             <a class="sb-link @(Active("Dashboard") ? "active" : "")"
                asp-controller="HR" asp-action="Dashboard" data-tip="Dashboard">
                 <i class="bi bi-speedometer2 sb-icon"></i>
@@ -550,13 +799,11 @@
             </a>
 
             <div class="sb-section-label">Staff Management</div>
-
             <a class="sb-link @(Active("Index") ? "active" : "")"
                asp-controller="HR" asp-action="Index" data-tip="All Staff">
                 <i class="bi bi-people sb-icon"></i>
                 <span class="sb-label">All Staff</span>
             </a>
-
             <a class="sb-link @(Active("Create") ? "active" : "")"
                asp-controller="HR" asp-action="Create" data-tip="Add Staff">
                 <i class="bi bi-person-plus sb-icon"></i>
@@ -565,56 +812,69 @@
 
             <hr class="sb-divider" />
             <div class="sb-section-label">Finance</div>
-
             <a class="sb-link @(Active("Payments") && Context.Request.Query["status"] != "Pending" ? "active" : "")"
                asp-controller="HR" asp-action="Payments" data-tip="Payments">
                 <i class="bi bi-cash-coin sb-icon"></i>
                 <span class="sb-label">Payments</span>
             </a>
-
             <a class="sb-link @(Active("Payments") && Context.Request.Query["status"] == "Pending" ? "active" : "")"
                asp-controller="HR" asp-action="Payments" asp-route-status="Pending" data-tip="Pending">
                 <i class="bi bi-hourglass-split sb-icon"></i>
                 <span class="sb-label">Pending Payments</span>
             </a>
-
         </nav>
 
-        <!-- Logout footer -->
+        <!-- Logout — opens custom modal instead of confirm() -->
         <div class="sb-footer">
-            <a asp-controller="Admin" asp-action="Logout"
-               class="sb-logout"
-               onclick="return confirm('Are you sure you want to logout?');">
+            <button class="sb-logout" onclick="hrShowLogout()" type="button"
+                    data-tip="Logout">
                 <i class="bi bi-box-arrow-left sb-icon"></i>
                 <span class="sb-label">Logout</span>
-            </a>
+            </button>
         </div>
-
     </div>
 
     <!-- Mobile overlay -->
     <div id="hr-overlay" onclick="hrCloseMob()"></div>
 
-    <!-- ══════════════════════════════════════════
-         MAIN
-    ══════════════════════════════════════════ -->
+    <!-- ═══════════ CUSTOM LOGOUT MODAL ═══════════ -->
+    <div id="hr-logout-overlay" onclick="hrHideLogout(event)">
+        <div id="hr-logout-modal" role="dialog" aria-modal="true"
+             aria-labelledby="logoutTitle">
+            <div class="logout-modal-icon">
+                <i class="bi bi-box-arrow-left"></i>
+            </div>
+            <div class="logout-modal-title" id="logoutTitle">Logout</div>
+            <div class="logout-modal-body">
+                You are signed in as
+                <span class="logout-modal-user">@_username</span>.
+                <br />Are you sure you want to logout?
+            </div>
+            <div class="logout-modal-actions">
+                <button class="logout-cancel-btn" onclick="hrHideLogout()" type="button">
+                    <i class="bi bi-x-lg"></i> Cancel
+                </button>
+                <a class="logout-confirm-btn"
+                   asp-controller="Admin" asp-action="Logout">
+                    <i class="bi bi-box-arrow-left"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ MAIN ═══════════ -->
     <div id="hr-main">
 
-        <!-- Topbar -->
         <header id="hr-topbar">
             <div class="topbar-left">
-
-                <!-- ★ Toggle button in topbar ★ -->
                 <button id="sb-toggle-btn" title="Toggle sidebar" onclick="hrToggle()">
                     <i class="bi bi-layout-sidebar" id="sb-toggle-icon"></i>
                 </button>
-
                 <div class="topbar-breadcrumb">
                     <span class="tb-module">HR Module</span>
                     <span class="tb-page">@ViewData["Title"]</span>
                 </div>
             </div>
-
             <div class="topbar-right">
                 <span class="tb-role-pill">
                     <i class="bi bi-shield-check me-1"></i>@_role
@@ -630,69 +890,141 @@
             </div>
         </header>
 
-        <!-- Alerts + page content -->
         <div id="hr-content">
-
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show mb-4 border-0 rounded-3 shadow-sm">
-                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show mb-4 border-0 rounded-3 shadow-sm">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-
             @RenderBody()
         </div>
 
     </div>
 
+    <!-- ═══════════ TOAST CONTAINER ═══════════ -->
+    <div id="hr-toast-container" aria-live="polite"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        var sidebar  = document.getElementById('hr-sidebar');
-        var main     = document.getElementById('hr-main');
-        var overlay  = document.getElementById('hr-overlay');
-        var icon     = document.getElementById('sb-toggle-icon');
+        /* ── Sidebar ── */
+        var sidebar = document.getElementById('hr-sidebar');
+        var main    = document.getElementById('hr-main');
+        var overlay = document.getElementById('hr-overlay');
 
-        // ── Restore saved state ──
         if (localStorage.getItem('hr_sb_collapsed') === '1') {
             sidebar.classList.add('collapsed');
             main.classList.add('collapsed');
         }
 
-        // ── Desktop toggle (topbar button) ──
         function hrToggle() {
             if (window.innerWidth <= 768) {
-                // On mobile: open/close as drawer
                 var isOpen = sidebar.classList.toggle('mob-open');
                 overlay.classList.toggle('open', isOpen);
             } else {
-                // On desktop: collapse/expand
                 var isCollapsed = sidebar.classList.toggle('collapsed');
                 main.classList.toggle('collapsed', isCollapsed);
                 localStorage.setItem('hr_sb_collapsed', isCollapsed ? '1' : '0');
             }
         }
 
-        // ── Mobile close via overlay ──
         function hrCloseMob() {
             sidebar.classList.remove('mob-open');
             overlay.classList.remove('open');
         }
 
-        // ── Close mobile drawer on nav click ──
-        document.querySelectorAll('#hr-sidebar .sb-link, #hr-sidebar .sb-logout').forEach(function (el) {
+        document.querySelectorAll('#hr-sidebar .sb-link').forEach(function (el) {
             el.addEventListener('click', function () {
                 if (window.innerWidth <= 768) hrCloseMob();
             });
         });
+
+        /* ── Logout Modal ── */
+        function hrShowLogout() {
+            document.getElementById('hr-logout-overlay').classList.add('open');
+            if (window.innerWidth <= 768) hrCloseMob();
+        }
+
+        function hrHideLogout(e) {
+            if (e && e.target !== document.getElementById('hr-logout-overlay')) return;
+            document.getElementById('hr-logout-overlay').classList.remove('open');
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') hrHideLogout();
+            document.getElementById('hr-logout-overlay').classList.remove('open');
+        });
+
+        /* ── Toast System ── */
+        function hrShowToast(type, title, message, index) {
+            var container = document.getElementById('hr-toast-container');
+
+            var icons = {
+                success: 'bi-check-circle-fill',
+                error:   'bi-exclamation-triangle-fill',
+                warning: 'bi-exclamation-circle-fill',
+                info:    'bi-info-circle-fill'
+            };
+
+            var toast = document.createElement('div');
+            toast.className = 'hr-toast hr-toast-' + type;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.innerHTML =
+                '<div class="hr-toast-icon"><i class="bi ' + icons[type] + '"></i></div>' +
+                '<div class="hr-toast-content">' +
+                    '<div class="hr-toast-title">' + title + '</div>' +
+                    '<div class="hr-toast-body">' + message + '</div>' +
+                '</div>' +
+                '<button class="hr-toast-close" onclick="hrDismissToast(this)" aria-label="Close">' +
+                    '<i class="bi bi-x-lg"></i>' +
+                '</button>';
+
+            container.appendChild(toast);
+
+            // Staggered slide-in
+            setTimeout(function () {
+                toast.classList.add('hr-toast-in');
+            }, index * 120 + 50);
+        }
+
+        function hrDismissToast(btn) {
+            var toast = btn.closest('.hr-toast');
+            if (!toast) return;
+            toast.classList.remove('hr-toast-in');
+            toast.classList.add('hr-toast-out');
+            setTimeout(function () {
+                // Collapse height smoothly before removing
+                toast.style.maxHeight  = toast.offsetHeight + 'px';
+                toast.style.overflow   = 'hidden';
+                toast.style.transition = 'max-height .2s ease, margin .2s, padding .2s, opacity .2s';
+                toast.style.opacity    = '0';
+                setTimeout(function () {
+                    toast.style.maxHeight = '0';
+                    toast.style.padding   = '0';
+                    toast.style.marginBottom = '0';
+                    setTimeout(function () { toast.remove(); }, 220);
+                }, 50);
+            }, 300);
+        }
+
+        // Fire toasts from server TempData
+        (function () {
+            var queue = [];
+            @if (_success != null)
+            {
+                    <text>queue.push({ type: 'success', title: 'Success', msg: '@Html.Raw(_success?.Replace("'", "\\'"))' });</text>
+            }
+            @if (_error != null)
+            {
+                    <text>queue.push({ type: 'error', title: 'Error', msg: '@Html.Raw(_error?.Replace("'", "\\'"))' });</text>
+            }
+            @if (_warning != null)
+            {
+                    <text>queue.push({ type: 'warning', title: 'Warning', msg: '@Html.Raw(_warning?.Replace("'", "\\'"))' });</text>
+            }
+            @if (_info != null)
+            {
+                    <text>queue.push({ type: 'info', title: 'Info', msg: '@Html.Raw(_info?.Replace("'", "\\'"))' });</text>
+            }
+            queue.forEach(function (item, i) {
+                hrShowToast(item.type, item.title, item.msg, i);
+            });
+        })();
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
