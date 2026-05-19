@@ -6,75 +6,618 @@
     var sessionPlantName = Context.Session.GetString("PlantName");
 }
 
-<h4 class="mb-4">🏭 Start Production Batch</h4>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-<div class="card shadow-sm" style="max-width: 550px;">
-    <div class="card-header bg-primary text-white"><strong>New Production Batch</strong></div>
-    <div class="card-body">
-        <form asp-action="StartBatch" method="post">
+<style>
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
-            <div class="mb-3">
-                <label class="form-label">Processing Plant</label>
+    .pb-page {
+        font-family: 'DM Sans', sans-serif;
+        padding: 2rem 0 3rem;
+        max-width: 620px;
+    }
 
-                @if (roleName == "Plant Manager" && sessionPlantId.HasValue)
-                {
-                    @* Plant Manager: show read-only field + hidden input *@
-                    <input type="text" class="form-control" value="@sessionPlantName" disabled />
-                    <input type="hidden" name="plantId" value="@sessionPlantId" />
-                }
-                else
-                {
-                    @* Admin / Collection Agent: show full dropdown *@
-                    <select name="plantId" class="form-select" required>
-                        <option value="">-- Select Plant --</option>
-                        @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
-                        {
-                            <option value="@p.PlantId">@p.PlantName</option>
-                        }
-                    </select>
-                }
-            </div>
+    /* ── Page header ─────────────────────────────────── */
+    .pb-page-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 2rem;
+    }
 
-            <div class="mb-3">
-                <label class="form-label">Milk Type to Use</label>
-                <select name="milkTypeId" class="form-select" required>
-                    <option value="">-- Select Milk Type --</option>
-                    @foreach (var m in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
-                    {
-                        <option value="@m.MilkTypeId">@m.MilkTypeName</option>
-                    }
-                </select>
-            </div>
+    .pb-page-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #1D4ED8;
+        font-size: 22px;
+    }
 
-            <div class="mb-3">
-                <label class="form-label">Product</label>
-                <select name="productId" class="form-select" required>
-                    <option value="">-- Select Product --</option>
-                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
-                    {
-                        <option value="@p.ProductId">@p.ProductName (@p.ProductType — @p.Unit)</option>
-                    }
-                </select>
-            </div>
+    .pb-page-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #0F172A;
+        letter-spacing: -0.3px;
+        line-height: 1.2;
+    }
 
-            <div class="mb-3">
-                <label class="form-label">Milk Used (Litres)</label>
-                <input type="number" name="milkUsedQuantity" class="form-control"
-                       step="0.01" min="1" placeholder="e.g. 200.00" required />
-                <small class="text-muted">Must not exceed available raw milk inventory at selected plant.</small>
-            </div>
+    .pb-page-sub {
+        font-size: 13.5px;
+        color: #64748B;
+        margin-top: 3px;
+    }
 
-            <div class="mb-3">
-                <label class="form-label">Production Date</label>
-                <input type="date" name="productionDate" class="form-control"
-                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-            </div>
+    /* ── Card ────────────────────────────────────────── */
+    .pb-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 16px rgba(15,23,42,.04);
+    }
 
-            <div class="d-flex justify-content-between mt-4">
-                <a asp-action="Batches" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn btn-success fw-bold">🚀 Start Batch</button>
-            </div>
+    /* ── Card header ─────────────────────────────────── */
+    .pb-card-head {
+        padding: 1.1rem 1.5rem;
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-        </form>
+    .pb-card-head-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pb-card-head-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+    .pb-card-head-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0F172A;
+    }
+
+    .pb-card-head-sub {
+        font-size: 12px;
+        color: #94A3B8;
+        margin-top: 1px;
+    }
+
+    .pb-step-dots {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pb-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #CBD5E1;
+    }
+
+        .pb-dot.active {
+            width: 20px;
+            border-radius: 4px;
+            background: #2563EB;
+        }
+
+    /* ── Card body ───────────────────────────────────── */
+    .pb-card-body {
+        padding: 1.75rem 1.5rem;
+    }
+
+    .pb-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #94A3B8;
+        margin-bottom: 1rem;
+    }
+
+    .pb-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .pb-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 1.25rem;
+    }
+
+        .pb-field:last-child {
+            margin-bottom: 0;
+        }
+
+    .pb-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .pb-label i {
+            font-size: 15px;
+            color: #94A3B8;
+        }
+
+    .pb-input, .pb-select {
+        height: 42px;
+        padding: 0 13px;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        color: #0F172A;
+        background: #F8FAFC;
+        width: 100%;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s, background .15s;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+        .pb-input:hover, .pb-select:hover {
+            border-color: #CBD5E1;
+            background: #fff;
+        }
+
+        .pb-input:focus, .pb-select:focus {
+            border-color: #2563EB;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+
+        .pb-input:disabled {
+            cursor: not-allowed;
+            color: #64748B;
+            background: #F1F5F9;
+            border-color: #E2E8F0;
+        }
+
+    .pb-select-wrap {
+        position: relative;
+    }
+
+        .pb-select-wrap::after {
+            content: '';
+            pointer-events: none;
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #94A3B8;
+        }
+
+    /* Plant confirmed badge */
+    .pb-plant-confirmed {
+        height: 42px;
+        padding: 0 13px;
+        border: 1px solid #BFDBFE;
+        border-radius: 10px;
+        background: #EFF6FF;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #1E40AF;
+        font-weight: 500;
+    }
+
+        .pb-plant-confirmed i {
+            font-size: 16px;
+            color: #2563EB;
+        }
+
+    /* Hint text */
+    .pb-hint {
+        font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .pb-hint.warn {
+            color: #B45309;
+        }
+
+        .pb-hint.danger {
+            color: #DC2626;
+        }
+
+    /* Inventory bar */
+    .pb-inv-bar-wrap {
+        margin-top: 6px;
+    }
+
+    .pb-inv-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11.5px;
+        color: #94A3B8;
+        font-family: 'DM Mono', monospace;
+        margin-bottom: 5px;
+    }
+
+    .pb-inv-bar {
+        height: 5px;
+        border-radius: 3px;
+        background: #F1F5F9;
+        overflow: hidden;
+    }
+
+    .pb-inv-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 3px;
+        background: #22C55E;
+        transition: width .35s ease, background .25s;
+    }
+
+        .pb-inv-fill.warn {
+            background: #F59E0B;
+        }
+
+        .pb-inv-fill.danger {
+            background: #EF4444;
+        }
+
+    /* Divider */
+    .pb-divider {
+        height: 1px;
+        background: #F1F5F9;
+        margin: 1.5rem 0;
+    }
+
+    /* ── Card footer ─────────────────────────────────── */
+    .pb-card-foot {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #F1F5F9;
+        background: #FAFCFF;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .pb-btn-cancel {
+        height: 40px;
+        padding: 0 1.1rem;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        background: transparent;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #64748B;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: background .15s, border-color .15s;
+    }
+
+        .pb-btn-cancel:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E1;
+            color: #334155;
+        }
+
+    .pb-btn-submit {
+        height: 40px;
+        padding: 0 1.4rem;
+        border: none;
+        border-radius: 10px;
+        background: #2563EB;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #fff;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background .15s, transform .1s, box-shadow .15s;
+        box-shadow: 0 1px 2px rgba(37,99,235,.3), 0 4px 12px rgba(37,99,235,.2);
+    }
+
+        .pb-btn-submit:hover {
+            background: #1D4ED8;
+            box-shadow: 0 1px 2px rgba(37,99,235,.4), 0 6px 16px rgba(37,99,235,.3);
+        }
+
+        .pb-btn-submit:active {
+            transform: scale(.98);
+        }
+
+    /* Footer status line */
+    .pb-foot-status {
+        font-size: 12px;
+        color: #94A3B8;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* ── System bar ──────────────────────────────────── */
+    .pb-sys-bar {
+        margin-top: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #CBD5E1;
+    }
+
+    .pb-sys-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22C55E;
+        display: inline-block;
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @@media (max-width: 520px) {
+        .pb-grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="pb-page">
+
+    
+    <div class="pb-page-header">
+        <div class="pb-page-icon">
+            <i class="bi bi-building-gear"></i>
+        </div>
+        <div>
+            <div class="pb-page-title">Start production batch</div>
+            <div class="pb-page-sub">Configure and launch a new milk processing run</div>
+        </div>
     </div>
+
+    <div class="pb-card">
+
+        
+        <div class="pb-card-head">
+            <div class="pb-card-head-left">
+                <div>
+                    <div class="pb-card-head-title">New production batch</div>
+                    <div class="pb-card-head-sub">All fields are required</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <div class="pb-card-head-badge">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    @(sessionPlantName ?? "All Plants")
+                </div>
+                <div class="pb-step-dots">
+                    <div class="pb-dot active"></div>
+                    <div class="pb-dot"></div>
+                    <div class="pb-dot"></div>
+                </div>
+            </div>
+        </div>
+
+      
+        <div class="pb-card-body">
+            <form asp-action="StartBatch" method="post" id="batchForm">
+
+              
+                <div class="pb-section-label">Plant & materials</div>
+
+                <div class="pb-field">
+                    <label class="pb-label">
+                        <i class="bi bi-building"></i>
+                        Processing plant
+                    </label>
+                    @if (roleName == "Plant Manager" && sessionPlantId.HasValue)
+                    {
+                        <div class="pb-plant-confirmed">
+                            <i class="bi bi-check-circle-fill"></i>
+                            @sessionPlantName
+                        </div>
+                        <input type="hidden" name="plantId" value="@sessionPlantId" />
+                    }
+                    else
+                    {
+                        <div class="pb-select-wrap">
+                            <select name="plantId" class="pb-select" required>
+                                <option value="">Select a plant</option>
+                                @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
+                                {
+                                    <option value="@p.PlantId">@p.PlantName</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+
+                <div class="pb-grid-2">
+                    <div class="pb-field">
+                        <label class="pb-label">
+                            <i class="bi bi-droplet-half"></i>
+                            Milk type
+                        </label>
+                        <div class="pb-select-wrap">
+                            <select name="milkTypeId" class="pb-select" required>
+                                <option value="">Select type</option>
+                                @foreach (var m in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
+                                {
+                                    <option value="@m.MilkTypeId">@m.MilkTypeName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pb-field">
+                        <label class="pb-label">
+                            <i class="bi bi-box-seam"></i>
+                            Product
+                        </label>
+                        <div class="pb-select-wrap">
+                            <select name="productId" class="pb-select" required>
+                                <option value="">Select product</option>
+                                @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
+                                {
+                                    <option value="@p.ProductId">@p.ProductName (@p.ProductType — @p.Unit)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pb-divider"></div>
+
+                <div class="pb-section-label">Batch details</div>
+
+                <div class="pb-field">
+                    <label class="pb-label">
+                        <i class="bi bi-moisture"></i>
+                        Milk used (litres)
+                    </label>
+                    <input type="number"
+                           name="milkUsedQuantity"
+                           id="milkQty"
+                           class="pb-input"
+                           step="0.01"
+                           min="1"
+                           placeholder="e.g. 200.00"
+                           required
+                           oninput="updateInvBar()" />
+                    <div class="pb-inv-bar-wrap">
+                        <div class="pb-inv-labels">
+                            <span id="pbUsed">0.00 L used</span>
+                            <span>500.00 L available</span>
+                        </div>
+                        <div class="pb-inv-bar">
+                            <div class="pb-inv-fill" id="pbFill"></div>
+                        </div>
+                    </div>
+                    <span class="pb-hint" id="pbHint">
+                        <i class="bi bi-info-circle"></i>
+                        Must not exceed available raw milk inventory at selected plant.
+                    </span>
+                </div>
+
+                <div class="pb-field" style="margin-bottom:0">
+                    <label class="pb-label">
+                        <i class="bi bi-calendar3"></i>
+                        Production date
+                    </label>
+                    <input type="date"
+                           name="productionDate"
+                           class="pb-input"
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           required />
+                    <span class="pb-hint">
+                        <i class="bi bi-clock"></i>
+                        Defaults to today — adjust only if scheduling ahead.
+                    </span>
+                </div>
+
+            </form>
+        </div>
+
+        
+        <div class="pb-card-foot">
+            <a asp-action="Batches" class="pb-btn-cancel">
+                <i class="bi bi-x"></i>
+                Cancel
+            </a>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="pb-foot-status" id="pbStatus">
+                    <i class="bi bi-shield-check"></i>
+                    Ready to launch
+                </span>
+                <button type="submit" form="batchForm" class="pb-btn-submit">
+                    <i class="bi bi-rocket-takeoff"></i>
+                    Start batch
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="pb-sys-bar">
+        <span class="pb-sys-dot"></span>
+        System online &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; &copy; @DateTime.Now.Year Dairy Management System
+    </div>
+
 </div>
+
+<script>
+    (function () {
+        var MAX = 500;
+
+        function updateInvBar() {
+            var qty = parseFloat(document.getElementById('milkQty').value) || 0;
+            var pct = Math.min((qty / MAX) * 100, 100);
+            var fill = document.getElementById('pbFill');
+            var hint = document.getElementById('pbHint');
+            var used = document.getElementById('pbUsed');
+            var status = document.getElementById('pbStatus');
+
+            fill.style.width = pct.toFixed(1) + '%';
+            fill.className = 'pb-inv-fill';
+            used.textContent = qty.toFixed(2) + ' L used';
+
+            if (pct > 100) {
+                fill.classList.add('danger');
+                hint.className = 'pb-hint danger';
+                hint.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> Exceeds available inventory. Reduce quantity.';
+                status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Inventory exceeded';
+            } else if (pct > 85) {
+                fill.classList.add('warn');
+                hint.className = 'pb-hint warn';
+                hint.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Approaching inventory limit — double-check before starting.';
+                status.innerHTML = '<i class="bi bi-shield-check"></i> Ready to launch';
+            } else {
+                hint.className = 'pb-hint';
+                hint.innerHTML = '<i class="bi bi-info-circle"></i> Must not exceed available raw milk inventory at selected plant.';
+                status.innerHTML = '<i class="bi bi-shield-check"></i> Ready to launch';
+            }
+        }
+
+        window.updateInvBar = updateInvBar;
+    })();
+</script>

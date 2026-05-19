@@ -8,9 +8,11 @@
 
     decimal totalLoss = Model.Sum(x => x.LossQty);
     decimal totalDispatch = Model.Sum(x => x.DispatchQty);
+    decimal totalReceived = Model.Sum(x => x.ReceivedQty);
     decimal overallPct = totalDispatch > 0 ? Math.Round((totalLoss / totalDispatch) * 100, 2) : 0;
     int severeCount = Model.Count(x => x.LossCategory == "Severe");
     int moderateCount = Model.Count(x => x.LossCategory == "Moderate");
+    int minorCount = Model.Count(x => x.LossCategory == "Minor");
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -26,7 +28,6 @@
         --c-text-4: #9ca3af;
         --c-accent: #2563eb;
         --c-accent-bg: #eff6ff;
-        --c-accent-text: #1d4ed8;
         --c-green: #16a34a;
         --c-green-bg: #f0fdf4;
         --c-green-border: #86efac;
@@ -36,36 +37,116 @@
         --c-amber: #d97706;
         --c-amber-bg: #fffbeb;
         --c-amber-border: #fcd34d;
-        --c-row-hover: #f8faff;
-        --r: 6px;
+        --r: 8px;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         font-size: 14px;
         color: var(--c-text);
     }
 
-    /* Summary */
-    .tl-summary {
+    /* ── Page Header ── */
+    .tl-page-header {
+        margin-bottom: 20px;
+    }
+
+    .tl-breadcrumb {
+        font-size: 12px;
+        color: var(--c-text-3);
+        margin-bottom: 4px;
+    }
+
+    .tl-page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--c-text);
+        margin: 0 0 12px;
+        letter-spacing: -0.5px;
+    }
+
+    /* ── Filter Tabs ── */
+    .tl-tabs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .tl-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 400;
+        cursor: pointer;
+        border: 1px solid var(--c-border);
+        background: transparent;
+        color: var(--c-text-3);
+        transition: all .15s;
+        text-decoration: none;
+    }
+
+        .tl-tab:hover {
+            background: #f3f4f6;
+            color: var(--c-text-2);
+        }
+
+        .tl-tab.active {
+            background: #f3f4f6;
+            color: var(--c-text);
+            font-weight: 500;
+            border-color: #d1d5db;
+        }
+
+    .tl-tab-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 10px;
+    }
+
+    .badge-all {
+        background: #e5e7eb;
+        color: var(--c-text-3);
+    }
+
+    .badge-severe {
+        background: var(--c-red-bg);
+        color: var(--c-red);
+    }
+
+    .badge-moderate {
+        background: var(--c-amber-bg);
+        color: var(--c-amber);
+    }
+
+    .badge-minor {
+        background: var(--c-green-bg);
+        color: var(--c-green);
+    }
+
+    /* ── Stats Row ── */
+    .tl-stats {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 0;
         background: var(--c-surface);
         border: 1px solid var(--c-border);
         border-radius: var(--r);
         overflow: hidden;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
     }
 
-    .tl-kpi {
+    .tl-stat {
         padding: 16px 20px;
         border-right: 1px solid var(--c-border);
-        position: relative;
     }
 
-        .tl-kpi:last-child {
+        .tl-stat:last-child {
             border-right: none;
         }
 
-    .tl-kpi-label {
+    .tl-stat-label {
         font-size: 11px;
         font-weight: 500;
         text-transform: uppercase;
@@ -74,53 +155,43 @@
         margin-bottom: 6px;
     }
 
-    .tl-kpi-value {
-        font-size: 26px;
+    .tl-stat-value {
+        font-size: 22px;
         font-weight: 700;
         color: var(--c-text);
-        letter-spacing: -1px;
-        line-height: 1;
+        letter-spacing: -0.5px;
         font-variant-numeric: tabular-nums;
     }
 
-        .tl-kpi-value .unit {
+        .tl-stat-value .unit {
             font-size: 13px;
             font-weight: 400;
             color: var(--c-text-3);
             margin-left: 2px;
-            letter-spacing: 0;
         }
 
-    .tl-kpi-sub {
-        font-size: 11px;
-        color: var(--c-text-3);
-        margin-top: 4px;
+    /* ── Table Card ── */
+    .tl-card {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
     }
 
-    .tl-kpi-bar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-    }
-
-    /* Toolbar */
     .tl-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        padding: 11px 16px;
+        padding: 10px 16px;
         background: #fafbfc;
         border-bottom: 1px solid var(--c-border);
         flex-wrap: wrap;
+        gap: 10px;
     }
 
-    .tl-toolbar-title {
+    .tl-toolbar-left {
         font-size: 13px;
-        font-weight: 600;
-        color: var(--c-text);
+        color: var(--c-text-3);
     }
 
     .tl-search-wrap {
@@ -132,7 +203,7 @@
         left: 10px;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 12px;
+        font-size: 13px;
         color: var(--c-text-4);
         pointer-events: none;
     }
@@ -141,9 +212,9 @@
         height: 30px;
         padding: 0 10px 0 30px;
         border: 1px solid var(--c-border);
-        border-radius: 5px;
+        border-radius: 6px;
         background: var(--c-surface);
-        font-size: 12px;
+        font-size: 13px;
         color: var(--c-text);
         outline: none;
         width: 220px;
@@ -155,17 +226,9 @@
             box-shadow: 0 0 0 3px rgba(37,99,235,.08);
         }
 
-    /* Table */
-    .tl-table-wrap {
-        background: var(--c-surface);
-        border: 1px solid var(--c-border);
-        border-radius: var(--r);
-        overflow: hidden;
-    }
-
+    /* ── Table ── */
     .tl-scroll {
         overflow-x: auto;
-        max-height: 64vh;
         overflow-y: auto;
     }
 
@@ -214,7 +277,7 @@
             }
 
         .tl-table tbody td {
-            padding: 11px 16px;
+            padding: 12px 16px;
             border-bottom: 1px solid #f3f4f6;
             vertical-align: middle;
             color: var(--c-text-2);
@@ -225,7 +288,7 @@
         }
 
         .tl-table tbody tr:hover td {
-            background: var(--c-row-hover);
+            background: #f8faff;
         }
 
         .tl-table td.r {
@@ -236,10 +299,10 @@
             text-align: center;
         }
 
-    /* Cells */
+    /* ── Cell Styles ── */
     .tl-refid {
         font-family: 'SF Mono', 'Consolas', monospace;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--c-accent);
         text-decoration: none;
@@ -249,32 +312,31 @@
             text-decoration: underline;
         }
 
-    .tl-plant {
+    .tl-sub {
         font-size: 11px;
         color: var(--c-text-3);
         margin-top: 2px;
     }
 
-    .tl-center {
+    .tl-route-name {
         font-size: 13px;
         font-weight: 500;
         color: var(--c-text);
     }
 
-    .tl-route-meta {
-        font-size: 11px;
-        color: var(--c-text-3);
-        margin-top: 2px;
+    .tl-driver-name {
+        font-size: 13px;
+        color: var(--c-text-2);
     }
 
-    .tl-date {
-        font-size: 12px;
+    .tl-date-val {
+        font-size: 13px;
         font-weight: 500;
         color: var(--c-text-2);
         font-variant-numeric: tabular-nums;
     }
 
-    .tl-shift {
+    .tl-shift-badge {
         display: inline-block;
         font-size: 10px;
         font-weight: 500;
@@ -284,51 +346,58 @@
         margin-top: 2px;
     }
 
-    .tl-vol-received {
+    .tl-dispatch-val {
         font-size: 13px;
         font-weight: 600;
         color: var(--c-text);
         font-variant-numeric: tabular-nums;
     }
 
-    .tl-vol-dispatch {
+    .tl-received-val {
         font-size: 11px;
         color: var(--c-text-3);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .tl-loss {
-        font-size: 12px;
-        font-weight: 600;
         font-variant-numeric: tabular-nums;
         margin-top: 2px;
     }
 
-        .tl-loss.severe {
+    .tl-loss-val {
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+        .tl-loss-val.severe {
             color: var(--c-red);
         }
 
-        .tl-loss.moderate {
+        .tl-loss-val.moderate {
             color: var(--c-amber);
         }
 
-        .tl-loss.normal {
+        .tl-loss-val.minor {
             color: var(--c-text-3);
         }
 
-    /* Category badge */
-    .tl-cat {
+    .tl-loss-pct {
+        font-size: 11px;
+        color: inherit;
+        margin-top: 2px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Category Pill ── */
+    .tl-pill {
         display: inline-flex;
         align-items: center;
         gap: 4px;
         font-size: 11px;
         font-weight: 600;
-        padding: 3px 9px;
+        padding: 3px 10px;
         border-radius: 20px;
         white-space: nowrap;
     }
 
-    .tl-cat-dot {
+    .tl-pill-dot {
         width: 5px;
         height: 5px;
         border-radius: 50%;
@@ -336,25 +405,25 @@
         flex-shrink: 0;
     }
 
-    .tl-cat.severe {
+    .tl-pill.severe {
         background: var(--c-red-bg);
         color: var(--c-red);
         border: 1px solid var(--c-red-border);
     }
 
-    .tl-cat.moderate {
+    .tl-pill.moderate {
         background: var(--c-amber-bg);
         color: var(--c-amber);
         border: 1px solid var(--c-amber-border);
     }
 
-    .tl-cat.minor {
+    .tl-pill.minor {
         background: var(--c-green-bg);
         color: var(--c-green);
         border: 1px solid var(--c-green-border);
     }
 
-    /* Footer */
+    /* ── Footer ── */
     .tl-footer {
         display: flex;
         align-items: center;
@@ -364,37 +433,8 @@
         background: #fafbfc;
         flex-wrap: wrap;
         gap: 8px;
+        min-height: 48px;
     }
-
-    .tl-footer-stats {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .tl-stat {
-        text-align: right;
-    }
-
-    .tl-stat-label {
-        font-size: 10px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        color: var(--c-text-4);
-        margin-bottom: 1px;
-    }
-
-    .tl-stat-value {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--c-text-2);
-        font-variant-numeric: tabular-nums;
-    }
-
-        .tl-stat-value.loss {
-            color: var(--c-red);
-        }
 
     .tl-record-count {
         font-size: 12px;
@@ -405,6 +445,36 @@
             color: var(--c-text-2);
         }
 
+    .tl-foot-stats {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .tl-foot-stat {
+        text-align: right;
+    }
+
+    .tl-foot-label {
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--c-text-4);
+        margin-bottom: 1px;
+    }
+
+    .tl-foot-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .tl-foot-value.red {
+            color: var(--c-red);
+        }
+
     .tl-empty {
         padding: 60px 24px;
         text-align: center;
@@ -412,17 +482,88 @@
         font-size: 13px;
     }
 
-    @@media (max-width: 768px) {
-        .tl-summary {
-            grid-template-columns: 1fr 1fr;
+    /* ── Pagination ── */
+    .tl-foot-center {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .tl-pagination {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .tl-pg-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+        height: 30px;
+        padding: 0 6px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-surface);
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--c-text-2);
+        cursor: pointer;
+        transition: all .15s;
+        font-family: inherit;
+    }
+
+        .tl-pg-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: var(--c-text);
         }
 
-        .tl-kpi:nth-child(2) {
+        .tl-pg-btn.active {
+            background: var(--c-accent);
+            border-color: var(--c-accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .tl-pg-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+    .tl-pg-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+        height: 30px;
+        font-size: 13px;
+        color: var(--c-text-3);
+        user-select: none;
+    }
+
+    @@media (max-width: 900px) {
+        .tl-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .tl-stat:nth-child(3) {
             border-right: none;
         }
 
-        .tl-kpi:nth-child(3) {
+        .tl-stat:nth-child(4) {
             border-top: 1px solid var(--c-border);
+        }
+
+        .tl-stat:nth-child(5) {
+            border-top: 1px solid var(--c-border);
+            border-right: none;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .tl-stats {
+            grid-template-columns: 1fr 1fr;
         }
 
         .tl-search {
@@ -433,40 +574,64 @@
 
 <div class="tl">
 
-    <!-- KPIs -->
-    <div class="tl-summary">
-        <div class="tl-kpi">
-            <div class="tl-kpi-label">Total Records</div>
-            <div class="tl-kpi-value">@Model.Count.ToString("N0")</div>
-            <div class="tl-kpi-sub">Historical entries</div>
-            <div class="tl-kpi-bar" style="background:var(--c-accent);"></div>
-        </div>
-        <div class="tl-kpi">
-            <div class="tl-kpi-label">Cumulative Loss</div>
-            <div class="tl-kpi-value" style="color:var(--c-red);">@totalLoss.ToString("N0") <span class="unit">L</span></div>
-            <div class="tl-kpi-sub">Across all transfers</div>
-            <div class="tl-kpi-bar" style="background:var(--c-red);"></div>
-        </div>
-        <div class="tl-kpi">
-            <div class="tl-kpi-label">Variance Rate</div>
-            <div class="tl-kpi-value" style="color:@(overallPct >= 5 ? "var(--c-red)" : overallPct >= 2 ? "var(--c-amber)" : "var(--c-green)");">
-                @overallPct.ToString("F2")<span class="unit">%</span>
-            </div>
-            <div class="tl-kpi-sub">Loss / dispatch ratio</div>
-            <div class="tl-kpi-bar" style="background:@(overallPct >= 5 ? "var(--c-red)" : overallPct >= 2 ? "var(--c-amber)" : "var(--c-green)");"></div>
-        </div>
-        <div class="tl-kpi">
-            <div class="tl-kpi-label">Critical Events</div>
-            <div class="tl-kpi-value" style="color:@(severeCount > 0 ? "var(--c-red)" : "var(--c-green)");">@severeCount</div>
-            <div class="tl-kpi-sub">@moderateCount moderate · @severeCount severe</div>
-            <div class="tl-kpi-bar" style="background:@(severeCount > 0 ? "var(--c-red)" : "var(--c-green)");"></div>
+    <!-- Page Header -->
+    <div class="tl-page-header">
+        <div class="tl-breadcrumb">Production › Transfer Loss Log</div>
+        <h1 class="tl-page-title">Transfer Loss Log</h1>
+        <div class="tl-tabs">
+            <button class="tl-tab active" data-filter="all">
+                <i class="bi bi-list-ul"></i>
+                All
+                <span class="tl-tab-badge badge-all">@Model.Count</span>
+            </button>
+            <button class="tl-tab" data-filter="Severe">
+                <i class="bi bi-exclamation-circle"></i>
+                Severe
+                <span class="tl-tab-badge badge-severe">@severeCount</span>
+            </button>
+            <button class="tl-tab" data-filter="Moderate">
+                <i class="bi bi-exclamation-triangle"></i>
+                Moderate
+                <span class="tl-tab-badge badge-moderate">@moderateCount</span>
+            </button>
+            <button class="tl-tab" data-filter="Minor">
+                <i class="bi bi-check-circle"></i>
+                Minor
+                <span class="tl-tab-badge badge-minor">@minorCount</span>
+            </button>
         </div>
     </div>
 
-    <!-- Table card -->
-    <div class="tl-table-wrap">
+    <!-- Stats Row -->
+    <div class="tl-stats">
+        <div class="tl-stat">
+            <div class="tl-stat-label">Total Dispatched (L)</div>
+            <div class="tl-stat-value">@totalDispatch.ToString("N0")</div>
+        </div>
+        <div class="tl-stat">
+            <div class="tl-stat-label">Total Received (L)</div>
+            <div class="tl-stat-value">@totalReceived.ToString("N0")</div>
+        </div>
+        <div class="tl-stat">
+            <div class="tl-stat-label">Total Loss (L)</div>
+            <div class="tl-stat-value" style="color:var(--c-red);">@totalLoss.ToString("N2")</div>
+        </div>
+        <div class="tl-stat">
+            <div class="tl-stat-label">Variance Rate</div>
+            <div class="tl-stat-value" style="color:@(overallPct >= 5 ? "var(--c-red)" : overallPct >= 2 ? "var(--c-amber)" : "var(--c-green)");">
+                @overallPct.ToString("F2")<span class="unit">%</span>
+            </div>
+        </div>
+        <div class="tl-stat">
+            <div class="tl-stat-label">Critical Events</div>
+            <div class="tl-stat-value" style="color:@(severeCount > 0 ? "var(--c-red)" : "var(--c-green)");">@severeCount</div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="tl-card">
         <div class="tl-toolbar">
-            <span class="tl-toolbar-title">Transfer Loss Archive</span>
+            <span class="tl-toolbar-left">Plant transfer loss records</span>
             <div class="tl-search-wrap">
                 <i class="bi bi-search tl-search-icon"></i>
                 <input type="text" id="logSearch" class="tl-search" placeholder="Search ID, driver, center…">
@@ -474,21 +639,28 @@
         </div>
 
         <div class="tl-scroll">
-            <table class="tl-table" id="auditTable">
+            <table class="tl-table" id="lossTable">
                 <thead>
                     <tr>
-                        <th style="width:110px;">Ref ID</th>
+                        <th style="width:120px;">Batch / Ref</th>
                         <th>Route</th>
+                        <th style="width:150px;">Driver</th>
                         <th style="width:130px;">Date / Shift</th>
-                        <th style="width:160px;" class="r">Volume (L)</th>
-                        <th style="width:120px;" class="c">Category</th>
+                        <th style="width:140px;" class="r">Dispatch (L)</th>
+                        <th style="width:130px;" class="r">Loss (L)</th>
+                        <th style="width:110px;" class="c">Category</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="5"><div class="tl-empty">No loss records found.</div></td>
+                            <td colspan="7">
+                                <div class="tl-empty">
+                                    <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+                                    No loss records found.
+                                </div>
+                            </td>
                         </tr>
                     }
                     else
@@ -497,30 +669,34 @@
                         {
                             string catClass = log.LossCategory == "Severe" ? "severe" :
                             log.LossCategory == "Moderate" ? "moderate" : "minor";
-                            string lossClass = log.LossCategory == "Severe" ? "severe" :
-                            log.LossCategory == "Moderate" ? "moderate" : "normal";
 
-                            <tr class="searchable-row">
+                            <tr class="searchable-row" data-category="@log.LossCategory">
                                 <td>
                                     <a href="@Url.Action("Detail", new { id = log.TransferId })" class="tl-refid">T#@log.TransferId</a>
-                                    <div class="tl-plant">@log.PlantName</div>
+                                    <div class="tl-sub">@log.PlantName</div>
                                 </td>
                                 <td>
-                                    <div class="tl-center">@log.CenterName</div>
-                                    <div class="tl-route-meta">@log.VehicleNumber · @log.DriverName</div>
+                                    <div class="tl-route-name">@log.CenterName</div>
+                                    <div class="tl-sub">@log.VehicleNumber</div>
                                 </td>
                                 <td>
-                                    <div class="tl-date">@log.DispatchDate.ToString("dd MMM yyyy")</div>
-                                    <div class="tl-shift">@log.Shift shift</div>
+                                    <div class="tl-driver-name">@log.DriverName</div>
+                                </td>
+                                <td>
+                                    <div class="tl-date-val">@log.DispatchDate.ToString("dd MMM yyyy")</div>
+                                    <div class="tl-shift-badge">@log.Shift shift</div>
                                 </td>
                                 <td class="r">
-                                    <div class="tl-vol-received">@log.ReceivedQty.ToString("N0")</div>
-                                    <div class="tl-vol-dispatch">of @log.DispatchQty.ToString("N0") dispatched</div>
-                                    <div class="tl-loss @lossClass">−@log.LossQty.ToString("N1") L &nbsp;(@log.LossPct.ToString("F2")%)</div>
+                                    <div class="tl-dispatch-val">@log.DispatchQty.ToString("N0")</div>
+                                    <div class="tl-received-val">Received: @log.ReceivedQty.ToString("N0")</div>
+                                </td>
+                                <td class="r">
+                                    <div class="tl-loss-val @catClass">−@log.LossQty.ToString("N1")</div>
+                                    <div class="tl-loss-pct @catClass">@log.LossPct.ToString("F2")%</div>
                                 </td>
                                 <td class="c">
-                                    <span class="tl-cat @catClass">
-                                        <span class="tl-cat-dot"></span>
+                                    <span class="tl-pill @catClass">
+                                        <span class="tl-pill-dot"></span>
                                         @log.LossCategory
                                     </span>
                                 </td>
@@ -532,21 +708,22 @@
         </div>
 
         <div class="tl-footer">
-            <span class="tl-record-count" id="recordCount">
-                <strong>@Model.Count</strong> records total
-            </span>
-            <div class="tl-footer-stats">
-                <div class="tl-stat">
-                    <div class="tl-stat-label">Gross Loss</div>
-                    <div class="tl-stat-value loss">@totalLoss.ToString("N1") L</div>
+            <span class="tl-record-count" id="recordCount"></span>
+            <div class="tl-foot-center">
+                <div class="tl-pagination" id="pagination"></div>
+            </div>
+            <div class="tl-foot-stats">
+                <div class="tl-foot-stat">
+                    <div class="tl-foot-label">Gross Loss</div>
+                    <div class="tl-foot-value red">@totalLoss.ToString("N1") L</div>
                 </div>
-                <div class="tl-stat">
-                    <div class="tl-stat-label">Variance</div>
-                    <div class="tl-stat-value">@overallPct.ToString("F2")%</div>
+                <div class="tl-foot-stat">
+                    <div class="tl-foot-label">Variance</div>
+                    <div class="tl-foot-value">@overallPct.ToString("F2")%</div>
                 </div>
-                <div class="tl-stat">
-                    <div class="tl-stat-label">Severe</div>
-                    <div class="tl-stat-value @(severeCount > 0 ? "loss" : "")">@severeCount</div>
+                <div class="tl-foot-stat">
+                    <div class="tl-foot-label">Severe</div>
+                    <div class="tl-foot-value @(severeCount > 0 ? "red" : "")">@severeCount</div>
                 </div>
             </div>
         </div>
@@ -555,19 +732,120 @@
 
 <script>
     const searchInput = document.getElementById('logSearch');
-    const allRows = document.querySelectorAll('.searchable-row');
-    const countEl = document.getElementById('recordCount');
+    const allRows = Array.from(document.querySelectorAll('.searchable-row'));
+    const countEl  = document.getElementById('recordCount');
+    const paginEl  = document.getElementById('pagination');
+    const tabs     = document.querySelectorAll('.tl-tab');
 
-    searchInput.addEventListener('input', function () {
-        const q = this.value.trim().toUpperCase();
-        let visible = 0;
-        allRows.forEach(row => {
-            const match = !q || row.textContent.toUpperCase().includes(q);
-            row.style.display = match ? '' : 'none';
-            if (match) visible++;
+    const PAGE_SIZE = 10;
+    let activeFilter = 'all';
+    let currentPage  = 1;
+    let filteredRows = [];
+
+    /* ── Filter + Search ── */
+    function getFiltered() {
+        const q = searchInput.value.trim().toUpperCase();
+        return allRows.filter(row => {
+            const catMatch    = activeFilter === 'all' || row.dataset.category === activeFilter;
+            const searchMatch = !q || row.textContent.toUpperCase().includes(q);
+            return catMatch && searchMatch;
         });
-        countEl.innerHTML = q
-            ? `<strong>${visible}</strong> of <strong>${allRows.length}</strong> records`
-            : `<strong>${allRows.length}</strong> records total`;
+    }
+
+    /* ── Render page ── */
+    function render() {
+        filteredRows = getFiltered();
+        const total     = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end   = start + PAGE_SIZE;
+
+        allRows.forEach(r => r.style.display = 'none');
+        filteredRows.forEach((r, i) => {
+            r.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        /* record count label */
+        const from = total === 0 ? 0 : start + 1;
+        const to   = Math.min(end, total);
+        countEl.innerHTML = total === 0
+            ? '<strong>0</strong> records'
+            : `Showing <strong>${from}–${to}</strong> of <strong>${total}</strong> records`;
+
+        /* pagination buttons */
+        renderPagination(totalPages);
+    }
+
+    /* ── Build pagination controls ── */
+    function renderPagination(totalPages) {
+        paginEl.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const pages = getPageNumbers(currentPage, totalPages);
+
+        /* Prev */
+        paginEl.appendChild(makeBtn(
+            '<i class="bi bi-chevron-left"></i>', currentPage === 1,
+            () => { currentPage--; render(); }
+        ));
+
+        pages.forEach(p => {
+            if (p === '…') {
+                const el = document.createElement('span');
+                el.className = 'tl-pg-ellipsis';
+                el.textContent = '…';
+                paginEl.appendChild(el);
+            } else {
+                paginEl.appendChild(makeBtn(p, false, () => { currentPage = p; render(); }, p === currentPage));
+            }
+        });
+
+        /* Next */
+        paginEl.appendChild(makeBtn(
+            '<i class="bi bi-chevron-right"></i>', currentPage === totalPages,
+            () => { currentPage++; render(); }
+        ));
+    }
+
+    /* ── Smart page number list (always show first, last, current ±1) ── */
+    function getPageNumbers(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = new Set([1, total, cur, cur - 1, cur + 1].filter(p => p >= 1 && p <= total));
+        const sorted = Array.from(pages).sort((a, b) => a - b);
+        const result = [];
+        sorted.forEach((p, i) => {
+            if (i > 0 && p - sorted[i - 1] > 1) result.push('…');
+            result.push(p);
+        });
+        return result;
+    }
+
+    /* ── Button factory ── */
+    function makeBtn(label, disabled, onClick, active = false) {
+        const btn = document.createElement('button');
+        btn.className = 'tl-pg-btn' + (active ? ' active' : '');
+        btn.innerHTML = label;
+        btn.disabled  = disabled;
+        if (!disabled) btn.addEventListener('click', onClick);
+        return btn;
+    }
+
+    /* ── Tab clicks ── */
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            activeFilter = this.dataset.filter;
+            currentPage  = 1;
+            render();
+        });
     });
+
+    /* ── Search input ── */
+    searchInput.addEventListener('input', () => { currentPage = 1; render(); });
+
+    /* ── Init ── */
+    render();
 </script>

@@ -9,7 +9,10 @@
 
         // ── Milk type — stored on MilkTransfers, used for correct inventory update ──
         public int MilkTypeId { get; set; }
-        public string MilkTypeName { get; set; }
+        public string MilkTypeName { get; set; }            
+        // ── Batch quality benchmarks (for deviation hint) ──────────      
+        public decimal? BatchAvgFat { get; set; }
+        public decimal? BatchAvgCLR { get; set; }
 
         public decimal DispatchQty { get; set; }
         public decimal? ReceivedQty { get; set; }

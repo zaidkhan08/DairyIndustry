@@ -115,7 +115,6 @@ namespace DairyIndustry.Repositories
         // GET ALL FARMER PAYMENTS
         // ════════════════════════════════════════════════════════
 
-        // AFTER
         public List<FarmerPaymentModel> GetAllFarmerPayments(int? centerId = null)
         {
             var list = new List<FarmerPaymentModel>();
@@ -327,7 +326,6 @@ namespace DairyIndustry.Repositories
         public List<FarmerDropdownModel> GetFarmersByCenter(int centerId)
         {
             var list = new List<FarmerDropdownModel>();
-            // Farmers whose most-recent collection belongs to this center
             string query = @"
                 SELECT DISTINCT f.FarmerId, f.FarmerName, f.FarmerCode
                 FROM Farmer.Farmers f
@@ -428,9 +426,6 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // GET ELIGIBLE TRANSFERS — scoped by PlantId for Plant Manager
-        // TestedFat/CLR  → Production.TransferQualityTests (fallback: cb.AvgFat/AvgCLR)
-        // MilkTypeId     → Collection.CenterMilkInventory
-        // Cancelled payments do NOT block a transfer — only Pending/Processed/Failed do.
         // ════════════════════════════════════════════════════════
         public List<TransferForPaymentModel> GetEligibleTransfers(int? plantId = null)
         {
@@ -450,8 +445,6 @@ namespace DairyIndustry.Repositories
                            ' | ', cc.CenterName,
                            ' | ', mt.ReceivedQty, ' L',
                            ' | ', FORMAT(mt.ReceivedDate,'dd-MMM-yyyy')) AS DisplayText,
-                    -- Cancelled payment lookup: if a Cancelled row exists, capture its Id
-                    -- so the controller can call ReactivateCenterPayment instead of CreateCenterPayment
                     cp_cancelled.CenterPaymentId AS CancelledPaymentId,
                     CASE WHEN cp_cancelled.CenterPaymentId IS NOT NULL THEN 1 ELSE 0 END AS HasCancelledPayment
                 FROM  Production.MilkTransfers             mt
@@ -459,7 +452,6 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId    = cb.CenterId
                 LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
                 LEFT  JOIN Collection.CenterMilkInventory  cmi ON cmi.CenterId  = cb.CenterId
-                -- Join to the most recent Cancelled row for this transfer (if any)
                 LEFT  JOIN (
                     SELECT BatchId, PlantId, MAX(CenterPaymentId) AS CenterPaymentId
                     FROM   Finance.CenterPayments
@@ -533,9 +525,6 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // CREATE CENTER PAYMENT
-        // SP signature: @BatchId @CenterId @PlantId @ReceivedQty
-        //               @RatePerLiter @TestedFat @TestedCLR @PaymentDate
-        // It does NOT take @TransferId — resolve it first, then call SP.
         // ════════════════════════════════════════════════════════
         public int CreateCenterPayment(int transferId, decimal ratePerLiter, DateTime paymentDate)
         {
@@ -543,14 +532,11 @@ namespace DairyIndustry.Repositories
             using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessCenterPayment", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                // ✅ Only 3 params (match SP)
                 cmd.Parameters.AddWithValue("@TransferId", transferId);
                 cmd.Parameters.AddWithValue("@RatePerLiter", ratePerLiter);
                 cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
 
                 con.Open();
-
                 using (SqlDataReader r = cmd.ExecuteReader())
                 {
                     if (r.Read())
@@ -735,8 +721,6 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // REACTIVATE CANCELLED CENTER PAYMENT
-        // Updates the existing Cancelled row back to Pending
-        // with a fresh rate and date — no duplicate row created.
         // ════════════════════════════════════════════════════════
         public int ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter, DateTime paymentDate)
         {
@@ -771,17 +755,12 @@ namespace DairyIndustry.Repositories
 
         // ════════════════════════════════════════════════════════
         // GET CENTER WALLET
-        // Returns summary + full transaction list for a center.
-        // If centerId is null → Admin sees everything (all centers).
-        // Collection Agent sees only their own center via session.
         // ════════════════════════════════════════════════════════
-
 
         public CenterWalletViewModel GetCenterWallet(int? centerId = null)
         {
             var vm = new CenterWalletViewModel();
 
-            // ── 1. Summary ────────────────────────────────────────────────
             string summaryQuery = @"
         SELECT
             cc.CenterId,
@@ -789,20 +768,17 @@ namespace DairyIndustry.Repositories
             ISNULL(SUM(CASE WHEN cp.PaymentStatus = 'Processed' THEN cp.TotalAmount ELSE 0 END), 0) AS TotalReceived,
             ISNULL(SUM(CASE WHEN cp.PaymentStatus = 'Pending'   THEN cp.TotalAmount ELSE 0 END), 0) AS TotalPending,
             COUNT(cp.CenterPaymentId) AS TotalTxns,
-            -- Staff cost: sum of ALL StaffPayments for staff whose CenterId matches
             ISNULL((
                 SELECT SUM(sp.TotalAmount)
                 FROM Finance.StaffPayments sp
                 INNER JOIN HR.Staffs s ON s.StaffId = sp.StaffId
                 WHERE s.CenterId = cc.CenterId
             ), 0) AS TotalStaffCost,
-            -- Staff count at this center
             ISNULL((
                 SELECT COUNT(*)
                 FROM HR.Staffs s
                 WHERE s.CenterId = cc.CenterId AND s.IsActive = 1
             ), 0) AS TotalStaffCount,
-            -- NEW: bonus totals from CenterWallet
             ISNULL((
                 SELECT SUM(cw.BonusAmount)
                 FROM Finance.CenterWallet cw
@@ -864,7 +840,6 @@ namespace DairyIndustry.Repositories
                 }
             }
 
-            // ── 2. Inflow transactions (unchanged) ─────────────────────────
             string txnQuery = @"
         SELECT
             cp.CenterPaymentId,
@@ -916,7 +891,6 @@ namespace DairyIndustry.Repositories
                 }
             }
 
-            // ── 3. Outflow: staff payments (unchanged) ─────────────────────
             string staffQuery = @"
         SELECT
             sp.PaymentId,
@@ -960,7 +934,6 @@ namespace DairyIndustry.Repositories
                 }
             }
 
-            // ── 4. NEW: Wallet bonus entries ───────────────────────────────
             vm.WalletEntries = GetCenterWalletEntries(centerId);
 
             return vm;
@@ -1016,7 +989,7 @@ namespace DairyIndustry.Repositories
                             BatchRef = r["BatchRef"].ToString(),
                             ReceivedQty = Convert.ToDecimal(r["ReceivedQty"]),
                             BonusRatePerLiter = Convert.ToDecimal(r["BonusRatePerLiter"]),
-                            BaseRatePerLiter = Convert.ToDecimal(r["BaseRatePerLiter"]),          
+                            BaseRatePerLiter = Convert.ToDecimal(r["BaseRatePerLiter"]),
                             FullRatePerLiter = Convert.ToDecimal(r["FullRatePerLiter"]),
                             BaseAmount = Convert.ToDecimal(r["BaseAmount"]),
                             BonusAmount = Convert.ToDecimal(r["BonusAmount"]),
@@ -1031,7 +1004,233 @@ namespace DairyIndustry.Repositories
 
             return list;
         }
-      
 
+        // ════════════════════════════════════════════════════════
+        // GET PLANT STAFF
+        // Returns staff whose center has supplied milk to the given plant.
+        // Plant Manager passes their PlantId; Admin passes null (sees all).
+        //
+        // Logic:
+        //   A staff member "belongs to" a plant when the center they work at
+        //   (HR.Staffs.CenterId) has sent at least one milk transfer to that
+        //   plant (Production.MilkTransfers joined via Collection.CollectionBatches).
+        // ════════════════════════════════════════════════════════
+        public PlantStaffViewModel GetPlantStaff(int? plantId = null)
+        {
+            var vm = new PlantStaffViewModel();
+
+            // ════════════════════════════════════════════════════════
+            // SUMMARY
+            // ════════════════════════════════════════════════════════
+
+            string summaryQuery = @"
+        SELECT
+            pp.PlantId,
+            pp.PlantName,
+
+            COUNT(DISTINCT s.StaffId) AS TotalStaff,
+
+            COUNT(DISTINCT CASE
+                WHEN s.IsActive = 1 THEN s.StaffId
+            END) AS ActiveStaff,
+
+            COUNT(DISTINCT CASE
+                WHEN s.IsActive = 0 THEN s.StaffId
+            END) AS InactiveStaff,
+
+            ISNULL(SUM(CASE
+                WHEN s.IsActive = 1
+                THEN ISNULL(s.Salary, 0)
+                ELSE 0
+            END), 0) AS TotalMonthlySalary,
+
+            COUNT(DISTINCT s.CenterId) AS TotalCenters
+
+        FROM Production.ProcessingPlants pp
+
+        LEFT JOIN HR.Staffs s
+            ON s.PlantId = pp.PlantId
+
+        WHERE (@PlantId IS NULL OR pp.PlantId = @PlantId)
+
+        GROUP BY
+            pp.PlantId,
+            pp.PlantName
+
+        ORDER BY
+            pp.PlantName";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(summaryQuery, con))
+            {
+                cmd.Parameters.AddWithValue("@PlantId",
+                    (object?)plantId ?? DBNull.Value);
+
+                con.Open();
+
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    int totalStaff = 0;
+                    int activeStaff = 0;
+                    int inactiveStaff = 0;
+                    decimal totalSalary = 0;
+                    int totalCenters = 0;
+
+                    string plantName = "All Plants";
+                    int pId = 0;
+
+                    while (r.Read())
+                    {
+                        totalStaff += Convert.ToInt32(r["TotalStaff"]);
+                        activeStaff += Convert.ToInt32(r["ActiveStaff"]);
+                        inactiveStaff += Convert.ToInt32(r["InactiveStaff"]);
+                        totalSalary += Convert.ToDecimal(r["TotalMonthlySalary"]);
+                        totalCenters += Convert.ToInt32(r["TotalCenters"]);
+
+                        if (plantId.HasValue)
+                        {
+                            pId = Convert.ToInt32(r["PlantId"]);
+                            plantName = r["PlantName"].ToString();
+                        }
+                    }
+
+                    vm.Summary = new PlantStaffSummary
+                    {
+                        PlantId = pId,
+                        PlantName = plantName,
+                        TotalStaff = totalStaff,
+                        ActiveStaff = activeStaff,
+                        InactiveStaff = inactiveStaff,
+                        TotalMonthlySalary = totalSalary,
+                        TotalCenters = totalCenters
+                    };
+                }
+            }
+
+            // ════════════════════════════════════════════════════════
+            // STAFF LIST
+            // ════════════════════════════════════════════════════════
+
+            string staffQuery = @"
+        SELECT
+            s.StaffId,
+
+            s.FirstName + ' ' + s.LastName AS FullName,
+
+            ISNULL(ar.RoleName, '') AS RoleName,
+
+            s.Email,
+            s.Phone,
+            s.Salary,
+            s.IsActive,
+
+            s.DOJ AS JoiningDate,
+
+            s.CenterId,
+            cc.CenterName,
+
+            s.PlantId,
+            pp.PlantName,
+
+            (
+                SELECT TOP 1 sp.PaymentDate
+                FROM Finance.StaffPayments sp
+                WHERE sp.StaffId = s.StaffId
+                ORDER BY sp.PaymentDate DESC
+            ) AS LastPaymentDate,
+
+            (
+                SELECT TOP 1 sp.PaymentStatus
+                FROM Finance.StaffPayments sp
+                WHERE sp.StaffId = s.StaffId
+                ORDER BY sp.PaymentDate DESC
+            ) AS LastPaymentStatus
+
+        FROM HR.Staffs s
+
+        LEFT JOIN Collection.CollectionCenters cc
+            ON cc.CenterId = s.CenterId
+
+        LEFT JOIN Production.ProcessingPlants pp
+            ON pp.PlantId = s.PlantId
+
+        LEFT JOIN Admin.Roles ar
+            ON ar.RoleId = s.RoleId
+
+        WHERE (@PlantId IS NULL OR s.PlantId = @PlantId)
+
+        ORDER BY
+            pp.PlantName,
+            cc.CenterName,
+            FullName";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(staffQuery, con))
+            {
+                cmd.Parameters.AddWithValue("@PlantId",
+                    (object?)plantId ?? DBNull.Value);
+
+                con.Open();
+
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        vm.Staff.Add(new PlantStaffModel
+                        {
+                            StaffId = Convert.ToInt32(r["StaffId"]),
+
+                            FullName = r["FullName"].ToString(),
+
+                            RoleName = r["RoleName"].ToString(),
+
+                            Email = r["Email"] == DBNull.Value
+                                ? null
+                                : r["Email"].ToString(),
+
+                            Phone = r["Phone"] == DBNull.Value
+                                ? null
+                                : r["Phone"].ToString(),
+
+                            Salary = r["Salary"] == DBNull.Value
+                                ? (decimal?)null
+                                : Convert.ToDecimal(r["Salary"]),
+
+                            IsActive = Convert.ToBoolean(r["IsActive"]),
+
+                            JoiningDate = r["JoiningDate"] == DBNull.Value
+                                ? (DateTime?)null
+                                : Convert.ToDateTime(r["JoiningDate"]),
+
+                            CenterId = r["CenterId"] == DBNull.Value
+                                ? 0
+                                : Convert.ToInt32(r["CenterId"]),
+
+                            CenterName = r["CenterName"] == DBNull.Value
+                                ? "-"
+                                : r["CenterName"].ToString(),
+
+                            PlantId = r["PlantId"] == DBNull.Value
+                                ? 0
+                                : Convert.ToInt32(r["PlantId"]),
+
+                            PlantName = r["PlantName"] == DBNull.Value
+                                ? "-"
+                                : r["PlantName"].ToString(),
+
+                            LastPaymentDate = r["LastPaymentDate"] == DBNull.Value
+                                ? (DateTime?)null
+                                : Convert.ToDateTime(r["LastPaymentDate"]),
+
+                            LastPaymentStatus = r["LastPaymentStatus"] == DBNull.Value
+                                ? null
+                                : r["LastPaymentStatus"].ToString()
+                        });
+                    }
+                }
+            }
+
+            return vm;
+        }
     }
 }

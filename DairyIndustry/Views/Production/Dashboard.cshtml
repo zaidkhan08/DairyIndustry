@@ -8,18 +8,15 @@
 
 <style>
     :root {
-        /* Core palette */
         --bg: #f5f6fb;
         --surface: rgba(255,255,255,0.85);
         --surface-solid: #ffffff;
         --border: rgba(220,224,240,0.7);
         --border-light: rgba(220,224,240,0.4);
-        /* Text */
         --text: #0f172a;
         --text-mid: #334155;
         --text-muted: #64748b;
         --text-light: #94a3b8;
-        /* Accent colors */
         --mint: #10b981;
         --mint-bg: #ecfdf5;
         --mint-text: #065f46;
@@ -38,7 +35,6 @@
         --coral: #f43f5e;
         --coral-bg: #fff1f2;
         --coral-text: #881337;
-        /* Shadows */
         --shadow-card: 0 8px 32px rgba(15,23,42,0.05), 0 2px 8px rgba(15,23,42,0.03);
         --shadow-hover: 0 20px 48px rgba(15,23,42,0.10), 0 4px 16px rgba(15,23,42,0.06);
         --shadow-sm: 0 2px 8px rgba(15,23,42,0.04);
@@ -63,7 +59,6 @@
         min-height: 100vh;
     }
 
-        /* Subtle mesh background */
         body::before {
             content: '';
             position: fixed;
@@ -73,48 +68,7 @@
             z-index: 0;
         }
 
-    /* ── Page Header ─────────────────────────────── */
-    .page-header {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.75rem 2rem 1.5rem;
-        background: rgba(255,255,255,0.75);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--border);
-    }
-
-    .page-title {
-        font-size: 26px;
-        font-weight: 800;
-        color: var(--text);
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-    }
-
-    .page-subtitle {
-        font-size: 13px;
-        color: var(--text-muted);
-        margin-top: 4px;
-        font-weight: 400;
-    }
-
-        .page-subtitle strong {
-            color: var(--text-mid);
-            font-weight: 600;
-        }
-
-    .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-shrink: 0;
-    }
-
-    /* ── Buttons ──────────────────────────────────── */
+    /* ── Buttons ── */
     .btn-primary {
         display: inline-flex;
         align-items: center;
@@ -163,7 +117,7 @@
             transform: translateY(-1px);
         }
 
-    /* ── Main Body ────────────────────────────────── */
+    /* ── Dash Body ── */
     .dash-body {
         position: relative;
         z-index: 1;
@@ -173,212 +127,541 @@
         gap: 1.75rem;
     }
 
-    /* ── Section Label ────────────────────────────── */
-    .section-label {
-        font-size: 11px;
+    /* ══════════════════════════════════════
+           WELCOME TYPOGRAPHY
+        ══════════════════════════════════════ */
+    .welcome-block {
+        padding: 0.25rem 0 0;
+    }
+
+    .welcome-date {
+        font-size: 11.5px;
         font-weight: 700;
-        letter-spacing: 1.2px;
+        letter-spacing: 1.4px;
         text-transform: uppercase;
         color: var(--text-light);
-        margin-bottom: 0.75rem;
+        margin-bottom: 10px;
     }
 
-    /* ── Summary Grid ─────────────────────────────── */
-    .summary-grid {
+    .welcome-title {
+        font-size: 46px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -1.5px;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .welcome-name {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .welcome-sub {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-top: 10px;
+        font-weight: 500;
+    }
+
+        .welcome-sub strong {
+            color: var(--text-mid);
+        }
+
+    .welcome-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 1.25rem;
+    }
+
+    /* ══════════════════════════════════════
+           NEW FINANCIAL KPI CARDS
+        ══════════════════════════════════════ */
+    .fin-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: 1.15fr 0.85fr;
         gap: 16px;
+        align-items: stretch;
     }
 
-    .sum-card {
-        background: var(--surface);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--border);
+    /* Base card */
+    .fin-card {
         border-radius: var(--radius-xl);
-        padding: 1.5rem 1.4rem 1.3rem;
+        padding: 1.6rem 1.75rem;
         box-shadow: var(--shadow-card);
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 0;
         transition: transform 0.25s ease, box-shadow 0.25s ease;
-        cursor: default;
         position: relative;
         overflow: hidden;
     }
 
-        .sum-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            opacity: 0;
-            transition: opacity 0.25s ease;
-        }
-
-        .sum-card:hover {
+        .fin-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-hover);
         }
 
-            .sum-card:hover::before {
-                opacity: 1;
-            }
-
-        .sum-card.c-mint::before {
-            background: linear-gradient(90deg, var(--mint), var(--aqua));
+        /* Card variants */
+        .fin-card.card-dark {
+            background: #0f172a;
+            color: #fff;
         }
 
-        .sum-card.c-aqua::before {
-            background: linear-gradient(90deg, var(--aqua), #38bdf8);
+        .fin-card.card-white {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
         }
 
-        .sum-card.c-amber::before {
-            background: linear-gradient(90deg, var(--amber), #fb923c);
+        .fin-card.card-green {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
         }
 
-        .sum-card.c-coral::before {
-            background: linear-gradient(90deg, var(--coral), #f97316);
+        .fin-card.card-red {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
         }
 
-        .sum-card.c-blue::before {
-            background: linear-gradient(90deg, var(--blue), #6366f1);
-        }
-
-        .sum-card.c-lavender::before {
-            background: linear-gradient(90deg, var(--lavender), #ec4899);
-        }
-
-    .sum-card-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
+    .icon-blue {
+        background: #eff6ff;
+        color: #2563eb;
     }
 
-    /* Icon containers — pastel gradients */
-    .sum-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: var(--radius-md);
+    .todo-card {
+        min-height: 295px;
+        width: 100%;
+    }
+
+    .todo-list {
+        flex: 1;
+    }
+
+    .fin-card {
+        height: 100%;
+    }
+
+    .todo-input-wrap {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        margin-bottom: 18px;
+    }
+
+    .todo-input {
+        flex: 1;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 0 14px;
+        font-size: 13px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        outline: none;
+        background: #fff;
+        transition: 0.2s ease;
+    }
+
+        .todo-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.08);
+        }
+
+    .todo-add-btn {
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg,#3b82f6,#6366f1);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s ease;
+        flex-shrink: 0;
+    }
+
+        .todo-add-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(99,102,241,0.35);
+        }
+
+    .todo-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        max-height: 180px;
+        padding-right: 4px;
+    }
+
+    .todo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px 14px;
+        transition: 0.2s ease;
+    }
+
+        .todo-item:hover {
+            background: #f1f5f9;
+        }
+
+    .todo-text {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.5;
+    }
+
+    .todo-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .todo-btn {
+        border: none;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 7px 10px;
+        border-radius: 8px;
+        transition: 0.2s ease;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .todo-edit {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .todo-delete {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .todo-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .todo-empty {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+        padding: 30px 10px;
+    }
+
+
+    /* Card header row */
+    .fin-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.1rem;
+    }
+
+    .fin-card-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: inherit;
+        opacity: 0.85;
+    }
+
+    .fin-card-label-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
     }
 
-        .sum-icon svg {
-            width: 20px;
-            height: 20px;
+        .fin-card-label-icon svg {
+            width: 14px;
+            height: 14px;
         }
 
-        .sum-icon.mint {
-            background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
-        }
+    /* Dark card icon */
+    .icon-dark-blue {
+        background: rgba(59,130,246,0.2);
+        color: #60a5fa;
+    }
+    /* Green card icon */
+    .icon-green {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+    /* Red card icon */
+    .icon-red {
+        background: #ffe4e6;
+        color: #e11d48;
+    }
 
-        .sum-icon.aqua {
-            background: linear-gradient(135deg, #a5f3fc, #67e8f9);
-        }
-
-        .sum-icon.amber {
-            background: linear-gradient(135deg, #fde68a, #fcd34d);
-        }
-
-        .sum-icon.coral {
-            background: linear-gradient(135deg, #fecdd3, #fda4af);
-        }
-
-        .sum-icon.blue {
-            background: linear-gradient(135deg, #bfdbfe, #93c5fd);
-        }
-
-        .sum-icon.lavender {
-            background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
-        }
-
-    /* Badges */
-    .sum-badge {
-        font-size: 10px;
+    .fin-pill {
+        font-size: 11px;
         font-weight: 700;
         padding: 3px 10px;
         border-radius: var(--radius-pill);
         white-space: nowrap;
-        letter-spacing: 0.2px;
     }
 
-    .badge-mint {
-        background: var(--mint-bg);
-        color: var(--mint-text);
-    }
-
-    .badge-amber {
-        background: var(--amber-bg);
-        color: var(--amber-text);
-    }
-
-    .badge-coral {
-        background: var(--coral-bg);
-        color: var(--coral-text);
-    }
-
-    .badge-blue {
-        background: var(--blue-bg);
-        color: var(--blue-text);
-    }
-
-    .badge-lavender {
-        background: var(--lavender-bg);
-        color: var(--lavender-text);
-    }
-
-    .badge-gray {
-        background: #f1f5f9;
-        color: #64748b;
-    }
-
-    /* Number + label */
-    .sum-value {
-        font-size: 36px;
-        font-weight: 800;
-        color: var(--text);
-        line-height: 1;
-        letter-spacing: -1px;
-    }
-
-    .sum-label {
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 3px;
-        font-weight: 500;
-    }
-
-    .sum-link {
-        font-size: 12px;
-        color: var(--blue);
-        text-decoration: none;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        opacity: 0.8;
-        transition: opacity 0.15s;
-    }
-
-        .sum-link:hover {
-            opacity: 1;
-            text-decoration: underline;
+        .fin-pill.dark {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
         }
 
-    /* ── Mid / Bottom Grid ────────────────────────── */
-    .mid-grid, .bottom-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
+        .fin-pill.green-pill {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .fin-pill.red-pill {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+
+        .fin-pill.amber-pill {
+            background: var(--amber-bg);
+            color: #b45309;
+        }
+
+    /* Big value */
+    .fin-value {
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -1.5px;
+        margin-bottom: 4px;
     }
 
-    /* ── Generic Panel ────────────────────────────── */
+    .fin-card.card-dark .fin-value {
+        color: #fff;
+    }
+
+    .fin-card.card-white .fin-value,
+    .fin-card.card-green .fin-value,
+    .fin-card.card-red .fin-value {
+        color: var(--text);
+    }
+
+    .fin-delta {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 6px;
+    }
+
+        .fin-delta.up {
+            color: #16a34a;
+        }
+
+        .fin-delta.down {
+            color: #e11d48;
+        }
+
+        .fin-delta.neutral {
+            color: var(--text-muted);
+        }
+
+        .fin-delta svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+    /* Dark card action buttons */
+    .fin-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 1.5rem;
+    }
+
+    .fin-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+        .fin-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .fin-btn.solid {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+            .fin-btn.solid:hover {
+                background: #2563eb;
+            }
+
+        .fin-btn.ghost {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+            .fin-btn.ghost:hover {
+                background: rgba(255,255,255,0.14);
+            }
+
+    /* Divider rows inside card */
+    .fin-divider {
+        height: 1px;
+        background: rgba(220,224,240,0.5);
+        margin: 1rem 0;
+    }
+
+        .fin-divider.dark {
+            background: rgba(255,255,255,0.08);
+        }
+
+    /* Sub rows (e.g. Salary / Freelance) */
+    .fin-sub-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.6rem;
+    }
+
+    .fin-sub-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .fin-sub-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .fin-sub-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'DM Mono', monospace;
+    }
+
+    /* Progress / mini bar */
+    .fin-bar-wrap {
+        margin-top: 1rem;
+    }
+
+    .fin-bar-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .fin-bar-track {
+        height: 7px;
+        background: #f1f5f9;
+        border-radius: 100px;
+        overflow: hidden;
+    }
+
+    .fin-bar-fill {
+        height: 100%;
+        border-radius: 100px;
+        transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .fill-blue {
+        background: linear-gradient(90deg, #3b82f6, #6366f1);
+    }
+
+    .fill-green {
+        background: linear-gradient(90deg, #10b981, #06b6d4);
+    }
+
+    .fill-red {
+        background: linear-gradient(90deg, #f43f5e, #f97316);
+    }
+
+    /* Segment bar (expense breakdown) */
+    .seg-bar {
+        display: flex;
+        height: 7px;
+        border-radius: 100px;
+        overflow: hidden;
+        margin-top: 1rem;
+        gap: 2px;
+    }
+
+    .seg-bar-chunk {
+        border-radius: 100px;
+    }
+
+    .seg-legend {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .seg-dot {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+        .seg-dot::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .seg-dot.blue::before {
+            background: #3b82f6;
+        }
+
+        .seg-dot.green::before {
+            background: #10b981;
+        }
+
+        .seg-dot.amber::before {
+            background: #f59e0b;
+        }
+
+    /* ── Panel (existing) ── */
     .panel {
         background: var(--surface);
         backdrop-filter: blur(16px);
@@ -485,7 +768,7 @@
         border-top: 1px solid var(--border-light);
     }
 
-    /* ── Batch Stat Grid ──────────────────────────── */
+    /* ── Batch Grid ── */
     .batch-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -517,7 +800,7 @@
         }
 
         .batch-cell.amber-bg {
-            background: linear-gradient(145deg, #fffbeb, #fef3c7);
+            background: linear-gradient(145deg,#fffbeb,#fef3c7);
         }
 
             .batch-cell.amber-bg::after {
@@ -525,7 +808,7 @@
             }
 
         .batch-cell.teal-bg {
-            background: linear-gradient(145deg, #ecfdf5, #d1fae5);
+            background: linear-gradient(145deg,#ecfdf5,#d1fae5);
         }
 
             .batch-cell.teal-bg::after {
@@ -533,7 +816,7 @@
             }
 
         .batch-cell.red-bg {
-            background: linear-gradient(145deg, #fff1f2, #ffe4e6);
+            background: linear-gradient(145deg,#fff1f2,#ffe4e6);
         }
 
             .batch-cell.red-bg::after {
@@ -541,7 +824,7 @@
             }
 
         .batch-cell.gray-bg {
-            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            background: linear-gradient(145deg,#f8fafc,#f1f5f9);
         }
 
             .batch-cell.gray-bg::after {
@@ -580,7 +863,6 @@
         color: var(--text-muted);
     }
 
-    /* ── View All Button ──────────────────────────── */
     .view-all-btn {
         display: flex;
         align-items: center;
@@ -615,7 +897,7 @@
                 border-color: var(--amber);
             }
 
-    /* ── Transfer Overview ────────────────────────── */
+    /* ── Transfer rows ── */
     .transfer-row {
         display: flex;
         align-items: center;
@@ -645,7 +927,6 @@
                 color: var(--coral);
             }
 
-    /* Progress bar */
     .progress-wrap {
         margin-top: 16px;
     }
@@ -662,7 +943,7 @@
         height: 100%;
         border-radius: var(--radius-pill);
         background: linear-gradient(90deg, var(--mint), var(--aqua));
-        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: width 1s cubic-bezier(0.4,0,0.2,1);
         position: relative;
     }
 
@@ -680,15 +961,15 @@
 
     @@keyframes shimmer {
         0% {
-            opacity: 0;
+            opacity: 0
         }
 
         50% {
-            opacity: 1;
+            opacity: 1
         }
 
         100% {
-            opacity: 0;
+            opacity: 0
         }
     }
 
@@ -698,7 +979,7 @@
         font-weight: 500;
     }
 
-    /* ── Tables ───────────────────────────────────── */
+    /* ── Tables ── */
     .dash-table {
         width: 100%;
         border-collapse: collapse;
@@ -740,7 +1021,7 @@
                 background: rgba(59,130,246,0.03);
             }
 
-    /* ── Status Pills ─────────────────────────────── */
+    /* ── Pills ── */
     .pill {
         display: inline-flex;
         align-items: center;
@@ -788,7 +1069,6 @@
         color: var(--amber-text);
     }
 
-    /* ── Panel Action Bar ─────────────────────────── */
     .panel-action-bar {
         padding: 1rem 1.5rem;
         border-top: 1px solid var(--border-light);
@@ -797,16 +1077,121 @@
         background: #fafbfc;
     }
 
-    /* ── Responsive ───────────────────────────────── */
-    @@media (max-width: 1400px) {
-        .summary-grid {
-            grid-template-columns: repeat(3, minmax(0,1fr));
+    /* ── Grid layouts ── */
+    .mid-grid, .bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* Todo list */
+
+    .ops-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 8px;
+    }
+
+    .ops-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: 0.2s ease;
+    }
+
+        .ops-item:hover {
+            background: #f1f5f9;
+            transform: translateY(-1px);
+        }
+
+    .ops-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ops-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .ops-icon.blue {
+            background: #dbeafe;
+        }
+
+        .ops-icon.green {
+            background: #dcfce7;
+        }
+
+        .ops-icon.red {
+            background: #fee2e2;
+        }
+
+        .ops-icon.amber {
+            background: #fef3c7;
+        }
+
+    .ops-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .ops-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .ops-badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+        .ops-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .ops-badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .ops-badge.danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .ops-badge.info {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+    @@media (max-width: 1200px) {
+        .fin-grid {
+            grid-template-columns: 1fr 1fr;
         }
     }
 
     @@media (max-width: 1024px) {
-        .summary-grid {
-            grid-template-columns: repeat(3, minmax(0,1fr));
+        .fin-grid {
+            grid-template-columns: 1fr;
         }
 
         .mid-grid, .bottom-grid {
@@ -815,35 +1200,27 @@
     }
 
     @@media (max-width: 640px) {
-        .summary-grid {
-            grid-template-columns: repeat(2, minmax(0,1fr));
-        }
-
         .dash-body {
             padding: 1.25rem;
         }
 
-        .page-header {
-            flex-direction: column;
-            gap: 14px;
-            align-items: flex-start;
+        .welcome-title {
+            font-size: 32px;
+        }
+
+        .fin-value {
+            font-size: 30px;
         }
 
         .batch-grid {
             grid-template-columns: 1fr 1fr;
         }
-    }
 
-    @@media (max-width: 400px) {
-        .summary-grid {
-            grid-template-columns: 1fr;
-        }
+
     }
 </style>
 
-<!-- ═══════════════════════════════════════
-     SVG ICON DEFS (inline, zero HTTP cost)
-═══════════════════════════════════════ -->
+<!-- ═══ SVG DEFS ═══ -->
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
     <symbol id="icon-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <rect x="1" y="3" width="15" height="13" rx="2" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
@@ -866,6 +1243,9 @@
     <symbol id="icon-trend-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
     </symbol>
+    <symbol id="icon-trend-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </symbol>
     <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
     </symbol>
@@ -876,191 +1256,382 @@
     <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+    </symbol>
 </svg>
 
-<!-- ═══════════════════════════════════════
-     PAGE HEADER
-═══════════════════════════════════════ -->
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Production Dashboard</h1>
-        <p class="page-subtitle">
-            Welcome back, <strong>@User.Identity?.Name?.Split('\\').Last()</strong>
-            &nbsp;&mdash;&nbsp; @DateTime.Now.ToString("dddd, dd MMMM yyyy")
-        </p>
-    </div>
-    <div class="header-actions">
-        <a href="@Url.Action("StartBatch", "Production")" class="btn-primary">
-            <svg width="14" height="14"><use href="#icon-plus" /></svg>
-            Start Batch
-        </a>
-        <a href="@Url.Action("Index", "Production")" class="btn-outline">
-            <svg width="14" height="14"><use href="#icon-list" /></svg>
-            All Records
-        </a>
-    </div>
-</div>
+@{
+    var totalDispatched = Model.RecentTransfers.Sum(t => t.DispatchQty);
+    var receivedQty = Model.RecentTransfers.Where(t => t.Status == "Received").Sum(t => t.DispatchQty);
+    var receivedPct = totalDispatched > 0 ? (int)Math.Round(receivedQty / totalDispatched * 100) : 0;
+    var totalCenterPaid = Model.TotalPaidToCenters;
+    var pendingCenterAmt = Model.RecentCenterPayments.Where(x => x.PaymentStatus == "Pending").Sum(x => x.TotalAmount);
+    var processedAmt = Model.RecentCenterPayments.Where(x => x.PaymentStatus == "Processed").Sum(x => x.TotalAmount);
+
+    // Expense segment %
+    var totalWaste = (double)(Model.TotalMilkProcessWastage + Model.TotalProductWastage);
+    var totalLoss = (double)Model.TotalLossLitres;
+    var totalStock = (double)Model.TotalRawMilkStock;
+    var grandOps = totalWaste + totalLoss + totalStock;
+    var wastePct = grandOps > 0 ? (int)(totalWaste / grandOps * 100) : 33;
+    var lossPct2 = grandOps > 0 ? (int)(totalLoss / grandOps * 100) : 33;
+    var stockPct = 100 - wastePct - lossPct2;
+}
 
 <div class="dash-body">
 
-    <!-- ═══ ROW 1 — 6 KPI Cards ══════════════════════ -->
-    <div class="summary-grid">
+    <!-- ═══ WELCOME ═══════════════════════════════════════ -->
+    <div class="welcome-block">
+        <p class="welcome-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</p>
+        <h1 class="welcome-title">
+            Welcome back,<br>
 
-        <!-- Milk Transfers -->
-        <div class="sum-card c-aqua">
-            <div class="sum-card-top">
-                <div class="sum-icon aqua">
-                    <svg><use href="#icon-truck" /></svg>
+            <span class="welcome-name">
+                @Context.Session.GetString("Username")
+            </span>
+
+            👋
+        </h1>
+        <p class="welcome-sub">
+            Here's what's happening at
+            <strong>@Context.Session.GetString("PlantName")</strong> today.
+        </p>
+        <div class="welcome-actions">
+            <a href="@Url.Action("StartBatch", "Production")" class="btn-primary">
+                <svg width="14" height="14"><use href="#icon-plus" /></svg>
+                Start Batch
+            </a>
+            <a href="@Url.Action("Index", "Production")" class="btn-outline">
+                <svg width="14" height="14"><use href="#icon-list" /></svg>
+                All Records
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ FINANCIAL KPI CARDS ══════════════════════════ -->
+    <div class="fin-grid">
+
+        <!-- Card 1: My Balance (dark) -->
+        <div class="fin-card card-dark">
+            <div class="fin-card-head">
+                <div class="fin-card-label">
+                    <div class="fin-card-label-icon icon-dark-blue">
+                        <svg><use href="#icon-card" /></svg>
+                    </div>
+                    Center Payments
                 </div>
+                <span class="fin-pill dark">ALL TIME</span>
+            </div>
+
+            <div class="fin-value">₹@((totalCenterPaid / 100000m).ToString("F2"))L</div>
+
+            @if (pendingCenterAmt > 0)
+            {
+                <div class="fin-delta down">
+                    <svg><use href="#icon-trend-down" /></svg>
+                    ₹@pendingCenterAmt.ToString("N0") pending settlement
+                </div>
+            }
+            else
+            {
+                <div class="fin-delta up">
+                    <svg><use href="#icon-trend-up" /></svg>
+                    All center payments settled
+                </div>
+            }
+
+            <div class="fin-divider dark"></div>
+
+            <div class="fin-actions">
+                <a href="@Url.Action("ProcessCenterPayment", "Finance")" class="fin-btn solid">
+                    <svg><use href="#icon-plus" /></svg>
+                    Process Payment
+                </a>
+                <a href="@Url.Action("CenterPayments", "Finance")" class="fin-btn ghost">
+                    <svg><use href="#icon-eye" /></svg>
+                    View All
+                </a>
+            </div>
+        </div>
+
+        <!-- Todo List Card -->
+               
+        <div class="fin-card card-white todo-card">
+
+            <div class="fin-card-head">
+
+                <div class="fin-card-label">
+
+                    <div class="fin-card-label-icon icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor"
+                             stroke-width="2">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+
+                    Pending Tasks
+
+                </div>
+
+                <span class="fin-pill amber-pill">
+
+                    @{
+                        int pendingCount = 0;
+
+                        if (Model.PendingTransfers > 0)
+                            pendingCount++;
+
+                        if (pendingCenterAmt > 0)
+                            pendingCount++;
+
+                        if (Model.QCFailedBatches > 0)
+                            pendingCount++;
+
+                        if (Model.InProgressBatches > 0)
+                            pendingCount++;
+                    }
+
+                    @pendingCount Pending
+
+                </span>
+
+            </div>
+
+            <div class="ops-list">
+
                 @if (Model.PendingTransfers > 0)
                 {
-                    <span class="sum-badge badge-amber">@Model.PendingTransfers Pending</span>
-                }
-                else
-                {
-                    <span class="sum-badge badge-mint">All Clear</span>
-                }
-            </div>
-            <div>
-                <div class="sum-value" data-target="@Model.TotalTransfers">@Model.TotalTransfers</div>
-                <div class="sum-label">Milk Transfers</div>
-            </div>
-            <a href="@Url.Action("Index", "Production")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
-        </div>
+                    <div class="ops-item">
 
-        <!-- Production Batches -->
-        <div class="sum-card c-amber">
-            <div class="sum-card-top">
-                <div class="sum-icon amber">
-                    <svg><use href="#icon-factory" /></svg>
-                </div>
+                        <div class="ops-left">
+
+                            <div class="ops-icon blue">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <rect x="1" y="3"
+                                          width="15"
+                                          height="13"></rect>
+
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+
+                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+
+                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Pending Milk Transfers
+                                </div>
+
+                                <div class="ops-sub">
+                                    Awaiting plant receipt
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge warning">
+                            @Model.PendingTransfers
+                        </span>
+
+                    </div>
+                }
+
+                @if (pendingCenterAmt > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon green">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <rect x="2" y="5"
+                                          width="20"
+                                          height="14"
+                                          rx="2"></rect>
+
+                                    <line x1="2" y1="10"
+                                          x2="22" y2="10"></line>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Pending Payments
+                                </div>
+
+                                <div class="ops-sub">
+                                    Center settlements due
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge danger">
+                            ₹@pendingCenterAmt.ToString("N0")
+                        </span>
+
+                    </div>
+                }
+
+                @if (Model.QCFailedBatches > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon red">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+
+                                    <line x1="12" y1="9"
+                                          x2="12" y2="13"></line>
+
+                                    <line x1="12" y1="17"
+                                          x2="12.01" y2="17"></line>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    QC Failed Batches
+                                </div>
+
+                                <div class="ops-sub">
+                                    Requires immediate review
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge danger">
+                            @Model.QCFailedBatches
+                        </span>
+
+                    </div>
+                }
+
                 @if (Model.InProgressBatches > 0)
                 {
-                    <span class="sum-badge badge-amber">@Model.InProgressBatches Active</span>
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon amber">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <path d="M6 22V12"></path>
+                                    <path d="M18 22V12"></path>
+                                    <path d="M2 12h20"></path>
+                                    <path d="M12 2v20"></path>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Active Production
+                                </div>
+
+                                <div class="ops-sub">
+                                    Batches currently running
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge info">
+                            @Model.InProgressBatches
+                        </span>
+
+                    </div>
                 }
-                else
+
+                @if (pendingCount == 0)
                 {
-                    <span class="sum-badge badge-gray">0 Active</span>
+                    <div class="todo-empty">
+
+                        <svg width="42"
+                             height="42"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="#10b981"
+                             stroke-width="2">
+
+                            <path d="M20 6L9 17l-5-5"></path>
+
+                        </svg>
+
+                        <div style="margin-top:10px;font-weight:700;">
+                            No Pending Tasks
+                        </div>
+
+                        <div style="margin-top:4px;font-size:12px;color:var(--text-muted);">
+                            Everything looks good.
+                        </div>
+
+                    </div>
                 }
+
             </div>
-            <div>
-                <div class="sum-value" data-target="@Model.TotalBatches">@Model.TotalBatches</div>
-                <div class="sum-label">Production Batches</div>
-            </div>
-            <a href="@Url.Action("Batches", "Production")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
+
         </div>
 
-        <!-- Raw Milk Stock -->
-        <div class="sum-card c-mint">
-            <div class="sum-card-top">
-                <div class="sum-icon mint">
-                    <svg><use href="#icon-droplet" /></svg>
-                </div>
-                @if (Model.LowStockCount > 0)
-                {
-                    <span class="sum-badge badge-amber">@Model.LowStockCount Low</span>
-                }
-                else
-                {
-                    <span class="sum-badge badge-mint">Stocked</span>
-                }
-            </div>
-            <div>
-                <div class="sum-value">@((Model.TotalRawMilkStock / 1000).ToString("F1"))k</div>
-                <div class="sum-label">Raw Milk Stock (L)</div>
-            </div>
-            <a href="@Url.Action("RawMilkInventory", "Production")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
-        </div>
-
-        <!-- Quality Tests -->
-        <div class="sum-card c-coral">
-            <div class="sum-card-top">
-                <div class="sum-icon coral">
-                    <svg><use href="#icon-flask" /></svg>
-                </div>
-                @if (Model.DeviatedTests > 0)
-                {
-                    <span class="sum-badge badge-coral">@Model.DeviatedTests Deviated</span>
-                }
-                else
-                {
-                    <span class="sum-badge badge-mint">All Normal</span>
-                }
-            </div>
-            <div>
-                <div class="sum-value" data-target="@Model.TotalQualityTests">@Model.TotalQualityTests</div>
-                <div class="sum-label">Quality Tests</div>
-            </div>
-            <a href="@Url.Action("QualityTests", "Production")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
-        </div>
-
-        <!-- Center Payments -->
-        <div class="sum-card c-blue">
-            <div class="sum-card-top">
-                <div class="sum-icon blue">
-                    <svg><use href="#icon-card" /></svg>
-                </div>
-                @if (Model.PendingCenterPayments > 0)
-                {
-                    <span class="sum-badge badge-amber">@Model.PendingCenterPayments Pending</span>
-                }
-                else
-                {
-                    <span class="sum-badge badge-mint">All Settled</span>
-                }
-            </div>
-            <div>
-                <div class="sum-value">₹@((Model.TotalPaidToCenters / 100000).ToString("F1"))L</div>
-                <div class="sum-label">Center Payments</div>
-            </div>
-            <a href="@Url.Action("CenterPayments", "Finance")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
-        </div>
-
-        <!-- Wastage -->
-        <div class="sum-card c-lavender">
-            <div class="sum-card-top">
-                <div class="sum-icon lavender">
-                    <svg><use href="#icon-box" /></svg>
-                </div>
-                <span class="sum-badge badge-lavender">@Model.TotalProductWastage Logged</span>
-            </div>
-            <div>
-                <div class="sum-value">@Model.TotalMilkProcessWastage.ToString("N0")</div>
-                <div class="sum-label">Process Wastage (L)</div>
-            </div>
-            <a href="@Url.Action("WastageLog", "Production")" class="sum-link">
-                View all
-                <svg width="12" height="12"><use href="#icon-arrow-right" /></svg>
-            </a>
-        </div>
 
     </div>
 
     <!-- ═══ ROW 2 — Batch Stats | Transfer Overview ════ -->
     <div class="mid-grid">
 
-        <!-- Production Batches Panel -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon amber">
-                        <svg><use href="#icon-factory" /></svg>
-                    </div>
+                    <div class="panel-icon amber"><svg><use href="#icon-factory" /></svg></div>
                     Production Batches
                 </div>
             </div>
@@ -1092,22 +1663,14 @@
             </div>
         </div>
 
-        <!-- Transfer Overview Panel -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon aqua">
-                        <svg><use href="#icon-truck" /></svg>
-                    </div>
+                    <div class="panel-icon aqua"><svg><use href="#icon-truck" /></svg></div>
                     Transfer Overview
                 </div>
             </div>
             <div class="panel-body">
-                @{
-                    var totalDispatched = Model.RecentTransfers.Sum(t => t.DispatchQty);
-                    var receivedQty = Model.RecentTransfers.Where(t => t.Status == "Received").Sum(t => t.DispatchQty);
-                    var receivedPct = totalDispatched > 0 ? (int)Math.Round(receivedQty / totalDispatched * 100) : 0;
-                }
                 <div class="transfer-row">
                     <span class="t-label">Total Dispatched</span>
                     <span class="t-value">@totalDispatched.ToString("N0") L</span>
@@ -1153,13 +1716,10 @@
     <!-- ═══ ROW 3 — Recent Transfers | Recent Batches ══ -->
     <div class="bottom-grid">
 
-        <!-- Recent Transfers -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon aqua">
-                        <svg><use href="#icon-truck" /></svg>
-                    </div>
+                    <div class="panel-icon aqua"><svg><use href="#icon-truck" /></svg></div>
                     Recent Transfers
                 </div>
                 <a href="@Url.Action("Index", "Production")" class="panel-view-all">View All</a>
@@ -1203,13 +1763,10 @@
             }
         </div>
 
-        <!-- Recent Batches -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon amber">
-                        <svg><use href="#icon-factory" /></svg>
-                    </div>
+                    <div class="panel-icon amber"><svg><use href="#icon-factory" /></svg></div>
                     Recent Batches
                 </div>
                 <a href="@Url.Action("Batches", "Production")" class="panel-view-all">View All</a>
@@ -1239,15 +1796,19 @@
                                             <span class="pill pill-inprogress">In Progress</span>
                                             break;
                                         case "Completed":
+
                                             <span class="pill pill-completed">Completed</span>
                                             break;
                                         case "QCFailed":
+
                                             <span class="pill pill-failed">QC Failed</span>
                                             break;
                                         case "Cancelled":
+
                                             <span class="pill pill-cancelled">Cancelled</span>
                                             break;
                                         default:
+
                                             <span class="pill pill-cancelled">@b.BatchStatus</span>
                                             break;
                                     }
@@ -1268,13 +1829,10 @@
     <!-- ═══ ROW 4 — Raw Milk Inventory | Transfer Loss ══ -->
     <div class="bottom-grid">
 
-        <!-- Raw Milk Inventory -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon mint">
-                        <svg><use href="#icon-droplet" /></svg>
-                    </div>
+                    <div class="panel-icon mint"><svg><use href="#icon-droplet" /></svg></div>
                     Raw Milk Inventory
                 </div>
                 <a href="@Url.Action("RawMilkInventory", "Production")" class="panel-view-all">View All</a>
@@ -1283,12 +1841,7 @@
             {
                 <table class="dash-table">
                     <thead>
-                        <tr>
-                            <th>Plant</th>
-                            <th>Milk Type</th>
-                            <th>Quantity</th>
-                            <th>Status</th>
-                        </tr>
+                        <tr><th>Plant</th><th>Milk Type</th><th>Quantity</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var inv in Model.Inventory.Take(7))
@@ -1304,9 +1857,11 @@
                                             <span class="pill pill-active">Available</span>
                                             break;
                                         case "Low":
+
                                             <span class="pill pill-inprogress">Low</span>
                                             break;
                                         default:
+
                                             <span class="pill pill-failed">Empty</span>
                                             break;
                                     }
@@ -1322,13 +1877,10 @@
             }
         </div>
 
-        <!-- Transfer Loss Log -->
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">
-                    <div class="panel-icon coral">
-                        <svg><use href="#icon-trend-down" /></svg>
-                    </div>
+                    <div class="panel-icon coral"><svg><use href="#icon-trend-down" /></svg></div>
                     Transfer Loss Log
                 </div>
                 <a href="@Url.Action("TransferLossLog", "Production")" class="panel-view-all">View All</a>
@@ -1337,12 +1889,7 @@
             {
                 <table class="dash-table">
                     <thead>
-                        <tr>
-                            <th>Route</th>
-                            <th>Loss (L)</th>
-                            <th>Loss %</th>
-                            <th>Category</th>
-                        </tr>
+                        <tr><th>Route</th><th>Loss (L)</th><th>Loss %</th><th>Category</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var l in Model.RecentLosses.Take(6))
@@ -1361,9 +1908,11 @@
                                             <span class="pill pill-failed">Severe</span>
                                             break;
                                         case "Moderate":
+
                                             <span class="pill pill-inprogress">Moderate</span>
                                             break;
                                         default:
+
                                             <span class="pill pill-active">Minor</span>
                                             break;
                                     }
@@ -1381,13 +1930,11 @@
 
     </div>
 
-    <!-- ═══ ROW 5 — Center Payments (Full Width) ════════ -->
+    <!-- ═══ ROW 5 — Center Payments Full Width ════════ -->
     <div class="panel">
         <div class="panel-header">
             <div class="panel-title">
-                <div class="panel-icon blue">
-                    <svg><use href="#icon-card" /></svg>
-                </div>
+                <div class="panel-icon blue"><svg><use href="#icon-card" /></svg></div>
                 Recent Center Payments
             </div>
             <a href="@Url.Action("CenterPayments", "Finance")" class="panel-view-all">View All</a>
@@ -1426,9 +1973,11 @@
                                         <span class="pill pill-completed">Processed</span>
                                         break;
                                     case "Failed":
+
                                         <span class="pill pill-failed">Failed</span>
                                         break;
                                     default:
+
                                         <span class="pill pill-pending">Pending</span>
                                         break;
                                 }
@@ -1458,26 +2007,23 @@
 
 @section Scripts {
     <script>
-        // ── Counter animation ─────────────────────────────
-        document.querySelectorAll('.sum-value').forEach(el => {
-            const txt  = el.textContent.trim();
+        // Counter animation
+        document.querySelectorAll('.fin-value').forEach(el => {
+            const txt = el.textContent.trim();
             const hasCurr = txt.startsWith('₹');
-            const raw  = txt.replace(/[^\d.]/g, '');
-            const num  = parseFloat(raw);
+            const raw = txt.replace(/[^\d.]/g, '');
+            const num = parseFloat(raw);
             if (isNaN(num) || num === 0) return;
-
-            const suffix  = txt.replace(/[\d,. ₹]/g, '').trim();
-            const prefix  = hasCurr ? '₹' : '';
+            const suffix = txt.replace(/[\d,. ₹]/g, '').trim();
+            const prefix = hasCurr ? '₹' : '';
             const isFloat = txt.includes('.');
-            const decs    = isFloat ? (txt.split('.')[1]?.replace(/\D/, '').length || 1) : 0;
-
-            const dur   = 900;
+            const decs = isFloat ? (txt.split('.')[1]?.replace(/\D/, '').length || 1) : 0;
+            const dur = 900;
             const start = performance.now();
-
             function tick(now) {
-                const p    = Math.min((now - start) / dur, 1);
+                const p = Math.min((now - start) / dur, 1);
                 const ease = 1 - Math.pow(1 - p, 3);
-                const v    = num * ease;
+                const v = num * ease;
                 const disp = isFloat ? v.toFixed(decs) : Math.round(v).toLocaleString('en-IN');
                 el.textContent = prefix + disp + suffix;
                 if (p < 1) requestAnimationFrame(tick);
@@ -1485,23 +2031,132 @@
             requestAnimationFrame(tick);
         });
 
-        // ── Progress bar animation ────────────────────────
-        document.querySelectorAll('.progress-fill').forEach(el => {
+        // Bar animations
+        document.querySelectorAll('.fin-bar-fill, .progress-fill').forEach(el => {
             const target = el.style.width;
             el.style.width = '0%';
-            setTimeout(() => { el.style.width = target; }, 150);
+            setTimeout(() => { el.style.width = target; }, 200);
         });
 
-        // ── Card stagger entrance ─────────────────────────
-        const cards = document.querySelectorAll('.sum-card, .panel');
-        cards.forEach((card, i) => {
+        // Card stagger entrance
+        document.querySelectorAll('.fin-card, .panel').forEach((card, i) => {
             card.style.opacity = '0';
-            card.style.transform = 'translateY(14px)';
+            card.style.transform = 'translateY(16px)';
             card.style.transition = 'opacity 0.45s ease, transform 0.45s ease, box-shadow 0.25s ease';
             setTimeout(() => {
                 card.style.opacity = '1';
                 card.style.transform = 'translateY(0)';
-            }, 60 + i * 40);
+            }, 60 + i * 50);
         });
+
+
+                let todos = [];
+
+        function renderTodos() {
+
+            const list = document.getElementById("todoList");
+            const count = document.getElementById("todoCount");
+
+            if (todos.length === 0) {
+
+                list.innerHTML = `
+                    <div class="todo-empty" id="todoEmpty">
+                        No tasks added yet.
+                    </div>
+                `;
+
+                count.innerText = "0";
+
+                return;
+            }
+
+            list.innerHTML = "";
+
+            todos.forEach((todo, index) => {
+
+                list.innerHTML += `
+                    <div class="todo-item">
+
+                        <div class="todo-text">
+                            ${todo}
+                        </div>
+
+                        <div class="todo-actions">
+
+                            <button type="button"
+                                    class="todo-btn todo-edit"
+                                    onclick="editTodo(${index})">
+
+                                Edit
+
+                            </button>
+
+                            <button type="button"
+                                    class="todo-btn todo-delete"
+                                    onclick="deleteTodo(${index})">
+
+                                Delete
+
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
+            });
+
+            count.innerText = todos.length;
+        }
+
+        function addTodo() {
+
+            const input = document.getElementById("todoInput");
+
+            const value = input.value.trim();
+
+            if (value === "")
+                return;
+
+            todos.unshift(value);
+
+            input.value = "";
+
+            renderTodos();
+        }
+
+        function deleteTodo(index) {
+
+            todos.splice(index, 1);
+
+            renderTodos();
+        }
+
+        function editTodo(index) {
+
+            const updated = prompt("Edit task", todos[index]);
+
+            if (updated === null)
+                return;
+
+            const clean = updated.trim();
+
+            if (clean === "")
+                return;
+
+            todos[index] = clean;
+
+            renderTodos();
+        }
+
+        document
+            .getElementById("todoInput")
+            .addEventListener("keypress", function (e) {
+
+                if (e.key === "Enter") {
+                    addTodo();
+                }
+            });
+
+        renderTodos();
     </script>
 }

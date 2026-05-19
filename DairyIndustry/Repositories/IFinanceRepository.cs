@@ -49,7 +49,7 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         CenterWalletViewModel GetCenterWallet(int? centerId = null);
 
-        // ── NEW: Bonus breakdown from Finance.CenterWallet table ─
+        // ── Bonus breakdown from Finance.CenterWallet table ─────
         /// <summary>
         /// Returns wallet entries from Finance.CenterWallet showing base vs bonus
         /// breakdown per center payment.
@@ -57,5 +57,17 @@ namespace DairyIndustry.Repositories
         /// Pass null to get all centers (Admin).
         /// </summary>
         List<CenterWalletEntry> GetCenterWalletEntries(int? centerId = null);
+
+        // ════════════════════════════════════════════════════════
+        // PLANT STAFF LIST
+        // plantId — from session (Plant Manager) or passed explicitly (Admin)
+        // If plantId is null → returns staff for ALL plants (Admin overview)
+        // ════════════════════════════════════════════════════════
+        /// <summary>
+        /// Returns staff working at centers that supply the given plant.
+        /// Plant Manager sees only their own plant's staff (plantId from session).
+        /// Admin passes null to see all staff across all plants.
+        /// </summary>
+        PlantStaffViewModel GetPlantStaff(int? plantId = null);
     }
 }

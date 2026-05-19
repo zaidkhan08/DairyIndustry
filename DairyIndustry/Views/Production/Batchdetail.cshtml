@@ -2,50 +2,76 @@
 @{
     ViewData["Title"] = $"Batch PB-{Model.ProductionBatchId}";
     Layout = "~/Views/Shared/_ProductionLayout.cshtml";
-    var milkTypes = ViewBag.MilkTypes as List<DairyIndustry.Models.Admin.MilkTypeModel>;
+
     bool canChangeStatus = Model.BatchStatus == "InProgress";
     bool canAddWastage = Model.BatchStatus == "InProgress";
+
+    string statusColor = Model.BatchStatus switch
+    {
+        "InProgress" => "#854F0B",
+        "Completed" => "#3B6D11",
+        "QCFailed" => "#A32D2D",
+        "Cancelled" => "#5f6368",
+        "Pending" => "#185FA5",
+        _ => "#5f6368"
+    };
+    string statusBg = Model.BatchStatus switch
+    {
+        "InProgress" => "#FAEEDA",
+        "Completed" => "#EAF3DE",
+        "QCFailed" => "#FCEBEB",
+        "Cancelled" => "#f1f3f4",
+        "Pending" => "#E6F1FB",
+        _ => "#f1f3f4"
+    };
+    string statusBorder = Model.BatchStatus switch
+    {
+        "InProgress" => "#FAC775",
+        "Completed" => "#C0DD97",
+        "QCFailed" => "#F7C1C1",
+        "Cancelled" => "#e0e0e0",
+        "Pending" => "#B5D4F4",
+        _ => "#e0e0e0"
+    };
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    .bd-root {
-        --ink: #202124;
-        --ink-2: #3c4043;
-        --ink-m: #5f6368;
-        --ink-f: #9aa0a6;
-        --surface: #fff;
+    .bd {
+        --ink: #111827;
+        --ink-2: #374151;
+        --ink-3: #6b7280;
+        --ink-4: #9ca3af;
+        --surface: #ffffff;
         --bg: #f8f9fa;
-        --bg-3: #f1f3f4;
-        --border: #e0e0e0;
-        --accent: #1a73e8;
-        --accent-bg: #e8f0fe;
-        --accent-dark: #185abc;
-        --green: #1e8e3e;
-        --green-bg: #e6f4ea;
-        --green-mid: #ceead6;
-        --red: #d93025;
-        --red-bg: #fce8e6;
-        --red-mid: #f5c6c2;
-        --yellow: #f29900;
-        --yellow-bg: #fef7e0;
-        --yellow-mid: #fce8b2;
-        --grey-bg: #f1f3f4;
-        --grey-mid: #e8eaed;
-        --shadow: 0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
-        --shadow-sm: 0 1px 2px rgba(60,64,67,.2);
-        --r: 8px;
-        --r-lg: 12px;
-        font-family: 'Roboto',sans-serif;
+        --border: #e2e5ea;
+        --accent: #185FA5;
+        --green: #3B6D11;
+        --green-bg: #EAF3DE;
+        --green-bd: #C0DD97;
+        --red: #A32D2D;
+        --red-bg: #FCEBEB;
+        --red-bd: #F7C1C1;
+        --amber: #854F0B;
+        --amber-bg: #FAEEDA;
+        --amber-bd: #FAC775;
+        --blue-bg: #E6F1FB;
+        --blue-bd: #B5D4F4;
+        --r: 10px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
         color: var(--ink);
-        max-width: 960px;
+        max-width: 1000px;
     }
 
+    /* ── Breadcrumb ── */
     .bd-bc {
         display: flex;
         align-items: center;
         gap: 6px;
         font-size: 12px;
-        color: var(--ink-f);
+        color: var(--ink-3);
         margin-bottom: 6px;
     }
 
@@ -59,32 +85,59 @@
                 text-decoration: underline;
             }
 
+    /* ── Page header ── */
     .bd-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        margin-bottom: 4px;
-        gap: 12px;
+        margin-bottom: 20px;
+        gap: 16px;
         flex-wrap: wrap;
     }
 
     .bd-title {
         font-size: 22px;
-        font-weight: 400;
+        font-weight: 700;
+        letter-spacing: -0.5px;
         color: var(--ink);
-        margin: 0 0 2px;
+        margin: 0 0 4px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .bd-title-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        letter-spacing: 0;
+    }
+
+    .bd-title-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
     }
 
     .bd-sub {
         font-size: 13px;
-        color: var(--ink-m);
-        margin: 0 0 20px;
+        color: var(--ink-3);
+        margin: 0;
     }
 
+    /* ── Action buttons ── */
     .bd-actions {
         display: flex;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+        flex-shrink: 0;
     }
 
     .bd-btn {
@@ -93,20 +146,16 @@
         gap: 7px;
         height: 36px;
         padding: 0 16px;
-        border-radius: 18px;
+        border-radius: 8px;
         font-size: 13px;
         font-weight: 500;
-        font-family: 'Roboto',sans-serif;
+        font-family: inherit;
         cursor: pointer;
         text-decoration: none;
         border: 1px solid;
-        transition: background .2s, box-shadow .2s, transform .1s;
+        transition: all .15s;
         white-space: nowrap;
     }
-
-        .bd-btn:active {
-            transform: scale(.98);
-        }
 
     .bd-btn-back {
         background: var(--surface);
@@ -115,64 +164,40 @@
     }
 
         .bd-btn-back:hover {
-            background: var(--bg-3);
+            background: #f3f4f6;
+            border-color: #ccc;
             color: var(--ink);
-            border-color: #bbb;
+            text-decoration: none;
         }
 
-    .bd-btn-warn {
-        background: var(--yellow-bg);
-        border-color: var(--yellow-mid);
-        color: #b06000;
+    .bd-btn-wastage {
+        background: var(--amber-bg);
+        border-color: var(--amber-bd);
+        color: var(--amber);
     }
 
-        .bd-btn-warn:hover {
+        .bd-btn-wastage:hover {
             background: #fde9a0;
-            box-shadow: 0 1px 4px rgba(242,153,0,.3);
         }
 
-    .bd-btn-ok {
+    .bd-btn-status {
         background: var(--green-bg);
-        border-color: var(--green-mid);
+        border-color: var(--green-bd);
         color: var(--green);
     }
 
-        .bd-btn-ok:hover {
+        .bd-btn-status:hover {
             background: #d2eeda;
-            box-shadow: 0 1px 4px rgba(30,142,62,.2);
         }
 
-    .bd-qc-alert {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 14px 18px;
-        border-radius: var(--r-lg);
-        background: var(--red-bg);
-        border: 1px solid var(--red-mid);
-        color: var(--red);
-        margin-bottom: 20px;
-        font-size: 14px;
-    }
-
-        .bd-qc-alert i {
-            font-size: 20px;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .bd-qc-alert a {
-            color: var(--red);
-            font-weight: 500;
-        }
-
+    /* ── Alerts ── */
     .bd-alert {
         display: flex;
         align-items: flex-start;
         gap: 10px;
         padding: 12px 16px;
-        border-radius: var(--r-lg);
-        font-size: 13.5px;
+        border-radius: var(--r);
+        font-size: 13px;
         font-weight: 500;
         margin-bottom: 16px;
         border: 1px solid;
@@ -180,13 +205,13 @@
 
     .bd-alert-success {
         background: var(--green-bg);
-        border-color: var(--green-mid);
+        border-color: var(--green-bd);
         color: var(--green);
     }
 
     .bd-alert-danger {
         background: var(--red-bg);
-        border-color: var(--red-mid);
+        border-color: var(--red-bd);
         color: var(--red);
     }
 
@@ -196,408 +221,481 @@
         border: none;
         cursor: pointer;
         color: inherit;
-        opacity: .6;
         font-size: 16px;
+        opacity: .6;
+        line-height: 1;
     }
 
         .bd-alert-close:hover {
             opacity: 1;
         }
 
+    /* ── QC Failed banner ── */
+    .bd-qc-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 18px;
+        border-radius: var(--r);
+        background: var(--red-bg);
+        border: 1px solid var(--red-bd);
+        color: var(--red);
+        margin-bottom: 20px;
+        font-size: 13.5px;
+    }
+
+        .bd-qc-banner a {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+    /* ── Grid layout ── */
     .bd-grid {
         display: grid;
-        grid-template-columns: 1fr 340px;
+        grid-template-columns: 1fr 320px;
         gap: 16px;
-        margin-bottom: 16px;
+        align-items: start;
     }
 
-    @@media(max-width:768px) {
-        .bd-grid {
-            grid-template-columns: 1fr;
-        }
+    @@media (max-width: 768px) {
+        .bd-grid
+
+    {
+        grid-template-columns: 1fr;
     }
 
+    }
+
+    /* ── Cards ── */
     .bd-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: var(--r-lg);
+        border-radius: var(--r);
         overflow: hidden;
-        box-shadow: var(--shadow-sm);
     }
 
     .bd-card-hd {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 13px 20px;
+        padding: 12px 18px;
         border-bottom: 1px solid var(--border);
-        background: var(--bg);
-        font-size: 14px;
-        font-weight: 500;
+        background: #fafbfc;
+        font-size: 13px;
+        font-weight: 600;
         color: var(--ink-2);
     }
 
         .bd-card-hd i {
             color: var(--accent);
-            font-size: 16px;
+            font-size: 15px;
         }
 
     .bd-card-body {
-        padding: 20px;
+        padding: 18px;
     }
 
+    /* ── Info grid (inside Batch Information card) ── */
     .bd-info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
     }
 
-    .bd-info-row {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        padding: 10px 14px;
-        background: var(--bg);
-        border-radius: var(--r);
+    .bd-info-cell {
+        padding: 11px 14px;
+        background: #fafbfc;
         border: 1px solid var(--border);
+        border-radius: 8px;
     }
 
-        .bd-info-row.full {
-            grid-column: 1/-1;
+        .bd-info-cell.span2 {
+            grid-column: 1 / -1;
         }
 
-    .bd-info-key {
-        font-size: 11px;
-        font-weight: 500;
+    .bd-info-label {
+        font-size: 10px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: .5px;
-        color: var(--ink-f);
+        letter-spacing: 0.6px;
+        color: var(--ink-4);
+        margin-bottom: 4px;
     }
 
-    .bd-info-val {
+    .bd-info-value {
         font-size: 14px;
         font-weight: 500;
         color: var(--ink);
     }
 
-        .bd-info-val.mono {
-            font-family: 'Roboto Mono','Courier New',monospace;
-        }
-
-        .bd-info-val.big {
-            font-size: 18px;
-            font-weight: 400;
+        .bd-info-value.mono {
+            font-family: 'SF Mono', 'Consolas', monospace;
             color: var(--accent);
         }
 
-    .bd-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 500;
-    }
+        .bd-info-value.big {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
 
-    .bd-status-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: currentColor;
-    }
-
+    /* ── Status Flow card ── */
     .bd-flow {
         display: flex;
         flex-direction: column;
-        gap: 0;
     }
 
     .bd-flow-step {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 10px 16px;
+        padding: 11px 18px;
         position: relative;
     }
 
-        .bd-flow-step:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            left: 27px;
-            top: 100%;
-            width: 2px;
-            height: 10px;
-            background: var(--border);
-            z-index: 0;
+        .bd-flow-step:not(:last-child) {
+            border-bottom: 1px solid #f3f4f6;
         }
 
-    .bd-flow-icon {
-        width: 24px;
-        height: 24px;
+    .bd-flow-dot {
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
         flex-shrink: 0;
-        z-index: 1;
         border: 2px solid;
     }
 
-    .bd-flow-step.inactive .bd-flow-icon {
-        background: var(--bg);
-        border-color: var(--border);
-        color: var(--ink-f);
-    }
+        .bd-flow-dot.active {
+            background: currentColor;
+        }
 
-    .bd-flow-name {
-        font-size: 14px;
-        font-weight: 400;
-        color: var(--ink-m);
-    }
+        .bd-flow-dot.inactive {
+            background: transparent;
+            border-color: #d1d5db;
+            color: #d1d5db;
+        }
 
-    .bd-flow-step.current .bd-flow-name {
-        font-weight: 500;
-        color: var(--ink);
-    }
-
-    .bd-flow-badge {
-        margin-left: auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 500;
-    }
-
-    .bd-qc-note {
-        margin: 12px 16px;
-        padding: 10px 14px;
-        background: var(--yellow-bg);
-        border: 1px solid var(--yellow-mid);
-        border-radius: var(--r);
-        font-size: 12px;
-        color: #7a4f00;
-    }
-
-    .bd-links {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-    }
-
-    .bd-link-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        height: 36px;
-        padding: 0 16px;
-        border-radius: 18px;
+    .bd-flow-label {
         font-size: 13px;
-        font-weight: 500;
-        font-family: 'Roboto',sans-serif;
-        cursor: pointer;
-        text-decoration: none;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        color: var(--ink-2);
-        transition: background .2s, border-color .2s;
+        font-weight: 400;
+        color: var(--ink-3);
+        flex: 1;
     }
 
-        .bd-link-btn:hover {
-            background: var(--bg-3);
-            border-color: #bbb;
+        .bd-flow-label.active {
+            font-weight: 600;
             color: var(--ink);
         }
 
-        .bd-link-btn.danger {
-            color: var(--red);
-            border-color: var(--red-mid);
-        }
-
-            .bd-link-btn.danger:hover {
-                background: var(--red-bg);
-            }
-
-    /* ── Offcanvas ── */
-    .bd-oc-title {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--ink);
+    .bd-flow-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
+        border: 1px solid;
+        letter-spacing: 0.3px;
     }
 
-    .bd-form-label {
-        display: block;
+    .bd-qc-note {
+        margin: 0 14px 14px;
+        padding: 10px 13px;
+        background: var(--amber-bg);
+        border: 1px solid var(--amber-bd);
+        border-radius: 8px;
         font-size: 12px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        color: var(--ink-m);
-        margin-bottom: 6px;
+        color: var(--amber);
+        line-height: 1.5;
     }
 
-    .bd-form-req {
-        color: var(--red);
+    /* ── Divider ── */
+    .bd-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 16px 0;
     }
 
-    .bd-select, .bd-input, .bd-textarea {
-        width: 100%;
-        border: 1.5px solid var(--border);
-        border-radius: var(--r);
-        padding: 10px 14px;
-        font-size: 14px;
-        font-family: 'Roboto',sans-serif;
-        color: var(--ink);
+    /* ── Offcanvas / Drawer ── */
+    .bd-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 400px;
+        max-width: 100vw;
+        height: 100vh;
         background: var(--surface);
-        outline: none;
-        transition: border-color .2s, box-shadow .2s;
-    }
-
-    .bd-select {
-        appearance: none;
-        cursor: pointer;
-    }
-
-        .bd-select:focus, .bd-input:focus, .bd-textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(26,115,232,.1);
-        }
-
-    .bd-textarea {
-        resize: vertical;
-        min-height: 80px;
-    }
-
-    .bd-form-hint {
-        font-size: 12px;
-        color: var(--ink-f);
-        margin-top: 4px;
-    }
-
-    .bd-input-group {
+        border-left: 1px solid var(--border);
         display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform .3s cubic-bezier(.4,0,.2,1);
+        z-index: 1050;
+        box-shadow: -4px 0 24px rgba(0,0,0,.08);
     }
 
-        .bd-input-group .bd-input {
-            border-radius: var(--r) 0 0 var(--r);
-            flex: 1;
+        .bd-drawer.open {
+            transform: translateX(0);
         }
 
-    .bd-input-group-text {
+    .bd-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.2);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 1040;
+    }
+
+        .bd-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .bd-drawer-hd {
         display: flex;
         align-items: center;
-        padding: 0 14px;
-        background: var(--bg-3);
-        border: 1.5px solid var(--border);
-        border-left: none;
-        border-radius: 0 var(--r) var(--r) 0;
-        font-size: 14px;
-        color: var(--ink-m);
-        font-weight: 500;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
     }
 
-    .bd-qc-warning {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 12px 14px;
-        border-radius: var(--r);
-        background: var(--red-bg);
-        border: 1px solid var(--red-mid);
-        color: var(--red);
-        font-size: 13px;
-        margin-bottom: 12px;
+    .bd-drawer-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        margin: 0;
     }
 
-        .bd-qc-warning.hidden {
-            display: none;
-        }
-
-    .bd-wastage-info {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 12px 14px;
-        border-radius: var(--r);
-        background: var(--yellow-bg);
-        border: 1px solid var(--yellow-mid);
-        color: #7a4f00;
-        font-size: 13px;
-        margin-bottom: 12px;
+    .bd-drawer-sub {
+        font-size: 12px;
+        color: var(--ink-3);
+        margin: 2px 0 0;
     }
 
-    /* ── Submit buttons — explicit solid colors, no CSS vars ── */
-    .bd-btn-submit {
-        width: 100%;
-        height: 44px;
-        border-radius: 22px;
-        border: none;
-        font-size: 14px;
-        font-weight: 500;
-        font-family: 'Roboto', sans-serif;
+    .bd-drawer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: #fafbfc;
         cursor: pointer;
+        font-size: 16px;
+        color: var(--ink-3);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        letter-spacing: .3px;
-        transition: box-shadow .2s, transform .1s;
+        transition: all .15s;
+        flex-shrink: 0;
     }
 
-        .bd-btn-submit:active {
-            transform: scale(.98);
+        .bd-drawer-close:hover {
+            background: #f0f0f0;
+            color: var(--ink);
         }
 
-        .bd-btn-submit.primary {
-            background-color: #1a73e8;
-            color: #ffffff;
-        }
-
-            .bd-btn-submit.primary:hover {
-                background-color: #1558b0;
-                box-shadow: 0 2px 8px rgba(26,115,232,.45);
-            }
-
-        .bd-btn-submit.warning {
-            background-color: #f29900;
-            color: #ffffff;
-        }
-
-            .bd-btn-submit.warning:hover {
-                background-color: #c97f00;
-                box-shadow: 0 2px 8px rgba(242,153,0,.45);
-            }
-
-    .bd-mb {
-        margin-bottom: 16px;
-    }
-
-    /* ── Offcanvas sticky footer layout ── */
-    .bd-oc-flex {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
-    .bd-oc-body {
+    .bd-drawer-body {
         flex: 1;
         overflow-y: auto;
         padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
 
-    .bd-oc-footer {
+    .bd-drawer-foot {
+        padding: 14px 20px;
+        border-top: 1px solid var(--border);
+        background: #fafbfc;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
         flex-shrink: 0;
-        padding: 16px 20px;
-        border-top: 1px solid #e0e0e0;
-        background: #ffffff;
     }
+
+    /* ── Frozen info pill inside drawer ── */
+    .bd-frozen {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: var(--blue-bg);
+        border: 1px solid var(--blue-bd);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--accent);
+    }
+
+        .bd-frozen strong {
+            font-size: 13px;
+        }
+
+    /* ── Form fields ── */
+    .bd-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .bd-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-2);
+        }
+
+        .bd-field .req {
+            color: var(--red);
+        }
+
+        .bd-field input,
+        .bd-field select,
+        .bd-field textarea {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 13px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fafbfc;
+            color: var(--ink);
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+            .bd-field input:focus,
+            .bd-field select:focus,
+            .bd-field textarea:focus {
+                border-color: var(--accent);
+                background: var(--surface);
+                box-shadow: 0 0 0 3px rgba(24,95,165,.1);
+            }
+
+        .bd-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+    .bd-field-hint {
+        font-size: 11px;
+        color: var(--ink-4);
+    }
+
+    .bd-input-row {
+        display: flex;
+        gap: 0;
+    }
+
+        .bd-input-row input {
+            border-radius: 8px 0 0 8px;
+            flex: 1;
+        }
+
+    .bd-input-suffix {
+        display: flex;
+        align-items: center;
+        padding: 0 13px;
+        background: #f3f4f6;
+        border: 1px solid var(--border);
+        border-left: none;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-3);
+    }
+
+    /* ── Info box inside drawer ── */
+    .bd-info-box {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 11px 13px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+        .bd-info-box.amber {
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-bd);
+            color: var(--amber);
+        }
+
+        .bd-info-box.red {
+            background: var(--red-bg);
+            border: 1px solid var(--red-bd);
+            color: var(--red);
+        }
+
+    /* ── QC warning in status drawer ── */
+    .bd-qc-warn {
+        display: none;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 11px 13px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+        background: var(--red-bg);
+        border: 1px solid var(--red-bd);
+        color: var(--red);
+    }
+
+        .bd-qc-warn.show {
+            display: flex;
+        }
+
+    /* ── Submit buttons ── */
+    .btn-submit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        height: 38px;
+        padding: 0 20px;
+        border-radius: 8px;
+        border: none;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .btn-submit.primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+            .btn-submit.primary:hover {
+                background: #0C447C;
+            }
+
+        .btn-submit.warning {
+            background: #d97706;
+            color: #fff;
+        }
+
+            .btn-submit.warning:hover {
+                background: #b45309;
+            }
+
+        .btn-submit.cancel {
+            background: var(--surface);
+            color: var(--ink-2);
+            border: 1px solid var(--border);
+        }
+
+            .btn-submit.cancel:hover {
+                background: #f3f4f6;
+            }
 </style>
 
-<div class="bd-root">
+<!-- Overlay -->
+<div class="bd-overlay" id="bdOverlay"></div>
+
+<div class="bd">
 
     <!-- Breadcrumb -->
     <div class="bd-bc">
@@ -609,19 +707,24 @@
     <!-- Header -->
     <div class="bd-header">
         <div>
-            <h1 class="bd-title">Batch Detail &nbsp;<span style="color:var(--ink-m);font-weight:300;">PB-@Model.ProductionBatchId</span></h1>
+            <h1 class="bd-title">
+                Batch <span style="font-family:'SF Mono','Consolas',monospace;font-weight:700;">PB-@Model.ProductionBatchId.ToString("D4")</span>
+                <span class="bd-title-badge" style="background:@statusBg;color:@statusColor;border:1px solid @statusBorder;">
+                    <span class="bd-title-dot"></span>@Model.BatchStatus
+                </span>
+            </h1>
             <p class="bd-sub">@Model.PlantName &nbsp;·&nbsp; @Model.ProductionDate.ToString("dd MMM yyyy")</p>
         </div>
         <div class="bd-actions">
             @if (canAddWastage)
             {
-                <button class="bd-btn bd-btn-warn" data-bs-toggle="offcanvas" data-bs-target="#wastageDrawer">
+                <button class="bd-btn bd-btn-wastage" onclick="openDrawer('wastageDrawer')">
                     <i class="bi bi-droplet-half"></i> Record Wastage
                 </button>
             }
             @if (canChangeStatus)
             {
-                <button class="bd-btn bd-btn-ok" data-bs-toggle="offcanvas" data-bs-target="#statusDrawer">
+                <button class="bd-btn bd-btn-status" onclick="openDrawer('statusDrawer')">
                     <i class="bi bi-pencil"></i> Update Status
                 </button>
             }
@@ -649,273 +752,281 @@
         </div>
     }
 
-    <!-- QC Failed banner -->
+    <!-- QC Failed Banner -->
     @if (Model.BatchStatus == "QCFailed")
     {
-        <div class="bd-qc-alert">
-            <i class="bi bi-exclamation-octagon-fill"></i>
+        <div class="bd-qc-banner">
+            <i class="bi bi-exclamation-octagon-fill" style="font-size:20px;flex-shrink:0;margin-top:2px;"></i>
             <div>
-                <strong>This batch failed QC.</strong><br>
-                The full milk quantity of <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong>
-                has been automatically written off and recorded in
-                <a asp-action="MilkProcessWastage">Milk Process Wastage</a>.
+                <strong>This batch failed QC.</strong> The full milk quantity of
+                <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong> has been automatically
+                written off and recorded in Milk Process Wastage.
             </div>
         </div>
     }
 
-    <!-- Main grid -->
+    <!-- Main 2-col grid -->
     <div class="bd-grid">
 
-        <!-- Batch info -->
+        <!-- LEFT: Batch Information -->
         <div class="bd-card">
-            <div class="bd-card-hd"><i class="bi bi-info-circle-fill"></i> Batch Information</div>
+            <div class="bd-card-hd">
+                <i class="bi bi-info-circle-fill"></i> Batch Information
+            </div>
             <div class="bd-card-body">
                 <div class="bd-info-grid">
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Batch ID</span>
-                        <span class="bd-info-val mono">PB-@Model.ProductionBatchId.ToString("D4")</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Batch ID</div>
+                        <div class="bd-info-value mono">PB-@Model.ProductionBatchId.ToString("D4")</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Status</span>
-                        @{
-                            string sc = Model.BatchStatus switch
-                            {
-                                "InProgress" => "background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-mid);",
-                                "Completed" => "background:var(--green-bg);color:var(--green);border:1px solid var(--green-mid);",
-                                "QCFailed" => "background:var(--red-bg);color:var(--red);border:1px solid var(--red-mid);",
-                                "Cancelled" => "background:var(--grey-bg);color:var(--ink-m);border:1px solid var(--grey-mid);",
-                                _ => ""
-                            };
-                        }
-                        <span class="bd-status" style="@sc">
-                            <span class="bd-status-dot"></span>@Model.BatchStatus
-                        </span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Status</div>
+                        <div class="bd-info-value">
+                            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:@statusBg;color:@statusColor;border:1px solid @statusBorder;">
+                                <span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>
+                                @Model.BatchStatus
+                            </span>
+                        </div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Plant</span>
-                        <span class="bd-info-val">@Model.PlantName</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Plant</div>
+                        <div class="bd-info-value">@Model.PlantName</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Production Date</span>
-                        <span class="bd-info-val">@Model.ProductionDate.ToString("dd MMM yyyy")</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Production Date</div>
+                        <div class="bd-info-value">@Model.ProductionDate.ToString("dd MMM yyyy")</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Product</span>
-                        <span class="bd-info-val">@Model.ProductName</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Product</div>
+                        <div class="bd-info-value">@Model.ProductName</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Product Type</span>
-                        <span class="bd-info-val">@Model.ProductType</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Product Type</div>
+                        <div class="bd-info-value">@Model.ProductType</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Unit</span>
-                        <span class="bd-info-val">@Model.Unit</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Unit</div>
+                        <div class="bd-info-value">@Model.Unit</div>
                     </div>
-                    <div class="bd-info-row">
-                        <span class="bd-info-key">Milk Used</span>
-                        <span class="bd-info-val big">@Model.MilkUsedQuantity.ToString("N2") L</span>
+                    <div class="bd-info-cell">
+                        <div class="bd-info-label">Milk Type</div>
+                        <div class="bd-info-value">@(Model.MilkTypeName ?? "—")</div>
                     </div>
+                    <div class="bd-info-cell span2">
+                        <div class="bd-info-label">Milk Used</div>
+                        <div class="bd-info-value big">@Model.MilkUsedQuantity.ToString("N2") <span style="font-size:14px;font-weight:500;color:var(--ink-3);">L</span></div>
+                    </div>
+                   
                 </div>
             </div>
         </div>
 
-        <!-- Status flow -->
+        <!-- RIGHT: Status Flow -->
         <div class="bd-card">
-            <div class="bd-card-hd"><i class="bi bi-diagram-3-fill"></i> Status Flow</div>
-            <div class="bd-card-body" style="padding:12px 0;">
+            <div class="bd-card-hd">
+                <i class="bi bi-diagram-3-fill"></i> Status Flow
+            </div>
+            <div class="bd-flow">
                 @{
-                    var steps = new[] {
-                                ("InProgress", "bi-hourglass-split",   "background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);"),
-                                ("Completed",  "bi-check-circle-fill", "background:var(--green-bg);color:var(--green);border-color:var(--green);"),
-                                ("QCFailed",   "bi-x-circle-fill",     "background:var(--red-bg);color:var(--red);border-color:var(--red);"),
-                                ("Cancelled",  "bi-dash-circle-fill",  "background:var(--grey-bg);color:var(--ink-m);border-color:var(--border);")
+                    var flowSteps = new[]
+                    {
+                                ("Pending",    "bi-clock",               "#185FA5", "#E6F1FB", "#B5D4F4"),
+                                ("InProgress", "bi-hourglass-split",     "#854F0B", "#FAEEDA", "#FAC775"),
+                                ("Completed",  "bi-check-circle-fill",   "#3B6D11", "#EAF3DE", "#C0DD97"),
+                                ("QCFailed",   "bi-x-circle-fill",       "#A32D2D", "#FCEBEB", "#F7C1C1"),
+                                ("Cancelled",  "bi-dash-circle-fill",    "#6b7280", "#f1f3f4", "#e0e0e0"),
                                 };
                 }
-                <div class="bd-flow">
-                    @foreach (var (name, icon, style) in steps)
-                    {
-                        bool isCurrent = Model.BatchStatus == name;
-                        <div class="bd-flow-step @(isCurrent ? "current" : "inactive")">
-                            <div class="bd-flow-icon" style="@(isCurrent? style : "background:var(--bg);border-color:var(--border);color:var(--ink-f);")">
-                                <i class="bi @icon"></i>
-                            </div>
-                            <span class="bd-flow-name">@name</span>
-                            @if (isCurrent)
-                            {
-                                <span class="bd-flow-badge" style="@style">Current</span>
-                            }
-                            @if (name == "QCFailed" && isCurrent)
-                            {
-                                <span class="bd-flow-badge" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-mid);margin-left:4px;">
-                                    <i class="bi bi-droplet-half"></i> Auto-logged
-                                </span>
-                            }
-                        </div>
-                    }
-                </div>
-                @if (canChangeStatus)
+                @foreach (var (name, icon, fc, fbg, fbd) in flowSteps)
                 {
-                    <div class="bd-qc-note">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Marking as <strong>QC Failed</strong> will automatically record
-                        <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong> in Milk Process Wastage.
+                    bool isCurrent = Model.BatchStatus == name;
+                    <div class="bd-flow-step">
+                        <span class="bd-flow-dot @(isCurrent ? "active" : "inactive")"
+                              style="@(isCurrent ? $"color:{fc};border-color:{fc};" : "")"></span>
+                        <span class="bd-flow-label @(isCurrent ? "active" : "")">@name</span>
+                        @if (isCurrent)
+                        {
+                            <span class="bd-flow-badge"
+                                  style="background:@fbg;color:@fc;border-color:@fbd;">
+                                Current
+                            </span>
+                        }
                     </div>
                 }
             </div>
+            @if (canChangeStatus)
+            {
+                <div class="bd-qc-note" style="margin:12px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Marking as <strong>QC Failed</strong> will automatically record
+                    <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong> in Milk Process Wastage.
+                </div>
+            }
         </div>
 
-    </div>
+    </div><!-- /bd-grid -->
 
-    <!-- Quick links -->
-    <div class="bd-links">
-        <a asp-action="WastageByBatch" asp-route-id="@Model.ProductionBatchId" class="bd-link-btn">
-            <i class="bi bi-trash3"></i> Product Wastage for This Batch
-        </a>
-        <a asp-action="MilkProcessWastage" class="bd-link-btn danger">
-            <i class="bi bi-droplet-half"></i> All Milk Process Wastage
-        </a>
-    </div>
-
-</div>
-
-
-<!-- ══════════════════════════════════════════
-     OFFCANVAS — Update Status
-══════════════════════════════════════════ -->
-@if (canChangeStatus)
-{
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="statusDrawer"
-         style="width:380px; font-family:'Roboto',sans-serif;">
-
-        <div class="bd-oc-flex">
-
-            <div class="offcanvas-header" style="border-bottom:1px solid #e0e0e0; flex-shrink:0;">
-                <h6 class="offcanvas-title bd-oc-title">
-                    <i class="bi bi-pencil me-2" style="color:#1a73e8;"></i>Update Batch Status
-                </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-
-            <div class="bd-oc-body">
-                <form asp-action="UpdateBatchStatus" method="post" id="statusForm">
-                    <input type="hidden" name="productionBatchId" value="@Model.ProductionBatchId" />
-
-                    <div class="bd-mb">
-                        <label class="bd-form-label">New Status</label>
-                        <select name="batchStatus" class="bd-select" id="statusSelect" onchange="showQCWarn(this.value)">
-                            <option value="Completed">Completed</option>
-                            <option value="QCFailed">QC Failed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
-
-                    <div class="bd-qc-warning hidden" id="qcWarning">
-                        <i class="bi bi-exclamation-octagon-fill" style="flex-shrink:0;margin-top:1px;"></i>
-                        <span>
-                            <strong>Warning:</strong> Selecting QC Failed will automatically record
-                            <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong> as wastage.
-                            This cannot be undone.
-                        </span>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Sticky footer — always visible -->
-            <div class="bd-oc-footer">
-                <button type="submit" form="statusForm" class="bd-btn-submit primary">
-                    <i class="bi bi-check-lg"></i> Confirm Status Update
-                </button>
-            </div>
-
-        </div>
-    </div>
-}
-
-
-<!-- ══════════════════════════════════════════
-     OFFCANVAS — Record Process Wastage
-══════════════════════════════════════════ -->
+</div><!-- /bd -->
+<!-- ══════════════════════════════════════
+     DRAWER — Record Wastage
+══════════════════════════════════════ -->
 @if (canAddWastage)
 {
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="wastageDrawer"
-         style="width:420px; font-family:'Roboto',sans-serif;">
+    <div class="bd-drawer" id="wastageDrawer">
+        <div class="bd-drawer-hd">
+            <div>
+                <p class="bd-drawer-title"><i class="bi bi-droplet-half" style="color:#d97706;margin-right:7px;"></i>Record Process Wastage</p>
+                <p class="bd-drawer-sub">Batch PB-@Model.ProductionBatchId.ToString("D4") · @Model.PlantName</p>
+            </div>
+            <button class="bd-drawer-close" onclick="closeDrawer('wastageDrawer')">&times;</button>
+        </div>
 
-        <div class="bd-oc-flex">
+        <div class="bd-drawer-body">
 
-            <div class="offcanvas-header" style="border-bottom:1px solid #e0e0e0; flex-shrink:0;">
-                <h6 class="offcanvas-title bd-oc-title">
-                    <i class="bi bi-droplet-half me-2" style="color:#f29900;"></i>Record Process Wastage
-                </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            <!-- Auto-filled milk type info pill -->
+            <div class="bd-frozen">
+                <i class="bi bi-lock-fill" style="font-size:15px;flex-shrink:0;"></i>
+                <div>
+                    <div style="font-size:11px;font-weight:500;margin-bottom:1px;">Milk Type (auto-filled from batch)</div>
+                    <strong>@(Model.MilkTypeName ?? "—")</strong>
+                </div>
             </div>
 
-            <div class="bd-oc-body">
-                <p style="font-size:13px;color:#5f6368;margin-bottom:20px;">
-                    Record raw milk lost during processing for batch <strong>PB-@Model.ProductionBatchId</strong>
-                    (e.g. spillage, evaporation, equipment loss). This is separate from a full QC failure.
-                </p>
+            <form asp-action="AddMilkProcessWastage" method="post" id="wastageForm">
+                <input type="hidden" name="productionBatchId" value="@Model.ProductionBatchId" />
+                <input type="hidden" name="milkTypeId" value="@Model.MilkTypeId" />
 
-                <form asp-action="AddMilkProcessWastage" method="post" id="wastageForm">
-                    <input type="hidden" name="productionBatchId" value="@Model.ProductionBatchId" />
-
-                    <div class="bd-mb">
-                        <label class="bd-form-label">Milk Type <span class="bd-form-req">*</span></label>
-                        <select name="milkTypeId" class="bd-select" required>
-                            <option value="">— Select milk type —</option>
-                            @if (milkTypes != null)
-                            {
-                                @foreach (var mt in milkTypes)
-                                {
-                                    <option value="@mt.MilkTypeId">@mt.MilkTypeName</option>
-                                }
-                            }
-                        </select>
+                <div class="bd-field">
+                    <label>Wastage Quantity <span class="req">*</span></label>
+                    <div class="bd-input-row">
+                        <input type="number" name="wastageQuantity"
+                               step="0.01" min="0.01" max="@Model.MilkUsedQuantity"
+                               placeholder="e.g. 25.50" required />
+                        <span class="bd-input-suffix">L</span>
                     </div>
+                    <span class="bd-field-hint">Max allowed: @Model.MilkUsedQuantity.ToString("N2") L</span>
+                </div>
 
-                    <div class="bd-mb">
-                        <label class="bd-form-label">Wastage Quantity <span class="bd-form-req">*</span></label>
-                        <div class="bd-input-group">
-                            <input type="number" name="wastageQuantity" class="bd-input"
-                                   step="0.01" min="0.01" max="@Model.MilkUsedQuantity"
-                                   placeholder="e.g. 25.50" required />
-                            <span class="bd-input-group-text">L</span>
-                        </div>
-                        <div class="bd-form-hint">Max: @Model.MilkUsedQuantity.ToString("N2") L (total milk used)</div>
-                    </div>
+                <div class="bd-field">
+                    <label>Wastage Reason <span class="req">*</span></label>
+                    <select name="reason" required>
+                        <option value="">— Select reason —</option>
+                        <option value="Spillage">Spillage</option>
+                        <option value="Evaporation">Evaporation</option>
+                        <option value="Equipment Loss">Equipment Loss</option>
+                        <option value="Contamination">Contamination</option>
+                        <option value="Transfer Loss">Transfer Loss</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
 
-                    <div class="bd-mb">
-                        <label class="bd-form-label">Reason</label>
-                        <textarea name="reason" class="bd-textarea" maxlength="200"
-                              placeholder="e.g. Spillage during transfer, evaporation loss…"></textarea>
-                    </div>
+                <div class="bd-field">
+                    <label>Notes <span style="font-weight:400;color:var(--ink-4);">(optional)</span></label>
+                    <textarea name="notes" placeholder="Any additional details about the wastage event…" maxlength="300"></textarea>
+                </div>
 
-                    <div class="bd-wastage-info">
-                        <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
-                        <span>
-                            This records a <strong>partial</strong> milk loss only.
-                            To write off the entire batch, use <strong>Update Status &rarr; QC Failed</strong>.
-                        </span>
-                    </div>
-                </form>
-            </div>
+                <div class="bd-info-box amber">
+                    <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
+                    <span>
+                        This records a <strong>partial</strong> milk loss only.
+                        To write off the entire batch, use <strong>Update Status → QC Failed</strong>.
+                    </span>
+                </div>
 
-            <!-- Sticky footer — always visible -->
-            <div class="bd-oc-footer">
-                <button type="submit" form="wastageForm" class="bd-btn-submit warning">
-                    <i class="bi bi-droplet-half"></i> Record Wastage
-                </button>
-            </div>
+            </form>
+        </div>
 
+        <div class="bd-drawer-foot">
+            <button type="button" class="btn-submit cancel" onclick="closeDrawer('wastageDrawer')">Cancel</button>
+            <button type="submit" form="wastageForm" class="btn-submit warning">
+                <i class="bi bi-droplet-half"></i> Record Wastage
+            </button>
         </div>
     </div>
 }
 
 
-@section Scripts {
-    <script>
-        function showQCWarn(val) {
-            const w = document.getElementById('qcWarning');
-            w.classList.toggle('hidden', val !== 'QCFailed');
-        }
-    </script>
+<!-- ══════════════════════════════════════
+     DRAWER — Update Status
+══════════════════════════════════════ -->
+@if (canChangeStatus)
+{
+    <div class="bd-drawer" id="statusDrawer">
+        <div class="bd-drawer-hd">
+            <div>
+                <p class="bd-drawer-title"><i class="bi bi-pencil" style="color:#185FA5;margin-right:7px;"></i>Update Batch Status</p>
+                <p class="bd-drawer-sub">Batch PB-@Model.ProductionBatchId.ToString("D4") · currently <strong>@Model.BatchStatus</strong></p>
+            </div>
+            <button class="bd-drawer-close" onclick="closeDrawer('statusDrawer')">&times;</button>
+        </div>
+
+        <div class="bd-drawer-body">
+
+            <form asp-action="UpdateBatchStatus" method="post" id="statusForm">
+                <input type="hidden" name="productionBatchId" value="@Model.ProductionBatchId" />
+
+                <div class="bd-field">
+                    <label>New Status <span class="req">*</span></label>
+                    <select name="batchStatus" id="statusSelect" onchange="toggleQCWarn(this.value)" required>
+                        <option value="">— Select new status —</option>
+                        <option value="Completed">Completed</option>
+                        <option value="QCFailed">QC Failed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="bd-qc-warn" id="qcWarn">
+                    <i class="bi bi-exclamation-octagon-fill" style="flex-shrink:0;margin-top:1px;font-size:15px;"></i>
+                    <span>
+                        <strong>Warning:</strong> Selecting QC Failed will automatically record
+                        <strong>@Model.MilkUsedQuantity.ToString("N2") L</strong> as wastage in
+                        Milk Process Wastage. <strong>This cannot be undone.</strong>
+                    </span>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="bd-drawer-foot">
+            <button type="button" class="btn-submit cancel" onclick="closeDrawer('statusDrawer')">Cancel</button>
+            <button type="submit" form="statusForm" class="btn-submit primary">
+                <i class="bi bi-check-lg"></i> Confirm Update
+            </button>
+        </div>
+    </div>
 }
+
+<script>
+    const overlay = document.getElementById('bdOverlay');
+
+    function openDrawer(id) {
+        document.getElementById(id).classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer(id) {
+        document.getElementById(id).classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    overlay.addEventListener('click', function () {
+        document.querySelectorAll('.bd-drawer.open').forEach(d => d.classList.remove('open'));
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.bd-drawer.open').forEach(d => d.classList.remove('open'));
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+
+    function toggleQCWarn(val) {
+        const w = document.getElementById('qcWarn');
+        if (w) w.classList.toggle('show', val === 'QCFailed');
+    }
+</script>

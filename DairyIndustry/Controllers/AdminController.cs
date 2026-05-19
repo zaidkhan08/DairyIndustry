@@ -1024,7 +1024,7 @@ namespace DairyIndustry.Controllers
                 var count = _adminRepo.GetNotificationCount();
                 return Json(new { count });
             }
-            catch
+            catch  
             {
                 return Json(new { count = 0 });
             }
