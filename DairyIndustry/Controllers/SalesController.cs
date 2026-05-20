@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
-{
+{ 
     [SessionAuthorize]
     public class SalesController : Controller
     {
@@ -476,6 +476,29 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Details", new { id = orderId });
         }
 
+        // ════════════════════════════════════════════════════════════════════
+        //  BULK UPDATE STATUS — Admin only
+        //  POST /Sales/BulkUpdateStatus
+        // ════════════════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [SessionAuthorize("Admin")]
+        public IActionResult BulkUpdateStatus(List<int> orderIds, string newStatus)
+        {
+            if (orderIds == null || orderIds.Count == 0)
+            {
+                TempData["Error"] = "No orders selected.";
+                return RedirectToAction("Index");
+            }
+            if (!ValidOrderStatuses.Contains(newStatus))
+            {
+                TempData["Error"] = "Invalid status.";
+                return RedirectToAction("Index");
+            }
+            int updated = _repo.BulkUpdateStatus(orderIds, newStatus);
+            TempData["Success"] = $"{updated} order(s) updated to {newStatus}.";
+            return RedirectToAction("Index");
+        }
 
         // ════════════════════════════════════════════════════════════════════
         //  DISTRIBUTORS LIST — Admin only
@@ -761,6 +784,44 @@ namespace DairyIndustry.Controllers
             if (!string.IsNullOrEmpty(referer))
                 return Redirect(referer);
             return RedirectToAction("MyOrders");
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  ORDER RECEIPT — Printable delivery confirmation
+        //  Accessible for Delivered and Received orders only.
+        //  Both Admin and Distributor can access.
+        //  Distributor can only view their own orders.
+        //  GET /Sales/OrderReceipt/5
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Admin", "Distributor")]
+        public IActionResult OrderReceipt(int id)
+        {
+            var order = _repo.GetOrderById(id);
+            if (order == null)
+            {
+                TempData["Error"] = "Order not found.";
+                return RedirectToAction("Index");
+            }
+
+            // Distributor can only view their own orders
+            string role = HttpContext.Session.GetString("RoleName") ?? "";
+            if (role == "Distributor")
+            {
+                int myId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
+                if (order.DistributorId != myId)
+                    return View("AccessDenied");
+            }
+
+            // Only Delivered or Received orders have a receipt
+            if (order.OrderStatus != "Delivered" && order.OrderStatus != "Received")
+            {
+                TempData["Error"] = "Receipt is only available for Delivered or Received orders.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            order.OrderDetails = _repo.GetOrderDetails(id);
+            return View(order);
         }
 
 

@@ -321,6 +321,22 @@ namespace DairyIndustry.Repositories
             return true;
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        //  BULK UPDATE STATUS — inline
+        // ═══════════════════════════════════════════════════════════════════
+        public int BulkUpdateStatus(List<int> orderIds, string newStatus)
+        {
+            if (orderIds == null || orderIds.Count == 0) return 0;
+            var parameters = string.Join(",", orderIds.Select((_, i) => $"@id{i}"));
+            string sql = $"UPDATE Sales.SalesOrders SET OrderStatus=@Status WHERE OrderId IN ({parameters})";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@Status", newStatus);
+            for (int i = 0; i < orderIds.Count; i++)
+                cmd.Parameters.AddWithValue($"@id{i}", orderIds[i]);
+            return cmd.ExecuteNonQuery();
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         //  GET ORDER DETAILS — SP: usp_Sales_GetOrderDetails
@@ -673,7 +689,8 @@ namespace DairyIndustry.Repositories
                        COUNT(so.OrderId)                                              AS TotalOrders,
                        ISNULL(SUM(so.TotalAmount), 0)                                 AS TotalRevenue,
                        SUM(CASE WHEN so.OrderStatus='Delivered' THEN 1 ELSE 0 END)    AS DeliveredOrders,
-                       SUM(CASE WHEN so.OrderStatus='Pending'   THEN 1 ELSE 0 END)    AS PendingOrders
+                       SUM(CASE WHEN so.OrderStatus='Pending'   THEN 1 ELSE 0 END)    AS PendingOrders,
+                                MAX(so.OrderDate)                                     AS LastOrderDate
                 FROM Sales.Distributors d
                 LEFT JOIN Sales.SalesOrders so ON so.DistributorId = d.DistributorId
                 GROUP BY d.DistributorId, d.DistributorName, d.Location
@@ -691,7 +708,8 @@ namespace DairyIndustry.Repositories
                     TotalOrders = Convert.ToInt32(reader["TotalOrders"]),
                     TotalRevenue = Convert.ToDecimal(reader["TotalRevenue"]),
                     DeliveredOrders = Convert.ToInt32(reader["DeliveredOrders"]),
-                    PendingOrders = Convert.ToInt32(reader["PendingOrders"])
+                    PendingOrders = Convert.ToInt32(reader["PendingOrders"]),
+                    LastOrderDate = reader["LastOrderDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["LastOrderDate"])
                 });
             return list;
         }

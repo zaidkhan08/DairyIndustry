@@ -4,15 +4,17 @@
     ViewData["Title"] = "Add New Staff";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-person-plus-fill me-2"></i>Add New Staff
-        </h2>
-        <small class="text-muted">Fill in the details to register a new staff member</small>
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-person-plus-fill"></i></span>
+            Add New Staff
+        </h1>
+        <p class="page-subtitle">Fill in the details to register a new staff member</p>
     </div>
-    <a asp-action="Index" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Back to List
+    <a asp-action="Index" class="btn-hr-secondary">
+        <i class="bi bi-arrow-left"></i> Back to List
     </a>
 </div>
 
@@ -21,309 +23,226 @@
 
     <div class="row g-4">
 
-        <!-- LEFT COLUMN -->
+        <!-- LEFT -->
         <div class="col-md-8">
 
             <!-- Personal Info -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white fw-semibold">
-                    <i class="bi bi-person-fill me-2"></i>Personal Information
+            <div class="hr-card mb-4">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-person-fill"></i></div>
+                    Personal Information
                 </div>
-                <div class="card-body">
+                <div class="hr-card-body">
                     <div class="row g-3">
-
                         <div class="col-md-6">
-                            <label asp-for="FirstName" class="form-label fw-semibold">
-                                First Name <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="FirstName" class="form-control" placeholder="e.g. Raj" />
-                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            <label class="form-label-hr">First Name <span style="color:#dc2626;">*</span></label>
+                            <input asp-for="FirstName" class="form-control-hr" placeholder="e.g. Raj" />
+                            <span asp-validation-for="FirstName" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="LastName" class="form-label fw-semibold">
-                                Last Name <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="LastName" class="form-control" placeholder="e.g. Patel" />
-                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                            <label class="form-label-hr">Last Name <span style="color:#dc2626;">*</span></label>
+                            <input asp-for="LastName" class="form-control-hr" placeholder="e.g. Patel" />
+                            <span asp-validation-for="LastName" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="RoleId" class="form-label fw-semibold">
-                                Role <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="RoleId" class="form-select" asp-items="ViewBag.Roles">
-                                <option value="0">-- Select Role --</option>
+                            <label class="form-label-hr">Role <span style="color:#dc2626;">*</span></label>
+                            <select asp-for="RoleId" class="form-select-hr" asp-items="ViewBag.Roles" onchange="handleRoleChange()">
+                                <option value="0">— Select Role —</option>
                             </select>
-                            <span asp-validation-for="RoleId" class="text-danger small"></span>
+                            <span asp-validation-for="RoleId" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="Phone" class="form-label fw-semibold">Phone Number</label>
-                            <input asp-for="Phone" class="form-control" placeholder="e.g. 9876543210" />
-                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                            <label class="form-label-hr">Phone Number</label>
+                            <input asp-for="Phone" class="form-control-hr" placeholder="e.g. 9876543210" />
+                            <span asp-validation-for="Phone" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="Email" class="form-label fw-semibold">Email Address</label>
-                            <input asp-for="Email" class="form-control" type="email"
-                                   placeholder="e.g. raj@example.com" />
-                            <span asp-validation-for="Email" class="text-danger small"></span>
+                            <label class="form-label-hr">Email Address</label>
+                            <input asp-for="Email" class="form-control-hr" type="email" placeholder="e.g. raj@example.com" />
+                            <span asp-validation-for="Email" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="DOJ" class="form-label fw-semibold">Date of Joining</label>
-                            <input asp-for="DOJ" class="form-control" type="date" />
-                            <span asp-validation-for="DOJ" class="text-danger small"></span>
+                            <label class="form-label-hr">Date of Joining</label>
+                            <input asp-for="DOJ" class="form-control-hr" type="date" />
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="Salary" class="form-label fw-semibold">Salary (₹)</label>
-                            <input asp-for="Salary" class="form-control" type="number"
-                                   step="0.01" placeholder="e.g. 25000.00" />
-                            <span asp-validation-for="Salary" class="text-danger small"></span>
+                            <label class="form-label-hr">Salary (₹)</label>
+                            <input asp-for="Salary" class="form-control-hr" type="number" step="0.01" placeholder="e.g. 25000" />
+                            <span asp-validation-for="Salary" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6 d-flex align-items-end pb-1">
-                            <div class="form-check form-switch ms-1">
-                                <input asp-for="IsActive" class="form-check-input"
-                                       type="checkbox" role="switch" checked />
-                                <label asp-for="IsActive" class="form-check-label fw-semibold">
-                                    Active Staff Member
-                                </label>
-                            </div>
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input asp-for="IsActive" type="checkbox" checked
+                                       style="width:18px;height:18px;accent-color:#2563eb;cursor:pointer;" />
+                                <span style="font-size:.82rem;font-weight:600;color:#0f172a;">Active Staff Member</span>
+                            </label>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            <!-- Assigning Section -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white fw-semibold">
-                    <i class="bi bi-diagram-3-fill me-2"></i>Assigning
-                    <small class="fw-normal ms-2">(fill only one)</small>
+            <!-- Assignment -->
+            <div class="hr-card mb-4">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-diagram-3-fill"></i></div>
+                    Assignment
+                    <span style="font-size:.72rem;color:#94a3b8;font-weight:400;margin-left:4px;">— fill only one</span>
                 </div>
-                <div class="card-body">
+                <div class="hr-card-body">
                     <div class="row g-3">
-
                         <div class="col-md-6">
-                            <label asp-for="PlantId" class="form-label fw-semibold">Plant</label>
-                            <select asp-for="PlantId" class="form-select" asp-items="ViewBag.Plants"
+                            <label class="form-label-hr">Plant</label>
+                            <select asp-for="PlantId" class="form-select-hr" asp-items="ViewBag.Plants"
                                     id="plantSelect" onchange="clearOther('centerSelect')">
                                 <option value="">— Select Plant —</option>
                             </select>
-                            <span asp-validation-for="PlantId" class="text-danger small"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="CenterId" class="form-label fw-semibold">
-                                Collection Center
-                            </label>
-                            <select asp-for="CenterId" class="form-select" asp-items="ViewBag.Centers"
+                            <label class="form-label-hr">Collection Center</label>
+                            <select asp-for="CenterId" class="form-select-hr" asp-items="ViewBag.Centers"
                                     id="centerSelect" onchange="clearOther('plantSelect')">
-                                <option value="">— Select Collection Center —</option>
+                                <option value="">— Select Center —</option>
                             </select>
-                            <span asp-validation-for="CenterId" class="text-danger small"></span>
                         </div>
-
                         <div class="col-12">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Select either a Plant or a Collection Center — not both.
-                                Selecting one automatically clears the other.
-                            </small>
+                            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#0369a1;">
+                                <i class="bi bi-info-circle me-1"></i>Select either a Plant or a Collection Center — selecting one clears the other automatically.
+                            </div>
                         </div>
-
                     </div>
                 </div>
             </div>
 
             <!-- Bank Details -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white fw-semibold">
-                    <i class="bi bi-bank2 me-2"></i>Bank Account Details
-                    <small class="fw-normal ms-2">(optional — fill all 3 or leave all blank)</small>
+            <div class="hr-card mb-4">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-bank2"></i></div>
+                    Bank Account Details
+                    <span style="font-size:.72rem;color:#94a3b8;font-weight:400;margin-left:4px;">— fill all 3 or leave blank</span>
                 </div>
-                <div class="card-body">
+                <div class="hr-card-body">
                     <div class="row g-3">
-
-                        <div class="col-md-6">
-                            <label asp-for="BankName" class="form-label fw-semibold">Bank Name</label>
-                            <input asp-for="BankName" class="form-control"
-                                   placeholder="e.g. State Bank of India" />
+                        <div class="col-md-4">
+                            <label class="form-label-hr">Bank Name</label>
+                            <input asp-for="BankName" class="form-control-hr" placeholder="e.g. SBI" />
                         </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="AccountNumber" class="form-label fw-semibold">
-                                Account Number
-                            </label>
-                            <input asp-for="AccountNumber" class="form-control"
-                                   placeholder="e.g. 123456789012" />
+                        <div class="col-md-4">
+                            <label class="form-label-hr">Account Number</label>
+                            <input asp-for="AccountNumber" class="form-control-hr" placeholder="e.g. 1234567890" />
                         </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="IFSCCode" class="form-label fw-semibold">IFSC Code</label>
-                            <input asp-for="IFSCCode" class="form-control"
-                                   placeholder="e.g. SBIN0001234" />
+                        <div class="col-md-4">
+                            <label class="form-label-hr">IFSC Code</label>
+                            <input asp-for="IFSCCode" class="form-control-hr" placeholder="e.g. SBIN0001234" />
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            <!-- ══════════════════════════════════════════════════════
-                 LOGIN CREDENTIALS SECTION — NEW
-                 Optional: if HR fills Username + Password, a login
-                 account is created for this staff member automatically.
-                 If left blank, no login account is created.
-                 Passwords are BCrypt hashed before storing.
-            ═══════════════════════════════════════════════════════ -->
-            @* Credentials card — hidden by default, shown via JS only for roles that need login *@
-            <div class="card border-0 shadow-sm mb-4"
-                 id="credentialsSection"
-                 style="border-left: 4px solid #6366f1 !important; display:none;">
-                <div class="card-header fw-semibold d-flex align-items-center gap-2"
-                     style="background:#eef2ff; border-bottom:1px solid #c7d2fe; color:#3730a3;">
-                    <i class="bi bi-shield-lock-fill fs-5" style="color:#6366f1;"></i>
-                    Login Credentials
-                    <span class="badge ms-auto fw-normal"
-                          style="background:#e0e7ff; color:#4338ca; font-size:.7rem;">
-                        Optional
-                    </span>
+            <!-- Login Credentials -->
+            <div class="hr-card mb-4" id="credentialsSection" style="display:none;border-left:3px solid #6366f1;">
+                <div class="hr-card-header" style="background:#eef2ff;border-color:#c7d2fe;">
+                    <div class="hch-icon" style="background:#e0e7ff;color:#6366f1;"><i class="bi bi-shield-lock-fill"></i></div>
+                    <span style="color:#3730a3;">Login Credentials</span>
+                    <span style="margin-left:auto;background:#e0e7ff;color:#4338ca;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;">Optional</span>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info border-0 py-2 mb-3" style="font-size:.82rem;">
-                        <i class="bi bi-info-circle-fill me-1"></i>
-                        Fill both fields to create a login account for this staff member.
-                        Leave both blank if no login is needed.
-                        Passwords are securely hashed using BCrypt.
+                <div class="hr-card-body">
+                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:.75rem;color:#1d4ed8;margin-bottom:16px;">
+                        <i class="bi bi-info-circle me-1"></i>Fill both fields to create a login account. Leave blank if no login is needed. Passwords are BCrypt hashed.
                     </div>
                     <div class="row g-3">
-
                         <div class="col-md-6">
-                            <label asp-for="Username" class="form-label fw-semibold">
-                                Username
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white">
-                                    <i class="bi bi-person-circle text-muted"></i>
-                                </span>
-                                <input asp-for="Username" class="form-control"
-                                       placeholder="e.g. raj.patel"
-                                       autocomplete="new-password"
-                                       oninput="checkCredentials()" />
-                            </div>
-                            <span asp-validation-for="Username" class="text-danger small"></span>
-                            <div id="usernameHint" class="text-muted small mt-1" style="display:none;">
-                                Username must be unique. Use letters, numbers, dots or underscores.
-                            </div>
+                            <label class="form-label-hr">Username</label>
+                            <input asp-for="Username" class="form-control-hr" placeholder="e.g. raj.patel" autocomplete="new-password" oninput="checkCredentials()" id="Username" />
+                            <span asp-validation-for="Username" style="font-size:.72rem;color:#dc2626;"></span>
                         </div>
-
                         <div class="col-md-6">
-                            <label asp-for="Password" class="form-label fw-semibold">
-                                Password
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white">
-                                    <i class="bi bi-lock-fill text-muted"></i>
-                                </span>
-                                <input asp-for="Password" class="form-control"
-                                       type="password"
-                                       placeholder="Min. 6 characters"
-                                       autocomplete="new-password"
-                                       oninput="checkCredentials()" />
-                                <button class="btn btn-outline-secondary" type="button"
-                                        onclick="togglePassword(this)" tabindex="-1">
+                            <label class="form-label-hr">Password</label>
+                            <div style="position:relative;">
+                                <input asp-for="Password" class="form-control-hr" type="password" id="Password"
+                                       placeholder="Min. 6 characters" autocomplete="new-password"
+                                       oninput="checkCredentials()" style="padding-right:40px;" />
+                                <button type="button" onclick="togglePwd(this)"
+                                        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.9rem;">
                                     <i class="bi bi-eye"></i>
                                 </button>
                             </div>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                            <div id="passwordStrength" class="mt-1" style="display:none;">
-                                <div class="progress" style="height:4px;">
-                                    <div id="strengthBar" class="progress-bar" style="width:0%;"></div>
+                            <div id="strengthBar" style="display:none;margin-top:6px;">
+                                <div style="height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;">
+                                    <div id="sBar" style="height:100%;border-radius:2px;transition:width .3s;width:0;"></div>
                                 </div>
-                                <small id="strengthLabel" class="text-muted"></small>
+                                <div id="sLabel" style="font-size:.68rem;color:#94a3b8;margin-top:3px;"></div>
+                            </div>
+                            <span asp-validation-for="Password" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-12" id="credWarning" style="display:none;">
+                            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#92400e;">
+                                <i class="bi bi-exclamation-triangle me-1"></i><span id="credWarnText"></span>
                             </div>
                         </div>
-
-                        <!-- Live warning if only one field is filled -->
-                        <div class="col-12" id="credentialWarning" style="display:none;">
-                            <div class="alert alert-warning border-0 py-2 mb-0" style="font-size:.82rem;">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                <span id="credentialWarningText"></span>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- RIGHT COLUMN — Photo + Tips -->
+        <!-- RIGHT -->
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white fw-semibold">
-                    <i class="bi bi-camera-fill me-2"></i>Profile Photo
+
+            <!-- Photo -->
+            <div class="hr-card mb-3">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-camera-fill"></i></div>
+                    Profile Photo
                 </div>
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <img id="photoPreview"
-                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23e9ecef' rx='75'/%3E%3Ccircle cx='75' cy='60' r='28' fill='%23adb5bd'/%3E%3Cellipse cx='75' cy='130' rx='45' ry='35' fill='%23adb5bd'/%3E%3C/svg%3E"
-                             class="rounded-circle border border-2 border-primary"
-                             style="width:150px;height:150px;object-fit:cover;" />
-                    </div>
-                    <label asp-for="PhotoFile" class="form-label fw-semibold d-block">
-                        Upload Photo
-                    </label>
-                    <input type="file" name="PhotoFile" id="PhotoFile" class="form-control"
-                           accept="image/*" onchange="previewPhoto(this)" />
-                    <small class="text-muted d-block mt-2">Optional — JPG or PNG, max 5MB</small>
+                <div style="padding:20px;text-align:center;">
+                    <img id="photoPreview"
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23eff6ff' rx='60'/%3E%3Ccircle cx='60' cy='48' r='22' fill='%23bfdbfe'/%3E%3Cellipse cx='60' cy='104' rx='36' ry='28' fill='%23bfdbfe'/%3E%3C/svg%3E"
+                         class="rounded-circle mb-3"
+                         style="width:120px;height:120px;object-fit:cover;border:3px solid #bfdbfe;" />
+                    <input type="file" name="PhotoFile" id="PhotoFile" accept="image/*"
+                           class="form-control-hr mb-2" style="font-size:.78rem;padding:7px 12px;"
+                           onchange="previewPhoto(this)" />
+                    <div style="font-size:.7rem;color:#94a3b8;">JPG or PNG — max 5MB</div>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mt-3"
-                 style="border-left:4px solid #0dcaf0 !important;">
-                <div class="card-body">
-                    <h6 class="fw-bold text-info mb-2">
-                        <i class="bi bi-info-circle-fill me-1"></i> Tips
-                    </h6>
-                    <ul class="list-unstyled small text-muted mb-0">
-                        <li class="mb-1">
-                            <i class="bi bi-dot text-primary"></i>
-                            First Name, Last Name and Role are required
-                        </li>
-                        <li class="mb-1">
-                            <i class="bi bi-dot text-primary"></i>
-                            Assign to Plant OR Collection Center — not both
-                        </li>
-                        <li class="mb-1">
-                            <i class="bi bi-dot text-primary"></i>
-                            For bank details, fill all 3 or leave all blank
-                        </li>
-                        <li class="mb-1">
-                            <i class="bi bi-dot text-primary"></i>
-                            Staff will be Active by default
-                        </li>
-                        <li>
-                            <i class="bi bi-dot text-indigo"></i>
-                            For login access, fill both Username and Password
-                        </li>
-                    </ul>
+            <!-- Tips -->
+            <div class="hr-card" style="border-left:3px solid #06b6d4;">
+                <div class="hr-card-header" style="background:#ecfeff;border-color:#a5f3fc;">
+                    <div class="hch-icon" style="background:#cffafe;color:#0891b2;"><i class="bi bi-lightbulb-fill"></i></div>
+                    <span style="color:#164e63;">Tips</span>
+                </div>
+                <div style="padding:14px 16px;">
+                    @{
+                        var tips = new[]
+                        {
+                                        "First Name, Last Name and Role are required",
+                                        "Assign to Plant OR Center — not both",
+                                        "Fill all 3 bank fields or leave all blank",
+                                        "For login access, fill both Username and Password",
+                                        "Login fields only appear for roles that need access"
+                                        };
+                    }
+                    @foreach (var tip in tips)
+                    {
+                        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:.78rem;color:#475569;">
+                            <i class="bi bi-check-circle-fill flex-shrink-0" style="color:#2563eb;margin-top:1px;"></i>
+                            @tip
+                        </div>
+                    }
                 </div>
             </div>
+
         </div>
-
     </div>
 
-    <!-- Buttons -->
-    <div class="d-flex justify-content-end gap-2 mt-4">
-        <a asp-action="Index" class="btn btn-outline-secondary px-4">
-            <i class="bi bi-x-lg me-1"></i> Cancel
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-end gap-3 mt-4">
+        <a asp-action="Index" class="btn-hr-secondary" style="padding:10px 24px;">
+            <i class="bi bi-x-lg"></i> Cancel
         </a>
-        <button type="submit" class="btn btn-primary px-5">
-            <i class="bi bi-check-lg me-1"></i> Save Staff
+        <button type="submit" class="btn-hr-primary" style="padding:10px 28px;">
+            <i class="bi bi-check-lg"></i> Save Staff
         </button>
     </div>
 
@@ -334,131 +253,62 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        // ── Photo preview ──
-        function previewPhoto(input) {
-            if (input.files && input.files[0]) {
-                var file = input.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Photo must be smaller than 5MB.');
-                    input.value = '';
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('photoPreview').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // ── Auto-clear the other assignment dropdown ──
-        function clearOther(otherId) {
-            var other = document.getElementById(otherId);
-            if (other) other.value = '';
-        }
-
-        // ── Role-based credentials section visibility ──
-        // RoleIds that should NOT have a login account:
-        // 6 = Plant Staff, 7 = Collection Staff
-        // All other roles (Admin, Driver, Plant Manager, Collection Agent,
-        // Farmer, Distributor, HR Manager) get the credentials section shown.
-        var NO_LOGIN_ROLE_IDS = [6, 7];
+        var NO_LOGIN = [6, 7];
 
         function handleRoleChange() {
-            var roleSelect   = document.getElementById('RoleId');
-            var credSection  = document.getElementById('credentialsSection');
-            var usernameInput = document.getElementById('Username');
-            var passwordInput = document.getElementById('Password');
-            var selectedRole = parseInt(roleSelect.value);
-
-            if (!selectedRole || NO_LOGIN_ROLE_IDS.indexOf(selectedRole) !== -1) {
-                // Hide credentials section and clear the fields
-                // so they are not accidentally submitted
-                credSection.style.display  = 'none';
-                usernameInput.value        = '';
-                passwordInput.value        = '';
-                // Also hide any open warnings/hints
-                document.getElementById('credentialWarning').style.display  = 'none';
-                document.getElementById('passwordStrength').style.display   = 'none';
-                document.getElementById('usernameHint').style.display       = 'none';
+            var role = parseInt(document.getElementById('RoleId').value);
+            var sec  = document.getElementById('credentialsSection');
+            if (!role || NO_LOGIN.indexOf(role) !== -1) {
+                sec.style.display = 'none';
+                document.getElementById('Username').value = '';
+                document.getElementById('Password').value = '';
+                document.getElementById('credWarning').style.display = 'none';
+                document.getElementById('strengthBar').style.display = 'none';
             } else {
-                // Show credentials section for login-eligible roles
-                credSection.style.display = '';
+                sec.style.display = '';
             }
         }
 
-        // Wire up the Role dropdown
-        document.getElementById('RoleId').addEventListener('change', handleRoleChange);
+        function clearOther(id) { var el = document.getElementById(id); if(el) el.value = ''; }
 
-        // Run once on page load in case form is re-rendered with a selected role
-        // (e.g. after a validation error on POST)
-        document.addEventListener('DOMContentLoaded', function () {
-            handleRoleChange();
-        });
-
-        // ── Show/hide password toggle ──
-        function togglePassword(btn) {
-            var input = btn.closest('.input-group').querySelector('input');
-            var icon  = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'bi bi-eye-slash';
-            } else {
-                input.type = 'password';
-                icon.className = 'bi bi-eye';
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                if (input.files[0].size > 5*1024*1024) { alert('Photo must be under 5MB.'); input.value=''; return; }
+                var r = new FileReader();
+                r.onload = function(e) { document.getElementById('photoPreview').src = e.target.result; };
+                r.readAsDataURL(input.files[0]);
             }
         }
 
-        // ── Credential validation + password strength ──
+        function togglePwd(btn) {
+            var inp = btn.parentElement.querySelector('input');
+            var ico = btn.querySelector('i');
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+            ico.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+        }
+
         function checkCredentials() {
-            var username  = document.getElementById('Username').value.trim();
-            var password  = document.getElementById('Password').value;
-            var warning   = document.getElementById('credentialWarning');
-            var warnText  = document.getElementById('credentialWarningText');
-            var strength  = document.getElementById('passwordStrength');
-            var bar       = document.getElementById('strengthBar');
-            var label     = document.getElementById('strengthLabel');
-            var uHint     = document.getElementById('usernameHint');
+            var u = document.getElementById('Username').value.trim();
+            var p = document.getElementById('Password').value;
+            var w = document.getElementById('credWarning');
+            var wt= document.getElementById('credWarnText');
+            var sb= document.getElementById('strengthBar');
+            var bar=document.getElementById('sBar');
+            var lbl=document.getElementById('sLabel');
 
-            // Show username hint when typing
-            uHint.style.display = username.length > 0 ? '' : 'none';
+            if (u && !p) { w.style.display=''; wt.textContent='Please enter a password to go with this username.'; }
+            else if (p && !u) { w.style.display=''; wt.textContent='Please enter a username to go with this password.'; }
+            else { w.style.display='none'; }
 
-            // Warning: one filled without the other
-            if (username && !password) {
-                warning.style.display = '';
-                warnText.textContent  = 'Please enter a password to go with this username.';
-            } else if (password && !username) {
-                warning.style.display = '';
-                warnText.textContent  = 'Please enter a username to go with this password.';
-            } else {
-                warning.style.display = 'none';
-            }
-
-            // Password strength indicator
-            if (password.length > 0) {
-                strength.style.display = '';
-                var score = 0;
-                if (password.length >= 6)  score++;
-                if (password.length >= 10) score++;
-                if (/[A-Z]/.test(password)) score++;
-                if (/[0-9]/.test(password)) score++;
-                if (/[^A-Za-z0-9]/.test(password)) score++;
-
-                var levels = [
-                    { pct: '20%',  cls: 'bg-danger',  text: 'Very Weak' },
-                    { pct: '40%',  cls: 'bg-warning',  text: 'Weak' },
-                    { pct: '60%',  cls: 'bg-info',     text: 'Fair' },
-                    { pct: '80%',  cls: 'bg-primary',  text: 'Strong' },
-                    { pct: '100%', cls: 'bg-success',  text: 'Very Strong' }
-                ];
-                var lvl = levels[Math.min(score, 4)];
-                bar.style.width     = lvl.pct;
-                bar.className       = 'progress-bar ' + lvl.cls;
-                label.textContent   = lvl.text;
-                label.className     = 'text-muted small';
-            } else {
-                strength.style.display = 'none';
-            }
+            if (p.length > 0) {
+                sb.style.display = '';
+                var s = 0;
+                if(p.length>=6)s++; if(p.length>=10)s++; if(/[A-Z]/.test(p))s++; if(/[0-9]/.test(p))s++; if(/[^A-Za-z0-9]/.test(p))s++;
+                var lvl = [['20%','#dc2626','Very Weak'],['40%','#d97706','Weak'],['60%','#0891b2','Fair'],['80%','#2563eb','Strong'],['100%','#16a34a','Very Strong']][Math.min(s,4)];
+                bar.style.width=lvl[0]; bar.style.background=lvl[1]; lbl.textContent=lvl[2]; lbl.style.color=lvl[1];
+            } else { sb.style.display='none'; }
         }
+
+        document.addEventListener('DOMContentLoaded', handleRoleChange);
     </script>
 }

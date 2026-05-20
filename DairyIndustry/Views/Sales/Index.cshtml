@@ -81,47 +81,71 @@
     <div class="card-body p-0">
         @if (Model.Any())
         {
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead style="background:#1a2e4a; color:#fff;">
-                        <tr>
-                            <th>#</th>
-                            <th>Distributor</th>
-                            <th>Date</th>
-                            <th class="text-end">Amount (₹)</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var o in Model)
-                        {
+            <form method="post" asp-action="BulkUpdateStatus" id="bulkForm">
+                @Html.AntiForgeryToken()
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead style="background:#1a2e4a; color:#fff;">
                             <tr>
-                                <td class="text-muted small">#@o.OrderId</td>
-                                <td>
-                                    <div class="fw-semibold">@o.DistributorName</div>
-                                    @if (!string.IsNullOrEmpty(o.Location))
-                                    {
-                                        <small class="text-muted">📍 @o.Location</small>
-                                    }
-                                </td>
-                                <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
-                                <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
-                                <td class="text-center">
-                                    <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
-                                </td>
-                                <td class="text-center">
-                                    <a asp-action="Details" asp-route-id="@o.OrderId"
-                                       class="btn btn-sm btn-outline-primary">Details</a>
-                                </td>
+                                <th style="width:36px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input" title="Select all" />
+                                </th>
+                                <th>#</th>
+                                <th>Distributor</th>
+                                <th>Date</th>
+                                <th class="text-end">Amount (₹)</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Action</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="px-3 py-2 border-top bg-light text-muted small">
-                Showing <strong>@Model.Count</strong> order(s)
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="orderIds" value="@o.OrderId"
+                                               class="form-check-input row-check" />
+                                    </td>
+                                    <td class="text-muted small">#@o.OrderId</td>
+                                    <td>
+                                        <div class="fw-semibold">@o.DistributorName</div>
+                                        @if (!string.IsNullOrEmpty(o.Location))
+                                        {
+                                            <small class="text-muted">📍 @o.Location</small>
+                                        }
+                                    </td>
+                                    <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@o.OrderId"
+                                           class="btn btn-sm btn-outline-primary">Details</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Showing <strong>@Model.Count</strong> order(s)</span>
+                    <div id="bulkBar" style="display:none;" class="d-flex align-items-center gap-2">
+                        <span class="text-dark fw-semibold small" id="selectedCount"></span>
+                        <select name="newStatus" class="form-select form-select-sm" style="width:160px;">
+                            <option value="">— Set Status —</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm"
+                                onclick="return validateBulk()">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </form>
         }
         else
         {
@@ -132,3 +156,35 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        const selectAll = document.getElementById('selectAll');
+        const checks    = document.querySelectorAll('.row-check');
+        const bulkBar   = document.getElementById('bulkBar');
+        const countSpan = document.getElementById('selectedCount');
+
+        function updateBar() {
+            const checked = document.querySelectorAll('.row-check:checked').length;
+            bulkBar.style.display = checked > 0 ? 'flex' : 'none';
+            countSpan.textContent = checked + ' selected';
+        }
+
+        selectAll.addEventListener('change', function () {
+            checks.forEach(c => c.checked = this.checked);
+            updateBar();
+        });
+
+        checks.forEach(c => c.addEventListener('change', function () {
+            selectAll.checked = [...checks].every(c => c.checked);
+            updateBar();
+        }));
+
+        function validateBulk() {
+            const status = document.querySelector('#bulkForm select[name="newStatus"]').value;
+            if (!status) { alert('Please select a status.'); return false; }
+            const count = document.querySelectorAll('.row-check:checked').length;
+            return confirm(`Update ${count} order(s) to "${status}"?`);
+        }
+    </script>
+}

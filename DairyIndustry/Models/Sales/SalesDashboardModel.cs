@@ -27,6 +27,7 @@
         public decimal TotalRevenue { get; set; }
         public int DeliveredOrders { get; set; }
         public int PendingOrders { get; set; }
+        public DateTime? LastOrderDate { get; set; }
     }
 
     public class SalesDashboardViewModel

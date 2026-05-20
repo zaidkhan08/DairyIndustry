@@ -4,74 +4,55 @@
     ViewData["Title"] = "Staff List";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-people-fill me-2"></i>Staff List
-        </h2>
-        <small class="text-muted" id="record-count">@Model.Count record(s) found</small>
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-people-fill"></i></span>
+            Staff List
+        </h1>
+        <p class="page-subtitle" id="record-count">@Model.Count record(s) found</p>
     </div>
     <div class="d-flex gap-2">
-        <a asp-action="Dashboard" class="btn btn-outline-primary">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+        <a asp-action="Dashboard" class="btn-hr-secondary">
+            <i class="bi bi-speedometer2"></i> Dashboard
         </a>
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-person-plus-fill me-1"></i> Add Staff
+        <a asp-action="Create" class="btn-hr-primary">
+            <i class="bi bi-person-plus-fill"></i> Add Staff
         </a>
     </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+<!-- Filter + Search Card -->
+<div class="hr-card mb-4">
+    <div class="hr-card-body">
 
-<!-- Filter Bar -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-
-        <!-- ── SEARCH BOX (client-side, no server call) ── -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold text-muted small">QUICK SEARCH</label>
-            <div class="input-group">
-                <span class="input-group-text bg-white border-end-0">
-                    <i class="bi bi-search text-muted"></i>
-                </span>
-                <input type="text"
-                       id="staff-search"
-                       class="form-control border-start-0 ps-0"
-                       placeholder="Search by name, email or phone..."
-                       autocomplete="off" />
-                <button class="btn btn-outline-secondary" type="button" id="clear-search"
-                        style="display:none;" title="Clear search">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div id="search-hint" class="text-muted small mt-1" style="display:none;">
-                Showing <span id="search-count" class="fw-semibold text-primary">0</span>
-                of @Model.Count staff — type more to narrow down or
-                <a href="#" id="clear-search-link" class="text-decoration-none">clear search</a>
-            </div>
+        <!-- Quick Search -->
+        <label class="form-label-hr mb-2">Quick Search</label>
+        <div style="position:relative; margin-bottom:16px;">
+            <i class="bi bi-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem;pointer-events:none;z-index:1;"></i>
+            <input type="text" id="staff-search" autocomplete="off"
+                   class="form-control-hr" style="padding-left:40px;"
+                   placeholder="Search by name, email or phone..." />
+            <button id="clear-search" type="button"
+                    style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                           background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.85rem;padding:4px;">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+        </div>
+        <div id="search-hint" style="display:none;font-size:.75rem;color:#94a3b8;margin-top:-10px;margin-bottom:12px;">
+            Showing <span id="search-count" style="font-weight:700;color:#2563eb;">0</span> of @Model.Count staff —
+            <a href="#" id="clear-search-link" style="color:#2563eb;text-decoration:none;font-weight:500;">clear</a>
         </div>
 
-        <hr class="my-2" />
+        <div style="border-top:1px solid #f1f5f9;margin-bottom:16px;"></div>
 
-        <!-- ── SERVER FILTERS (Role + Status) ── -->
-        <form method="get" asp-action="Index" id="filter-form">
+        <!-- Server Filters -->
+        <form method="get" asp-action="Index">
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold text-muted small">ROLE</label>
-                    <select name="roleId" class="form-select">
+                    <label class="form-label-hr">Role</label>
+                    <select name="roleId" class="form-select-hr">
                         <option value="">All Roles</option>
                         @foreach (var item in ViewBag.Roles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
                         {
@@ -87,8 +68,8 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold text-muted small">STATUS</label>
-                    <select name="isActive" class="form-select">
+                    <label class="form-label-hr">Status</label>
+                    <select name="isActive" class="form-select-hr">
                         <option value="">All Status</option>
                         @if (ViewBag.SelectedActive == true)
                         {
@@ -108,190 +89,161 @@
                     </select>
                 </div>
                 <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-grow-1">
-                        <i class="bi bi-funnel-fill me-1"></i> Filter
+                    <button type="submit" class="btn-hr-primary flex-grow-1">
+                        <i class="bi bi-funnel-fill"></i> Filter
                     </button>
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i> Reset
+                    <a asp-action="Index" class="btn-hr-secondary">
+                        <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
             </div>
         </form>
-
     </div>
 </div>
 
 <!-- Staff Table -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        @if (Model.Any())
-        {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="staff-table">
-                    <thead class="table-primary">
-                        <tr>
-                            <th class="px-3">Staff</th>
-                            <th>Role</th>
-                            <th>Phone</th>
-                            <th>Date of Joining</th>
-                            <th>Status</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staff-tbody">
-                        @foreach (var s in Model)
-                        {
-                            <tr class="staff-row"
-                                data-name="@s.FullName.ToLower()"
-                                data-email="@(s.Email?.ToLower() ?? "")"
-                                data-phone="@(s.Phone ?? "")">
-                                <td class="px-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                                        {
-                                            <img src="@s.ProfilePhoto" class="rounded-circle"
-                                                 style="width:40px;height:40px;object-fit:cover;" />
-                                        }
-                                        else
-                                        {
-                                            <div class="rounded-circle bg-primary bg-opacity-10
-                                                                    d-flex align-items-center justify-content-center"
-                                                 style="width:40px;height:40px;">
-                                                <i class="bi bi-person-fill text-primary"></i>
-                                            </div>
-                                        }
-                                        <div>
-                                            <div class="fw-semibold">@s.FullName</div>
-                                            <small class="text-muted">@s.Email</small>
+<div class="hr-card">
+    @if (Model.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="hr-table" id="staff-table">
+                <thead>
+                    <tr>
+                        <th style="padding-left:20px;">Staff Member</th>
+                        <th>Role</th>
+                        <th>Phone</th>
+                        <th>Date of Joining</th>
+                        <th>Status</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="staff-tbody">
+                    @foreach (var s in Model)
+                    {
+                        <tr class="staff-row"
+                            data-name="@s.FullName.ToLower()"
+                            data-email="@(s.Email?.ToLower() ?? "")"
+                            data-phone="@(s.Phone ?? "")">
+                            <td style="padding-left:20px;">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                    {
+                                        <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0"
+                                             style="width:40px;height:40px;object-fit:cover;border:2px solid #e2e8f0;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                             style="width:40px;height:40px;background:#eff6ff;color:#2563eb;font-size:1rem;border:2px solid #bfdbfe;">
+                                            <i class="bi bi-person-fill"></i>
                                         </div>
+                                    }
+                                    <div>
+                                        <div style="font-size:.84rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                                        <div style="font-size:.72rem;color:#94a3b8;">@(s.Email ?? "—")</div>
                                     </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
-                                        @s.RoleName
-                                    </span>
-                                </td>
-                                <td>@(s.Phone ?? "—")</td>
-                                <td>@(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")</td>
-                                <td><span class="@s.StatusBadgeClass">@s.StatusLabel</span></td>
-                                <td class="text-center">
+                                </div>
+                            </td>
+                            <td><span class="badge-role">@s.RoleName</span></td>
+                            <td style="color:#475569;font-size:.82rem;">@(s.Phone ?? "—")</td>
+                            <td style="color:#475569;font-size:.82rem;">@(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")</td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge-active">Active</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align:center;">
+                                <div class="d-flex justify-content-center gap-2">
                                     <a asp-action="Details" asp-route-id="@s.StaffId"
-                                       class="btn btn-sm btn-outline-primary me-1" title="Details">
-                                        <i class="bi bi-eye-fill"></i> Details
+                                       class="btn-hr-secondary" style="padding:6px 12px;font-size:.75rem;">
+                                        <i class="bi bi-eye"></i> Details
                                     </a>
                                     <a asp-action="Edit" asp-route-id="@s.StaffId"
-                                       class="btn btn-sm btn-outline-warning" title="Edit">
-                                        <i class="bi bi-pencil-fill"></i> Edit
+                                       class="btn-hr-secondary" style="padding:6px 12px;font-size:.75rem;color:#d97706;border-color:#fde68a;background:#fffbeb;">
+                                        <i class="bi bi-pencil"></i> Edit
                                     </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
-            <!-- No search results row (hidden by default) -->
-            <div id="no-search-results" class="text-center py-5 text-muted" style="display:none;">
-                <i class="bi bi-search fs-1 d-block mb-2 opacity-25"></i>
-                No staff found matching <strong id="search-term-display"></strong>.
-                <div class="mt-2">
-                    <a href="#" id="clear-search-btn2" class="btn btn-outline-primary btn-sm">
-                        Clear Search
-                    </a>
-                </div>
-            </div>
+        <!-- No results -->
+        <div id="no-search-results" style="display:none;text-align:center;padding:48px 24px;">
+            <i class="bi bi-search" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
+            <div style="font-size:.88rem;font-weight:600;color:#64748b;margin-bottom:4px;">No results found</div>
+            <div style="font-size:.78rem;color:#94a3b8;">No staff matched <strong id="search-term-display"></strong></div>
+            <button id="clear-search-btn2" style="margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;padding:6px 16px;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;">
+                Clear Search
+            </button>
+        </div>
 
-            <div class="px-3 py-2 border-top text-muted small" id="footer-count">
-                Showing <span id="footer-visible">@Model.Count</span> of @Model.Count staff member(s)
+        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;font-size:.75rem;color:#94a3b8;">
+            Showing <span id="footer-visible" style="font-weight:600;color:#475569;">@Model.Count</span> of @Model.Count staff member(s)
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-people empty-state-icon"></i>
+            <div class="empty-state-title">No staff members found</div>
+            <div class="empty-state-text">Try adjusting your filters or add a new staff member</div>
+            <div class="d-flex gap-2 justify-content-center mt-3">
+                <a asp-action="Index" class="btn-hr-secondary" style="font-size:.8rem;">Clear Filters</a>
+                <a asp-action="Create" class="btn-hr-primary" style="font-size:.8rem;">Add Staff</a>
             </div>
-        }
-        else
-        {
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
-                No staff members found matching your filters.
-                <div class="mt-2">
-                    <a asp-action="Index" class="btn btn-outline-primary btn-sm me-2">Clear Filters</a>
-                    <a asp-action="Create" class="btn btn-primary btn-sm">Add Staff</a>
-                </div>
-            </div>
-        }
-    </div>
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
         (function () {
-            var searchInput   = document.getElementById('staff-search');
-            var clearBtn      = document.getElementById('clear-search');
-            var clearLink     = document.getElementById('clear-search-link');
-            var clearBtn2     = document.getElementById('clear-search-btn2');
-            var searchHint    = document.getElementById('search-hint');
-            var searchCount   = document.getElementById('search-count');
-            var recordCount   = document.getElementById('record-count');
-            var footerVisible = document.getElementById('footer-visible');
-            var noResults     = document.getElementById('no-search-results');
-            var termDisplay   = document.getElementById('search-term-display');
-            var rows          = document.querySelectorAll('.staff-row');
-            var totalRows     = rows.length;
+            var si = document.getElementById('staff-search');
+            var cb = document.getElementById('clear-search');
+            var cl = document.getElementById('clear-search-link');
+            var cb2= document.getElementById('clear-search-btn2');
+            var sh = document.getElementById('search-hint');
+            var sc = document.getElementById('search-count');
+            var rc = document.getElementById('record-count');
+            var fv = document.getElementById('footer-visible');
+            var nr = document.getElementById('no-search-results');
+            var td = document.getElementById('search-term-display');
+            var rows = document.querySelectorAll('.staff-row');
 
             function doSearch(term) {
                 term = term.trim().toLowerCase();
-                var visible = 0;
-
-                rows.forEach(function (row) {
-                    var name  = row.getAttribute('data-name')  || '';
-                    var email = row.getAttribute('data-email') || '';
-                    var phone = row.getAttribute('data-phone') || '';
-
-                    var match = !term
-                        || name.includes(term)
-                        || email.includes(term)
-                        || phone.includes(term);
-
-                    row.style.display = match ? '' : 'none';
-                    if (match) visible++;
+                var v = 0;
+                rows.forEach(function(r) {
+                    var match = !term || r.getAttribute('data-name').includes(term)
+                        || r.getAttribute('data-email').includes(term)
+                        || r.getAttribute('data-phone').includes(term);
+                    r.style.display = match ? '' : 'none';
+                    if (match) v++;
                 });
-
-                // Update counts
-                if (searchCount)   searchCount.textContent   = visible;
-                if (footerVisible) footerVisible.textContent = visible;
-                if (recordCount)   recordCount.textContent   = visible + ' record(s) found';
-
-                // Show/hide hint and clear button
-                if (term) {
-                    if (searchHint) searchHint.style.display = '';
-                    if (clearBtn)   clearBtn.style.display   = '';
-                    if (termDisplay) termDisplay.textContent = '"' + term + '"';
-                } else {
-                    if (searchHint) searchHint.style.display = 'none';
-                    if (clearBtn)   clearBtn.style.display   = 'none';
-                }
-
-                // Show no-results message if needed
-                if (noResults) {
-                    noResults.style.display = (term && visible === 0) ? '' : 'none';
-                }
+                if (sc) sc.textContent = v;
+                if (fv) fv.textContent = v;
+                if (rc) rc.textContent = v + ' record(s) found';
+                if (sh) sh.style.display = term ? '' : 'none';
+                if (cb) cb.style.display = term ? '' : 'none';
+                if (td) td.textContent = '"' + term + '"';
+                if (nr) nr.style.display = (term && v === 0) ? '' : 'none';
             }
 
-            function clearSearch() {
-                if (searchInput) searchInput.value = '';
-                doSearch('');
-                if (searchInput) searchInput.focus();
-            }
+            function clearSearch() { si.value = ''; doSearch(''); si.focus(); }
 
-            // Live search on keyup
-            if (searchInput) {
-                searchInput.addEventListener('input', function () {
-                    doSearch(this.value);
-                });
-            }
-
-            // Clear buttons
-            if (clearBtn)   clearBtn.addEventListener('click',   clearSearch);
-            if (clearLink)  clearLink.addEventListener('click',  function(e) { e.preventDefault(); clearSearch(); });
-            if (clearBtn2)  clearBtn2.addEventListener('click',  function(e) { e.preventDefault(); clearSearch(); });
-
+            if (si) si.addEventListener('input', function() { doSearch(this.value); });
+            if (cb)  cb.addEventListener('click', clearSearch);
+            if (cl)  cl.addEventListener('click', function(e){ e.preventDefault(); clearSearch(); });
+            if (cb2) cb2.addEventListener('click', function(e){ e.preventDefault(); clearSearch(); });
         })();
     </script>
 }

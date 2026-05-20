@@ -1,303 +1,189 @@
 ﻿@model DairyIndustry.Models.HRDashboardViewModel
 @{
     Layout = "~/Views/Shared/_HRLayout.cshtml";
-    ViewData["Title"] = "HR Dashboard";
+    ViewData["Title"] = "Dashboard";
     int thisYear = DateTime.Today.Year;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-people-fill me-2"></i>HR Dashboard
-        </h2>
-        <small class="text-muted">Human Resource Overview — @DateTime.Today.ToString("dd MMM yyyy")</small>
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-speedometer2"></i></span>
+            HR Dashboard
+        </h1>
+        <p class="page-subtitle">Welcome back — @DateTime.Today.ToString("dddd, dd MMMM yyyy")</p>
     </div>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-person-plus-fill me-1"></i> Add Staff
+    <a asp-action="Create" class="btn-hr-primary">
+        <i class="bi bi-person-plus-fill"></i> Add Staff
     </a>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-<!-- ── Summary Cards ── -->
+<!-- ── Stat Cards ── -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
-                    <i class="bi bi-people-fill fs-3 text-primary"></i>
-                </div>
-                <div>
-                    <div class="fs-2 fw-bold text-primary">@Model.Summary.TotalStaff</div>
-                    <div class="text-muted small">Total Staff</div>
-                </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-card-blue stat-blue">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="stat-value">@Model.Summary.TotalStaff</div>
+                <div class="stat-label">Total Staff</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                    <i class="bi bi-person-check-fill fs-3 text-success"></i>
-                </div>
-                <div>
-                    <div class="fs-2 fw-bold text-success">@Model.Summary.ActiveStaff</div>
-                    <div class="text-muted small">Active Staff</div>
-                </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-card-green stat-green">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-person-check-fill"></i></div>
+            <div>
+                <div class="stat-value">@Model.Summary.ActiveStaff</div>
+                <div class="stat-label">Active Staff</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
-                    <i class="bi bi-person-dash-fill fs-3 text-danger"></i>
-                </div>
-                <div>
-                    <div class="fs-2 fw-bold text-danger">@Model.Summary.InactiveStaff</div>
-                    <div class="text-muted small">Inactive Staff</div>
-                </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-card-red stat-red">
+            <div class="stat-icon stat-icon-red"><i class="bi bi-person-dash-fill"></i></div>
+            <div>
+                <div class="stat-value">@Model.Summary.InactiveStaff</div>
+                <div class="stat-label">Inactive Staff</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                    <i class="bi bi-clock-history fs-3 text-warning"></i>
-                </div>
-                <div>
-                    <div class="fs-2 fw-bold text-warning">@Model.Summary.NewJoiningThisMonth</div>
-                    <div class="text-muted small">Joined This Month</div>
-                </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card stat-card-amber stat-amber">
+            <div class="stat-icon stat-icon-amber"><i class="bi bi-person-plus-fill"></i></div>
+            <div>
+                <div class="stat-value">@Model.Summary.NewJoiningThisMonth</div>
+                <div class="stat-label">Joined This Month</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ── Feature 4 — Anniversaries + New Joinings Alerts ── -->
+<!-- ── Alerts: Anniversaries + New Joinings ── -->
 @if (Model.AnniversariesThisMonth.Any() || Model.NewJoiningsThisMonth.Any())
 {
     <div class="row g-3 mb-4">
-
         @if (Model.AnniversariesThisMonth.Any())
         {
-            string colClass = Model.NewJoiningsThisMonth.Any() ? "col-md-6" : "col-12";
-            <div class="@colClass">
-                <div class="card border-0 shadow-sm h-100"
-                     style="border-left:4px solid #f59e0b !important;">
-                    <div class="card-header d-flex align-items-center gap-2 fw-semibold"
-                         style="background:#fffbeb; border-bottom:1px solid #fde68a; color:#92400e;">
-                        <i class="bi bi-award-fill text-warning fs-5"></i>
-                        Work Anniversaries — @DateTime.Today.ToString("MMMM yyyy")
-                        <span class="badge ms-auto rounded-pill"
-                              style="background:#f59e0b; color:#fff;">
-                            @Model.AnniversariesThisMonth.Count
-                        </span>
+            string col = Model.NewJoiningsThisMonth.Any() ? "col-md-6" : "col-12";
+            <div class="@col">
+                <div class="hr-card h-100">
+                    <div class="hr-card-header" style="background:#fffbeb; border-color:#fde68a;">
+                        <div class="hch-icon" style="background:#fef3c7; color:#d97706;"><i class="bi bi-award-fill"></i></div>
+                        <span style="color:#92400e;">Work Anniversaries — @DateTime.Today.ToString("MMMM yyyy")</span>
+                        <span class="ms-auto badge" style="background:#f59e0b;color:#fff;border-radius:20px;font-size:.68rem;padding:4px 10px;">@Model.AnniversariesThisMonth.Count</span>
                     </div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            @foreach (var s in Model.AnniversariesThisMonth)
+                    @foreach (var s in Model.AnniversariesThisMonth)
+                    {
+                        int years = thisYear - s.DOJ!.Value.Year;
+                        <div class="d-flex align-items-center gap-3 px-4 py-3" style="border-bottom:1px solid #fef9c3;">
+                            @if (!string.IsNullOrEmpty(s.ProfilePhoto))
                             {
-                                int years = thisYear - s.DOJ!.Value.Year;
-                                <li class="list-group-item px-3 py-2">
-                                    <div class="d-flex align-items-center gap-3">
-                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                                        {
-                                            <img src="@s.ProfilePhoto" class="rounded-circle"
-                                                 style="width:40px;height:40px;object-fit:cover;" />
-                                        }
-                                        else
-                                        {
-                                            <div class="rounded-circle d-flex align-items-center
-                                                                        justify-content-center"
-                                                 style="width:40px;height:40px;background:#fef3c7;">
-                                                <i class="bi bi-person-fill" style="color:#f59e0b;"></i>
-                                            </div>
-                                        }
-                                        <div class="flex-grow-1">
-                                            <div class="fw-semibold">@s.FullName</div>
-                                            <small class="text-muted">@s.RoleName</small>
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge rounded-pill fw-semibold"
-                                                  style="background:#fef3c7;color:#92400e;">
-                                                <i class="bi bi-award-fill me-1"></i>
-                                                @years yr@(years > 1 ? "s" : "")
-                                            </span>
-                                            <div class="text-muted small mt-1">
-                                                since @s.DOJ.Value.ToString("dd MMM yyyy")
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
+                                <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:38px;height:38px;object-fit:cover;" />
                             }
-                        </ul>
-                    </div>
+                            else
+                            {
+                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:38px;height:38px;background:#fef3c7;color:#d97706;font-size:1rem;"><i class="bi bi-person-fill"></i></div>
+                            }
+                            <div class="flex-grow-1">
+                                <div style="font-size:.83rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                                <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                            </div>
+                            <div class="text-end">
+                                <span style="background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;">🏆 @years yr@(years > 1 ? "s" : "")</span>
+                                <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">@s.DOJ.Value.ToString("dd MMM yyyy")</div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         }
-
         @if (Model.NewJoiningsThisMonth.Any())
         {
-            string colClass = Model.AnniversariesThisMonth.Any() ? "col-md-6" : "col-12";
-            <div class="@colClass">
-                <div class="card border-0 shadow-sm h-100"
-                     style="border-left:4px solid #22c55e !important;">
-                    <div class="card-header d-flex align-items-center gap-2 fw-semibold"
-                         style="background:#f0fdf4; border-bottom:1px solid #bbf7d0; color:#166534;">
-                        <i class="bi bi-person-plus-fill text-success fs-5"></i>
-                        New Joinings — @DateTime.Today.ToString("MMMM yyyy")
-                        <span class="badge ms-auto rounded-pill bg-success">
-                            @Model.NewJoiningsThisMonth.Count
-                        </span>
+            string col = Model.AnniversariesThisMonth.Any() ? "col-md-6" : "col-12";
+            <div class="@col">
+                <div class="hr-card h-100">
+                    <div class="hr-card-header" style="background:#f0fdf4; border-color:#bbf7d0;">
+                        <div class="hch-icon" style="background:#dcfce7; color:#16a34a;"><i class="bi bi-person-plus-fill"></i></div>
+                        <span style="color:#166534;">New Joinings — @DateTime.Today.ToString("MMMM yyyy")</span>
+                        <span class="ms-auto badge bg-success" style="border-radius:20px;font-size:.68rem;padding:4px 10px;">@Model.NewJoiningsThisMonth.Count</span>
                     </div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            @foreach (var s in Model.NewJoiningsThisMonth)
+                    @foreach (var s in Model.NewJoiningsThisMonth)
+                    {
+                        <div class="d-flex align-items-center gap-3 px-4 py-3" style="border-bottom:1px solid #f0fdf4;">
+                            @if (!string.IsNullOrEmpty(s.ProfilePhoto))
                             {
-                                <li class="list-group-item px-3 py-2">
-                                    <div class="d-flex align-items-center gap-3">
-                                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                                        {
-                                            <img src="@s.ProfilePhoto" class="rounded-circle"
-                                                 style="width:40px;height:40px;object-fit:cover;" />
-                                        }
-                                        else
-                                        {
-                                            <div class="rounded-circle d-flex align-items-center
-                                                                        justify-content-center"
-                                                 style="width:40px;height:40px;background:#dcfce7;">
-                                                <i class="bi bi-person-fill text-success"></i>
-                                            </div>
-                                        }
-                                        <div class="flex-grow-1">
-                                            <div class="fw-semibold">@s.FullName</div>
-                                            <small class="text-muted">@s.RoleName</small>
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge rounded-pill fw-semibold"
-                                                  style="background:#dcfce7;color:#166534;">
-                                                <i class="bi bi-stars me-1"></i>New
-                                            </span>
-                                            <div class="text-muted small mt-1">
-                                                joined @s.DOJ!.Value.ToString("dd MMM yyyy")
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
+                                <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:38px;height:38px;object-fit:cover;" />
                             }
-                        </ul>
-                    </div>
-                    <div class="card-footer bg-white border-0">
-                        <a asp-action="Index" class="btn btn-outline-success btn-sm w-100">
-                            View All Staff <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
+                            else
+                            {
+                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:38px;height:38px;background:#dcfce7;color:#16a34a;font-size:1rem;"><i class="bi bi-person-fill"></i></div>
+                            }
+                            <div class="flex-grow-1">
+                                <div style="font-size:.83rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                                <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                            </div>
+                            <div class="text-end">
+                                <span style="background:#dcfce7;color:#166534;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;">✨ New</span>
+                                <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">@s.DOJ!.Value.ToString("dd MMM yyyy")</div>
+                            </div>
+                        </div>
+                    }
+                    <div class="hr-card-footer">
+                        <a asp-action="Index" class="btn-hr-secondary w-100 justify-content-center" style="font-size:.78rem;">View All Staff <i class="bi bi-arrow-right ms-1"></i></a>
                     </div>
                 </div>
             </div>
         }
-
     </div>
 }
 
-<!-- ══════════════════════════════════════════════════════════════
-     FEATURE 2 — INACTIVE STAFF ALERT
-     Shown only when there are inactive staff members.
-     Hidden completely when all staff are active — no empty card.
-     Each row links to Details page for quick action.
-═══════════════════════════════════════════════════════════════ -->
+<!-- ── Inactive Staff Alert ── -->
 @if (Model.InactiveStaffList.Any())
 {
-    <div class="row g-3 mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm"
-                 style="border-left:4px solid #ef4444 !important;">
-                <div class="card-header d-flex align-items-center gap-2 fw-semibold"
-                     style="background:#fef2f2; border-bottom:1px solid #fecaca; color:#991b1b;">
-                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-                    Inactive Staff
-                    <span class="badge ms-auto rounded-pill bg-danger">
-                        @Model.InactiveStaffList.Count
-                    </span>
-                </div>
-                <div class="card-body p-0">
-
-                    @* Show max 5 inline, rest hidden behind "Show All" toggle *@
-                    <ul class="list-group list-group-flush" id="inactive-list">
-                        @for (int i = 0; i < Model.InactiveStaffList.Count; i++)
-                        {
-                            var s = Model.InactiveStaffList[i];
-                            <li class="list-group-item px-3 py-2 @(i >= 5 ? "inactive-extra d-none" : "")">
-                                <div class="d-flex align-items-center gap-3">
-                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                                    {
-                                        <img src="@s.ProfilePhoto" class="rounded-circle"
-                                             style="width:38px;height:38px;object-fit:cover;
-                                                                filter:grayscale(100%); opacity:.7;" />
-                                    }
-                                    else
-                                    {
-                                        <div class="rounded-circle d-flex align-items-center
-                                                                justify-content-center"
-                                             style="width:38px;height:38px;background:#fee2e2;">
-                                            <i class="bi bi-person-fill" style="color:#ef4444;"></i>
-                                        </div>
-                                    }
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold text-muted">@s.FullName</div>
-                                        <small class="text-muted">@s.RoleName</small>
-                                    </div>
-                                    <div class="text-end d-flex align-items-center gap-2">
-                                        <span class="badge bg-secondary">Inactive</span>
-                                        <a asp-action="Details" asp-route-id="@s.StaffId"
-                                           class="btn btn-outline-primary btn-sm"
-                                           title="View Details">
-                                            <i class="bi bi-eye-fill"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-
-                    @if (Model.InactiveStaffList.Count > 5)
+    <div class="hr-card mb-4">
+        <div class="hr-card-header" style="background:#fef2f2; border-color:#fecaca;">
+            <div class="hch-icon" style="background:#fee2e2; color:#dc2626;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <span style="color:#991b1b;">Inactive Staff Requiring Attention</span>
+            <span class="ms-auto badge bg-danger" style="border-radius:20px;font-size:.68rem;padding:4px 10px;">@Model.InactiveStaffList.Count</span>
+        </div>
+        <div>
+            @for (int i = 0; i < Model.InactiveStaffList.Count; i++)
+            {
+                var s = Model.InactiveStaffList[i];
+                <div class="d-flex align-items-center gap-3 px-4 py-3 @(i >= 5 ? "inactive-extra d-none" : "")" style="border-bottom:1px solid #fef2f2;">
+                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
                     {
-                        <div class="px-3 py-2 border-top text-center">
-                            <button class="btn btn-link btn-sm text-danger text-decoration-none"
-                                    id="show-all-inactive"
-                                    onclick="toggleInactive()">
-                                <i class="bi bi-chevron-down me-1"></i>
-                                Show all @Model.InactiveStaffList.Count inactive staff
-                            </button>
-                        </div>
+                        <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:36px;height:36px;object-fit:cover;filter:grayscale(1);opacity:.6;" />
                     }
-
+                    else
+                    {
+                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#fee2e2;color:#ef4444;font-size:.9rem;"><i class="bi bi-person-fill"></i></div>
+                    }
+                    <div class="flex-grow-1">
+                        <div style="font-size:.83rem;font-weight:600;color:#64748b;">@s.FullName</div>
+                        <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-inactive">Inactive</span>
+                        <a asp-action="Details" asp-route-id="@s.StaffId" class="btn-hr-secondary" style="padding:5px 12px;font-size:.72rem;">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </div>
                 </div>
-                <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Review these staff members and activate or remove as needed.
-                    </small>
-                    <a asp-action="Index" asp-route-isActive="false"
-                       class="btn btn-outline-danger btn-sm">
-                        View All Inactive <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
+            }
+        </div>
+        @if (Model.InactiveStaffList.Count > 5)
+        {
+            <div class="text-center py-2" style="border-top:1px solid #fef2f2;">
+                <button class="btn btn-link btn-sm text-danger text-decoration-none" id="show-all-inactive" onclick="toggleInactive()" style="font-size:.78rem;">
+                    <i class="bi bi-chevron-down me-1"></i>Show all @Model.InactiveStaffList.Count inactive staff
+                </button>
             </div>
+        }
+        <div class="hr-card-footer d-flex justify-content-between align-items-center">
+            <span style="font-size:.75rem;color:#94a3b8;"><i class="bi bi-info-circle me-1"></i>Review and reactivate or remove as needed</span>
+            <a asp-action="Index" asp-route-isActive="false" class="btn-hr-secondary" style="font-size:.75rem;padding:6px 14px;">View All Inactive <i class="bi bi-arrow-right ms-1"></i></a>
         </div>
     </div>
 }
@@ -305,89 +191,73 @@
 <!-- ── Staff by Role + Recent Joinings ── -->
 <div class="row g-3 mb-4">
     <div class="col-md-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-primary text-white fw-semibold">
-                <i class="bi bi-bar-chart-fill me-2"></i>Staff by Role
+        <div class="hr-card h-100">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-bar-chart-fill"></i></div>
+                Staff by Role
             </div>
-            <div class="card-body p-0">
+            <div class="hr-card-body">
                 @if (Model.StaffByType.Any())
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var item in Model.StaffByType)
-                        {
-                            int pct = Model.Summary.TotalStaff > 0
-                            ? (int)((item.Count * 100.0) / Model.Summary.TotalStaff) : 0;
-                            <li class="list-group-item px-3 py-2">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="fw-semibold">@item.StaffType</span>
-                                    <span class="badge bg-primary rounded-pill">@item.Count</span>
-                                </div>
-                                <div class="progress" style="height:6px;">
-                                    <div class="progress-bar bg-primary" style="width:@pct%"></div>
-                                </div>
-                            </li>
-                        }
-                    </ul>
+                    @foreach (var item in Model.StaffByType)
+                    {
+                        int pct = Model.Summary.TotalStaff > 0 ? (int)((item.Count * 100.0) / Model.Summary.TotalStaff) : 0;
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span style="font-size:.8rem;font-weight:500;color:#0f172a;">@item.StaffType</span>
+                                <span style="font-size:.75rem;font-weight:700;color:#2563eb;">@item.Count</span>
+                            </div>
+                            <div class="hr-progress">
+                                <div class="hr-progress-bar" style="width:@pct%"></div>
+                            </div>
+                        </div>
+                    }
                 }
                 else
                 {
-                    <div class="text-center text-muted py-4">No staff data available.</div>
+                    <div class="empty-state"><i class="bi bi-bar-chart empty-state-icon"></i><div class="empty-state-title">No data yet</div></div>
                 }
             </div>
         </div>
     </div>
-
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-primary text-white fw-semibold">
-                <i class="bi bi-person-lines-fill me-2"></i>Recently Joined Staff
+        <div class="hr-card h-100">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-person-lines-fill"></i></div>
+                Recently Joined
             </div>
-            <div class="card-body p-0">
-                @if (Model.RecentJoinings.Any())
+            @if (Model.RecentJoinings.Any())
+            {
+                @foreach (var s in Model.RecentJoinings)
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var s in Model.RecentJoinings)
+                    <div class="d-flex align-items-center gap-3 px-4 py-3" style="border-bottom:1px solid #f8fafc;">
+                        @if (!string.IsNullOrEmpty(s.ProfilePhoto))
                         {
-                            <li class="list-group-item px-3 py-2">
-                                <div class="d-flex align-items-center gap-3">
-                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                                    {
-                                        <img src="@s.ProfilePhoto" class="rounded-circle"
-                                             style="width:42px;height:42px;object-fit:cover;" />
-                                    }
-                                    else
-                                    {
-                                        <div class="rounded-circle bg-primary bg-opacity-10
-                                                                d-flex align-items-center justify-content-center"
-                                             style="width:42px;height:42px;">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                    }
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold">@s.FullName</div>
-                                        <small class="text-muted">@s.RoleName</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="@s.StatusBadgeClass">@s.StatusLabel</span>
-                                        <div class="text-muted small mt-1">
-                                            @(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
+                            <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover;" />
                         }
-                    </ul>
+                        else
+                        {
+                            <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#eff6ff;color:#2563eb;font-size:1rem;"><i class="bi bi-person-fill"></i></div>
+                        }
+                        <div class="flex-grow-1">
+                            <div style="font-size:.83rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                            <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="@(s.IsActive ? "badge-active" : "badge-inactive")">@s.StatusLabel</span>
+                            <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">@(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")</div>
+                        </div>
+                    </div>
                 }
-                else
-                {
-                    <div class="text-center text-muted py-4">No recent staff found.</div>
-                }
-            </div>
-            <div class="card-footer bg-white border-0">
-                <a asp-action="Index" class="btn btn-outline-primary btn-sm w-100">
-                    View All Staff <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            </div>
+                <div class="hr-card-footer">
+                    <a asp-action="Index" class="btn-hr-secondary w-100 justify-content-center" style="font-size:.78rem;">View All Staff <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            }
+            else
+            {
+
+                <div class="empty-state"><i class="bi bi-people empty-state-icon"></i><div class="empty-state-title">No recent joinings</div></div>
+            }
         </div>
     </div>
 </div>
@@ -395,54 +265,71 @@
 <!-- ── Pending Payments + Quick Nav ── -->
 <div class="row g-3">
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-warning text-dark fw-semibold">
-                <i class="bi bi-cash-coin me-2"></i>Pending Payments
+        <div class="hr-card h-100">
+            <div class="hr-card-header" style="background:#fffbeb;border-color:#fde68a;">
+                <div class="hch-icon" style="background:#fef3c7;color:#d97706;"><i class="bi bi-cash-coin"></i></div>
+                <span style="color:#92400e;">Pending Payments</span>
             </div>
-            <div class="card-body text-center py-4">
-                <div class="fs-1 fw-bold text-warning">@Model.Summary.PendingPaymentsCount</div>
-                <div class="text-muted">payments awaiting processing</div>
-                <div class="fs-5 fw-semibold mt-2">
-                    ₹@Model.Summary.PendingPaymentsAmount.ToString("N0")
-                </div>
-                <div class="text-muted small">total pending amount</div>
+            <div class="hr-card-body text-center py-4">
+                <div style="font-size:2.5rem;font-weight:900;color:#d97706;letter-spacing:-.04em;">@Model.Summary.PendingPaymentsCount</div>
+                <div style="font-size:.78rem;color:#94a3b8;margin-bottom:12px;">payments awaiting processing</div>
+                <div style="font-size:1.2rem;font-weight:800;color:#0f172a;">₹@Model.Summary.PendingPaymentsAmount.ToString("N0")</div>
+                <div style="font-size:.72rem;color:#94a3b8;">total pending amount</div>
             </div>
-            <div class="card-footer bg-white border-0">
+            <div class="hr-card-footer">
                 <a asp-action="Payments" asp-route-status="Pending"
-                   class="btn btn-warning btn-sm w-100">
-                    View Pending <i class="bi bi-arrow-right ms-1"></i>
+                   class="d-flex align-items-center justify-content-center gap-2 w-100 py-2 px-4 rounded-3 fw-semibold"
+                   style="background:#fef3c7;color:#92400e;text-decoration:none;font-size:.8rem;border:1px solid #fde68a;transition:all .15s;"
+                   onmouseover="this.style.background='#fde68a'" onmouseout="this.style.background='#fef3c7'">
+                    View Pending <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         </div>
     </div>
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-primary text-white fw-semibold">
-                <i class="bi bi-grid-fill me-2"></i>Quick Navigation
+        <div class="hr-card h-100">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-grid-fill"></i></div>
+                Quick Navigation
             </div>
-            <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-6">
-                        <a asp-action="Index" class="btn btn-outline-primary w-100 py-3">
-                            <i class="bi bi-people-fill d-block fs-4 mb-1"></i>All Staff
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a asp-action="Create" class="btn btn-outline-success w-100 py-3">
-                            <i class="bi bi-person-plus-fill d-block fs-4 mb-1"></i>Add Staff
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a asp-action="Payments" class="btn btn-outline-warning w-100 py-3">
-                            <i class="bi bi-cash-stack d-block fs-4 mb-1"></i>Payments
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a asp-action="Index" asp-route-isActive="true"
-                           class="btn btn-outline-info w-100 py-3">
-                            <i class="bi bi-person-check-fill d-block fs-4 mb-1"></i>Active Only
-                        </a>
-                    </div>
+            <div class="hr-card-body">
+                <div class="row g-3">
+                    @{
+                        var navItems = new[]
+                        {
+                                        new { Action="Index",   Route=(string?)null,  Icon="bi-people-fill",      Label="All Staff",    Color="#eff6ff", TextColor="#1d4ed8", BorderColor="#bfdbfe" },
+                                        new { Action="Create",  Route=(string?)null,  Icon="bi-person-plus-fill", Label="Add Staff",    Color="#f0fdf4", TextColor="#166534", BorderColor="#bbf7d0" },
+                                        new { Action="Payments",Route=(string?)null,  Icon="bi-cash-stack",       Label="All Payments", Color="#fffbeb", TextColor="#92400e", BorderColor="#fde68a" },
+                                        new { Action="Payments",Route="Pending",      Icon="bi-hourglass-split",  Label="Pending Pay",  Color="#fef2f2", TextColor="#991b1b", BorderColor="#fecaca" },
+                                        };
+                    }
+                    @foreach (var nav in navItems)
+                    {
+                        <div class="col-6">
+                            @if (nav.Route != null)
+                            {
+                                <a asp-action="@nav.Action" asp-route-isActive="@nav.Route"
+                                   class="d-flex flex-column align-items-center justify-content-center py-3 px-2 rounded-3 text-decoration-none"
+                                   style="background:@nav.Color;border:1px solid @nav.BorderColor;color:@nav.TextColor;transition:all .15s;gap:6px;"
+                                   onmouseover="this.style.opacity='.8';this.style.transform='translateY(-2px)'"
+                                   onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+                                    <i class="bi @nav.Icon" style="font-size:1.4rem;"></i>
+                                    <span style="font-size:.75rem;font-weight:600;">@nav.Label</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-action="@nav.Action"
+                                   class="d-flex flex-column align-items-center justify-content-center py-3 px-2 rounded-3 text-decoration-none"
+                                   style="background:@nav.Color;border:1px solid @nav.BorderColor;color:@nav.TextColor;transition:all .15s;gap:6px;"
+                                   onmouseover="this.style.opacity='.8';this.style.transform='translateY(-2px)'"
+                                   onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+                                    <i class="bi @nav.Icon" style="font-size:1.4rem;"></i>
+                                    <span style="font-size:.75rem;font-weight:600;">@nav.Label</span>
+                                </a>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -454,15 +341,11 @@
         function toggleInactive() {
             var extras = document.querySelectorAll('.inactive-extra');
             var btn    = document.getElementById('show-all-inactive');
-            var hidden = extras[0].classList.contains('d-none');
-
-            extras.forEach(function (el) {
-                el.classList.toggle('d-none', !hidden);
-            });
-
+            var hidden = extras[0] && extras[0].classList.contains('d-none');
+            extras.forEach(function(el){ el.classList.toggle('d-none', !hidden); });
             btn.innerHTML = hidden
-                ? '<i class="bi bi-chevron-up me-1"></i> Show less'
-                : '<i class="bi bi-chevron-down me-1"></i> Show all @Model.InactiveStaffList.Count inactive staff';
+                ? '<i class="bi bi-chevron-up me-1"></i>Show less'
+                : '<i class="bi bi-chevron-down me-1"></i>Show all @Model.InactiveStaffList.Count inactive staff';
         }
     </script>
 }

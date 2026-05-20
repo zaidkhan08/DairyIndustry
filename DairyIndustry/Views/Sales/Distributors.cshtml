@@ -5,7 +5,7 @@
     var sales = ViewBag.DistributorSales as List<DairyIndustry.Models.DistributorSalesModel> ?? new();
     var statusFilter = ViewBag.StatusFilter as string;
 }
-
+ 
 <div class="page-header">
     <div>
         <h4 class="fw-bold mb-1">Distributors</h4>
@@ -50,6 +50,8 @@
                             <th>GSTIN</th>
                             <th>Contact</th>
                             <th>Registered</th>
+                            <th class="text-center">Total Orders</th>
+                            <th>Last Order</th>
                             <th class="text-center">Status</th>
                             <th class="text-center">Actions</th>
                         </tr>
@@ -77,6 +79,29 @@
                                     @if (d.RegisteredOn.HasValue)
                                     {
                                         <small>@d.RegisteredOn.Value.ToString("dd MMM yyyy")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                @{
+                                    var distSale = sales.FirstOrDefault(s => s.DistributorId == d.DistributorId);
+                                }
+                                <td class="text-center">
+                                    @if (distSale != null && distSale.TotalOrders > 0)
+                                    {
+                                        <span class="badge bg-primary">@distSale.TotalOrders</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (distSale?.LastOrderDate != null)
+                                    {
+                                        <small>@distSale.LastOrderDate.Value.ToString("dd MMM yyyy")</small>
                                     }
                                     else
                                     {

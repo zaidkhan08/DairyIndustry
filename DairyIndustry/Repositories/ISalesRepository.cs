@@ -41,6 +41,9 @@ namespace DairyIndustry.Repositories
         int CreateOrder(SalesOrderFormModel model);
         bool UpdateOrderStatus(int orderId, string status);
 
+        // Bulk update status for multiple orders at once (Admin only)
+        int BulkUpdateStatus(List<int> orderIds, string newStatus);
+
         // ── ORDER LINE ITEMS ───────────────────────────────────────────────
         List<SalesOrderDetailModel> GetOrderDetails(int orderId);
 
