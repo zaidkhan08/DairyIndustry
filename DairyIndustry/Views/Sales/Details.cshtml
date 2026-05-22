@@ -5,6 +5,8 @@
     string role = Context.Session.GetString("RoleName") ?? "";
     bool isAdmin = role == "Admin";
     bool isDist = role == "Distributor";
+    var inactiveIds = ViewBag.InactiveProductIds as HashSet<int> ?? new HashSet<int>();
+    bool hasInactive = Model.OrderDetails.Any(d => inactiveIds.Contains(d.ProductId));
 
     // Timeline steps in order
     var steps = new[] { "Pending", "Confirmed", "Dispatched", "Delivered", "Received" };
@@ -75,6 +77,14 @@
     </div>
 }
 
+@if (hasInactive)
+{
+    <div class="alert alert-warning alert-dismissible fade show py-2">
+        ⚠️ <strong>Inactive Product Warning:</strong> This order contains one or more products that are no longer active in the catalogue.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <!-- ── Order Status Timeline ── -->
 @if (isCancelled)
 {
@@ -89,11 +99,11 @@ else
             <div class="d-flex align-items-center justify-content-between position-relative">
                 <!-- connecting line -->
                 <div style="position:absolute; top:18px; left:10%; right:10%;
-                                                     height:3px; background:#dee2e6; z-index:0;"></div>
+                                                         height:3px; background:#dee2e6; z-index:0;"></div>
                 <div style="position:absolute; top:18px; left:10%;
-                                                     height:3px; background:#0d6efd; z-index:1;
-                                                     width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
-                                                     transition:width .4s;"></div>
+                                                         height:3px; background:#0d6efd; z-index:1;
+                                                         width:@(currentStep < 0 ? 0 : (currentStep * 100 / (steps.Length - 1)))%;
+                                                         transition:width .4s;"></div>
 
                 @for (int i = 0; i < steps.Length; i++)
                 {
@@ -104,8 +114,8 @@ else
                     "background:#fff; border-color:#dee2e6; color:#adb5bd;";
                     <div class="d-flex flex-column align-items-center" style="z-index:2; flex:1;">
                         <div style="width:36px; height:36px; border-radius:50%; border:2px solid;
-                                                                                    display:flex; align-items:center; justify-content:center;
-                                                                                    font-size:.8rem; font-weight:700; @circleStyle">
+                                                                                            display:flex; align-items:center; justify-content:center;
+                                                                                            font-size:.8rem; font-weight:700; @circleStyle">
                             @if (done)
                             {
                                 <span>✓</span>
@@ -322,7 +332,14 @@ else
                                 {
                                     <tr>
                                         <td class="text-muted small">@(rowNum++)</td>
-                                        <td class="fw-semibold">@item.ProductName</td>
+                                        <td class="fw-semibold">
+                                            @item.ProductName
+                                            @if (inactiveIds.Contains(item.ProductId))
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1"
+                                                      title="This product is no longer active">⚠️ Inactive</span>
+                                            }
+                                        </td>
                                         <td><small class="text-muted">@item.ProductType</small></td>
                                         <td class="text-center">
                                             @item.Quantity.ToString("N2")
@@ -419,10 +436,10 @@ else
         const mrpMap = {};
         @if (ViewBag.ProductList != null)
         {
-                                    foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
-                                    {
-                                                                @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
-                                    }
+                                        foreach (var p in (List<DairyIndustry.Models.ProductSalesModel>)ViewBag.ProductList)
+                                        {
+                                                                        @Html.Raw($"mrpMap['{p.ProductId}'] = {{ mrp: {p.MRP}, unit: '{p.Unit}' }};")
+                                        }
         }
 
         function setMRP(sel) {

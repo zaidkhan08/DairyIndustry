@@ -74,6 +74,15 @@ namespace DairyIndustry.Repositories
         List<OrderStatusCountModel> GetOrdersByStatus();
         List<DistributorSalesModel> GetDistributorSales();
 
+        //for date range pdf 
+        SalesDashboardSummaryModel GetDashboardSummaryByRange(DateTime from, DateTime to);
+        List<OrderStatusCountModel> GetOrdersByStatusByRange(DateTime from, DateTime to);
+        List<DistributorSalesModel> GetDistributorSalesByRange(DateTime from, DateTime to);
+        List<TopProductModel> GetTopProductsByRange(DateTime from, DateTime to);
+
+        // Returns ProductIds that are inactive (IsActive=0) — used for warning badges
+        HashSet<int> GetInactiveProductIds();
+
         // ── DISTRIBUTOR DASHBOARD (inline queries) ─────────────────────────
         // Last 6 full calendar months of spend for this distributor.
         // Only orders with status Delivered or Received are counted.
@@ -85,6 +94,9 @@ namespace DairyIndustry.Repositories
 
         // ── DROPDOWNS (inline queries) ─────────────────────────────────────
         List<ProductSalesModel> GetProducts();
+
+        // Returns all products including inactive — for catalogue display only
+        List<ProductSalesModel> GetAllProducts();
         List<PlantModel> GetPlants();
 
         // ── NOTIFICATION SEEN (DB-persisted across logins) ────────────────

@@ -21,7 +21,7 @@
         public string? ProductType { get; set; }
         public string? Unit { get; set; }
         public decimal MRP { get; set; }
-
+        public bool IsActive { get; set; } = true;
         public string DisplayText => $"{ProductName} ({ProductType} — {Unit})  MRP: ₹{MRP}";
     }
 }

@@ -5,6 +5,7 @@
     string distName = ViewBag.DistributorName ?? "Distributor";
     var productList = ViewBag.ProductList as List<DairyIndustry.Models.ProductSalesModel> ?? new();
     var plantItems = ViewBag.Plants as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var inactiveIds = ViewBag.InactiveProductIds as HashSet<int> ?? new HashSet<int>();
 
     // Stats
     int total = Model.Count;
@@ -259,7 +260,14 @@ else
                     {
                         <tr data-date="@o.OrderDate.ToString("yyyy-MM-dd")"
                             data-status="@o.OrderStatus">
-                            <td><strong>#@o.OrderId</strong></td>
+                            <td>
+                                <strong>#@o.OrderId</strong>
+                                @if (o.OrderDetails.Any(d => inactiveIds.Contains(d.ProductId)))
+                                {
+                                    <span class="badge bg-warning text-dark ms-1"
+                                          title="This order contains one or more inactive products">⚠️ Inactive Product</span>
+                                }
+                            </td>
                             <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
                             <td>
                                 @if (o.OrderDetails.Any())
@@ -342,6 +350,14 @@ else
             No orders match the selected filters.
             <button class="btn btn-link btn-sm p-0 ms-1" onclick="clearDateFilter()">Clear date filter</button>
         </div>
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light"
+             id="paginationWrap" style="display:none!important;">
+            <small class="text-muted" id="pageInfo"></small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="pageControls"></ul>
+            </nav>
+        </div>
     </div>
 }
 
@@ -376,7 +392,6 @@ else
             const from  = document.getElementById('fromDate').value;
             const to    = document.getElementById('toDate').value;
             const rows  = document.querySelectorAll('#ordersTable tbody tr');
-            let visible = 0;
 
             rows.forEach(row => {
                 const rowDate   = row.getAttribute('data-date');
@@ -384,13 +399,9 @@ else
                 const statusOk  = !activeStatus || rowStatus === activeStatus;
                 const fromOk    = !from || rowDate >= from;
                 const toOk      = !to   || rowDate <= to;
-                const show      = statusOk && fromOk && toOk;
-                row.style.display = show ? '' : 'none';
-                if (show) visible++;
+                // mark matching rows — pagination will handle visibility
+                row.setAttribute('data-filtered', statusOk && fromOk && toOk ? '1' : '0');
             });
-
-            const header = document.getElementById('tableHeader');
-            if (header) header.textContent = `📦 Orders (${visible} shown)`;
 
             const badge = document.getElementById('dateFilterBadge');
             if (from || to) {
@@ -400,11 +411,87 @@ else
                 badge.style.display = 'none';
             }
 
+            currentPage = 1;
+            renderPagination();
+        }
+
+        // ── Pagination ────────────────────────────────────────────────────
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows      = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const visible   = rows.filter(r => r.getAttribute('data-filtered') !== '0');
+            const total     = visible.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            // Show/hide rows for current page
+            visible.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+            // Hide filtered-out rows
+            rows.filter(r => r.getAttribute('data-filtered') === '0')
+                .forEach(r => r.style.display = 'none');
+
+            // Update header count
+            const header = document.getElementById('tableHeader');
+            if (header) header.textContent = `📦 Orders (${total} shown)`;
+
+            // Empty state
             const emptyMsg  = document.getElementById('noResultsMsg');
             const tableWrap = document.getElementById('tableWrap');
-            if (emptyMsg)  emptyMsg.style.display  = visible === 0 ? 'block' : 'none';
-            if (tableWrap) tableWrap.style.display  = visible === 0 ? 'none'  : '';
+            if (emptyMsg)  emptyMsg.style.display  = total === 0 ? 'block' : 'none';
+            if (tableWrap) tableWrap.style.display  = total === 0 ? 'none'  : '';
+
+            // Page info
+            const paginationWrap = document.getElementById('paginationWrap');
+            const pageInfo       = document.getElementById('pageInfo');
+            const pageControls   = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                paginationWrap.style.display = 'none';
+                return;
+            }
+            paginationWrap.style.removeProperty('display');
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.textContent = `Showing ${start}–${end} of ${total} orders`;
+
+            // Build page buttons
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
         }
+
+        function goToPage(p) {
+            const rows    = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const total   = rows.filter(r => r.getAttribute('data-filtered') !== '0').length;
+            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage   = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+            document.getElementById('ordersTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // initialise — mark all rows as visible then paginate
+        document.querySelectorAll('#ordersTable tbody tr').forEach(r => r.setAttribute('data-filtered', '1'));
+        renderPagination();
 
         function clearDateFilter() {
             document.getElementById('fromDate').value = '';

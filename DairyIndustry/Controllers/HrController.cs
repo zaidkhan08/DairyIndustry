@@ -6,7 +6,13 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
-    [SessionAuthorize("HR Manager")]
+    // ═══════════════════════════════════════════════════════════════
+    //  SESSION GUARD — Both HR Manager and Plant Manager can access
+    //  this controller. Every action internally checks the role and
+    //  applies the appropriate restrictions.
+    //  Collection Agent will be added here once their session is fixed.
+    // ═══════════════════════════════════════════════════════════════
+    [SessionAuthorize("HR Manager", "Plant Manager")]
     public class HRController : Controller
     {
         private readonly IHRRepository _repo;
@@ -18,9 +24,71 @@ namespace DairyIndustry.Controllers
             _env = env;
         }
 
-        // ─── DASHBOARD ────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPERS
+        // ═══════════════════════════════════════════════════════════
+
+        // Returns the session role name
+        private string SessionRole =>
+            HttpContext.Session.GetString("RoleName") ?? string.Empty;
+
+        // Returns true if the logged-in user is an HR Manager
+        private bool IsHRManager =>
+            string.Equals(SessionRole, "HR Manager", StringComparison.OrdinalIgnoreCase);
+
+        // Returns true if the logged-in user is a Plant Manager
+        private bool IsPlantManager =>
+            string.Equals(SessionRole, "Plant Manager", StringComparison.OrdinalIgnoreCase);
+
+        // Returns the PlantId from session for Plant Manager.
+        // Returns null if not a Plant Manager or not assigned.
+        private int? SessionPlantId =>
+            IsPlantManager ? HttpContext.Session.GetInt32("PlantId") : null;
+
+        // ── Guard: blocks Plant Manager from HR-only actions ──────────
+        // Returns a redirect result if the current user is NOT an HR Manager.
+        // Usage: var guard = HROnly(); if (guard != null) return guard;
+        private IActionResult? HROnly()
+        {
+            if (!IsHRManager)
+            {
+                TempData["Error"] = "Access denied. This action is only available to HR Managers.";
+                return RedirectToAction("Index");
+            }
+            return null;
+        }
+
+        // ── Guard: ensures Plant Manager can only access their own plant's staff ──
+        // Returns a redirect if the staff member does not belong to the
+        // Plant Manager's plant. HR Manager always passes through.
+        private IActionResult? PlantOwnershipGuard(StaffModel staff)
+        {
+            if (IsHRManager) return null;  // HR sees everything
+
+            int? plantId = SessionPlantId;
+            if (plantId == null)
+            {
+                TempData["Error"] = "Your account is not assigned to any plant. Contact HR.";
+                return RedirectToAction("Index");
+            }
+
+            if (staff.PlantId != plantId)
+            {
+                TempData["Error"] = "Access denied. This staff member does not belong to your plant.";
+                return RedirectToAction("Index");
+            }
+
+            return null;
+        }
+
+        // ─── DASHBOARD — HR Manager only ──────────────────────────────
+        // Plant Manager is redirected to Index (their staff list)
         public IActionResult Dashboard()
         {
+            // Plant Manager has no dashboard — redirect to their staff list
+            if (IsPlantManager)
+                return RedirectToAction("Index");
+
             try
             {
                 var allStaff = _repo.GetAllStaff(null, null);
@@ -34,36 +102,26 @@ namespace DairyIndustry.Controllers
 
                     RecentJoinings = allStaff
                         .OrderByDescending(s => s.DOJ)
-                        .Take(5)
-                        .ToList(),
+                        .Take(5).ToList(),
 
                     RecentPayments = _repo.GetAllPayments(null)
-                        .Take(5)
-                        .ToList(),
+                        .Take(5).ToList(),
 
-                    // Feature 4A — Work anniversaries this month
                     AnniversariesThisMonth = allStaff
                         .Where(s => s.DOJ.HasValue
                                  && s.DOJ.Value.Month == thisMonth
                                  && s.DOJ.Value.Year != thisYear)
-                        .OrderBy(s => s.DOJ!.Value.Day)
-                        .ToList(),
+                        .OrderBy(s => s.DOJ!.Value.Day).ToList(),
 
-                    // Feature 4B — New joinings this month
                     NewJoiningsThisMonth = allStaff
                         .Where(s => s.DOJ.HasValue
                                  && s.DOJ.Value.Month == thisMonth
                                  && s.DOJ.Value.Year == thisYear)
-                        .OrderBy(s => s.DOJ!.Value.Day)
-                        .ToList(),
+                        .OrderBy(s => s.DOJ!.Value.Day).ToList(),
 
-                    // FEATURE 2 — Inactive staff alert
-                    // All staff with IsActive = false, ordered by name.
-                    // Reuses already-loaded allStaff — zero extra DB call.
                     InactiveStaffList = allStaff
                         .Where(s => !s.IsActive)
-                        .OrderBy(s => s.FullName)
-                        .ToList()
+                        .OrderBy(s => s.FullName).ToList()
                 };
 
                 return View(model);
@@ -76,14 +134,43 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── INDEX ────────────────────────────────────────────────────
+        // HR Manager  → sees ALL staff, can filter by role and status
+        // Plant Manager → sees ONLY their plant's staff
+        //                 Role/status filter still works within their plant
+        //                 PlantId filter is forced from session — cannot be
+        //                 overridden via URL params
         public IActionResult Index(int? roleId, bool? isActive)
         {
             try
             {
-                var staff = _repo.GetAllStaff(roleId, isActive);
+                List<StaffModel> staff;
+
+                if (IsPlantManager)
+                {
+                    int? plantId = SessionPlantId;
+
+                    if (plantId == null)
+                    {
+                        TempData["Error"] = "Your account is not assigned to any plant. Contact HR.";
+                        return View(new List<StaffModel>());
+                    }
+
+                    // Get only this plant's staff — PlantId is forced from session
+                    staff = _repo.GetStaffByPlant(plantId.Value, roleId, isActive);
+                    ViewBag.IsPlantManager = true;
+                    ViewBag.PlantName = HttpContext.Session.GetString("PlantName") ?? "Your Plant";
+                }
+                else
+                {
+                    // HR Manager — full access
+                    staff = _repo.GetAllStaff(roleId, isActive);
+                    ViewBag.IsPlantManager = false;
+                }
+
                 LoadRolesDropdown(roleId);
                 ViewBag.SelectedRoleId = roleId;
                 ViewBag.SelectedActive = isActive;
+
                 return View(staff);
             }
             catch (Exception ex)
@@ -94,6 +181,8 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── DETAILS ──────────────────────────────────────────────────
+        // HR Manager  → can view any staff member
+        // Plant Manager → can only view staff from their plant
         public IActionResult Details(int id)
         {
             try
@@ -105,11 +194,13 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // Feature 3 — Salary history
-                ViewBag.SalaryHistory = _repo.GetSalaryHistory(id);
+                // Ownership guard — Plant Manager cannot view other plants' staff
+                var guard = PlantOwnershipGuard(staff);
+                if (guard != null) return guard;
 
-                // Feature 4 — Performance notes
+                ViewBag.SalaryHistory = _repo.GetSalaryHistory(id);
                 ViewBag.StaffNotes = _repo.GetStaffNotes(id);
+                ViewBag.IsPlantManager = IsPlantManager;
 
                 return View(staff);
             }
@@ -120,45 +211,36 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        // ─── CREATE GET ───────────────────────────────────────────────
+        // ─── CREATE GET — HR Manager only ─────────────────────────────
         public IActionResult Create()
         {
+            var guard = HROnly(); if (guard != null) return guard;
             LoadFormDropdowns(null);
             return View(new StaffFormModel());
         }
 
-        // ─── CREATE POST ──────────────────────────────────────────────
+        // ─── CREATE POST — HR Manager only ────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(StaffFormModel model)
         {
-            // Cannot assign to both Plant and Center
+            var guard = HROnly(); if (guard != null) return guard;
+
             if (model.PlantId != null && model.CenterId != null)
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
 
-            // FIX — Username and Password must both be filled or both be empty
-            // Prevents partial credential entry
             bool hasUsername = !string.IsNullOrWhiteSpace(model.Username);
             bool hasPassword = !string.IsNullOrWhiteSpace(model.Password);
 
             if (hasUsername && !hasPassword)
-                ModelState.AddModelError("Password",
-                    "Password is required when a username is provided.");
-
+                ModelState.AddModelError("Password", "Password is required when a username is provided.");
             if (hasPassword && !hasUsername)
-                ModelState.AddModelError("Username",
-                    "Username is required when a password is provided.");
-
+                ModelState.AddModelError("Username", "Username is required when a password is provided.");
             if (hasPassword && model.Password!.Length < 6)
-                ModelState.AddModelError("Password",
-                    "Password must be at least 6 characters.");
+                ModelState.AddModelError("Password", "Password must be at least 6 characters.");
 
-            // IFormFile cannot be validated by standard model validation
             ModelState.Remove("PhotoFile");
-
-            // Remove credential validation from ModelState —
-            // they are optional fields handled manually above
             ModelState.Remove("Username");
             ModelState.Remove("Password");
 
@@ -170,18 +252,12 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // Read photo directly from Request (reliable across all scenarios)
                 var photoFile = Request.Form.Files["PhotoFile"];
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
 
-                // FIX — AddStaff now uses usp_HR_AddStaff SP which handles
-                // bank account creation and StaffId return in one transaction
                 int newId = _repo.AddStaff(model);
 
-                // ── CREATE LOGIN ACCOUNT (if credentials provided) ──
-                // Uses BCrypt to hash the password before storing.
-                // usp_Admin_RegisterUser already checks for duplicate username.
                 if (hasUsername && hasPassword)
                 {
                     string passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
@@ -189,14 +265,13 @@ namespace DairyIndustry.Controllers
                 }
 
                 TempData["Success"] = hasUsername
-                    ? $"Staff member added successfully and login account created for '{model.Username}'."
+                    ? $"Staff member added and login account created for '{model.Username}'."
                     : "Staff member added successfully.";
 
                 return RedirectToAction("Details", new { id = newId });
             }
             catch (InvalidOperationException ex)
             {
-                // Duplicate phone, email, or username surfaces here cleanly
                 TempData["Error"] = ex.Message;
                 LoadFormDropdowns(model.RoleId);
                 return View(model);
@@ -210,6 +285,8 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── EDIT GET ─────────────────────────────────────────────────
+        // HR Manager  → can edit any staff
+        // Plant Manager → can only edit staff from their plant
         public IActionResult Edit(int id)
         {
             try
@@ -220,6 +297,10 @@ namespace DairyIndustry.Controllers
                     TempData["Error"] = "Staff member not found.";
                     return RedirectToAction("Index");
                 }
+
+                // Ownership guard — Plant Manager cannot edit other plants' staff
+                var guard = PlantOwnershipGuard(staff);
+                if (guard != null) return guard;
 
                 var model = new StaffFormModel
                 {
@@ -235,8 +316,6 @@ namespace DairyIndustry.Controllers
                     PlantId = staff.PlantId,
                     CenterId = staff.CenterId,
                     Salary = staff.Salary,
-                    // FEATURE 3 — store current salary so Edit POST can
-                    // detect whether it changed and log history accordingly
                     CurrentSalary = staff.Salary,
                     BankName = staff.BankName,
                     AccountNumber = staff.AccountNumber,
@@ -254,10 +333,25 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── EDIT POST ────────────────────────────────────────────────
+        // Plant Manager ownership is re-verified on POST to prevent
+        // URL tampering — cannot edit staff outside their plant
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(StaffFormModel model)
         {
+            // Re-verify ownership on POST
+            if (IsPlantManager)
+            {
+                var existingStaff = _repo.GetStaffById(model.StaffId);
+                if (existingStaff == null)
+                {
+                    TempData["Error"] = "Staff member not found.";
+                    return RedirectToAction("Index");
+                }
+                var ownerGuard = PlantOwnershipGuard(existingStaff);
+                if (ownerGuard != null) return ownerGuard;
+            }
+
             if (model.PlantId != null && model.CenterId != null)
                 ModelState.AddModelError("PlantId",
                     "Staff can only be assigned to either a Plant or a Collection Center, not both.");
@@ -279,18 +373,11 @@ namespace DairyIndustry.Controllers
                 if (photoFile != null && photoFile.Length > 0)
                     model.ProfilePhoto = SavePhoto(photoFile);
 
-                // FEATURE 3 — Detect salary change BEFORE updating
-                // Compare submitted Salary with CurrentSalary (hidden field)
-                // Only log if salary actually changed and new salary has a value
                 bool salaryChanged = model.Salary.HasValue
                     && model.Salary != model.CurrentSalary;
 
-                // Save staff first
                 _repo.UpdateStaff(model);
 
-                // Log salary history AFTER successful save
-                // Wrapped in try/catch — history failure must never
-                // prevent the staff update from completing
                 if (salaryChanged)
                 {
                     try
@@ -301,16 +388,10 @@ namespace DairyIndustry.Controllers
                             model.CurrentSalary,
                             model.Salary!.Value,
                             string.IsNullOrWhiteSpace(model.SalaryChangeReason)
-                                ? null
-                                : model.SalaryChangeReason.Trim(),
-                            changedBy
-                        );
+                                ? null : model.SalaryChangeReason.Trim(),
+                            changedBy);
                     }
-                    catch
-                    {
-                        // Silently ignore — salary history logging is
-                        // supplementary and must never block the main save
-                    }
+                    catch { /* history failure never blocks the main save */ }
                 }
 
                 TempData["Success"] = "Staff member updated successfully.";
@@ -331,12 +412,24 @@ namespace DairyIndustry.Controllers
         }
 
         // ─── TOGGLE ACTIVE ────────────────────────────────────────────
+        // Plant Manager can toggle their own plant's staff active status
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ToggleActive(int id, bool currentStatus)
         {
             try
             {
+                // Ownership check for Plant Manager
+                if (IsPlantManager)
+                {
+                    var staff = _repo.GetStaffById(id);
+                    if (staff != null)
+                    {
+                        var ownerGuard = PlantOwnershipGuard(staff);
+                        if (ownerGuard != null) return ownerGuard;
+                    }
+                }
+
                 _repo.ToggleActive(id, !currentStatus);
                 TempData["Success"] = !currentStatus
                     ? "Staff member activated."
@@ -356,6 +449,17 @@ namespace DairyIndustry.Controllers
         {
             try
             {
+                // Ownership check for Plant Manager
+                if (IsPlantManager)
+                {
+                    var staff = _repo.GetStaffById(staffId);
+                    if (staff != null)
+                    {
+                        var ownerGuard = PlantOwnershipGuard(staff);
+                        if (ownerGuard != null) return ownerGuard;
+                    }
+                }
+
                 if (photo == null || photo.Length == 0)
                 {
                     TempData["Error"] = "Please select a photo to upload.";
@@ -372,29 +476,21 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Details", new { id = staffId });
         }
 
-        // ─── ADD NOTE — /HR/AddNote ────────────────────────────────────
-        // FEATURE 4 — Adds a performance note for a staff member.
-        // Called via POST from the Details page note form.
-        // NoteText is required — returns error if blank.
-        // CreatedBy pulled from session Username.
+        // ─── ADD NOTE — HR Manager only ───────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddNote(int staffId, string noteText, string noteType)
         {
+            var guard = HROnly(); if (guard != null) return guard;
+
             if (string.IsNullOrWhiteSpace(noteText))
             {
                 TempData["Error"] = "Note text cannot be empty.";
                 return RedirectToAction("Details", new { id = staffId });
             }
 
-            // Validate noteType against allowed values
-            var allowedTypes = new[]
-            {
-                "General", "Warning", "Appreciation", "Feedback", "Observation"
-            };
-
-            if (!allowedTypes.Contains(noteType))
-                noteType = "General";
+            var allowedTypes = new[] { "General", "Warning", "Appreciation", "Feedback", "Observation" };
+            if (!allowedTypes.Contains(noteType)) noteType = "General";
 
             try
             {
@@ -406,18 +502,16 @@ namespace DairyIndustry.Controllers
             {
                 TempData["Error"] = "Failed to add note: " + ex.Message;
             }
-
             return RedirectToAction("Details", new { id = staffId });
         }
 
-        // ─── DELETE NOTE — /HR/DeleteNote ──────────────────────────────
-        // FEATURE 4 — Deletes a note by NoteId.
-        // StaffId is passed and verified in the repo to prevent
-        // cross-staff deletion via URL tampering.
+        // ─── DELETE NOTE — HR Manager only ────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteNote(int noteId, int staffId)
         {
+            var guard = HROnly(); if (guard != null) return guard;
+
             try
             {
                 bool deleted = _repo.DeleteStaffNote(noteId, staffId);
@@ -429,13 +523,14 @@ namespace DairyIndustry.Controllers
             {
                 TempData["Error"] = "Failed to delete note: " + ex.Message;
             }
-
             return RedirectToAction("Details", new { id = staffId });
         }
 
-        // ─── PAYMENTS ─────────────────────────────────────────────────
+        // ─── PAYMENTS — HR Manager only ───────────────────────────────
         public IActionResult Payments(int? staffId, string? status)
         {
+            var guard = HROnly(); if (guard != null) return guard;
+
             try
             {
                 var payments = staffId.HasValue

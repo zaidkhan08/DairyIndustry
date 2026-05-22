@@ -11,6 +11,33 @@
     </div>
 </div>
 
+<!-- Download PDF Form -->
+<div class="card mb-4">
+    <div class="card-header fw-semibold">📥 Download Sales Report PDF</div>
+    <div class="card-body">
+        <form asp-action="DownloadSalesReport" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">From Date</label>
+                <input type="date" name="from" class="form-control form-control-sm"
+                       value="@DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">To Date</label>
+                <input type="date" name="to" class="form-control form-control-sm"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    📄 Download PDF
+                </button>
+            </div>
+            <div class="col-md-3 text-muted small">
+                Includes: revenue summary, orders by status, top distributors, top 5 products.
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Summary Cards -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-2">
@@ -116,8 +143,8 @@
                 Distributor-wise Sales
             </div>
             <div class="card-body p-0">
-                @if (Model.TopDistributors.Any())
-                {
+@if (Model.TopDistributors.Any())
+{
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead style="background:#1a2e4a; color:#fff;">
@@ -130,7 +157,7 @@
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="distReportTable">
                                 @foreach (var d in Model.TopDistributors)
                                 {
                                     <tr>
@@ -173,12 +200,67 @@
                             </tfoot>
                         </table>
                     </div>
-                }
-                else
-                {
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light">
+                        <small class="text-muted" id="distPageInfo"></small>
+                        <nav><ul class="pagination pagination-sm mb-0" id="distPageControls"></ul></nav>
+                    </div>
+}
+else
+{
                     <div class="text-center text-muted py-4">No data.</div>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+}
+
+@section Scripts {
+                    <script>
+                        const PAGE_SIZE = 5;
+                        let currentPage = 1;
+
+                        function renderPagination() {
+                            const rows       = [...document.querySelectorAll('#distReportTable tr')];
+                            const total      = rows.length;
+                            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+                            if (currentPage > totalPages) currentPage = totalPages;
+
+                            rows.forEach((row, i) => {
+                                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+                            });
+
+                            const pageInfo     = document.getElementById('distPageInfo');
+                            const pageControls = document.getElementById('distPageControls');
+                            if (!pageInfo || !pageControls) return;
+
+                            if (total <= PAGE_SIZE) {
+                                pageInfo.textContent = `Showing ${total} distributor(s)`;
+                                pageControls.innerHTML = '';
+                                return;
+                            }
+
+                            const start = (currentPage - 1) * PAGE_SIZE + 1;
+                            const end   = Math.min(currentPage * PAGE_SIZE, total);
+                            pageInfo.textContent = `Showing ${start}–${end} of ${total} distributors`;
+
+                            let html = '';
+                            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                                     </li>`;
+                            for (let p = 1; p <= totalPages; p++) {
+                                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                                         </li>`;
+                            }
+                            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                                     </li>`;
+                            pageControls.innerHTML = html;
+                        }
+
+                        function goToPage(p) {
+                            const total   = document.querySelectorAll('#distReportTable tr').length;
+                            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+                            currentPage   = Math.max(1, Math.min(p, maxPage));
+                            renderPagination();
+                        }
+
+                        renderPagination();
+                    </script>
+}

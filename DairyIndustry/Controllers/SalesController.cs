@@ -1,20 +1,27 @@
 ﻿using DairyIndustry.Filters;
 using DairyIndustry.Models;
 using DairyIndustry.Repositories;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
-{ 
+{
     [SessionAuthorize]
     public class SalesController : Controller
     {
         private readonly ISalesRepository _repo;
+        private readonly IConverter _pdfConverter;
 
         private static readonly List<string> ValidOrderStatuses = new()
             { "Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled" };
 
-        public SalesController(ISalesRepository repo) => _repo = repo;
+        public SalesController(ISalesRepository repo, IConverter pdfConverter)
+        {
+            _repo         = repo;
+            _pdfConverter = pdfConverter;
+        }
 
 
         // ════════════════════════════════════════════════════════════════════
@@ -130,6 +137,7 @@ namespace DairyIndustry.Controllers
             // Pass the full product list so the view can show MRP automatically
             ViewBag.ProductList = _repo.GetProducts();
             LoadProductDropdown();
+            ViewBag.InactiveProductIds = _repo.GetInactiveProductIds();
 
             if (role == "Distributor")
             {
@@ -650,7 +658,8 @@ namespace DairyIndustry.Controllers
         public IActionResult ProductCatalogue()
         {
             int distId = HttpContext.Session.GetInt32("DistributorId") ?? 0;
-            var products = _repo.GetProducts();
+            var products = _repo.GetAllProducts();
+            ViewBag.InactiveProductIds = _repo.GetInactiveProductIds();
             SetNotifBadge(distId, _repo.GetOrders(distId, null, null, null));
             return View(products);
         }
@@ -758,6 +767,7 @@ namespace DairyIndustry.Controllers
             // SetNotifBadge writes current unseen orders to session for sidebar
             // Badge only clears when distributor explicitly clicks Mark as seen (DismissNotif)
             SetNotifBadge(distributorId, orders);
+            ViewBag.InactiveProductIds = _repo.GetInactiveProductIds();
             return View(orders);
         }
 
@@ -838,6 +848,165 @@ namespace DairyIndustry.Controllers
                 TopDistributors = _repo.GetDistributorSales()
             };
             return View(vm);
+        }
+
+
+        // ════════════════════════════════════════════════════════════════════
+        //  DOWNLOAD SALES REPORT PDF — Admin only
+        //  GET /Sales/DownloadSalesReport?from=2025-01-01&to=2025-01-31
+        // ════════════════════════════════════════════════════════════════════
+        [SessionAuthorize("Admin")]
+        public IActionResult DownloadSalesReport(DateTime? from, DateTime? to)
+        {
+            var fromDate = from?.Date ?? DateTime.Today.AddMonths(-1);
+            var toDate   = to?.Date   ?? DateTime.Today;
+
+            if (fromDate > toDate)
+            {
+                TempData["Error"] = "From date cannot be after To date.";
+                return RedirectToAction("Reports");
+            }
+
+            var summary      = _repo.GetDashboardSummaryByRange(fromDate, toDate);
+            var byStatus     = _repo.GetOrdersByStatusByRange(fromDate, toDate);
+            var distributors = _repo.GetDistributorSalesByRange(fromDate, toDate);
+            var products     = _repo.GetTopProductsByRange(fromDate, toDate);
+
+            string html     = GenerateSalesReportHtml(fromDate, toDate, summary, byStatus, distributors, products);
+            byte[] pdfBytes = GeneratePdfFromHtml(html);
+            string fileName = $"SalesReport_{fromDate:yyyyMMdd}_to_{toDate:yyyyMMdd}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+
+        private byte[] GeneratePdfFromHtml(string html)
+        {
+            var doc = new HtmlToPdfDocument
+            {
+                GlobalSettings = new GlobalSettings
+                {
+                    ColorMode   = ColorMode.Color,
+                    Orientation = Orientation.Portrait,
+                    PaperSize   = PaperKind.A4,
+                    Margins     = new MarginSettings { Top = 15, Bottom = 15, Left = 12, Right = 12 }
+                },
+                Objects =
+                {
+                    new ObjectSettings
+                    {
+                        PagesCount  = true,
+                        HtmlContent = html,
+                        WebSettings = { DefaultEncoding = "utf-8" },
+                        FooterSettings = new FooterSettings
+                        {
+                            FontSize = 8,
+                            Center   = "DMS — Dairy Management System",
+                            Right    = "Page [page] of [topage]",
+                            Left     = $"Generated: {DateTime.Now:dd MMM yyyy, hh:mm tt}"
+                        }
+                    }
+                }
+            };
+            return _pdfConverter.Convert(doc);
+        }
+
+        private static string GenerateSalesReportHtml(
+            DateTime fromDate, DateTime toDate,
+            SalesDashboardSummaryModel summary,
+            List<OrderStatusCountModel> byStatus,
+            List<DistributorSalesModel> distributors,
+            List<TopProductModel> products)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset='utf-8'/>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; color: #1a1a1a; margin: 0; padding: 0; }
+                .header { border-bottom: 3px solid #0f2040; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+                .header-left h1 { font-size: 18px; color: #0f2040; margin: 0 0 4px; }
+                .header-left p  { font-size: 10px; color: #64748b; margin: 0; }
+                .header-right   { text-align: right; }
+                .header-right h2 { font-size: 22px; color: #0f2040; margin: 0 0 4px; letter-spacing: .06em; }
+                .header-right p  { font-size: 10px; color: #64748b; margin: 0; }
+                .section-title  { font-size: 13px; font-weight: bold; color: #0f2040; margin: 20px 0 8px; }
+                table  { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+                thead tr { background: #0f2040; color: #fff; }
+                thead th { padding: 8px 10px; font-size: 10px; font-weight: bold; text-align: left; }
+                tbody tr:nth-child(even) { background: #f8fafc; }
+                tbody td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+                tfoot td { padding: 8px 10px; font-weight: bold; background: #eff6ff; border-top: 2px solid #0f2040; }
+                .text-right { text-align: right; }
+                .text-center { text-align: center; }
+                .summary-grid { display: flex; gap: 10px; margin-bottom: 4px; }
+                .summary-card { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; background: #f8fafc; text-align: center; }
+                .summary-card .val { font-size: 22px; font-weight: bold; color: #0f2040; }
+                .summary-card .lbl { font-size: 10px; color: #64748b; margin-top: 2px; }
+            </style>
+            </head>
+            <body>");
+
+            // Header
+            sb.Append($@"
+            <div class='header'>
+                <div class='header-left'>
+                    <h1>DMS — Dairy Management System</h1>
+                    <p>Sales Division — Confidential Report</p>
+                </div>
+                <div class='header-right'>
+                    <h2>SALES REPORT</h2>
+                    <p>{fromDate:dd MMM yyyy} to {toDate:dd MMM yyyy}</p>
+                </div>
+            </div>");
+
+            // Section 1 — Summary cards
+            sb.Append("<div class='section-title'>1. Revenue Summary</div>");
+            sb.Append($@"
+            <div class='summary-grid'>
+                <div class='summary-card'><div class='val'>{summary.TotalOrders}</div><div class='lbl'>Total Orders</div></div>
+                <div class='summary-card'><div class='val' style='color:#166534'>{summary.DeliveredOrders}</div><div class='lbl'>Delivered</div></div>
+                <div class='summary-card'><div class='val' style='color:#92400e'>{summary.PendingOrders}</div><div class='lbl'>Pending</div></div>
+                <div class='summary-card'><div class='val' style='color:#991b1b'>{summary.CancelledOrders}</div><div class='lbl'>Cancelled</div></div>
+                <div class='summary-card'><div class='val' style='color:#166534; font-size:16px'>Rs {summary.TotalRevenue:N2}</div><div class='lbl'>Total Revenue</div></div>
+            </div>");
+
+            // Section 2 — Orders by Status
+            sb.Append("<div class='section-title'>2. Orders by Status</div>");
+            if (byStatus.Any())
+            {
+                sb.Append("<table><thead><tr><th>Status</th><th class='text-center'>Count</th><th class='text-right'>Amount (Rs)</th></tr></thead><tbody>");
+                foreach (var s in byStatus)
+                    sb.Append($"<tr><td>{s.OrderStatus}</td><td class='text-center'>{s.Count}</td><td class='text-right'>Rs {s.TotalAmount:N2}</td></tr>");
+                sb.Append("</tbody></table>");
+            }
+            else sb.Append("<p style='color:#94a3b8;font-style:italic;'>No orders in this date range.</p>");
+
+            // Section 3 — Top Distributors
+            sb.Append("<div class='section-title'>3. Top Distributors by Revenue</div>");
+            if (distributors.Any())
+            {
+                sb.Append("<table><thead><tr><th>Distributor</th><th class='text-center'>Orders</th><th class='text-right'>Revenue (Rs)</th><th class='text-center'>Delivered</th><th class='text-center'>Pending</th></tr></thead><tbody>");
+                foreach (var d in distributors.Take(10))
+                    sb.Append($"<tr><td>{d.DistributorName} ({d.Location})</td><td class='text-center'>{d.TotalOrders}</td><td class='text-right'>Rs {d.TotalRevenue:N2}</td><td class='text-center'>{d.DeliveredOrders}</td><td class='text-center'>{d.PendingOrders}</td></tr>");
+                sb.Append("</tbody></table>");
+            }
+            else sb.Append("<p style='color:#94a3b8;font-style:italic;'>No distributor data for this range.</p>");
+
+            // Section 4 — Top Products
+            sb.Append("<div class='section-title'>4. Top 5 Products by Quantity</div>");
+            if (products.Any())
+            {
+                sb.Append("<table><thead><tr><th>#</th><th>Product</th><th>Type</th><th>Unit</th><th class='text-right'>Total Qty</th><th class='text-right'>Total Value (Rs)</th></tr></thead><tbody>");
+                int rank = 1;
+                foreach (var p in products)
+                    sb.Append($"<tr><td class='text-center'>{rank++}</td><td>{p.ProductName}</td><td>{p.ProductType}</td><td>{p.Unit}</td><td class='text-right'>{p.TotalQuantity:N2}</td><td class='text-right'>Rs {p.TotalValue:N2}</td></tr>");
+                sb.Append("</tbody></table>");
+            }
+            else sb.Append("<p style='color:#94a3b8;font-style:italic;'>No product data for this range.</p>");
+
+            sb.Append("</body></html>");
+            return sb.ToString();
         }
 
 

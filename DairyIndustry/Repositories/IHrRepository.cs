@@ -12,6 +12,12 @@ namespace DairyIndustry.Repositories
         bool ToggleActive(int staffId, bool isActive);
         bool UpdateProfilePhoto(int staffId, string photoPath);
 
+        // ── PLANT MANAGER FILTERED LIST ────────────────────────────
+        // Returns only staff assigned to the given PlantId.
+        // roleId and isActive filters still apply within the plant.
+        // Used by HRController.Index when role = Plant Manager.
+        List<StaffModel> GetStaffByPlant(int plantId, int? roleId, bool? isActive);
+
         // ── USER REGISTRATION ──────────────────────────────────────
         void RegisterStaffUser(string username, string passwordHash,
                                int roleId, int staffId);
@@ -22,15 +28,9 @@ namespace DairyIndustry.Repositories
         List<SalaryHistoryModel> GetSalaryHistory(int staffId);
 
         // ── PERFORMANCE NOTES ──────────────────────────────────────
-        // Add a note against a staff member from the Details page.
         void AddStaffNote(int staffId, string noteText,
                           string noteType, string? createdBy);
-
-        // Get all notes for a staff member — newest first.
         List<StaffNoteModel> GetStaffNotes(int staffId);
-
-        // Delete a note — only if it belongs to the given StaffId
-        // (prevents cross-staff deletion via URL tampering).
         bool DeleteStaffNote(int noteId, int staffId);
 
         // ── DROPDOWNS ──────────────────────────────────────────────

@@ -5,7 +5,7 @@
     var sales = ViewBag.DistributorSales as List<DairyIndustry.Models.DistributorSalesModel> ?? new();
     var statusFilter = ViewBag.StatusFilter as string;
 }
- 
+
 <div class="page-header">
     <div>
         <h4 class="fw-bold mb-1">Distributors</h4>
@@ -56,7 +56,7 @@
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="distTable">
                         @foreach (var d in Model)
                         {
                             <tr>
@@ -160,8 +160,9 @@
                     </tbody>
                 </table>
             </div>
-            <div class="px-3 py-2 border-top bg-light text-muted small">
-                Showing <strong>@Model.Count</strong> distributor(s)
+            <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted" id="pageInfo">Showing <strong>@Model.Count</strong> distributor(s)</small>
+                <nav><ul class="pagination pagination-sm mb-0" id="pageControls"></ul></nav>
             </div>
         </div>
     </div>
@@ -175,4 +176,62 @@ else
             <a asp-action="AddDistributor" class="btn btn-primary btn-sm mt-3">Add First Distributor</a>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows       = [...document.querySelectorAll('#distTable tr')];
+            const total      = rows.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            rows.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+
+            const pageInfo     = document.getElementById('pageInfo');
+            const pageControls = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                pageInfo.textContent = `Showing ${total} distributor(s)`;
+                pageControls.innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total}</strong> distributors`;
+
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
+        }
+
+        function goToPage(p) {
+            const total    = document.querySelectorAll('#distTable tr').length;
+            const maxPage  = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage    = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+        }
+
+        renderPagination();
+    </script>
 }

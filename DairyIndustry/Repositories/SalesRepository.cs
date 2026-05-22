@@ -606,6 +606,19 @@ namespace DairyIndustry.Repositories
             };
         }
 
+        public HashSet<int> GetInactiveProductIds()
+        {
+            var set = new HashSet<int>();
+            const string sql = "SELECT ProductId FROM Production.Products WHERE IsActive = 0";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                set.Add(Convert.ToInt32(reader["ProductId"]));
+            return set;
+        }
+
 
         // ═══════════════════════════════════════════════════════════════════
         //  DASHBOARD SUMMARY — inline
@@ -710,6 +723,143 @@ namespace DairyIndustry.Repositories
                     DeliveredOrders = Convert.ToInt32(reader["DeliveredOrders"]),
                     PendingOrders = Convert.ToInt32(reader["PendingOrders"]),
                     LastOrderDate = reader["LastOrderDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["LastOrderDate"])
+                });
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET DASHBOARD SUMMARY BY RANGE — inline (for PDF report)
+        // ═══════════════════════════════════════════════════════════════════
+        public SalesDashboardSummaryModel GetDashboardSummaryByRange(DateTime from, DateTime to)
+        {
+            var model = new SalesDashboardSummaryModel();
+            const string sql = @"
+                SELECT
+                    COUNT(*)                                                                          AS TotalOrders,
+                    SUM(CASE WHEN OrderStatus='Pending'   THEN 1 ELSE 0 END)                         AS PendingOrders,
+                    SUM(CASE WHEN OrderStatus='Delivered' THEN 1 ELSE 0 END)                         AS DeliveredOrders,
+                    SUM(CASE WHEN OrderStatus='Cancelled' THEN 1 ELSE 0 END)                         AS CancelledOrders,
+                    ISNULL(SUM(CASE WHEN OrderStatus IN ('Delivered','Received') THEN TotalAmount END), 0) AS TotalRevenue
+                FROM Sales.SalesOrders
+                WHERE OrderDate >= @From AND OrderDate <= @To";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@From", from.Date);
+            cmd.Parameters.AddWithValue("@To", to.Date);
+            using var r = cmd.ExecuteReader();
+            if (r.Read())
+            {
+                model.TotalOrders = r["TotalOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalOrders"]);
+                model.PendingOrders = r["PendingOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingOrders"]);
+                model.DeliveredOrders = r["DeliveredOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["DeliveredOrders"]);
+                model.CancelledOrders = r["CancelledOrders"] == DBNull.Value ? 0 : Convert.ToInt32(r["CancelledOrders"]);
+                model.TotalRevenue = r["TotalRevenue"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalRevenue"]);
+            }
+            return model;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET ORDERS BY STATUS BY RANGE — inline (for PDF report)
+        // ═══════════════════════════════════════════════════════════════════
+        public List<OrderStatusCountModel> GetOrdersByStatusByRange(DateTime from, DateTime to)
+        {
+            var list = new List<OrderStatusCountModel>();
+            const string sql = @"
+                SELECT OrderStatus, COUNT(*) AS Count, ISNULL(SUM(TotalAmount),0) AS TotalAmount
+                FROM Sales.SalesOrders
+                WHERE OrderDate >= @From AND OrderDate <= @To
+                GROUP BY OrderStatus ORDER BY Count DESC";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@From", from.Date);
+            cmd.Parameters.AddWithValue("@To", to.Date);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(new OrderStatusCountModel
+                {
+                    OrderStatus = r["OrderStatus"].ToString(),
+                    Count = Convert.ToInt32(r["Count"]),
+                    TotalAmount = Convert.ToDecimal(r["TotalAmount"])
+                });
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET DISTRIBUTOR SALES BY RANGE — inline (for PDF report)
+        // ═══════════════════════════════════════════════════════════════════
+        public List<DistributorSalesModel> GetDistributorSalesByRange(DateTime from, DateTime to)
+        {
+            var list = new List<DistributorSalesModel>();
+            const string sql = @"
+                SELECT d.DistributorId, d.DistributorName, d.Location,
+                       COUNT(o.OrderId)                                           AS TotalOrders,
+                       ISNULL(SUM(o.TotalAmount),0)                               AS TotalRevenue,
+                       SUM(CASE WHEN o.OrderStatus='Delivered' THEN 1 ELSE 0 END) AS DeliveredOrders,
+                       SUM(CASE WHEN o.OrderStatus='Pending'   THEN 1 ELSE 0 END) AS PendingOrders
+                FROM Sales.Distributors d
+                INNER JOIN Sales.SalesOrders o ON o.DistributorId = d.DistributorId
+                WHERE o.OrderDate >= @From AND o.OrderDate <= @To
+                GROUP BY d.DistributorId, d.DistributorName, d.Location
+                ORDER BY TotalRevenue DESC";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@From", from.Date);
+            cmd.Parameters.AddWithValue("@To", to.Date);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(new DistributorSalesModel
+                {
+                    DistributorId = Convert.ToInt32(r["DistributorId"]),
+                    DistributorName = r["DistributorName"].ToString(),
+                    Location = r["Location"] == DBNull.Value ? null : r["Location"].ToString(),
+                    TotalOrders = Convert.ToInt32(r["TotalOrders"]),
+                    TotalRevenue = Convert.ToDecimal(r["TotalRevenue"]),
+                    DeliveredOrders = Convert.ToInt32(r["DeliveredOrders"]),
+                    PendingOrders = Convert.ToInt32(r["PendingOrders"])
+                });
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  GET TOP PRODUCTS BY RANGE — inline (for PDF report)
+        // ═══════════════════════════════════════════════════════════════════
+        public List<TopProductModel> GetTopProductsByRange(DateTime from, DateTime to)
+        {
+            var list = new List<TopProductModel>();
+            const string sql = @"
+                SELECT TOP 5
+                    p.ProductId, p.ProductName, p.ProductType, p.Unit,
+                    SUM(d.Quantity)               AS TotalQuantity,
+                    SUM(d.Quantity * d.UnitPrice)  AS TotalValue
+                FROM Sales.SalesOrderDetails d
+                INNER JOIN Sales.SalesOrders   o ON o.OrderId   = d.OrderId
+                INNER JOIN Production.Products p ON p.ProductId = d.ProductId
+                WHERE o.OrderDate >= @From AND o.OrderDate <= @To
+                  AND o.OrderStatus <> 'Cancelled'
+                GROUP BY p.ProductId, p.ProductName, p.ProductType, p.Unit
+                ORDER BY TotalQuantity DESC";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@From", from.Date);
+            cmd.Parameters.AddWithValue("@To", to.Date);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(new TopProductModel
+                {
+                    ProductId = Convert.ToInt32(r["ProductId"]),
+                    ProductName = r["ProductName"].ToString()!,
+                    ProductType = r["ProductType"].ToString()!,
+                    Unit = r["Unit"].ToString()!,
+                    TotalQuantity = Convert.ToDecimal(r["TotalQuantity"]),
+                    TotalValue = Convert.ToDecimal(r["TotalValue"])
                 });
             return list;
         }
@@ -829,6 +979,28 @@ namespace DairyIndustry.Repositories
             return list;
         }
 
+        public List<ProductSalesModel> GetAllProducts()
+        {
+            var list = new List<ProductSalesModel>();
+            const string sql = @"
+        SELECT ProductId, ProductName, ProductType, Unit, MRP, IsActive
+        FROM Production.Products ORDER BY ProductName";
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(sql, con);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(new ProductSalesModel
+                {
+                    ProductId = Convert.ToInt32(reader["ProductId"]),
+                    ProductName = reader["ProductName"].ToString(),
+                    ProductType = reader["ProductType"].ToString(),
+                    Unit = reader["Unit"].ToString(),
+                    MRP = Convert.ToDecimal(reader["MRP"]),
+                    IsActive = Convert.ToBoolean(reader["IsActive"])
+                });
+            return list;
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         //  GET PLANTS — inline (active only)

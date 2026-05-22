@@ -84,7 +84,7 @@
             <form method="post" asp-action="BulkUpdateStatus" id="bulkForm">
                 @Html.AntiForgeryToken()
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover mb-0" id="ordersTable">
                         <thead style="background:#1a2e4a; color:#fff;">
                             <tr>
                                 <th style="width:36px;">
@@ -127,6 +127,10 @@
                             }
                         </tbody>
                     </table>
+                </div>
+                <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span id="pageInfo">Showing <strong>@Model.Count</strong> order(s)</span>
+                    <nav><ul class="pagination pagination-sm mb-0" id="pageControls"></ul></nav>
                 </div>
                 <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span>Showing <strong>@Model.Count</strong> order(s)</span>
@@ -186,5 +190,64 @@
             const count = document.querySelectorAll('.row-check:checked').length;
             return confirm(`Update ${count} order(s) to "${status}"?`);
         }
+
+        // ── Pagination ────────────────────────────────────────────────────
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows       = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const total      = rows.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            rows.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+
+            // Keep select-all in sync after page change
+            const visibleChecks = [...document.querySelectorAll('.row-check')].filter(c => c.closest('tr').style.display !== 'none');
+            if (selectAll) selectAll.checked = visibleChecks.length > 0 && visibleChecks.every(c => c.checked);
+
+            const pageInfo     = document.getElementById('pageInfo');
+            const pageControls = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                pageInfo.innerHTML = `Showing <strong>${total}</strong> order(s)`;
+                pageControls.innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total}</strong> orders`;
+
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
+        }
+
+        function goToPage(p) {
+            const total   = document.querySelectorAll('#ordersTable tbody tr').length;
+            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage   = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+        }
+
+        renderPagination();
     </script>
 }

@@ -15,6 +15,7 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  1. GET ALL STAFF — SP usp_HR_GetStaff
+        //  Used by HR Manager (full access)
         // ═══════════════════════════════════════════════════════════
         public List<StaffModel> GetAllStaff(int? roleId, bool? isActive)
         {
@@ -35,19 +36,63 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  2. GET STAFF BY ID — SP usp_HR_GetStaffById
-        //  FEATURE 1 — Also fetches login account status from
-        //  Admin.Users by StaffId. Uses a second query on the same
-        //  open connection — no extra connection overhead.
-        //  This is only done on Details page (single record) so
-        //  performance impact is negligible.
+        //  2. GET STAFF BY PLANT — inline query
+        //
+        //  NEW — Used by Plant Manager. Returns ONLY staff where
+        //  HR.Staffs.PlantId = @PlantId (forced from session).
+        //  roleId and isActive filters still work within that plant.
+        //  PlantId comes from the controller session — never from URL.
+        //
+        //  Joins the same tables as usp_HR_GetStaff so the returned
+        //  StaffModel is identical and works with the same Index view.
+        // ═══════════════════════════════════════════════════════════
+        public List<StaffModel> GetStaffByPlant(int plantId, int? roleId, bool? isActive)
+        {
+            var list = new List<StaffModel>();
+
+            string query = @"
+                SELECT
+                    s.StaffId, s.FirstName, s.LastName, s.Phone, s.Email,
+                    s.RoleId, r.RoleName,
+                    s.DOJ, s.IsActive, s.ProfilePhoto,
+                    s.BankAccountId,
+                    ba.BankName, ba.AccountNumber, ba.IFSCCode,
+                    s.PlantId, pp.PlantName,
+                    s.CenterId, cc.CenterName,
+                    s.Salary
+                FROM HR.Staffs s
+                LEFT JOIN Admin.Roles                  r  ON r.RoleId          = s.RoleId
+                LEFT JOIN Finance.BankAccounts         ba ON ba.BankAccountId  = s.BankAccountId
+                LEFT JOIN Production.ProcessingPlants  pp ON pp.PlantId        = s.PlantId
+                LEFT JOIN Collection.CollectionCenters cc ON cc.CenterId       = s.CenterId
+                WHERE s.PlantId = @PlantId
+                  AND (@RoleId   IS NULL OR s.RoleId   = @RoleId)
+                  AND (@IsActive IS NULL OR s.IsActive = @IsActive)
+                ORDER BY s.FirstName, s.LastName";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", plantId);
+            cmd.Parameters.AddWithValue("@RoleId", (object?)roleId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IsActive", (object?)isActive ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(MapStaffList(reader));
+
+            return list;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  3. GET STAFF BY ID — SP usp_HR_GetStaffById
+        //  Also fetches login account info from Admin.Users
         // ═══════════════════════════════════════════════════════════
         public StaffModel? GetStaffById(int staffId)
         {
             using var con = _db.GetConnection();
             con.Open();
 
-            // Step 1 — get full staff record via SP
             StaffModel? staff = null;
             using (var cmd = new SqlCommand("HR.usp_HR_GetStaffById", con))
             {
@@ -60,15 +105,11 @@ namespace DairyIndustry.Repositories
 
             if (staff == null) return null;
 
-            // Step 2 — FEATURE 1: check if this staff has a login account
-            // Queries Admin.Users where StaffId matches.
-            // Never throws — if Admin.Users is unavailable, login info
-            // stays at default (HasLoginAccount = false).
+            // Feature 1 — login account status
             try
             {
                 using var loginCmd = new SqlCommand(@"
-                    SELECT TOP 1
-                        Username, IsActive, CreatedDate
+                    SELECT TOP 1 Username, IsActive, CreatedDate
                     FROM Admin.Users
                     WHERE StaffId = @StaffId", con);
                 loginCmd.Parameters.AddWithValue("@StaffId", staffId);
@@ -83,63 +124,46 @@ namespace DairyIndustry.Repositories
                                                 : Convert.ToDateTime(lr["CreatedDate"]);
                 }
             }
-            catch
-            {
-                // Silently ignore — login status is supplementary info
-                // Staff details page still loads fully without it
-            }
+            catch { /* login status is supplementary — never block details load */ }
 
             return staff;
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  3. ADD STAFF — SP usp_HR_AddStaff
-        //
-        //  FIX — Bank details bug root cause:
-        //  The previous inline INSERT created the bank account and
-        //  staff record in two separate steps. If the second step
-        //  failed silently or the BankAccountId was not linked back,
-        //  the staff record had BankAccountId = NULL.
-        //
-        //  Now uses usp_HR_AddStaff SP which:
-        //  - Creates bank account + inserts staff in ONE transaction
-        //  - Rolls back both if anything fails
-        //  - Returns the new StaffId via SELECT SCOPE_IDENTITY()
-        //  - Validates RoleId, PlantId, CenterId before inserting
-        //
-        //  FIX 5 — Duplicate phone/email check before calling SP
+        //  4. ADD STAFF — SP usp_HR_AddStaff
+        //  Duplicate phone/email check before calling SP
         // ═══════════════════════════════════════════════════════════
         public int AddStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
 
-            // Duplicate phone check
             if (!string.IsNullOrWhiteSpace(model.Phone))
             {
-                using var dupCmd = new SqlCommand(
+                using var dup = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone", con);
-                dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
-                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
+                dup.Parameters.AddWithValue("@Phone", model.Phone.Trim());
+                if (Convert.ToInt32(dup.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Phone number '{model.Phone}' is already registered to another staff member.");
             }
 
-            // Duplicate email check
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
-                using var dupCmd = new SqlCommand(
+                using var dup = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email", con);
-                dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
-                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
+                dup.Parameters.AddWithValue("@Email", model.Email.Trim());
+                if (Convert.ToInt32(dup.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Email address '{model.Email}' is already registered to another staff member.");
             }
 
-            // Use the SP — handles bank + staff in one atomic transaction
+            bool hasBankDetails = !string.IsNullOrWhiteSpace(model.BankName)
+                                && !string.IsNullOrWhiteSpace(model.AccountNumber)
+                                && !string.IsNullOrWhiteSpace(model.IFSCCode);
+
             using var cmd = new SqlCommand("HR.usp_HR_AddStaff", con);
             cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
             cmd.Parameters.AddWithValue("@FirstName", (object?)model.FirstName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@LastName", (object?)model.LastName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
@@ -150,12 +174,6 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@PlantId", (object?)model.PlantId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CenterId", (object?)model.CenterId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Salary", (object?)model.Salary ?? DBNull.Value);
-
-            // Bank details — pass all 3 or none (SP handles the condition)
-            bool hasBankDetails = !string.IsNullOrWhiteSpace(model.BankName)
-                                && !string.IsNullOrWhiteSpace(model.AccountNumber)
-                                && !string.IsNullOrWhiteSpace(model.IFSCCode);
-
             cmd.Parameters.AddWithValue("@BankName",
                 hasBankDetails ? model.BankName!.Trim() : (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@AccountNumber",
@@ -171,41 +189,32 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  4. UPDATE STAFF — inline UPDATE
-        //
-        //  usp_HR_UpdateStaff SP is intentionally NOT used here
-        //  because it only updates 6 fields and misses DOJ, IsActive,
-        //  Salary, PlantId, CenterId, and bank details entirely.
-        //  The inline approach covers all fields correctly.
-        //
-        //  Bank account: upsert — updates if exists, creates if not.
-        //  FIX 5 — Duplicate phone/email check excludes current StaffId.
+        //  5. UPDATE STAFF — inline UPDATE with bank upsert
+        //  Duplicate phone/email check excludes current StaffId
         // ═══════════════════════════════════════════════════════════
         public bool UpdateStaff(StaffFormModel model)
         {
             using var con = _db.GetConnection();
             con.Open();
 
-            // Duplicate phone check (excluding self)
             if (!string.IsNullOrWhiteSpace(model.Phone))
             {
-                using var dupCmd = new SqlCommand(
+                using var dup = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Phone = @Phone AND StaffId <> @StaffId", con);
-                dupCmd.Parameters.AddWithValue("@Phone", model.Phone.Trim());
-                dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
+                dup.Parameters.AddWithValue("@Phone", model.Phone.Trim());
+                dup.Parameters.AddWithValue("@StaffId", model.StaffId);
+                if (Convert.ToInt32(dup.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Phone number '{model.Phone}' is already registered to another staff member.");
             }
 
-            // Duplicate email check (excluding self)
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
-                using var dupCmd = new SqlCommand(
+                using var dup = new SqlCommand(
                     "SELECT COUNT(1) FROM HR.Staffs WHERE Email = @Email AND StaffId <> @StaffId", con);
-                dupCmd.Parameters.AddWithValue("@Email", model.Email.Trim());
-                dupCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                if (Convert.ToInt32(dupCmd.ExecuteScalar()) > 0)
+                dup.Parameters.AddWithValue("@Email", model.Email.Trim());
+                dup.Parameters.AddWithValue("@StaffId", model.StaffId);
+                if (Convert.ToInt32(dup.ExecuteScalar()) > 0)
                     throw new InvalidOperationException(
                         $"Email address '{model.Email}' is already registered to another staff member.");
             }
@@ -219,44 +228,40 @@ namespace DairyIndustry.Repositories
 
                 if (hasBankDetails)
                 {
-                    // Check if staff already has a bank account linked
-                    using var checkCmd = new SqlCommand(
+                    using var chk = new SqlCommand(
                         "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId", con, tran);
-                    checkCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                    var existingBankId = checkCmd.ExecuteScalar();
+                    chk.Parameters.AddWithValue("@StaffId", model.StaffId);
+                    var existingBankId = chk.ExecuteScalar();
 
                     if (existingBankId != null && existingBankId != DBNull.Value)
                     {
-                        // Update existing bank account record
-                        using var updBankCmd = new SqlCommand(@"
+                        using var updBank = new SqlCommand(@"
                             UPDATE Finance.BankAccounts
                             SET BankName = @BankName, AccountNumber = @AccountNumber, IFSCCode = @IFSCCode
                             WHERE BankAccountId = @BankAccountId", con, tran);
-                        updBankCmd.Parameters.AddWithValue("@BankAccountId", Convert.ToInt32(existingBankId));
-                        updBankCmd.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
-                        updBankCmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
-                        updBankCmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode!.Trim());
-                        updBankCmd.ExecuteNonQuery();
+                        updBank.Parameters.AddWithValue("@BankAccountId", Convert.ToInt32(existingBankId));
+                        updBank.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
+                        updBank.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
+                        updBank.Parameters.AddWithValue("@IFSCCode", model.IFSCCode!.Trim());
+                        updBank.ExecuteNonQuery();
                     }
                     else
                     {
-                        // Create new bank account and link it to staff
-                        using var insBankCmd = new SqlCommand(@"
+                        using var insBank = new SqlCommand(@"
                             DECLARE @NewBankId INT;
                             INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
                             VALUES (@BankName, @AccountNumber, @IFSCCode);
                             SET @NewBankId = SCOPE_IDENTITY();
                             UPDATE HR.Staffs SET BankAccountId = @NewBankId WHERE StaffId = @StaffId;",
                             con, tran);
-                        insBankCmd.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
-                        insBankCmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
-                        insBankCmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode!.Trim());
-                        insBankCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
-                        insBankCmd.ExecuteNonQuery();
+                        insBank.Parameters.AddWithValue("@BankName", model.BankName!.Trim());
+                        insBank.Parameters.AddWithValue("@AccountNumber", model.AccountNumber!.Trim());
+                        insBank.Parameters.AddWithValue("@IFSCCode", model.IFSCCode!.Trim());
+                        insBank.Parameters.AddWithValue("@StaffId", model.StaffId);
+                        insBank.ExecuteNonQuery();
                     }
                 }
 
-                // Update all staff fields — covers everything the SP misses
                 using var staffCmd = new SqlCommand(@"
                     UPDATE HR.Staffs
                     SET
@@ -271,8 +276,7 @@ namespace DairyIndustry.Repositories
                         CenterId     = @CenterId,
                         Salary       = @Salary,
                         ProfilePhoto = CASE WHEN @ProfilePhoto IS NOT NULL
-                                           THEN @ProfilePhoto
-                                           ELSE ProfilePhoto END
+                                           THEN @ProfilePhoto ELSE ProfilePhoto END
                     WHERE StaffId = @StaffId", con, tran);
 
                 staffCmd.Parameters.AddWithValue("@StaffId", model.StaffId);
@@ -292,41 +296,7 @@ namespace DairyIndustry.Repositories
                 tran.Commit();
                 return result;
             }
-            catch
-            {
-                tran.Rollback();
-                throw;
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  5. REGISTER STAFF USER — SP usp_Admin_RegisterUser
-        //
-        //  NEW — Called after AddStaff if HR provides credentials.
-        //  BCrypt hash is generated in the controller and passed here.
-        //  SP already checks for duplicate username and throws if found.
-        //  Links the new Admin.Users record to the StaffId via FK.
-        // ═══════════════════════════════════════════════════════════
-        public void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId)
-        {
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand("Admin.usp_Admin_RegisterUser", con);
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("@Username", username);
-            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
-            cmd.Parameters.AddWithValue("@RoleId", roleId);
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-            try
-            {
-                cmd.ExecuteNonQuery();
-            }
-            catch (SqlException ex) when (ex.Message.Contains("Username already exists"))
-            {
-                throw new InvalidOperationException(
-                    $"Username '{username}' is already taken. Please choose a different username.");
-            }
+            catch { tran.Rollback(); throw; }
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -360,7 +330,142 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  8. GET ROLES
+        //  8. REGISTER STAFF USER
+        // ═══════════════════════════════════════════════════════════
+        public void RegisterStaffUser(string username, string passwordHash, int roleId, int staffId)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand("Admin.usp_Admin_RegisterUser", con);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Username", username);
+            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            try { cmd.ExecuteNonQuery(); }
+            catch (SqlException ex) when (ex.Message.Contains("Username already exists"))
+            {
+                throw new InvalidOperationException(
+                    $"Username '{username}' is already taken. Please choose a different username.");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  9. ADD SALARY HISTORY
+        // ═══════════════════════════════════════════════════════════
+        public void AddSalaryHistory(int staffId, decimal? oldSalary, decimal newSalary,
+                                     string? reason, string? changedBy)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO HR.SalaryHistory
+                    (StaffId, OldSalary, NewSalary, ChangedDate, Reason, ChangedBy)
+                VALUES
+                    (@StaffId, @OldSalary, @NewSalary, GETDATE(), @Reason, @ChangedBy)", con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            cmd.Parameters.AddWithValue("@OldSalary", (object?)oldSalary ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@NewSalary", newSalary);
+            cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ChangedBy", (object?)changedBy ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  10. GET SALARY HISTORY
+        // ═══════════════════════════════════════════════════════════
+        public List<SalaryHistoryModel> GetSalaryHistory(int staffId)
+        {
+            var list = new List<SalaryHistoryModel>();
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                SELECT HistoryId, StaffId, OldSalary, NewSalary,
+                       ChangedDate, Reason, ChangedBy
+                FROM HR.SalaryHistory
+                WHERE StaffId = @StaffId
+                ORDER BY ChangedDate DESC", con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(new SalaryHistoryModel
+                {
+                    HistoryId = Convert.ToInt32(reader["HistoryId"]),
+                    StaffId = Convert.ToInt32(reader["StaffId"]),
+                    OldSalary = reader["OldSalary"] == DBNull.Value ? null : Convert.ToDecimal(reader["OldSalary"]),
+                    NewSalary = Convert.ToDecimal(reader["NewSalary"]),
+                    ChangedDate = Convert.ToDateTime(reader["ChangedDate"]),
+                    Reason = reader["Reason"] == DBNull.Value ? null : reader["Reason"].ToString(),
+                    ChangedBy = reader["ChangedBy"] == DBNull.Value ? null : reader["ChangedBy"].ToString()
+                });
+            return list;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  11. ADD STAFF NOTE
+        // ═══════════════════════════════════════════════════════════
+        public void AddStaffNote(int staffId, string noteText,
+                                 string noteType, string? createdBy)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO HR.StaffNotes
+                    (StaffId, NoteText, NoteType, CreatedDate, CreatedBy)
+                VALUES
+                    (@StaffId, @NoteText, @NoteType, GETDATE(), @CreatedBy)", con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            cmd.Parameters.AddWithValue("@NoteText", noteText.Trim());
+            cmd.Parameters.AddWithValue("@NoteType", noteType);
+            cmd.Parameters.AddWithValue("@CreatedBy", (object?)createdBy ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  12. GET STAFF NOTES
+        // ═══════════════════════════════════════════════════════════
+        public List<StaffNoteModel> GetStaffNotes(int staffId)
+        {
+            var list = new List<StaffNoteModel>();
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                SELECT NoteId, StaffId, NoteText, NoteType, CreatedDate, CreatedBy
+                FROM HR.StaffNotes
+                WHERE StaffId = @StaffId
+                ORDER BY CreatedDate DESC", con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(new StaffNoteModel
+                {
+                    NoteId = Convert.ToInt32(reader["NoteId"]),
+                    StaffId = Convert.ToInt32(reader["StaffId"]),
+                    NoteText = reader["NoteText"].ToString()!,
+                    NoteType = reader["NoteType"].ToString()!,
+                    CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                    CreatedBy = reader["CreatedBy"] == DBNull.Value ? null : reader["CreatedBy"].ToString()
+                });
+            return list;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  13. DELETE STAFF NOTE
+        // ═══════════════════════════════════════════════════════════
+        public bool DeleteStaffNote(int noteId, int staffId)
+        {
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(@"
+                DELETE FROM HR.StaffNotes
+                WHERE NoteId = @NoteId AND StaffId = @StaffId", con);
+            cmd.Parameters.AddWithValue("@NoteId", noteId);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  14. GET ROLES
         // ═══════════════════════════════════════════════════════════
         public List<RoleModel> GetRoles()
         {
@@ -380,7 +485,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  9. GET PLANTS
+        //  15. GET PLANTS
         // ═══════════════════════════════════════════════════════════
         public List<PlantAssignModel> GetPlants()
         {
@@ -401,7 +506,7 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  10. GET CENTERS
+        //  16. GET CENTERS
         // ═══════════════════════════════════════════════════════════
         public List<CenterAssignModel> GetCenters()
         {
@@ -422,48 +527,43 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  11. DASHBOARD SUMMARY
+        //  17. DASHBOARD SUMMARY
         // ═══════════════════════════════════════════════════════════
         public HRDashboardSummaryModel GetDashboardSummary()
         {
             var model = new HRDashboardSummaryModel();
 
-            string staffQuery = @"
-                SELECT
-                    COUNT(*)                                                      AS TotalStaff,
-                    SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END)                AS ActiveStaff,
-                    SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END)                AS InactiveStaff,
-                    SUM(CASE WHEN MONTH(DOJ) = MONTH(GETDATE())
-                              AND YEAR(DOJ)  = YEAR(GETDATE()) THEN 1 ELSE 0 END) AS NewJoiningThisMonth
-                FROM HR.Staffs";
-
-            string payQuery = @"
-                SELECT COUNT(*) AS PendingCount, ISNULL(SUM(TotalAmount),0) AS PendingAmount
-                FROM Finance.StaffPayments
-                WHERE PaymentStatus = 'Pending'";
-
             using var con = _db.GetConnection();
             con.Open();
 
-            using (var cmd = new SqlCommand(staffQuery, con))
-            using (var reader = cmd.ExecuteReader())
+            using (var cmd = new SqlCommand(@"
+                SELECT
+                    COUNT(*)                                                       AS TotalStaff,
+                    SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END)                 AS ActiveStaff,
+                    SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END)                 AS InactiveStaff,
+                    SUM(CASE WHEN MONTH(DOJ) = MONTH(GETDATE())
+                              AND YEAR(DOJ)  = YEAR(GETDATE()) THEN 1 ELSE 0 END) AS NewJoiningThisMonth
+                FROM HR.Staffs", con))
+            using (var r = cmd.ExecuteReader())
             {
-                if (reader.Read())
+                if (r.Read())
                 {
-                    model.TotalStaff = reader["TotalStaff"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TotalStaff"]);
-                    model.ActiveStaff = reader["ActiveStaff"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ActiveStaff"]);
-                    model.InactiveStaff = reader["InactiveStaff"] == DBNull.Value ? 0 : Convert.ToInt32(reader["InactiveStaff"]);
-                    model.NewJoiningThisMonth = reader["NewJoiningThisMonth"] == DBNull.Value ? 0 : Convert.ToInt32(reader["NewJoiningThisMonth"]);
+                    model.TotalStaff = r["TotalStaff"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalStaff"]);
+                    model.ActiveStaff = r["ActiveStaff"] == DBNull.Value ? 0 : Convert.ToInt32(r["ActiveStaff"]);
+                    model.InactiveStaff = r["InactiveStaff"] == DBNull.Value ? 0 : Convert.ToInt32(r["InactiveStaff"]);
+                    model.NewJoiningThisMonth = r["NewJoiningThisMonth"] == DBNull.Value ? 0 : Convert.ToInt32(r["NewJoiningThisMonth"]);
                 }
             }
 
-            using (var cmd = new SqlCommand(payQuery, con))
-            using (var reader = cmd.ExecuteReader())
+            using (var cmd = new SqlCommand(@"
+                SELECT COUNT(*) AS PendingCount, ISNULL(SUM(TotalAmount),0) AS PendingAmount
+                FROM Finance.StaffPayments WHERE PaymentStatus = 'Pending'", con))
+            using (var r = cmd.ExecuteReader())
             {
-                if (reader.Read())
+                if (r.Read())
                 {
-                    model.PendingPaymentsCount = reader["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["PendingCount"]);
-                    model.PendingPaymentsAmount = reader["PendingAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["PendingAmount"]);
+                    model.PendingPaymentsCount = r["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingCount"]);
+                    model.PendingPaymentsAmount = r["PendingAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["PendingAmount"]);
                 }
             }
 
@@ -471,24 +571,22 @@ namespace DairyIndustry.Repositories
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  12. STAFF BY TYPE
+        //  18. STAFF BY TYPE
         // ═══════════════════════════════════════════════════════════
         public List<StaffTypeCountModel> GetStaffByType()
         {
             var list = new List<StaffTypeCountModel>();
-
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand(@"
                 SELECT
-                    ISNULL(r.RoleName, 'Not Assigned')               AS StaffType,
-                    COUNT(*)                                          AS Count,
-                    SUM(CASE WHEN s.IsActive = 1 THEN 1 ELSE 0 END)  AS ActiveCount
+                    ISNULL(r.RoleName, 'Not Assigned')              AS StaffType,
+                    COUNT(*)                                         AS Count,
+                    SUM(CASE WHEN s.IsActive = 1 THEN 1 ELSE 0 END) AS ActiveCount
                 FROM HR.Staffs s
                 LEFT JOIN Admin.Roles r ON r.RoleId = s.RoleId
                 GROUP BY r.RoleName
                 ORDER BY Count DESC", con);
-
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(new StaffTypeCountModel
@@ -497,299 +595,135 @@ namespace DairyIndustry.Repositories
                     Count = Convert.ToInt32(reader["Count"]),
                     ActiveCount = Convert.ToInt32(reader["ActiveCount"])
                 });
-
             return list;
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  13. GET PAYMENTS BY STAFF — LEFT JOIN fix applied
+        //  19. GET PAYMENTS BY STAFF — LEFT JOIN on ProcessingPlants
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetPaymentsByStaff(int staffId)
         {
             var list = new List<StaffPaymentModel>();
-
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand(@"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
-                    s.FirstName + ' ' + s.LastName            AS StaffName,
-                    ISNULL(r.RoleName, 'Not Assigned')         AS StaffType,
-                    ISNULL(pp.PlantName, 'N/A')                AS PlantName,
+                    s.FirstName + ' ' + s.LastName           AS StaffName,
+                    ISNULL(r.RoleName, 'Not Assigned')        AS StaffType,
+                    ISNULL(pp.PlantName, 'N/A')               AS PlantName,
                     sp.FromDate, sp.ToDate, sp.TotalAmount,
                     sp.PaymentDate, sp.PaymentStatus
                 FROM Finance.StaffPayments sp
-                INNER JOIN HR.Staffs                    s  ON s.StaffId  = sp.StaffId
-                LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
-                LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
+                INNER JOIN HR.Staffs                   s  ON s.StaffId  = sp.StaffId
+                LEFT  JOIN Admin.Roles                 r  ON r.RoleId   = s.RoleId
+                LEFT  JOIN Production.ProcessingPlants pp ON pp.PlantId = sp.PlantId
                 WHERE sp.StaffId = @StaffId
                 ORDER BY sp.PaymentDate DESC", con);
-
             cmd.Parameters.AddWithValue("@StaffId", staffId);
             using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                list.Add(MapPayment(reader));
-
+            while (reader.Read()) list.Add(MapPayment(reader));
             return list;
         }
 
         // ═══════════════════════════════════════════════════════════
-        //  14. GET ALL PAYMENTS — LEFT JOIN fix applied
+        //  20. GET ALL PAYMENTS — LEFT JOIN on ProcessingPlants
         // ═══════════════════════════════════════════════════════════
         public List<StaffPaymentModel> GetAllPayments(string? status)
         {
             var list = new List<StaffPaymentModel>();
-
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand(@"
                 SELECT
                     sp.PaymentId, sp.StaffId, sp.PlantId,
-                    s.FirstName + ' ' + s.LastName            AS StaffName,
-                    ISNULL(r.RoleName, 'Not Assigned')         AS StaffType,
-                    ISNULL(pp.PlantName, 'N/A')                AS PlantName,
+                    s.FirstName + ' ' + s.LastName           AS StaffName,
+                    ISNULL(r.RoleName, 'Not Assigned')        AS StaffType,
+                    ISNULL(pp.PlantName, 'N/A')               AS PlantName,
                     sp.FromDate, sp.ToDate, sp.TotalAmount,
                     sp.PaymentDate, sp.PaymentStatus
                 FROM Finance.StaffPayments sp
-                INNER JOIN HR.Staffs                    s  ON s.StaffId  = sp.StaffId
-                LEFT  JOIN Admin.Roles                  r  ON r.RoleId   = s.RoleId
-                LEFT  JOIN Production.ProcessingPlants  pp ON pp.PlantId = sp.PlantId
+                INNER JOIN HR.Staffs                   s  ON s.StaffId  = sp.StaffId
+                LEFT  JOIN Admin.Roles                 r  ON r.RoleId   = s.RoleId
+                LEFT  JOIN Production.ProcessingPlants pp ON pp.PlantId = sp.PlantId
                 WHERE (@Status IS NULL OR sp.PaymentStatus = @Status)
                 ORDER BY sp.PaymentDate DESC", con);
-
             cmd.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
             using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                list.Add(MapPayment(reader));
-
+            while (reader.Read()) list.Add(MapPayment(reader));
             return list;
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FEATURE 3 — ADD SALARY HISTORY
-        //  Called from HrController.Edit POST when salary changes.
-        //  Inserts one row into HR.SalaryHistory with old salary,
-        //  new salary, reason and who changed it.
-        //  If this fails, the staff update is NOT rolled back —
-        //  history logging is supplementary and must never block
-        //  the main save operation.
-        // ═══════════════════════════════════════════════════════════
-        public void AddSalaryHistory(int staffId, decimal? oldSalary, decimal newSalary,
-                                     string? reason, string? changedBy)
-        {
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(@"
-                INSERT INTO HR.SalaryHistory
-                    (StaffId, OldSalary, NewSalary, ChangedDate, Reason, ChangedBy)
-                VALUES
-                    (@StaffId, @OldSalary, @NewSalary, GETDATE(), @Reason, @ChangedBy)",
-                con);
-
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-            cmd.Parameters.AddWithValue("@OldSalary", (object?)oldSalary ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@NewSalary", newSalary);
-            cmd.Parameters.AddWithValue("@Reason", (object?)reason ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@ChangedBy", (object?)changedBy ?? DBNull.Value);
-
-            cmd.ExecuteNonQuery();
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FEATURE 3 — GET SALARY HISTORY
-        //  Returns full salary timeline for a staff member,
-        //  ordered most recent first.
-        // ═══════════════════════════════════════════════════════════
-        public List<SalaryHistoryModel> GetSalaryHistory(int staffId)
-        {
-            var list = new List<SalaryHistoryModel>();
-
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(@"
-                SELECT
-                    HistoryId, StaffId, OldSalary, NewSalary,
-                    ChangedDate, Reason, ChangedBy
-                FROM HR.SalaryHistory
-                WHERE StaffId = @StaffId
-                ORDER BY ChangedDate DESC",
-                con);
-
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                list.Add(new SalaryHistoryModel
-                {
-                    HistoryId = Convert.ToInt32(reader["HistoryId"]),
-                    StaffId = Convert.ToInt32(reader["StaffId"]),
-                    OldSalary = reader["OldSalary"] == DBNull.Value ? null : Convert.ToDecimal(reader["OldSalary"]),
-                    NewSalary = Convert.ToDecimal(reader["NewSalary"]),
-                    ChangedDate = Convert.ToDateTime(reader["ChangedDate"]),
-                    Reason = reader["Reason"] == DBNull.Value ? null : reader["Reason"].ToString(),
-                    ChangedBy = reader["ChangedBy"] == DBNull.Value ? null : reader["ChangedBy"].ToString()
-                });
-            }
-
-            return list;
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FEATURE 4 — ADD STAFF NOTE
-        //  Inserts one note into HR.StaffNotes.
-        //  NoteType is validated by DB CHECK constraint so no
-        //  extra validation needed here.
-        // ═══════════════════════════════════════════════════════════
-        public void AddStaffNote(int staffId, string noteText,
-                                 string noteType, string? createdBy)
-        {
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(@"
-                INSERT INTO HR.StaffNotes
-                    (StaffId, NoteText, NoteType, CreatedDate, CreatedBy)
-                VALUES
-                    (@StaffId, @NoteText, @NoteType, GETDATE(), @CreatedBy)",
-                con);
-
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-            cmd.Parameters.AddWithValue("@NoteText", noteText.Trim());
-            cmd.Parameters.AddWithValue("@NoteType", noteType);
-            cmd.Parameters.AddWithValue("@CreatedBy", (object?)createdBy ?? DBNull.Value);
-
-            cmd.ExecuteNonQuery();
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FEATURE 4 — GET STAFF NOTES
-        //  Returns all notes for a staff member, newest first.
-        // ═══════════════════════════════════════════════════════════
-        public List<StaffNoteModel> GetStaffNotes(int staffId)
-        {
-            var list = new List<StaffNoteModel>();
-
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(@"
-                SELECT NoteId, StaffId, NoteText, NoteType,
-                       CreatedDate, CreatedBy
-                FROM HR.StaffNotes
-                WHERE StaffId = @StaffId
-                ORDER BY CreatedDate DESC",
-                con);
-
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                list.Add(new StaffNoteModel
-                {
-                    NoteId = Convert.ToInt32(reader["NoteId"]),
-                    StaffId = Convert.ToInt32(reader["StaffId"]),
-                    NoteText = reader["NoteText"].ToString()!,
-                    NoteType = reader["NoteType"].ToString()!,
-                    CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
-                    CreatedBy = reader["CreatedBy"] == DBNull.Value
-                                    ? null
-                                    : reader["CreatedBy"].ToString()
-                });
-            }
-
-            return list;
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        //  FEATURE 4 — DELETE STAFF NOTE
-        //  Deletes a note only if it belongs to the given StaffId.
-        //  This prevents a malicious HR user from deleting notes
-        //  of other staff by tampering with the NoteId in the URL.
-        //  Returns true if a row was actually deleted.
-        // ═══════════════════════════════════════════════════════════
-        public bool DeleteStaffNote(int noteId, int staffId)
-        {
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(@"
-                DELETE FROM HR.StaffNotes
-                WHERE NoteId = @NoteId AND StaffId = @StaffId",
-                con);
-
-            cmd.Parameters.AddWithValue("@NoteId", noteId);
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-            return cmd.ExecuteNonQuery() > 0;
         }
 
         // ═══════════════════════════════════════════════════════════
         //  PRIVATE MAPPERS
         // ═══════════════════════════════════════════════════════════
-        private StaffModel MapStaffList(SqlDataReader reader)
+        private StaffModel MapStaffList(SqlDataReader r)
         {
             return new StaffModel
             {
-                StaffId = Convert.ToInt32(reader["StaffId"]),
-                FirstName = reader["FirstName"].ToString(),
-                LastName = reader["LastName"].ToString(),
-                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
-                RoleId = reader["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["RoleId"]),
-                RoleName = reader["RoleName"] == DBNull.Value ? null : reader["RoleName"].ToString(),
-                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
-                IsActive = Convert.ToBoolean(reader["IsActive"]),
-                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
-                Salary = reader["Salary"] == DBNull.Value ? null : Convert.ToDecimal(reader["Salary"]),
-                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
-                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
-                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
-                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
-                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
-                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString()
+                StaffId = Convert.ToInt32(r["StaffId"]),
+                FirstName = r["FirstName"].ToString(),
+                LastName = r["LastName"].ToString(),
+                Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                RoleId = r["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(r["RoleId"]),
+                RoleName = r["RoleName"] == DBNull.Value ? null : r["RoleName"].ToString(),
+                DOJ = r["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(r["DOJ"]),
+                IsActive = Convert.ToBoolean(r["IsActive"]),
+                ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
+                Salary = r["Salary"] == DBNull.Value ? null : Convert.ToDecimal(r["Salary"]),
+                PlantId = r["PlantId"] == DBNull.Value ? null : Convert.ToInt32(r["PlantId"]),
+                PlantName = r["PlantName"] == DBNull.Value ? null : r["PlantName"].ToString(),
+                CenterId = r["CenterId"] == DBNull.Value ? null : Convert.ToInt32(r["CenterId"]),
+                CenterName = r["CenterName"] == DBNull.Value ? null : r["CenterName"].ToString(),
+                BankAccountId = r["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(r["BankAccountId"]),
+                BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
+                AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
+                IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString()
             };
         }
 
-        private StaffModel MapStaffFull(SqlDataReader reader)
+        private StaffModel MapStaffFull(SqlDataReader r)
         {
             return new StaffModel
             {
-                StaffId = Convert.ToInt32(reader["StaffId"]),
-                FirstName = reader["FirstName"].ToString(),
-                LastName = reader["LastName"].ToString(),
-                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
-                RoleId = reader["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["RoleId"]),
-                RoleName = reader["RoleName"] == DBNull.Value ? null : reader["RoleName"].ToString(),
-                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
-                IsActive = Convert.ToBoolean(reader["IsActive"]),
-                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
-                BankAccountId = reader["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(reader["BankAccountId"]),
-                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString(),
-                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
-                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
-                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
-                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
-                Salary = reader["Salary"] == DBNull.Value ? null : Convert.ToDecimal(reader["Salary"])
+                StaffId = Convert.ToInt32(r["StaffId"]),
+                FirstName = r["FirstName"].ToString(),
+                LastName = r["LastName"].ToString(),
+                Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                RoleId = r["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(r["RoleId"]),
+                RoleName = r["RoleName"] == DBNull.Value ? null : r["RoleName"].ToString(),
+                DOJ = r["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(r["DOJ"]),
+                IsActive = Convert.ToBoolean(r["IsActive"]),
+                ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
+                BankAccountId = r["BankAccountId"] == DBNull.Value ? null : Convert.ToInt32(r["BankAccountId"]),
+                BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
+                AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
+                IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
+                PlantId = r["PlantId"] == DBNull.Value ? null : Convert.ToInt32(r["PlantId"]),
+                PlantName = r["PlantName"] == DBNull.Value ? null : r["PlantName"].ToString(),
+                CenterId = r["CenterId"] == DBNull.Value ? null : Convert.ToInt32(r["CenterId"]),
+                CenterName = r["CenterName"] == DBNull.Value ? null : r["CenterName"].ToString(),
+                Salary = r["Salary"] == DBNull.Value ? null : Convert.ToDecimal(r["Salary"])
             };
         }
 
-        private StaffPaymentModel MapPayment(SqlDataReader reader)
+        private StaffPaymentModel MapPayment(SqlDataReader r)
         {
             return new StaffPaymentModel
             {
-                PaymentId = Convert.ToInt32(reader["PaymentId"]),
-                StaffId = Convert.ToInt32(reader["StaffId"]),
-                PlantId = reader["PlantId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["PlantId"]),
-                StaffName = reader["StaffName"].ToString(),
-                StaffType = reader["StaffType"].ToString(),
-                PlantName = reader["PlantName"].ToString(),
-                FromDate = Convert.ToDateTime(reader["FromDate"]),
-                ToDate = Convert.ToDateTime(reader["ToDate"]),
-                TotalAmount = Convert.ToDecimal(reader["TotalAmount"]),
-                PaymentDate = Convert.ToDateTime(reader["PaymentDate"]),
-                PaymentStatus = reader["PaymentStatus"].ToString()
+                PaymentId = Convert.ToInt32(r["PaymentId"]),
+                StaffId = Convert.ToInt32(r["StaffId"]),
+                PlantId = r["PlantId"] == DBNull.Value ? 0 : Convert.ToInt32(r["PlantId"]),
+                StaffName = r["StaffName"].ToString(),
+                StaffType = r["StaffType"].ToString(),
+                PlantName = r["PlantName"].ToString(),
+                FromDate = Convert.ToDateTime(r["FromDate"]),
+                ToDate = Convert.ToDateTime(r["ToDate"]),
+                TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                PaymentStatus = r["PaymentStatus"].ToString()
             };
         }
     }
