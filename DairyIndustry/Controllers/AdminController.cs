@@ -301,9 +301,9 @@ namespace DairyIndustry.Controllers
             }
 
             // 2. Validate password length
-            if (newPassword.Length < 8)
+            if (newPassword.Length < 3)
             {
-                ViewBag.Error = "Password must be at least 8 characters.";
+                ViewBag.Error = "Password must be at least 3 characters.";
                 return View();
             }
 
