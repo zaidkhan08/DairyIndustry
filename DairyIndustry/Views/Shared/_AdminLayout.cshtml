@@ -1,36 +1,54 @@
-﻿<!DOCTYPE html>
+﻿@* ============================================================
+   DAIRY MANAGEMENT SYSTEM — Admin Layout
+   Premium Enterprise Design
+   ============================================================ *@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] — Dairy Management System</title>
+    <title>@ViewData["Title"] — DMS</title>
+
+    <!-- DM Sans + DM Mono (premium, distinctive) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
 
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-    <!-- Admin Layout CSS -->
-    <link rel="stylesheet" href="~/css/admin-layout.css" />
+    <!-- Admin Layout CSS (replaces old file) -->
+    <link rel="stylesheet" href="~/css/admin-layout.css" asp-append-version="true" />
 
     <!-- Notification CSS -->
-    <link rel="stylesheet" href="~/css/admin-notifications.css" />
+    <link rel="stylesheet" href="~/css/admin-notifications.css" asp-append-version="true" />
 
+    @RenderSection("Styles", required: false)
 </head>
 <body>
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- SIDEBAR                                    -->
-    <!-- ══════════════════════════════════════════ -->
+    @{
+        var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+        var act = ViewContext.RouteData.Values["action"]?.ToString();
 
-    <div id="sidebar">
+        bool IsActive(string c, string a = null) =>
+        ctrl == c && (a == null || act == a);
+
+        bool IsActiveAny(string c, params string[] actions) =>
+        ctrl == c && actions.Contains(act);
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SIDEBAR                                                  -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="sidebar" role="navigation" aria-label="Main navigation">
 
         <!-- Brand -->
-        <a class="sidebar-brand" asp-controller="Admin" asp-action="Index">
-            <div class="brand-icon">
+        <a class="sidebar-brand" asp-controller="Admin" asp-action="Index" aria-label="DairyManage home">
+            <div class="brand-icon" aria-hidden="true">
                 <i class="bi bi-droplet-fill"></i>
             </div>
             <div class="brand-text">
@@ -40,316 +58,275 @@
         </a>
 
         <!-- Nav -->
-        <div class="sidebar-nav">
+        <nav class="sidebar-nav">
 
-            @{
-                var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
-                var act = ViewContext.RouteData.Values["action"]?.ToString();
-            }
-
-            <!-- ── Main ────────────────────────── -->
+            <!-- ── Main ──────────────────────────── -->
             <div class="nav-label">Main</div>
 
             <a asp-controller="Admin" asp-action="Index"
-               class="nav-item-link @(ctrl == "Admin" && act == "Index" ? "active" : "")">
-                <i class="bi bi-grid-fill"></i>
+               class="nav-item-link @(IsActive("Admin", "Index") ? "active" : "")">
+                <i class="bi bi-grid-fill" aria-hidden="true"></i>
                 <span>Dashboard</span>
             </a>
 
-            <!-- ── User Management ─────────────── -->
-            <div class="nav-label">User Management</div>
+            <!-- ── People ────────────────────────── -->
+            <div class="nav-label">People</div>
 
             <a asp-controller="Admin" asp-action="Users"
-               class="nav-item-link @(ctrl == "Admin" && act == "Users" ? "active" : "")">
-                <i class="bi bi-people-fill"></i>
-                <span>All Users</span>
+               class="nav-item-link @(IsActive("Admin", "Users") ? "active" : "")">
+                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                <span>Users</span>
             </a>
 
             <a asp-controller="Admin" asp-action="RegisterUser"
-               class="nav-item-link @(ctrl == "Admin" && act == "RegisterUser" ? "active" : "")">
-                <i class="bi bi-person-plus-fill"></i>
+               class="nav-item-link @(IsActive("Admin", "RegisterUser") ? "active" : "")">
+                <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
                 <span>Register User</span>
             </a>
 
             <a asp-controller="Admin" asp-action="Roles"
-               class="nav-item-link @(ctrl == "Admin" && act == "Roles" ? "active" : "")">
-                <i class="bi bi-shield-fill"></i>
+               class="nav-item-link @(IsActive("Admin", "Roles") ? "active" : "")">
+                <i class="bi bi-shield-fill" aria-hidden="true"></i>
                 <span>Roles</span>
             </a>
 
             <a asp-controller="Admin" asp-action="Staff"
-               class="nav-item-link @(ctrl == "Admin" && (act == "Staff" || act == "AddStaff" || act == "GetStaffById") ? "active" : "")">
-                <i class="bi bi-briefcase-fill"></i>
+               class="nav-item-link @(IsActiveAny("Admin", "Staff", "AddStaff", "GetStaffById") ? "active" : "")">
+                <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
                 <span>Staff</span>
             </a>
 
+            @* <a asp-controller="Farmer" asp-action="Index"
+               class="nav-item-link @(ctrl == "Farmer" ? "active" : "")">
+                <i class="bi bi-person-badge-fill" aria-hidden="true"></i>
+                <span>Farmers</span>
+            </a> *@
+
+            <!-- ── Assignments ────────────────────── -->
+            <div class="nav-label">Assignments</div>
+
             <a asp-controller="Admin" asp-action="AssignUserToPlant"
-               class="nav-item-link @(ctrl == "Admin" && act == "AssignUserToPlant" ? "active" : "")">
-                <i class="bi bi-building-up"></i>
+               class="nav-item-link @(IsActive("Admin", "AssignUserToPlant") ? "active" : "")">
+                <i class="bi bi-building-up" aria-hidden="true"></i>
                 <span>Assign to Plant</span>
             </a>
 
             <a asp-controller="Admin" asp-action="AssignUserToCenter"
-               class="nav-item-link @(ctrl == "Admin" && act == "AssignUserToCenter" ? "active" : "")">
-                <i class="bi bi-house-check-fill"></i>
+               class="nav-item-link @(IsActive("Admin", "AssignUserToCenter") ? "active" : "")">
+                <i class="bi bi-house-check-fill" aria-hidden="true"></i>
                 <span>Assign to Center</span>
             </a>
 
-            <!-- ── Master Data ─────────────────── -->
+            <!-- ── Master Data ───────────────────── -->
             <div class="nav-label">Master Data</div>
 
             <a asp-controller="Admin" asp-action="Location"
-               class="nav-item-link @(ctrl == "Admin" && act == "Location" ? "active" : "")">
-                <i class="bi bi-geo-alt-fill"></i>
-                <span>Location</span>
+               class="nav-item-link @(IsActive("Admin", "Location") ? "active" : "")">
+                <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                <span>Locations</span>
             </a>
 
             <a asp-controller="Admin" asp-action="MilkTypes"
-               class="nav-item-link @(ctrl == "Admin" && act == "MilkTypes" ? "active" : "")">
-                <i class="bi bi-droplet-half"></i>
+               class="nav-item-link @(IsActive("Admin", "MilkTypes") ? "active" : "")">
+                <i class="bi bi-droplet-half" aria-hidden="true"></i>
                 <span>Milk Types</span>
             </a>
 
             <a asp-controller="Admin" asp-action="RateChart"
-               class="nav-item-link @(ctrl == "Admin" && act == "RateChart" ? "active" : "")">
-                <i class="bi bi-cash-stack"></i>
+               class="nav-item-link @(IsActive("Admin", "RateChart") ? "active" : "")">
+                <i class="bi bi-cash-stack" aria-hidden="true"></i>
                 <span>Rate Chart</span>
             </a>
 
-            <!-- Processing Plants -->
             <a asp-controller="Admin" asp-action="GetAllPlants"
-               class="nav-item-link @(ctrl == "Admin" && (act == "GetAllPlants" || act == "AddPlant" || act == "EditPlant") ? "active" : "")">
-                <i class="bi bi-building-fill"></i>
+               class="nav-item-link @(IsActiveAny("Admin", "GetAllPlants", "AddPlant", "EditPlant") ? "active" : "")">
+                <i class="bi bi-building-fill" aria-hidden="true"></i>
                 <span>Processing Plants</span>
             </a>
 
-            <!-- Collection Centers -->
             <a asp-controller="Admin" asp-action="GetAllCollection"
-               class="nav-item-link @(ctrl == "Admin" && (act == "GetAllCollection" || act == "AddCollection" || act == "EditCollection") ? "active" : "")">
-                <i class="bi bi-bucket-fill"></i>
+               class="nav-item-link @(IsActiveAny("Admin", "GetAllCollection", "AddCollection", "EditCollection") ? "active" : "")">
+                <i class="bi bi-bucket-fill" aria-hidden="true"></i>
                 <span>Collection Centers</span>
             </a>
 
-            <!-- ── Modules ─────────────────────── -->
-            <div class="nav-label">Modules</div>
+            <!-- ── Operations ────────────────────── -->
+            <div class="nav-label">Operations</div>
 
-            <!-- Farmers -->
-            <a asp-controller="Farmer" asp-action="Index"
-               class="nav-item-link @(ctrl == "Farmer" ? "active" : "")">
-                <i class="bi bi-person-badge-fill"></i>
-                <span>Farmers</span>
-            </a>
-
-            <!-- Logistics submenu -->
             @{
-                bool logisticsOpen = ctrl == "Logistics";
+                bool logisticsOpen = ctrl == "Logistics" || IsActive("Admin", "MilkTransfers");
             }
-            <a class="nav-item-link d-flex align-items-center justify-content-between"
-               data-bs-toggle="collapse"
-               href="#logisticsMenu"
-               role="button"
-               aria-expanded="@(logisticsOpen ? "true" : "false")">
-                <span>
-                    <i class="bi bi-truck-front-fill me-2"></i>Logistics
+            <a class="nav-item-link d-flex align-items-center justify-content-between @(logisticsOpen ? "active" : "")"
+               data-bs-toggle="collapse" href="#logisticsMenu" role="button"
+               aria-expanded="@(logisticsOpen ? "true" : "false")" aria-controls="logisticsMenu">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-truck-front-fill" aria-hidden="true"></i>
+                    <span>Logistics</span>
                 </span>
-                <i class="bi bi-chevron-down small"></i>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </a>
-
             <div class="collapse @(logisticsOpen ? "show" : "")" id="logisticsMenu">
-
                 <a asp-controller="Logistics" asp-action="AllDrivers"
-                   class="nav-item-link ps-4 @(ctrl == "Logistics" && (act == "AllDrivers" || act == "UpdateDriverStatus") ? "active" : "")">
-                    <i class="bi bi-person-badge-fill me-2"></i>
+                   class="nav-item-link ps-4 @(IsActiveAny("Logistics", "AllDrivers", "UpdateDriverStatus") ? "active" : "")">
+                    <i class="bi bi-person-vcard" aria-hidden="true"></i>
                     <span>Drivers</span>
                 </a>
-
                 <a asp-controller="Logistics" asp-action="AllVehicles"
-                   class="nav-item-link ps-4 @(ctrl == "Logistics" && (act == "AllVehicles" || act == "UpdateVehicleStatus") ? "active" : "")">
-                    <i class="bi bi-truck me-2"></i>
+                   class="nav-item-link ps-4 @(IsActiveAny("Logistics", "AllVehicles", "UpdateVehicleStatus") ? "active" : "")">
+                    <i class="bi bi-truck" aria-hidden="true"></i>
                     <span>Vehicles</span>
                 </a>
-
-            </div>
-
-            <!-- Production submenu -->
-            @{
-                var productionActions = new[] {
-                        "Products", "AddProduct", "EditProduct", "ProductDetail",
-                        "ProductionBatches", "WastageSummary", "MilkTransfers"
-                        };
-                bool productionOpen = ctrl == "Admin" && productionActions.Contains(act);
-            }
-            <a class="nav-item-link d-flex align-items-center justify-content-between"
-               data-bs-toggle="collapse"
-               href="#productionMenu"
-               role="button"
-               aria-expanded="@(productionOpen ? "true" : "false")">
-                <span>
-                    <i class="bi bi-gear-fill me-2"></i>Production
-                </span>
-                <i class="bi bi-chevron-down small"></i>
-            </a>
-
-            <div class="collapse @(productionOpen ? "show" : "")" id="productionMenu">
-
-                <a asp-controller="Admin" asp-action="Products"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "Products" || act == "AddProduct" || act == "EditProduct" || act == "ProductDetail") ? "active" : "")">
-                    <i class="bi bi-box-seam me-2"></i>
-                    <span>Products</span>
-                </a>
-
-                <a asp-controller="Admin" asp-action="ProductionBatches"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "ProductionBatches" ? "active" : "")">
-                    <i class="bi bi-layers me-2"></i>
-                    <span>Production Batches</span>
-                </a>
-
-                <a asp-controller="Admin" asp-action="WastageSummary"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "WastageSummary" ? "active" : "")">
-                    <i class="bi bi-trash3-fill me-2"></i>
-                    <span>Wastage</span>
-                </a>
-
                 <a asp-controller="Admin" asp-action="MilkTransfers"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "MilkTransfers" ? "active" : "")">
-                    <i class="bi bi-arrow-left-right me-2"></i>
+                   class="nav-item-link ps-4 @(IsActive("Admin", "MilkTransfers") ? "active" : "")">
+                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                     <span>Milk Transfers</span>
                 </a>
-
             </div>
 
-            <!-- Distributors + Orders submenu -->
             @{
-                var distributorActions = new[] {
-                        "Distributors", "AddDistributor",
-                        "PendingDistributors", "UpdateDistributorStatus",
-                        "AdminOrder", "AdminOrderList", "UpdateOrderStatus"
-                        };
-                bool distributorsOpen = ctrl == "Admin" && distributorActions.Contains(act);
+                var productionActions = new[] { "Products", "AddProduct", "EditProduct", "ProductDetail", "ProductionBatches", "WastageSummary" };
+                bool productionOpen = IsActiveAny("Admin", productionActions);
             }
-            <a class="nav-item-link d-flex align-items-center justify-content-between"
-               data-bs-toggle="collapse"
-               href="#distributorMenu"
-               role="button"
-               aria-expanded="@(distributorsOpen ? "true" : "false")">
-                <span>
-                    <i class="bi bi-diagram-3-fill me-2"></i>Distributors
+            <a class="nav-item-link d-flex align-items-center justify-content-between @(productionOpen ? "active" : "")"
+               data-bs-toggle="collapse" href="#productionMenu" role="button"
+               aria-expanded="@(productionOpen ? "true" : "false")" aria-controls="productionMenu">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-gear-fill" aria-hidden="true"></i>
+                    <span>Production</span>
                 </span>
-                <i class="bi bi-chevron-down small"></i>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </a>
+            <div class="collapse @(productionOpen ? "show" : "")" id="productionMenu">
+                <a asp-controller="Admin" asp-action="Products"
+                   class="nav-item-link ps-4 @(IsActiveAny("Admin", "Products", "AddProduct", "EditProduct", "ProductDetail") ? "active" : "")">
+                    <i class="bi bi-box-seam" aria-hidden="true"></i>
+                    <span>Products</span>
+                </a>
+                <a asp-controller="Admin" asp-action="ProductionBatches"
+                   class="nav-item-link ps-4 @(IsActive("Admin", "ProductionBatches") ? "active" : "")">
+                    <i class="bi bi-layers" aria-hidden="true"></i>
+                    <span>Production Batches</span>
+                </a>
+                <a asp-controller="Admin" asp-action="WastageSummary"
+                   class="nav-item-link ps-4 @(IsActive("Admin", "WastageSummary") ? "active" : "")">
+                    <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+                    <span>Wastage</span>
+                </a>
+            </div>
 
-            <div class="collapse @(distributorsOpen ? "show" : "")" id="distributorMenu">
+            <!-- ── Commerce ──────────────────────── -->
+            <div class="nav-label">Commerce</div>
 
+            @{
+                var distActions = new[] { "Distributors", "RegisterDistributor", "PendingDistributors", "UpdateDistributorStatus", "AdminOrder", "AdminOrderList", "UpdateOrderStatus" };
+                bool distOpen = IsActiveAny("Admin", distActions);
+            }
+            <a class="nav-item-link d-flex align-items-center justify-content-between @(distOpen ? "active" : "")"
+               data-bs-toggle="collapse" href="#distributorMenu" role="button"
+               aria-expanded="@(distOpen ? "true" : "false")" aria-controls="distributorMenu">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+                    <span>Distributors</span>
+                </span>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </a>
+            <div class="collapse @(distOpen ? "show" : "")" id="distributorMenu">
                 <a asp-controller="Admin" asp-action="Distributors"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "Distributors" ? "active" : "")">
-                    <i class="bi bi-people-fill me-2"></i>
+                   class="nav-item-link ps-4 @(IsActive("Admin", "Distributors") ? "active" : "")">
+                    <i class="bi bi-people-fill" aria-hidden="true"></i>
                     <span>All Distributors</span>
                 </a>
-
                 <a asp-controller="Admin" asp-action="PendingDistributors"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "PendingDistributors" || act == "UpdateDistributorStatus") ? "active" : "")">
-                    <i class="bi bi-hourglass-split me-2"></i>
+                   class="nav-item-link ps-4 @(IsActiveAny("Admin", "PendingDistributors", "UpdateDistributorStatus") ? "active" : "")">
+                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
                     <span>Pending Approvals</span>
                 </a>
-
-                <a asp-controller="Admin" asp-action="AddDistributor"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "AddDistributor" ? "active" : "")">
-                    <i class="bi bi-person-plus-fill me-2"></i>
+                <a asp-controller="Admin" asp-action="RegisterDistributor"
+                   class="nav-item-link ps-4 @(IsActive("Admin", "RegisterDistributor") ? "active" : "")">
+                    <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
                     <span>Add Distributor</span>
                 </a>
-
-                <!-- Orders nested under Distributors -->
-                <div class="nav-label ps-4 mt-1" style="font-size:10px; opacity:0.6; letter-spacing:.06em;">
-                    Orders
-                </div>
-
+                <div class="nav-label ps-2" style="font-size:9.5px; padding-top:10px;">Orders</div>
                 <a asp-controller="Admin" asp-action="AdminOrderList"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && (act == "AdminOrderList" || act == "UpdateOrderStatus") ? "active" : "")">
-                    <i class="bi bi-list-check me-2"></i>
+                   class="nav-item-link ps-4 @(IsActiveAny("Admin", "AdminOrderList", "UpdateOrderStatus") ? "active" : "")">
+                    <i class="bi bi-list-check" aria-hidden="true"></i>
                     <span>All Orders</span>
                 </a>
-
                 <a asp-controller="Admin" asp-action="AdminOrder"
-                   class="nav-item-link ps-4 @(ctrl == "Admin" && act == "AdminOrder" ? "active" : "")">
-                    <i class="bi bi-cart-plus-fill me-2"></i>
+                   class="nav-item-link ps-4 @(IsActive("Admin", "AdminOrder") ? "active" : "")">
+                    <i class="bi bi-cart-plus-fill" aria-hidden="true"></i>
                     <span>Place Order</span>
                 </a>
-
             </div>
 
-            <!-- Collection / Center Payment -->
-            <a asp-controller="Finance" asp-action="CenterPayments"
-               class="nav-item-link @(ctrl == "Finance" && act == "CenterPayments" ? "active" : "")">
-                <i class="bi bi-bucket-fill"></i>
-                <span>Center Payment</span>
+            <!-- ── Finance ───────────────────────── -->
+            <div class="nav-label">Finance</div>
+
+            <a asp-controller="Admin" asp-action="CenterPayments"
+               class="nav-item-link @(IsActive("Admin", "CenterPayments") ? "active" : "")">
+                <i class="bi bi-bucket-fill" aria-hidden="true"></i>
+                <span>Center Payments</span>
             </a>
 
-            <!-- Finance submenu -->
             @{
-                var financeActions = new[] { "Index", "FarmerPayments", "StaffPayments" };
-                bool financeOpen = ctrl == "Finance" && financeActions.Contains(act);
+                var finActions = new[] { "Index", "FarmerPayments", "StaffPayments" };
+                bool finOpen = ctrl == "Finance" && finActions.Contains(act);
             }
-            <a class="nav-item-link d-flex align-items-center justify-content-between"
-               data-bs-toggle="collapse"
-               href="#financeMenu"
-               role="button"
-               aria-expanded="@(financeOpen ? "true" : "false")">
-                <span>
-                    <i class="bi bi-cash-stack me-2"></i>Finance
+            <a class="nav-item-link d-flex align-items-center justify-content-between @(finOpen ? "active" : "")"
+               data-bs-toggle="collapse" href="#financeMenu" role="button"
+               aria-expanded="@(finOpen ? "true" : "false")" aria-controls="financeMenu">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="bi bi-wallet2" aria-hidden="true"></i>
+                    <span>Payments</span>
                 </span>
-                <i class="bi bi-chevron-down small"></i>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </a>
-
-            <div class="collapse @(financeOpen ? "show" : "")" id="financeMenu">
-
+            <div class="collapse @(finOpen ? "show" : "")" id="financeMenu">
                 <a asp-controller="Finance" asp-action="Index"
                    class="nav-item-link ps-4 @(ctrl == "Finance" && act == "Index" ? "active" : "")">
-                    <i class="bi bi-grid me-2"></i>
+                    <i class="bi bi-grid" aria-hidden="true"></i>
                     <span>Overview</span>
                 </a>
-
                 <a asp-controller="Finance" asp-action="FarmerPayments"
                    class="nav-item-link ps-4 @(ctrl == "Finance" && act == "FarmerPayments" ? "active" : "")">
-                    <i class="bi bi-person-check-fill me-2"></i>
+                    <i class="bi bi-person-check-fill" aria-hidden="true"></i>
                     <span>Farmer Payments</span>
                 </a>
-
                 <a asp-controller="Finance" asp-action="StaffPayments"
                    class="nav-item-link ps-4 @(ctrl == "Finance" && act == "StaffPayments" ? "active" : "")">
-                    <i class="bi bi-briefcase me-2"></i>
+                    <i class="bi bi-briefcase" aria-hidden="true"></i>
                     <span>Staff Payments</span>
                 </a>
-
             </div>
 
-            <!-- HR -->
+            <!-- ── System ────────────────────────── -->
+            <div class="nav-label">System</div>
+
             <a asp-controller="HR" asp-action="Index"
                class="nav-item-link @(ctrl == "HR" ? "active" : "")">
-                <i class="bi bi-people-fill"></i>
+                <i class="bi bi-people-fill" aria-hidden="true"></i>
                 <span>HR</span>
             </a>
 
-            <!-- Reports -->
             <a asp-controller="Reports" asp-action="Index"
                class="nav-item-link @(ctrl == "Reports" ? "active" : "")">
-                <i class="bi bi-bar-chart-fill"></i>
+                <i class="bi bi-bar-chart-fill" aria-hidden="true"></i>
                 <span>Reports</span>
             </a>
 
-            <!-- ── System ──────────────────────── -->
-            <div class="nav-label">System</div>
-
             <a asp-controller="Admin" asp-action="AuditLogs"
-               class="nav-item-link @(ctrl == "Admin" && act == "AuditLogs" ? "active" : "")">
-                <i class="bi bi-clock-history"></i>
+               class="nav-item-link @(IsActive("Admin", "AuditLogs") ? "active" : "")">
+                <i class="bi bi-clock-history" aria-hidden="true"></i>
                 <span>Audit Logs</span>
             </a>
 
-        </div>
+        </nav>
 
         <!-- Sidebar Footer -->
-        <div class="sidebar-footer d-flex align-items-center gap-2">
-            <div class="user-avatar">A</div>
+        <div class="sidebar-footer">
+            <div class="user-avatar" aria-hidden="true">
+                @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "A")
+            </div>
             <div class="user-info">
                 <span>@Context.Session.GetString("RoleName")</span>
                 <small>@Context.Session.GetString("Username")</small>
@@ -359,148 +336,157 @@
     </div>
 
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- TOPBAR                                     -->
-    <!-- ══════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TOPBAR                                                   -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <header id="topbar" role="banner">
 
-    <div id="topbar">
-
-        <!-- Toggle Button -->
-        <button class="topbar-icon-btn me-3"
-                onclick="toggleSidebar()"
-                title="Toggle Sidebar">
-            <i class="bi bi-list"></i>
+        <!-- Hamburger -->
+        <button class="topbar-icon-btn me-2" onclick="toggleSidebar()" aria-label="Toggle navigation">
+            <i class="bi bi-list fs-5" aria-hidden="true"></i>
         </button>
 
-        <!-- Page Title -->
+        <!-- Page title + breadcrumb -->
         <div>
             <p class="topbar-title mb-0">@ViewData["Title"]</p>
             <p class="page-breadcrumb mb-0">
-                Admin &rsaquo; @ViewData["Title"]
+                @(ctrl) › @(act)
             </p>
         </div>
 
-        <!-- Right Side -->
+        <!-- Right side actions -->
         <div class="topbar-right">
 
-            <!-- Full Screen -->
-            <a class="topbar-icon-btn"
-               onclick="toggleFullScreen()"
-               title="Full Screen">
-                <i class="bi bi-fullscreen"></i>
-            </a>
+            <!-- Fullscreen -->
+            <button class="topbar-icon-btn" onclick="toggleFullScreen()" title="Toggle fullscreen" aria-label="Toggle fullscreen">
+                <i class="bi bi-fullscreen" aria-hidden="true"></i>
+            </button>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- NOTIFICATIONS BELL                      -->
-            <!-- ═══════════════════════════════════════ -->
+            <div class="topbar-divider"></div>
+
+            <!-- ─── NOTIFICATIONS BELL ─── -->
             <div class="dropdown">
-                <a class="topbar-icon-btn position-relative"
-                   href="#"
-                   title="Notifications"
-                   id="notifBell"
-                   data-bs-toggle="dropdown"
-                   data-bs-auto-close="outside"
-                   aria-expanded="false">
-                    <i class="bi bi-bell-fill"></i>
+                <button class="topbar-icon-btn position-relative"
+                        id="notifBell"
+                        data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside"
+                        aria-expanded="false"
+                        aria-label="Notifications"
+                        aria-haspopup="true">
+                    <i class="bi bi-bell" aria-hidden="true"></i>
                     <span id="notif-badge"
                           class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger"
-                          style="font-size:9px; padding:3px 5px; display:none;">0</span>
-                </a>
+                          style="font-size:9px; padding:2px 5px; display:none; font-family:'DM Mono',monospace;">0</span>
+                </button>
 
                 <div class="dropdown-menu dropdown-menu-end p-0 notif-dropdown-menu"
-                     aria-labelledby="notifBell">
+                     role="menu" aria-label="Notifications panel">
 
                     <!-- Header -->
                     <div class="notif-header">
                         <span class="notif-header-title">Notifications</span>
-                        <span id="notif-badge-header" class="badge bg-danger" style="font-size:10px;">0</span>
+                        <span id="notif-badge-header" class="badge bg-danger" style="display:none;">0</span>
                     </div>
 
                     <!-- Filter Tabs -->
-                    <div class="notif-tabs">
-                        <button class="notif-tab active" data-sev="all">All</button>
-                        <button class="notif-tab notif-tab-danger" data-sev="danger">Urgent</button>
-                        <button class="notif-tab notif-tab-warning" data-sev="warning">Warning</button>
-                        <button class="notif-tab notif-tab-info" data-sev="info">Info</button>
+                    <div class="notif-tabs" role="tablist">
+                        <button class="notif-tab active" data-sev="all" role="tab">All</button>
+                        <button class="notif-tab notif-tab-danger" data-sev="danger" role="tab">Urgent</button>
+                        <button class="notif-tab notif-tab-warning" data-sev="warning" role="tab">Warning</button>
+                        <button class="notif-tab notif-tab-info" data-sev="info" role="tab">Info</button>
                     </div>
 
                     <!-- List -->
-                    <div id="notif-list" class="notif-list">
+                    <div id="notif-list" class="notif-list" role="list">
                         <div class="notif-loading">
-                            <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
-                            <div>Loading...</div>
+                            <div class="spinner-border spinner-border-sm mb-2" role="status" aria-label="Loading"></div>
+                            <div>Loading notifications…</div>
                         </div>
                     </div>
 
+                    <!-- Footer -->
+                    <div class="notif-footer">
+                        <button class="notif-mark-all-btn" onclick="markAllRead()" type="button">
+                            <i class="bi bi-check2-all" aria-hidden="true"></i> Mark all read
+                        </button>
+                        <a href="/Admin/AuditLogs" class="notif-view-all">View all →</a>
+                    </div>
                 </div>
             </div>
-            <!-- ═══════════════════════════════════════ -->
+
+            <div class="topbar-divider"></div>
+
             <!-- User Dropdown -->
             <div class="dropdown">
                 <div class="topbar-avatar dropdown-toggle"
                      data-bs-toggle="dropdown"
                      aria-expanded="false"
-                     title="Account">
-                    A
+                     role="button"
+                     aria-label="Account menu"
+                     style="list-style:none;">
+                    @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "A")
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                        <div class="px-3 py-2 border-bottom">
-                            <p class="mb-0 fw-semibold text-dark small">@Context.Session.GetString("RoleName")</p>
-                            <p class="mb-0 text-muted" style="font-size:11px;">
+                        <div class="px-3 py-2 border-bottom" style="border-color: #eaecf0 !important;">
+                            <p class="mb-0 fw-600 text-dark" style="font-size:13.5px; font-weight:600;">
+                                @Context.Session.GetString("RoleName")
+                            </p>
+                            <p class="mb-0 text-muted" style="font-size:11.5px; font-family:'DM Mono',monospace;">
                                 @Context.Session.GetString("Username")
                             </p>
                         </div>
                     </li>
                     <li>
-                        <a class="dropdown-item small py-2" href="#">
-                            <i class="bi bi-person me-2 text-primary"></i> My Profile
+                        <a class="dropdown-item" asp-controller="Admin" asp-action="Profile">
+                            <i class="bi bi-person me-2 text-primary" aria-hidden="true"></i> My Profile
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item small py-2" href="#">
-                            <i class="bi bi-gear me-2 text-secondary"></i> Settings
+                        <a class="dropdown-item" href="/Admin/Settings">
+                            <i class="bi bi-gear me-2" style="color:#6b7280;" aria-hidden="true"></i> Settings
                         </a>
                     </li>
-                    <li><hr class="dropdown-divider my-1" /></li>
                     <li>
-                        <a class="dropdown-item small py-2 text-danger"
-                           asp-controller="Admin" asp-action="Logout">
-                            <i class="bi bi-box-arrow-right me-2"></i> Logout
+                        <a class="dropdown-item" href="/Admin/ChangePassword">
+                            <i class="bi bi-key me-2" style="color:#6b7280;" aria-hidden="true"></i> Change Password
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <a class="dropdown-item text-danger" asp-controller="Admin" asp-action="Logout">
+                            <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i> Sign out
                         </a>
                     </li>
                 </ul>
             </div>
 
         </div>
-    </div>
+    </header>
 
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- MAIN CONTENT                               -->
-    <!-- ══════════════════════════════════════════ -->
-
-    <div id="main-content">
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- MAIN CONTENT                                            -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <main id="main-content" role="main">
         @RenderBody()
-    </div>
+    </main>
 
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- FOOTER                                     -->
-    <!-- ══════════════════════════════════════════ -->
-
-    <footer id="main-footer">
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- FOOTER                                                   -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <footer id="main-footer" role="contentinfo">
         <div class="d-flex justify-content-between w-100 align-items-center">
             <small class="text-muted">
                 &copy; @DateTime.Now.Year
-                <strong class="text-primary">Dairy Management System</strong>
-                — All rights reserved
+                <strong style="color: #2563eb; font-weight:600;">Dairy Management System</strong>
             </small>
-            <small class="text-muted">
-                Version 1.0 &nbsp;|&nbsp;
-                <span class="text-success fw-semibold">
-                    <i class="bi bi-circle-fill" style="font-size:8px;"></i>
-                    System Online
+            <small class="text-muted d-flex align-items-center gap-2">
+                <span style="font-family:'DM Mono',monospace; font-size:11px;">v1.0.0</span>
+                <span class="d-flex align-items-center gap-1" style="color: #059669;">
+                    <i class="bi bi-circle-fill" style="font-size:6px;" aria-hidden="true"></i>
+                    <span style="font-size:11px;">Online</span>
                 </span>
             </small>
         </div>
@@ -511,10 +497,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Admin Layout JS -->
-    <script src="~/js/admin-layout.js"></script>
+    <script src="~/js/admin-layout.js" asp-append-version="true"></script>
 
     <!-- Notification JS -->
-    <script src="~/js/admin-notifications.js"></script>
+    <script src="~/js/admin-notifications.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
 

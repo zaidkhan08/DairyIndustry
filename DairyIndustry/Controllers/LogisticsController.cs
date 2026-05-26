@@ -26,6 +26,20 @@ namespace DairyIndustry.Controllers
             return View(driver);
         }
 
+        [SessionAuthorize("Driver")]
+        public IActionResult MyVehicles()
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+            int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
+
+            var driver = _logisticRepo.GetDriverByUserId(userId);
+            var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
+
+            ViewBag.Vehicles = vehicles;
+
+            return View(driver);
+        }
+
         [HttpGet]
         public ActionResult RegisterDriver()
         {

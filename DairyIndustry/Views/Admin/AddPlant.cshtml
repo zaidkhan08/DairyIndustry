@@ -2,9 +2,7 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Add Processing Plant";
 }
-
 <div class="container mt-4">
-
     <div class="row mb-4">
         <div class="col d-flex justify-content-between align-items-center">
             <div>
@@ -16,16 +14,13 @@
             </a>
         </div>
     </div>
-
     <div class="row justify-content-center">
         <div class="col-md-6">
-
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white fw-semibold">
                     <i class="bi bi-building me-1 text-primary"></i> Plant Details
                 </div>
                 <div class="card-body p-4">
-
                     <form method="post" asp-controller="Admin" asp-action="AddPlant">
 
                         <div class="mb-3">
@@ -33,54 +28,85 @@
                                 Plant Name <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-building"></i>
-                                </span>
-                                <input type="text"
-                                       name="PlantName"
-                                       class="form-control"
-                                       placeholder="e.g. Surat Processing Plant"
-                                       required />
+                                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                <input type="text" name="PlantName" class="form-control"
+                                       placeholder="e.g. Surat Processing Plant" required />
                             </div>
-                            <div class="form-text">Enter a unique name for this plant</div>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">
                                 Location <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-geo-alt"></i>
-                                </span>
-                                <input type="text"
-                                       name="Location"
-                                       class="form-control"
-                                       placeholder="e.g. GIDC, Sachin, Surat"
-                                       required />
+                                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                <input type="text" name="Location" class="form-control"
+                                       placeholder="e.g. GIDC, Sachin" required />
                             </div>
-                            <div class="form-text">Enter the physical address or area of the plant</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                State <span class="text-danger">*</span>
+                            </label>
+                            <select name="State" id="StateId" class="form-select" required>
+                                <option value="">-- Select State --</option>
+                                @foreach (var state in ViewBag.States)
+                                {
+                                    <option value="@state.StateName" data-id="@state.StateId">
+                                        @state.StateName
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                City <span class="text-danger">*</span>
+                            </label>
+                            <select name="City" id="CityId" class="form-select" required disabled>
+                                <option value="">-- Select State First --</option>
+                            </select>
                         </div>
 
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-plus-circle me-1"></i> Add Plant
                             </button>
-                            <a asp-controller="Admin"
-                               asp-action="GetAllPlants"
-                               class="btn btn-outline-secondary px-4">
-                                Cancel
-                            </a>
+                            <a asp-controller="Admin" asp-action="GetAllPlants"
+                               class="btn btn-outline-secondary px-4">Cancel</a>
                         </div>
 
                     </form>
-
                 </div>
             </div>
-
-            
-
         </div>
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('StateId').addEventListener('change', function () {
+            const stateId = this.options[this.selectedIndex].dataset.id;
+            const cityDropdown = document.getElementById('CityId');
+
+            cityDropdown.innerHTML = '<option value="">-- Loading... --</option>';
+            cityDropdown.disabled = true;
+
+            if (!stateId) {
+                cityDropdown.innerHTML = '<option value="">-- Select State First --</option>';
+                return;
+            }
+
+            fetch(`/Admin/GetCitiesByState?stateId=${stateId}`)
+                .then(r => r.json())
+                .then(data => {
+                    cityDropdown.innerHTML = '<option value="">-- Select City --</option>';
+                    data.forEach(c => {
+                        cityDropdown.innerHTML += `<option value="${c.cityName}">${c.cityName}</option>`;
+                    });
+                    cityDropdown.disabled = false;
+                });
+        });
+    </script>
+}

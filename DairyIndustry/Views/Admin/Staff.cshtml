@@ -1,20 +1,23 @@
 ﻿@model List<DairyIndustry.Models.Admin.StaffModel>
-
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Manage Staff";
+
+    // Standardize pagination variables
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
 }
 
 <div class="container mt-4">
 
-    <!-- Page Title -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Manage Staff</h3>
-                <p class="text-muted mb-0">View and manage all staff members</p>
-            </div>
-            <a asp-controller="Admin" asp-action="AddStaff" class="btn btn-primary">
+    <!-- Page Title & Add Button -->
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h3 class="fw-bold mb-0">Manage Staff</h3>
+            <p class="text-muted mb-0">View and manage all staff members</p>
+        </div>
+        <div class="col-auto">
+            <a asp-controller="Admin" asp-action="AddStaff" class="btn btn-primary shadow-sm">
                 <i class="bi bi-person-plus me-1"></i> Add New Staff
             </a>
         </div>
@@ -22,313 +25,242 @@
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success mb-4">
-            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
+        <div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" role="alert">
+            <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <!-- Stats -->
+    <!-- Stats Cards -->
     <div class="row mb-4 g-3">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-primary text-white">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 small">Total Staff</p>
-                        <h4 class="fw-bold mb-0">@Model.Count</h4>
+                        <p class="mb-1 small opacity-75">Total Staff</p>
+                        <h4 class="fw-bold mb-0">@ViewBag.TotalRecords</h4>
                     </div>
-                    <i class="bi bi-people-fill fs-2 opacity-75"></i>
+                    <i class="bi bi-people-fill fs-2 opacity-50"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card border-0 shadow-sm bg-success text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 small">Active</p>
+                        <p class="mb-1 small opacity-75">Active</p>
                         <h4 class="fw-bold mb-0">@Model.Count(s => s.IsActive)</h4>
                     </div>
-                    <i class="bi bi-person-check-fill fs-2 opacity-75"></i>
+                    <i class="bi bi-person-check-fill fs-2 opacity-50"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-danger text-white">
+            <div class="card border-0 shadow-sm bg-danger text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 small">Inactive</p>
+                        <p class="mb-1 small opacity-75">Inactive</p>
                         <h4 class="fw-bold mb-0">@Model.Count(s => !s.IsActive)</h4>
                     </div>
-                    <i class="bi bi-person-x-fill fs-2 opacity-75"></i>
+                    <i class="bi bi-person-x-fill fs-2 opacity-50"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-info text-white">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 small">Roles</p>
-                        <h4 class="fw-bold mb-0">@Model.Select(s => s.RoleId).Distinct().Count()</h4>
+                        <p class="mb-1 small opacity-75">Locations</p>
+                        <h4 class="fw-bold mb-0">@(Model.Select(s => s.CenterName).Distinct().Count() + Model.Select(s => s.PlantName).Distinct().Count())</h4>
                     </div>
-                    <i class="bi bi-person-badge-fill fs-2 opacity-75"></i>
+                    <i class="bi bi-geo-alt-fill fs-2 opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Table -->
+    <!-- Data Table Card -->
     <div class="card shadow-sm border-0">
-
-        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-people me-1"></i> All Staff Members</span>
-            <span class="badge bg-primary">Total : @Model.Count</span>
-        </div>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-people me-2"></i>Staff List</h6>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary rounded-pill">Total Records: @ViewBag.TotalStaff</span>
+                <a href="/Admin/DownloadStaffPdf" class="btn btn-sm btn-success shadow-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Download PDF
+        </a>
+    </div>
+</div>
 
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>#</th>
-                            <th>Staff</th>
+                            <th class="ps-3">#</th>
+                            <th>Staff Info</th>
                             <th>Role</th>
-                            <th>Assigned To</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Joining Date</th>
+                            <th>Assignment</th>
+                            <th>Contact</th>
                             <th>Salary</th>
-                            <th>Bank</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-
                         @if (!Model.Any())
                         {
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                                    No staff members found.
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                    No staff records available.
                                 </td>
                             </tr>
                         }
                         else
                         {
-                            int sr = 1;
+                            int sr = ((currentPage - 1) * 10) + 1;
                             foreach (var staff in Model)
                             {
                                 <tr>
-
-                                    <td class="text-muted small">@sr</td>
-
-                                    <!-- Photo + Name -->
+                                    <td class="ps-3 text-muted small">@sr</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
                                             @if (!string.IsNullOrEmpty(staff.ProfilePhoto))
                                             {
                                                 <img src="@Url.Content("~/" + staff.ProfilePhoto.TrimStart('/'))"
-                                                     class="rounded-circle border"
-                                                     width="40" height="40"
-                                                     style="object-fit:cover;"
-                                                     alt="@staff.FullName" />
+                                                     class="rounded-circle border" width="38" height="38"
+                                                     style="object-fit:cover;" alt="Profile" />
                                             }
                                             else
                                             {
-                                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
-                                                     style="width:40px; height:40px; flex-shrink:0;">
-                                                    <span class="text-white fw-bold small">
-                                                        @staff.FirstName[0]@staff.LastName[0]
-                                                    </span>
+                                                <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold small"
+                                                     style="width:38px; height:38px;">
+                                                    @(staff.FirstName?[0])@(staff.LastName?[0])
                                                 </div>
                                             }
                                             <div>
-                                                <div class="fw-semibold small">@staff.FullName</div>
-                                                <div class="text-muted" style="font-size:11px;">ID: @staff.StaffId</div>
+                                                <div class="fw-bold small text-dark">@staff.FullName</div>
+                                                <div class="text-muted tiny" style="font-size: 11px;">ID: @staff.StaffId</div>
                                             </div>
                                         </div>
                                     </td>
-
-                                    <!-- Role -->
                                     <td>
                                         @{
-                                            string badge = staff.RoleName?.ToLower() switch
+                                            string roleColor = staff.RoleName?.ToLower() switch
                                             {
-                                                "collection agent" => "bg-primary",
-                                                "production manager" => "bg-warning text-dark",
-                                                "finance manager" => "bg-success",
-                                                "sales manager" => "bg-info text-dark",
-                                                "hr manager" => "bg-secondary",
-                                                "driver" => "bg-dark",
-                                                "administrator" => "bg-danger",
-                                                _ => "bg-secondary"
+                                                "administrator" => "danger",
+                                                "production manager" => "warning text-dark",
+                                                "collection agent" => "primary",
+                                                _ => "secondary"
                                             };
                                         }
-                                        <span class="badge @badge">@staff.RoleName</span>
+                                        <span class="badge bg-@roleColor-subtle text-@roleColor.Replace(" text-dark", "") border">@staff.RoleName</span>
                                     </td>
-
-                                    <!-- Assigned To — Center or Plant -->
                                     <td>
                                         @if (!string.IsNullOrEmpty(staff.CenterName))
                                         {
-                                            <div class="d-flex align-items-center gap-1">
-                                                <i class="bi bi-building text-primary" style="font-size:13px;"></i>
-                                                <div>
-                                                    <div class="small fw-semibold">@staff.CenterName</div>
-                                                    <div class="text-muted" style="font-size:11px;">Collection Center</div>
-                                                </div>
-                                            </div>
+                                            <div class="small fw-semibold text-primary"><i class="bi bi-building me-1"></i>@staff.CenterName</div>
+                                            <div class="text-muted tiny" style="font-size: 10px;">Collection Center</div>
                                         }
                                         else if (!string.IsNullOrEmpty(staff.PlantName))
                                         {
-                                            <div class="d-flex align-items-center gap-1">
-                                                <i class="bi bi-gear text-warning" style="font-size:13px;"></i>
-                                                <div>
-                                                    <div class="small fw-semibold">@staff.PlantName</div>
-                                                    <div class="text-muted" style="font-size:11px;">Processing Plant</div>
-                                                </div>
-                                            </div>
+                                            <div class="small fw-semibold text-warning"><i class="bi bi-gear-wide-connected me-1"></i>@staff.PlantName</div>
+                                            <div class="text-muted tiny" style="font-size: 10px;">Processing Plant</div>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-light text-muted border">Not Assigned</span>
+                                            <span class="text-muted small">Unassigned</span>
                                         }
                                     </td>
-
-                                    <!-- Phone -->
                                     <td>
-                                        @if (!string.IsNullOrEmpty(staff.Phone))
-                                        {
-                                            <small><i class="bi bi-telephone me-1 text-muted"></i>@staff.Phone</small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
+                                        <div class="small"><i class="bi bi-telephone me-1 text-muted"></i>@staff.Phone</div>
+                                        <div class="text-muted small"><i class="bi bi-envelope me-1 text-muted"></i>@staff.Email</div>
                                     </td>
-
-                                    <!-- Email -->
                                     <td>
-                                        @if (!string.IsNullOrEmpty(staff.Email))
-                                        {
-                                            <small><i class="bi bi-envelope me-1 text-muted"></i>@staff.Email</small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
+                                        <span class="fw-bold text-success">₹@staff.Salary.ToString("N0")</span>
                                     </td>
-
-                                    <!-- Joining Date -->
                                     <td>
-                                        @if (staff.DOJ.HasValue)
-                                        {
-                                            <small>
-                                                <i class="bi bi-calendar3 me-1 text-muted"></i>
-                                                @staff.DOJ.Value.ToString("dd MMM yyyy")
-                                            </small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
+                                        <span class="badge @(staff.IsActive ? "bg-success" : "bg-danger")">
+                                            @(staff.IsActive ? "Active" : "Inactive")
+                                        </span>
                                     </td>
-
-                                    <!-- Salary -->
-                                    <td>
-                                        @if ( staff.Salary > 0)
-                                        {
-                                            <small class="fw-semibold text-success">
-                                                ₹@staff.Salary.ToString("N0")
-                                            </small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-
-                                    <!-- Bank -->
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(staff.BankName))
-                                        {
-                                            <div class="small fw-semibold">@staff.BankName</div>
-                                            <div class="text-muted" style="font-size:11px;">@staff.AccountNumber</div>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning text-dark">Not Added</span>
-                                        }
-                                    </td>
-
-                                    <!-- Status -->
-                                    <td>
-                                        @if (staff.IsActive)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Inactive</span>
-                                        }
-                                    </td>
-
-                                    <!-- Actions -->
-                                    <td>
-                                        <div class="d-flex gap-1">
-
-                                            <a asp-controller="Admin" asp-action="GetStaffById"
-                                               asp-route-id="@staff.StaffId"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-eye me-1"></i> View
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group">
+                                            <a asp-action="GetStaffById" asp-route-id="@staff.StaffId" class="btn btn-sm btn-outline-secondary" title="View">
+                                                <i class="bi bi-eye"></i>
                                             </a>
-
-                                            <form method="post" asp-controller="Admin" asp-action="ToggleStaffActive">
-                                                <input type="hidden" name="staffId" value="@staff.StaffId" />
-                                                <input type="hidden" name="isActive" value="@(!staff.IsActive ? 1 : 0)" />
-                                                @if (staff.IsActive)
-                                                {
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                            onclick="return confirm('Deactivate @staff.FullName?')">
-                                                        <i class="bi bi-person-x me-1"></i> Deactivate
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button type="submit" class="btn btn-sm btn-outline-success"
-                                                            onclick="return confirm('Activate @staff.FullName?')">
-                                                        <i class="bi bi-person-check me-1"></i> Activate
-                                                    </button>
-                                                }
-                                            </form>
-                                            <a asp-action="EditStaff" asp-route-id="@staff.StaffId" class="btn btn-sm btn-outline-primary">
+                                            <a asp-action="EditStaff" asp-route-id="@staff.StaffId" class="btn btn-sm btn-outline-primary" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
+                                            <form method="post" asp-action="ToggleStaffActive" class="d-inline">
+                                                <input type="hidden" name="staffId" value="@staff.StaffId" />
+                                                <input type="hidden" name="isActive" value="@(!staff.IsActive ? 1 : 0)" />
+                                                <button type="submit" class="btn btn-sm @(staff.IsActive ? "btn-outline-danger" : "btn-outline-success")"
+                                                        onclick="return confirm('Change status for @staff.FullName?')">
+                                                    <i class="bi @(staff.IsActive ? "bi-person-x" : "bi-person-check")"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
-
                                 </tr>
                                 sr++;
                             }
                         }
-
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-            <span>
-                Total: @Model.Count &nbsp;|&nbsp;
-                Active: @Model.Count(s => s.IsActive) &nbsp;|&nbsp;
-                Inactive: @Model.Count(s => !s.IsActive)
-            </span>
-            <span>
-                Centers: @Model.Count(s => !string.IsNullOrEmpty(s.CenterName)) &nbsp;|&nbsp;
-                Plants: @Model.Count(s => !string.IsNullOrEmpty(s.PlantName)) &nbsp;|&nbsp;
-                Unassigned: @Model.Count(s => string.IsNullOrEmpty(s.CenterName) && string.IsNullOrEmpty(s.PlantName))
-            </span>
+        <!-- Pagination Footer -->
+        <div class="card-footer bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col-sm-6 text-center text-sm-start mb-3 mb-sm-0">
+                    <span class="text-muted small">
+                        Showing page <strong>@currentPage</strong> of <strong>@totalPages</strong>
+                    </span>
+                </div>
+                <div class="col-sm-6">
+                    <nav aria-label="Staff navigation">
+                        <ul class="pagination pagination-sm justify-content-center justify-content-sm-end mb-0">
+                            <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                                <a class="page-link" href="?page=@(currentPage - 1)"><i class="bi bi-chevron-left"></i></a>
+                            </li>
+
+                            @for (int i = 1; i <= totalPages; i++)
+                            {
+                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i">@i</a>
+                                </li>
+                            }
+
+                            <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                                <a class="page-link" href="?page=@(currentPage + 1)"><i class="bi bi-chevron-right"></i></a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
         </div>
-
     </div>
-
 </div>
+
+<style>
+    .table thead th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+    }
+
+    .tiny {
+        font-size: 0.7rem;
+    }
+
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .badge {
+        font-weight: 500;
+    }
+</style>
