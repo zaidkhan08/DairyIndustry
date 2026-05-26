@@ -109,7 +109,7 @@ namespace DairyIndustry.Services
                 _config["EmailSettings:SMTPServer"],
                 Convert.ToInt32(_config["EmailSettings:Port"]),
                 SecureSocketOptions.StartTls);
-            smtp.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+            smtp.Authenticate(_config["EmailSettings:SenderName"], _config["EmailSettings:AppPassword"]);
             smtp.Send(message);
             smtp.Disconnect(true);
         }
