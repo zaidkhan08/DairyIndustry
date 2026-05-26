@@ -23,6 +23,10 @@
         public string AccountNumber { get; set; }
         public string IFSCCode { get; set; }
 
+        // ── Paid By ────────────────────────────────────────────
+        public int? PaidByUserId { get; set; }
+        public string PaidBy { get; set; }   // Full name of the Admin / Collection Agent
+
         // ── Badge helper ───────────────────────────────────────
         public string StatusBadgeClass => PaymentStatus switch
         {

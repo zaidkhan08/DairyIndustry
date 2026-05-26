@@ -23,8 +23,10 @@ namespace DairyIndustry.Repositories
 
         //Added By Zaid
         int? GetPlantIdByUser(int userId);
+
+        int? GetCenterIdByUser(int userId);
         // ── AUDIT LOG ──────────────────────────────────────────
-       
+
 
         // ════════════════════════════════════════════════════════
         // LOCATION — STATE
@@ -38,6 +40,7 @@ namespace DairyIndustry.Repositories
         int AddCity(string cityName, int stateId);
         List<CityModel> GetAllCities();
         List<CityModel> GetCitiesByState(int stateId);
+    
 
         // ════════════════════════════════════════════════════════
         // LOCATION — VILLAGE

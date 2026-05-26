@@ -1,0 +1,887 @@
+﻿@model DairyIndustry.Models.Finance.CenterWalletViewModel
+@{
+    ViewData["Title"] = "Center Wallet";
+    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    decimal netBalance = Model.Summary.TotalReceived - Model.Summary.TotalStaffCost;
+    decimal utilization = Model.Summary.TotalReceived > 0
+        ? Math.Round((Model.Summary.TotalStaffCost / Model.Summary.TotalReceived) * 100, 1)
+        : 0;
+    decimal totalBonus = Model.Summary.TotalBonusEarned;
+    decimal totalBase = Model.Summary.TotalBaseEarned;
+}
+
+<style>
+    .cw-root {
+        font-family: 'DM Sans', sans-serif;
+        --ink: #0f172a;
+        --ink-muted: #64748b;
+        --ink-faint: #94a3b8;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --surface-3: #f1f5f9;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --accent: #2563eb;
+        --accent-light: #eff6ff;
+        --accent-mid: #bfdbfe;
+        --success: #16a34a;
+        --success-light: #f0fdf4;
+        --success-mid: #bbf7d0;
+        --warning: #d97706;
+        --warning-light: #fffbeb;
+        --warning-mid: #fde68a;
+        --danger: #dc2626;
+        --danger-light: #fef2f2;
+        --danger-mid: #fecaca;
+        --purple: #7c3aed;
+        --purple-light: #f5f3ff;
+        --purple-mid: #ddd6fe;
+        --teal: #0d9488;
+        --teal-light: #f0fdfa;
+        --teal-mid: #99f6e4;
+        --gold: #b45309;
+        --gold-light: #fffbeb;
+        --gold-mid: #fcd34d;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+        --shadow-md: 0 4px 12px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.04);
+    }
+
+    /* ── Page header ── */
+    .cw-page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .cw-page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -.4px;
+        margin: 0 0 2px;
+    }
+
+    .cw-page-sub {
+        font-size: 13px;
+        color: var(--ink-muted);
+        margin: 0;
+    }
+
+    /* ── Hero balance strip ── */
+    .cw-hero {
+        background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#1d4ed8 100%);
+        border-radius: var(--r-lg);
+        padding: 28px 32px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: center;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cw-hero::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.04);
+        }
+
+        .cw-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            right: 120px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.03);
+        }
+
+    .cw-hero-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+        color: rgba(255,255,255,.55);
+        margin-bottom: 8px;
+    }
+
+    .cw-hero-center {
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .cw-hero-balance {
+        font-size: 38px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono',monospace;
+        color: #fff;
+        letter-spacing: -1px;
+        line-height: 1;
+    }
+
+        .cw-hero-balance.negative {
+            color: #fca5a5;
+        }
+
+    .cw-hero-sub {
+        font-size: 12px;
+        color: rgba(255,255,255,.45);
+        margin-top: 6px;
+    }
+
+    .cw-hero-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    .cw-hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.15);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255,255,255,.85);
+    }
+
+    /* ── Stat cards ── */
+    .cw-stats {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .cw-stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 16px 18px;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cw-stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--r-md) var(--r-md) 0 0;
+        }
+
+        .cw-stat.income::before {
+            background: var(--success);
+        }
+
+        .cw-stat.pending::before {
+            background: var(--warning);
+        }
+
+        .cw-stat.spent::before {
+            background: var(--purple);
+        }
+
+        .cw-stat.net::before {
+            background: var(--teal);
+        }
+
+        .cw-stat.bonus::before {
+            background: var(--gold);
+        }
+
+    .cw-stat-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--r-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        margin-bottom: 10px;
+    }
+
+    .icon-income {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .icon-pending {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .icon-spent {
+        background: var(--purple-light);
+        color: var(--purple);
+    }
+
+    .icon-net {
+        background: var(--teal-light);
+        color: var(--teal);
+    }
+
+    .icon-bonus {
+        background: var(--gold-light);
+        color: var(--gold);
+    }
+
+    .cw-stat-label {
+        font-size: 11.5px;
+        color: var(--ink-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .cw-stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono',monospace;
+        color: var(--ink);
+        margin-top: 4px;
+    }
+
+    .cw-stat-sub {
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        margin-top: 3px;
+    }
+
+    /* ── Cards / tables ── */
+    .cw-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        margin-bottom: 16px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .cw-card-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
+    }
+
+    .cw-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        margin: 24px 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cw-section-badge {
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1px 9px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-muted);
+    }
+
+    .cw-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .cw-table thead th {
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .cw-table tbody td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--ink);
+            vertical-align: middle;
+        }
+
+        .cw-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cw-table tbody tr:hover {
+            background: var(--surface-2);
+        }
+
+        .cw-table th.r, .cw-table td.r {
+            text-align: right;
+        }
+
+    .cw-tally-row td {
+        background: var(--surface-3) !important;
+        font-weight: 700;
+        border-top: 2px solid var(--border-strong);
+    }
+
+    /* ── Bonus table highlight colours ── */
+    .cw-table td.bonus-col {
+        color: var(--gold);
+        font-weight: 600;
+        font-family: 'JetBrains Mono',monospace;
+    }
+
+    .cw-table td.base-col {
+        color: var(--ink-muted);
+        font-family: 'JetBrains Mono',monospace;
+    }
+
+    .cw-table td.total-col {
+        color: var(--success);
+        font-weight: 700;
+        font-family: 'JetBrains Mono',monospace;
+    }
+
+    /* ── Pill badges ── */
+    .cw-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 20px;
+        padding: 3px 9px;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+
+    .cw-pill-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .pill-processed {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .pill-pending {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .pill-failed {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+
+    .pill-cancelled {
+        background: var(--surface-3);
+        color: var(--ink-muted);
+    }
+
+    /* ── Misc ── */
+    .cw-id {
+        font-family: 'JetBrains Mono',monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+    }
+
+    .cw-ref-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        color: var(--ink-muted);
+        background: var(--surface-3);
+        border-radius: 5px;
+        padding: 2px 8px;
+    }
+
+    .cw-amount-in {
+        color: var(--success);
+        font-family: 'JetBrains Mono',monospace;
+        font-weight: 600;
+    }
+
+    .cw-amount-out {
+        color: var(--purple);
+        font-family: 'JetBrains Mono',monospace;
+        font-weight: 600;
+    }
+
+    .cw-amount-neutral {
+        font-family: 'JetBrains Mono',monospace;
+    }
+
+    .cw-date {
+        font-size: 12.5px;
+        color: var(--ink-muted);
+    }
+
+    .cw-empty {
+        text-align: center;
+        padding: 32px;
+        color: var(--ink-faint);
+    }
+
+    .cw-empty-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    /* ── Bonus breakdown highlight bar ── */
+    .bonus-highlight-bar {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fcd34d;
+        border-radius: var(--r-lg);
+        padding: 18px 24px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+        .bonus-highlight-bar .bh-icon {
+            font-size: 28px;
+            color: var(--gold);
+        }
+
+        .bonus-highlight-bar .bh-label {
+            font-size: 12px;
+            color: var(--gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .bonus-highlight-bar .bh-value {
+            font-size: 26px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--gold);
+        }
+
+        .bonus-highlight-bar .bh-sub {
+            font-size: 12px;
+            color: var(--ink-muted);
+            margin-top: 2px;
+        }
+
+        .bonus-highlight-bar .bh-divider {
+            width: 1px;
+            height: 40px;
+            background: #fcd34d;
+            margin: 0 8px;
+        }
+</style>
+
+<div class="cw-root">
+
+    <!-- Page header -->
+    <div class="cw-page-header">
+        <div>
+            <p class="cw-page-title"><i class="bi bi-wallet2" style="color:var(--accent);"></i> Center Wallet</p>
+            <p class="cw-page-sub">Inflow from plant payments · Staff cost outflow · ₹3/L bonus breakdown</p>
+        </div>
+    </div>
+
+    <!-- Hero balance strip -->
+    <div class="cw-hero">
+        <div>
+            <div class="cw-hero-label">Net Balance (Received − Staff Cost)</div>
+            <div class="cw-hero-center">@Model.Summary.CenterName</div>
+            <div class="cw-hero-balance @(netBalance < 0 ? "negative" : "")">
+                ₹@netBalance.ToString("N2")
+            </div>
+            <div class="cw-hero-sub">Staff cost utilization: @utilization%</div>
+        </div>
+        <div class="cw-hero-right">
+            <div class="cw-hero-pill">
+                <i class="bi bi-arrow-down-circle-fill" style="color:#86efac;"></i>
+                ₹@Model.Summary.TotalReceived.ToString("N2") received
+            </div>
+            <div class="cw-hero-pill">
+                <i class="bi bi-star-fill" style="color:#fcd34d;"></i>
+                ₹@totalBonus.ToString("N2") bonus earned
+            </div>
+            <div class="cw-hero-pill">
+                <i class="bi bi-people-fill" style="color:#c4b5fd;"></i>
+                @Model.Summary.TotalStaffCount staff
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat cards (now 5 cards — added Bonus) -->
+    <div class="cw-stats" style="grid-template-columns:repeat(5,1fr);">
+        <div class="cw-stat income">
+            <div class="cw-stat-icon icon-income"><i class="bi bi-arrow-down-circle-fill"></i></div>
+            <div class="cw-stat-label">Total Received</div>
+            <div class="cw-stat-value">₹@Model.Summary.TotalReceived.ToString("N0")</div>
+            <div class="cw-stat-sub">Processed payments only</div>
+        </div>
+        <div class="cw-stat pending">
+            <div class="cw-stat-icon icon-pending"><i class="bi bi-hourglass-split"></i></div>
+            <div class="cw-stat-label">Pending</div>
+            <div class="cw-stat-value">₹@Model.Summary.TotalPending.ToString("N0")</div>
+            <div class="cw-stat-sub">Awaiting bank transfer</div>
+        </div>
+        <div class="cw-stat spent">
+            <div class="cw-stat-icon icon-spent"><i class="bi bi-people-fill"></i></div>
+            <div class="cw-stat-label">Staff Cost</div>
+            <div class="cw-stat-value">₹@Model.Summary.TotalStaffCost.ToString("N0")</div>
+            <div class="cw-stat-sub">@Model.Summary.TotalStaffCount active staff</div>
+        </div>
+        <div class="cw-stat net">
+            <div class="cw-stat-icon icon-net"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="cw-stat-label">Net Balance</div>
+            <div class="cw-stat-value">₹@netBalance.ToString("N0")</div>
+            <div class="cw-stat-sub">Received − Staff Cost</div>
+        </div>
+        <div class="cw-stat bonus">
+            <div class="cw-stat-icon icon-bonus"><i class="bi bi-star-fill"></i></div>
+            <div class="cw-stat-label">Bonus Earned</div>
+            <div class="cw-stat-value">₹@totalBonus.ToString("N0")</div>
+            <div class="cw-stat-sub">₹3 × total litres received</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         NEW SECTION: Bonus Breakdown (Finance.CenterWallet)
+         ═══════════════════════════════════════════════════════ -->
+    <div class="cw-section-title">
+        <i class="bi bi-star-fill" style="color:var(--gold);"></i>
+        Bonus Earnings Breakdown
+        <span class="cw-section-badge">@Model.WalletEntries.Count</span>
+    </div>
+
+    <!-- Highlight bar: Base vs Bonus totals at a glance -->
+    <div class="bonus-highlight-bar">
+        <div class="bh-icon"><i class="bi bi-star-fill"></i></div>
+        <div>
+            <div class="bh-label">Total Bonus (₹3/L)</div>
+            <div class="bh-value">₹@totalBonus.ToString("N2")</div>
+            <div class="bh-sub">Extra earned on top of base rate</div>
+        </div>
+        <div class="bh-divider"></div>
+        <div>
+            <div class="bh-label">Base Earnings</div>
+            <div class="bh-value" style="color:var(--ink-muted);font-size:22px;">₹@totalBase.ToString("N2")</div>
+            <div class="bh-sub">From RateChart rate only</div>
+        </div>
+        <div class="bh-divider"></div>
+        <div>
+            <div class="bh-label">Total Earned</div>
+            <div class="bh-value" style="color:var(--success);font-size:22px;">₹@(totalBase + totalBonus).ToString("N2")</div>
+            <div class="bh-sub">Base + Bonus</div>
+        </div>
+    </div>
+
+    <div class="cw-card">
+        <div class="cw-card-toolbar">
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">
+                Per-Payment Bonus Detail
+            </span>
+            <span style="font-size:12px;color:var(--ink-muted);">
+                Bonus Rate: <strong style="color:var(--gold);">₹3 / Litre</strong> (fixed)
+            </span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="cw-table">
+                <thead>
+                    <tr>
+                        <th>CP ID</th>
+                        <th>Transfer Ref</th>
+                        <th>Plant</th>
+                        <th class="r">Qty (L)</th>
+                        <th class="r">Base Rate</th>
+                        <th class="r">Bonus Rate</th>
+                        <th class="r">Base Amt (₹)</th>
+                        <th class="r">Bonus Amt (₹)</th>
+                        <th class="r">Total Earned (₹)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.WalletEntries.Any())
+                    {
+                        <tr>
+                            <td colspan="11">
+                                <div class="cw-empty">
+                                    <div class="cw-empty-icon"><i class="bi bi-star"></i></div>
+                                    No wallet entries found.
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var w in Model.WalletEntries)
+                        {
+                            <tr>
+                                <td><span class="cw-id">CP-@w.CenterPaymentId.ToString("D4")</span></td>
+                                <td><span class="cw-ref-badge"><i class="bi bi-arrow-left-right" style="font-size:10px;"></i>@w.BatchRef</span></td>
+                                <td style="font-size:13px;color:var(--ink-muted);">@w.PlantName</td>
+                                <td class="r"><span class="cw-amount-neutral">@w.ReceivedQty.ToString("N2")</span></td>
+                                <td class="r base-col">@w.BaseRatePerLiter.ToString("N2")</td>
+                                <td class="r bonus-col">+@w.BonusRatePerLiter.ToString("N2")</td>
+                                <td class="r base-col">@w.BaseAmount.ToString("N2")</td>
+                                <td class="r bonus-col">+@w.BonusAmount.ToString("N2")</td>
+                                <td class="r total-col">@w.TotalEarned.ToString("N2")</td>
+                                <td><span class="cw-date">@w.PaymentDate.ToString("dd MMM yyyy")</span></td>
+                                <td>
+                                    <span class="cw-pill @w.StatusPillClass">
+                                        <span class="cw-pill-dot"></span>
+                                        @w.PaymentStatus
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                        <!-- Tally row -->
+                        <tr class="cw-tally-row">
+                            <td colspan="6" style="text-align:right;padding-right:16px;color:var(--ink-muted);font-size:12px;">
+                                TOTALS
+                            </td>
+                            <td class="r base-col">@totalBase.ToString("N2")</td>
+                            <td class="r bonus-col">+@totalBonus.ToString("N2")</td>
+                            <td class="r total-col">@(totalBase + totalBonus).ToString("N2")</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         EXISTING SECTION: Inflow transactions
+         ═══════════════════════════════════════════════════════ -->
+    <div class="cw-section-title">
+        <i class="bi bi-arrow-down-circle" style="color:var(--success);"></i>
+        Inflow — Plant Payments
+        <span class="cw-section-badge">@Model.Transactions.Count</span>
+    </div>
+    <div class="cw-card">
+        <div class="cw-card-toolbar">
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">Center Payment Records</span>
+            <span style="font-size:12px;color:var(--ink-muted);">
+                Total Received:
+                <strong style="color:var(--success);font-family:'JetBrains Mono',monospace;">
+                    ₹@Model.Transactions.Where(t => t.PaymentStatus == "Processed").Sum(t => t.TotalAmount).ToString("N2")
+                </strong>
+            </span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="cw-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Transfer Ref</th>
+                        <th>Plant</th>
+                        <th class="r">Qty (L)</th>
+                        <th class="r">Rate/L (₹)</th>
+                        <th class="r">Amount (₹)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Bank</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Transactions.Any())
+                    {
+                        <tr>
+                            <td colspan="9">
+                                <div class="cw-empty">
+                                    <div class="cw-empty-icon"><i class="bi bi-inbox"></i></div>
+                                    No payment records found.
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var t in Model.Transactions)
+                        {
+                            string pillCss = t.PaymentStatus switch
+                            {
+                                "Processed" => "pill-processed",
+                                "Pending" => "pill-pending",
+                                "Failed" => "pill-failed",
+                                _ => "pill-cancelled"
+                            };
+                            <tr>
+                                <td><span class="cw-id">CP-@t.CenterPaymentId.ToString("D4")</span></td>
+                                <td><span class="cw-ref-badge"><i class="bi bi-arrow-left-right" style="font-size:10px;"></i>@t.BatchRef</span></td>
+                                <td style="font-size:13px;color:var(--ink-muted);">@t.PlantName</td>
+                                <td class="r"><span class="cw-amount-neutral">@t.ReceivedQty.ToString("N2")</span></td>
+                                <td class="r"><span class="cw-amount-neutral">@t.RatePerLiter.ToString("N2")</span></td>
+                                <td class="r">
+                                    <span class="@(t.PaymentStatus == "Processed" ? "cw-amount-in" : "cw-amount-neutral")">
+                                        @t.TotalAmount.ToString("N2")
+                                    </span>
+                                </td>
+                                <td><span class="cw-date">@t.PaymentDate.ToString("dd MMM yyyy")</span></td>
+                                <td>
+                                    <span class="cw-pill @pillCss">
+                                        <span class="cw-pill-dot"></span>
+                                        @t.PaymentStatus
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (t.BankStatus == "Success")
+                                    {
+                                        <span style="color:var(--success);font-weight:600;font-size:12.5px;">
+                                            <i class="bi bi-check-circle-fill"></i> Success
+                                        </span>
+                                    }
+                                    else if (t.BankStatus != null)
+                                    {
+                                        <span style="color:var(--danger);font-weight:600;font-size:12.5px;">
+                                            <i class="bi bi-x-circle-fill"></i> @t.BankStatus
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--ink-faint);">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        <tr class="cw-tally-row">
+                            <td colspan="5" style="text-align:right;padding-right:16px;color:var(--ink-muted);font-size:12px;">
+                                TOTAL RECEIVED (Processed only)
+                            </td>
+                            <td class="r" style="color:var(--success);">
+                                @Model.Transactions.Where(t => t.PaymentStatus == "Processed").Sum(t => t.TotalAmount).ToString("N2")
+                            </td>
+                            <td colspan="3"></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         EXISTING SECTION: Outflow — Staff
+         ═══════════════════════════════════════════════════════ -->
+    <div class="cw-section-title">
+        <i class="bi bi-arrow-up-circle" style="color:var(--purple);"></i>
+        Outflow — Staff Cost Breakdown
+        <span class="cw-section-badge">@Model.StaffPayments.Count</span>
+    </div>
+    <div class="cw-card">
+        <div class="cw-card-toolbar">
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">Staff Salary Records</span>
+            <span style="font-size:12px;color:var(--ink-muted);">
+                Total Cost:
+                <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace;">
+                    ₹@Model.StaffPayments.Sum(s => s.TotalAmount).ToString("N2")
+                </strong>
+            </span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="cw-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Staff Name</th>
+                        <th>Role</th>
+                        <th>Period</th>
+                        <th class="r">Salary/Mo (₹)</th>
+                        <th class="r">Amount Paid (₹)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.StaffPayments.Any())
+                    {
+                        <tr>
+                            <td colspan="8">
+                                <div class="cw-empty">
+                                    <div class="cw-empty-icon"><i class="bi bi-people"></i></div>
+                                    No staff payment records for this center.
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var s in Model.StaffPayments)
+                        {
+                            string pillCss = s.PaymentStatus switch
+                            {
+                                "Processed" => "pill-processed",
+                                "Pending" => "pill-pending",
+                                _ => "pill-cancelled"
+                            };
+                            <tr>
+                                <td><span class="cw-id">SP-@s.PaymentId.ToString("D4")</span></td>
+                                <td style="font-weight:600;color:var(--ink);">@s.StaffName</td>
+                                <td style="font-size:12.5px;color:var(--ink-muted);">@s.RoleName</td>
+                                <td>
+                                    <span class="cw-date">
+                                        @s.FromDate.ToString("dd MMM") – @s.ToDate.ToString("dd MMM yyyy")
+                                    </span>
+                                </td>
+                                <td class="r"><span class="cw-amount-neutral">@s.MonthlySalary.ToString("N2")</span></td>
+                                <td class="r"><span class="cw-amount-out">@s.TotalAmount.ToString("N2")</span></td>
+                                <td><span class="cw-date">@s.PaymentDate.ToString("dd MMM yyyy")</span></td>
+                                <td>
+                                    <span class="cw-pill @pillCss">
+                                        <span class="cw-pill-dot"></span>
+                                        @s.PaymentStatus
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                        <tr class="cw-tally-row">
+                            <td colspan="5" style="text-align:right;padding-right:16px;color:var(--ink-muted);font-size:12px;">
+                                TOTAL STAFF COST
+                            </td>
+                            <td class="r" style="color:var(--purple);">
+                                @Model.StaffPayments.Sum(s => s.TotalAmount).ToString("N2")
+                            </td>
+                            <td colspan="2"></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

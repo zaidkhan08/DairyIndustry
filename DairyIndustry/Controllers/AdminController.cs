@@ -120,24 +120,24 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
 
-            if (user.StaffId.HasValue)
-                HttpContext.Session.SetInt32("StaffId", user.StaffId.Value);
 
-            if (user.CenterId.HasValue)
+            if (user.RoleName == "Collection Agent")
             {
-                HttpContext.Session.SetInt32("CenterId", user.CenterId.Value);
-                HttpContext.Session.SetString("CenterName", user.CenterName ?? "");
+                var centerId = _adminRepo.GetCenterIdByUser(user.UserId); // you may need to create this
+
+                if (centerId.HasValue)
+                {
+                    HttpContext.Session.SetInt32("CenterId", centerId.Value);
+
+                   var center = _adminRepo.getCollectionById(centerId.Value); // optional but recommended
+                    if (center != null)
+                    {
+                        HttpContext.Session.SetString("CenterName", center.CenterName);
+                    }
+                }
             }
 
-            if (user.PlantId.HasValue)
-            {
-                HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
-                HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
-            }
-        }
 
-        private IActionResult RedirectByRole(User user)
-        {
             switch (user.RoleName)
             {
                 case "Admin":
@@ -150,7 +150,15 @@ namespace DairyIndustry.Controllers
                     return RedirectToAction("Index", "Logistics");
 
                 case "Plant Manager":
-                    return RedirectToAction("Index", "Production");
+                    var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
+                    if (plantId.HasValue)
+                    {
+                        HttpContext.Session.SetInt32("PlantId", plantId.Value);
+                        var plant = _adminRepo.getPlantById(plantId.Value);
+                        if (plant != null)
+                            HttpContext.Session.SetString("PlantName", plant.PlantName);   
+                    }
+                    return RedirectToAction("Dashboard", "Production");
 
                 case "Collection Agent":
                     return RedirectToAction("Index", "Production");
@@ -1238,13 +1246,33 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [SessionAuthorize("Admin")]
-        [RequestSizeLimit(5 * 1024 * 1024)]
-        [HttpPost]
-        public async Task<IActionResult> EditStaff(int staffId, string firstName, string lastName,
-    string phone, string email, int roleId, DateTime? doj, string bankName,
-    string accountNumber, string ifscCode, decimal salary, string profilePhoto,
-    IFormFile photoFile, int? centerId, int? plantId)
+        [RequestSizeLimit(5 * 1024 * 1024)] // 2MB limit
+        public IActionResult EditStaff(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    IFormFile photoFile,
+    int? centerId,
+    int? plantId)
         {
+            if (centerId.HasValue && plantId.HasValue)
+            {
+                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
+                ViewBag.Roles = _adminRepo.GetAllRoles();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                return View(_adminRepo.GetStaffById(staffId));
+            }
+
             string finalPhoto = profilePhoto;
 
             if (photoFile != null && photoFile.Length > 0)
@@ -1988,7 +2016,7 @@ namespace DairyIndustry.Controllers
                 var count = _adminRepo.GetNotificationCount();
                 return Json(new { count });
             }
-            catch
+            catch  
             {
                 return Json(new { count = 0 });
             }
