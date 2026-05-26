@@ -86,7 +86,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
-                                    <th>Milk Type ID</th>
+                                    @* <th>Milk Type ID</th> *@
                                     <th>Milk Type Name</th>
                                 </tr>
                             </thead>
@@ -107,11 +107,11 @@
                                     {
                                         <tr>
                                             <td>@sr</td>
-                                            <td>
+                                            @* <td>
                                                 <span class="badge bg-secondary">
                                                     @milkType.MilkTypeId
                                                 </span>
-                                            </td>
+                                            </td> *@
                                             <td>
                                                 @{
                                                     string iconColor = milkType.MilkTypeName.ToLower() switch

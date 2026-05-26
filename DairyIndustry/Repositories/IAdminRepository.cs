@@ -10,7 +10,7 @@ namespace DairyIndustry.Repositories
         // ── ROLES ──────────────────────────────────────────────
         int CreateRole(string roleName);
         List<RoleModel> GetAllRoles();
-
+        UserProfileVM GetUserProfile(int userId);
         // ── USERS ──────────────────────────────────────────────
         int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
         User GetUserByUsername(string username);
@@ -65,14 +65,23 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // STAFF
         // ════════════════════════════════════════════════════════
-        int AddStaff(string firstName, string lastName, string phone, string email,
-             int roleId, DateTime? doj,
-             string bankName, string accountNumber, string ifscCode,
-             decimal salary,
-             string profilePhoto = null,
-             int? centerId = null,
-             int? plantId = null);
-        void UpdateStaff(int staffId, string firstName, string lastName,
+        Task<int> AddStaffAsync(string firstName, string lastName, string phone, string email,
+        int roleId, DateTime? doj,
+        string bankName, string accountNumber, string ifscCode,
+        decimal salary,
+        string profilePhoto = null,
+        int? centerId = null,
+        int? plantId = null);
+        Task<int> AddStaffWithUserAsync(string firstName, string lastName, string phone, string email,
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null,
+     string username = null,
+     string passwordHash = null);
+        Task UpdateStaffAsync(int staffId, string firstName, string lastName,
                         string phone, string email, int roleId, DateTime? doj,
                         string bankName, string accountNumber, string ifscCode,
                         decimal salary, string profilePhoto,
@@ -140,7 +149,7 @@ namespace DairyIndustry.Repositories
 
         //Distributers
         List<Distributor> GetDistributors();
-        int AddDistributor(Distributor distributor);
+        int RegisterDistributor(Distributor distributor, string username, string passwordHash);
         bool UpdateDistributorStatus(int distributorId, string status);
         Distributor? GetDistributorById(int distributorId);
         List<Distributor> GetPendingDistributors();
@@ -161,6 +170,36 @@ namespace DairyIndustry.Repositories
         bool MarkNotificationRead(int notificationId);
         bool MarkAllNotificationsRead();
 
+        //Email
+
+        void SendOtpEmail(string toEmail, string toName, string otp, string purpose);
+        void ChangePassword(int userId, string newPasswordHash);
+
+        //Index
+
+        List<ChartPoint> GetMilkCollectedLast7Days();
+
+        /// <summary>
+        /// Returns (TotalMilkCollected, TodayMilkCollected, TotalFarmers,
+        ///          ActiveFarmers, OpenBatches, ClosedBatches, DispatchedBatches)
+        /// </summary>
+        DashboardCollectionSummary GetCollectionSummary();
+
+        /// <summary>
+        /// Returns aggregated finance totals for farmer / staff / center payments
+        /// and total sales revenue.
+        /// </summary>
+        DashboardFinanceSummary GetFinanceSummary();
+
+        /// <summary>
+        /// Returns top 5 products ranked by total milk used in production.
+        /// </summary>
+        List<ChartPoint> GetTopProductsByMilkUsed(int top = 5);
+
+        /// <summary>
+        /// Returns count of sales orders grouped by status.
+        /// </summary>
+        List<ChartPoint> GetOrdersByStatus();
     }
 
 }
