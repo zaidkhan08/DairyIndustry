@@ -39,6 +39,30 @@ namespace DairyIndustry.Controllers
         // LOGIN — NO [SessionAuthorize] here
         // ════════════════════════════════════════════════════════
 
+        private IActionResult RedirectByRole(User user)
+        {
+            switch (user.RoleName)
+            {
+                case "Admin":
+                    return RedirectToAction("Index", "Admin");
+
+                case "Driver":
+                    var driver = _logisticsRepo.GetDriverByUserId(user.UserId);
+                    if (driver != null)
+                        HttpContext.Session.SetInt32("DriverId", driver.DriverId);
+                    return RedirectToAction("Index", "Logistics");
+
+                case "Plant Manager":
+                    return RedirectToAction("Index", "Production");
+
+                case "Collection Agent":
+                    return RedirectToAction("Index", "Production");
+
+                default:
+                    return RedirectToAction("Login", "Admin");
+            }
+        }
+
         public IActionResult Profile()
         {
             int? userId = HttpContext.Session.GetInt32("UserId");
@@ -56,7 +80,6 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        [HttpPost]
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
@@ -120,51 +143,19 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
 
+            if (user.StaffId.HasValue)
+                HttpContext.Session.SetInt32("StaffId", user.StaffId.Value);
 
-            if (user.RoleName == "Collection Agent")
+            if (user.CenterId.HasValue)
             {
-                var centerId = _adminRepo.GetCenterIdByUser(user.UserId); // you may need to create this
-
-                if (centerId.HasValue)
-                {
-                    HttpContext.Session.SetInt32("CenterId", centerId.Value);
-
-                   var center = _adminRepo.getCollectionById(centerId.Value); // optional but recommended
-                    if (center != null)
-                    {
-                        HttpContext.Session.SetString("CenterName", center.CenterName);
-                    }
-                }
+                HttpContext.Session.SetInt32("CenterId", user.CenterId.Value);
+                HttpContext.Session.SetString("CenterName", user.CenterName ?? "");
             }
 
-
-            switch (user.RoleName)
+            if (user.PlantId.HasValue)
             {
-                case "Admin":
-                    return RedirectToAction("Index", "Admin");
-
-                case "Driver":
-                    var driver = _logisticsRepo.GetDriverByUserId(user.UserId);
-                    if (driver != null)
-                        HttpContext.Session.SetInt32("DriverId", driver.DriverId);
-                    return RedirectToAction("Index", "Logistics");
-
-                case "Plant Manager":
-                    var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
-                    if (plantId.HasValue)
-                    {
-                        HttpContext.Session.SetInt32("PlantId", plantId.Value);
-                        var plant = _adminRepo.getPlantById(plantId.Value);
-                        if (plant != null)
-                            HttpContext.Session.SetString("PlantName", plant.PlantName);   
-                    }
-                    return RedirectToAction("Dashboard", "Production");
-
-                case "Collection Agent":
-                    return RedirectToAction("Index", "Production");
-
-                default:
-                    return RedirectToAction("Login", "Admin");
+                HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
+                HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
             }
         }
 
@@ -1246,33 +1237,13 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [SessionAuthorize("Admin")]
-        [RequestSizeLimit(5 * 1024 * 1024)] // 2MB limit
-        public IActionResult EditStaff(
-    int staffId,
-    string firstName,
-    string lastName,
-    string phone,
-    string email,
-    int roleId,
-    DateTime? doj,
-    string bankName,
-    string accountNumber,
-    string ifscCode,
-    decimal salary,
-    string profilePhoto,
-    IFormFile photoFile,
-    int? centerId,
-    int? plantId)
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        [HttpPost]
+        public async Task<IActionResult> EditStaff(int staffId, string firstName, string lastName,
+    string phone, string email, int roleId, DateTime? doj, string bankName,
+    string accountNumber, string ifscCode, decimal salary, string profilePhoto,
+    IFormFile photoFile, int? centerId, int? plantId)
         {
-            if (centerId.HasValue && plantId.HasValue)
-            {
-                ViewBag.Error = "Please assign staff to either a Collection Center or a Plant — not both.";
-                ViewBag.Roles = _adminRepo.GetAllRoles();
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Centers = _adminRepo.GetAllCenters();
-                return View(_adminRepo.GetStaffById(staffId));
-            }
-
             string finalPhoto = profilePhoto;
 
             if (photoFile != null && photoFile.Length > 0)
