@@ -137,7 +137,6 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
-
         public User GetUserByUsername(string username)
         {
             User user = null;

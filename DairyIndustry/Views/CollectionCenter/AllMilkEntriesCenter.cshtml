@@ -1,0 +1,334 @@
+﻿@using DairyIndustry.Models.Collection
+@model List<DairyIndustry.Models.Collection.AllMilkEntriesModel>
+@{
+    ViewData["Title"] = "All Milk Entries Page";
+    Layout = "_CollectionCenterLayout";
+}
+
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-warning shadow-sm">
+        No entries available.
+    </div>
+}
+else
+{
+    <!-- FILTERS -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <!-- Search -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Search Farmer
+                    </label>
+
+                    <input type="text"
+                           id="searchInput"
+                           class="form-control"
+                           placeholder="Farmer name or code..." />
+                </div>
+
+                <!-- Shift -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        Shift
+                    </label>
+
+                    <select id="shiftFilter" class="form-select">
+                        <option value="all">All Shifts</option>
+                        <option value="Morning">Morning</option>
+                        <option value="Evening">Evening</option>
+                    </select>
+                </div>
+
+                <!-- Date -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        Date
+                    </label>
+
+                    <input type="date"
+                           id="dateFilter"
+                           class="form-control" />
+                </div>
+
+                <!-- Reset -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-secondary w-100"
+                            id="resetFilters">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- STATUS FILTERS -->
+            <div class="d-flex gap-2 mt-4">
+
+                <button class="btn btn-dark filter-btn active"
+                        data-status="all">
+                    All
+                </button>
+
+                <button class="btn btn-success filter-btn"
+                        data-status="Accepted">
+                    Accepted
+                </button>
+
+                <button class="btn btn-danger filter-btn"
+                        data-status="Rejected">
+                    Rejected
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0">
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Farmer</th>
+                        <th>Code</th>
+                        <th>Date</th>
+                        <th>Shift</th>
+                        <th>Qty</th>
+                        <th>Fat</th>
+                        <th>CLR</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                        <th>Remarks</th>
+                        <th>Receipt</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var item in Model)
+                    {
+                        var shiftClass = item.Shift == "Morning"? "bg-warning text-dark": "bg-info";
+
+                        var statusClass = item.Status == "Accepted"? "bg-success": "bg-danger";
+
+                        <tr data-status="@item.Status"
+                            data-shift="@item.Shift"
+                            data-date="@item.CollectionDate.ToString("yyyy-MM-dd")">
+
+                            <td class="fw-semibold farmer-name">
+                                @item.FarmerName
+                            </td>
+
+                            <td class="farmer-code">
+                                @item.FarmerCode
+                            </td>
+
+                            <td>
+                                @item.CollectionDate.ToString("dd-MM-yyyy")
+                            </td>
+
+                            <td>
+                                <span class="badge @shiftClass">
+                                    @item.Shift
+                                </span>
+                            </td>
+
+                            <td>@item.Quantity</td>
+
+                            <td>@item.AppliedFat</td>
+
+                            <td>@item.AppliedCLR</td>
+
+                            <td>
+                                @(item.Status == "Accepted"? $"₹ {item.RatePerLiter}": "-")
+                            </td>
+
+                            <td class="fw-semibold">
+
+                                @(item.Status == "Accepted"? $"₹ {item.Amount}": "-")
+
+                            </td>
+
+                            <td>
+                                <span class="badge @statusClass">
+                                    @item.Status
+                                </span>
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrEmpty(item.RejectionReason)? "-": item.RejectionReason)
+                            </td>
+                            <td>
+                                @(string.IsNullOrEmpty(item.Remarks)? "-": item.Remarks)
+                            </td>
+
+                            <td>
+
+                                @if (item.Status == "Accepted")
+                                {
+                                    <a asp-action="MilkReceipt"
+                                       asp-route-id="@item.CollectionId"
+                                       class="btn btn-sm btn-outline-primary">
+
+                                        <i class="bi bi-receipt"></i> View
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+
+                            </td>
+
+                            <td>
+
+                                @if (item.Status == "Accepted")
+                                {
+                                    <a asp-action="DownloadReceipt"
+                                       asp-route-id="@item.CollectionId"
+                                       class="btn btn-sm btn-outline-success">
+
+                                        <i class="bi bi-download"></i> PDF
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+
+
+    </div>
+}
+<script>
+
+    const rows = document.querySelectorAll("tbody tr");
+
+    const buttons = document.querySelectorAll(".filter-btn");
+
+    const searchInput = document.getElementById("searchInput");
+    const shiftFilter = document.getElementById("shiftFilter");
+    const dateFilter = document.getElementById("dateFilter");
+    const resetBtn = document.getElementById("resetFilters");
+
+    let currentStatus = "all";
+
+    function applyFilters() {
+
+        const search = searchInput.value.toLowerCase();
+        const shift = shiftFilter.value;
+        const date = dateFilter.value;
+
+        rows.forEach(row => {
+
+            const farmerName = row.querySelector(".farmer-name")
+                .innerText.toLowerCase();
+
+            const farmerCode = row.querySelector(".farmer-code")
+                .innerText.toLowerCase();
+
+            const rowStatus = row.dataset.status;
+            const rowShift = row.dataset.shift;
+            const rowDate = row.dataset.date;
+
+            let visible = true;
+
+            // STATUS FILTER
+            if (
+                currentStatus !== "all" &&
+                rowStatus !== currentStatus
+            ) {
+                visible = false;
+            }
+
+            // SEARCH FILTER
+            if (
+                !farmerName.includes(search) &&
+                !farmerCode.includes(search)
+            ) {
+                visible = false;
+            }
+
+            // SHIFT FILTER
+            if (
+                shift !== "all" &&
+                rowShift !== shift
+            ) {
+                visible = false;
+            }
+
+            // DATE FILTER
+            if (
+                date &&
+                rowDate !== date
+            ) {
+                visible = false;
+            }
+
+            row.style.display = visible ? "" : "none";
+
+        });
+    }
+
+    // STATUS BUTTONS
+    buttons.forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            buttons.forEach(btn =>
+                btn.classList.remove("active"));
+
+            this.classList.add("active");
+
+            currentStatus = this.dataset.status;
+
+            applyFilters();
+        });
+
+    });
+
+    // OTHER FILTERS
+    searchInput.addEventListener("keyup", applyFilters);
+
+    shiftFilter.addEventListener("change", applyFilters);
+
+    dateFilter.addEventListener("change", applyFilters);
+
+    // RESET
+    resetBtn.addEventListener("click", function () {
+
+        searchInput.value = "";
+        shiftFilter.value = "all";
+        dateFilter.value = "";
+
+        currentStatus = "all";
+
+        buttons.forEach(btn =>
+            btn.classList.remove("active"));
+
+        document.querySelector('[data-status="all"]')
+            .classList.add("active");
+
+        applyFilters();
+    });
+
+</script>

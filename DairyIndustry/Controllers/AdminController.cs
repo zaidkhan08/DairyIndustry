@@ -3,6 +3,7 @@ using DairyIndustry.Interfaces;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Finance;
 using DairyIndustry.Repositories;
+using Microsoft.AspNetCore.Http;
 using DinkToPdf;
 using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -17,16 +18,18 @@ namespace DairyIndustry.Controllers
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly ICollectionCenterRepository _centerRepository;
         private readonly IReportRepository _reportRepo;
         private readonly IFinanceRepository _financeRepo;
         private readonly IWebHostEnvironment _env;
         private readonly EmailSettings _settings;
         private readonly IAuthRepository _authRepo;
         private readonly IConverter _pdfConverter;
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo, IAuthRepository authRepo, IOptions<EmailSettings> settings, IConverter pdfConverter)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo, IAuthRepository authRepo, IOptions<EmailSettings> settings, IConverter pdfConverter, ICollectionCenterRepository _centerRepository)
         {
-            _adminRepo = adminRepo;
-            _logisticsRepo = logisticsRepo;
+            _adminRepo = adminRepo; 
+            _logisticsRepo=logisticsRepo;
+            _centerRepository = centerRepository;
             _reportRepo = reportRepo;
             _financeRepo = financeRepo;
             _env = env;
@@ -84,7 +87,8 @@ namespace DairyIndustry.Controllers
         public IActionResult Login(string username, string password)
         {
             // 1. Get user
-            var user = _adminRepo.GetUserByUsername(username);
+            var user = _adminRepo.GetUserByUsername(username);            
+
             if (user == null)
             {
                 ViewBag.Error = "Invalid username or password.";
@@ -142,6 +146,7 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("RoleName", user.RoleName);
+            HttpContext.Session.SetInt32("StaffId", user.StaffId??0);
 
             if (user.StaffId.HasValue)
                 HttpContext.Session.SetInt32("StaffId", user.StaffId.Value);
@@ -159,34 +164,43 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        private string MaskEmail(string email)
-        {
-            if (string.IsNullOrEmpty(email)) return "";
-            var parts = email.Split('@');
-            if (parts.Length != 2) return email;
-            var name = parts[0];
-            var domain = parts[1];
-            var masked = name.Length <= 2
-                ? new string('*', name.Length)
-                : name[..2] + new string('*', name.Length - 2);
-            return $"{masked}@{domain}";
-        }
-        [HttpGet]
-        public IActionResult ResendOtp()
-        {
-            if (TempData["OtpUserId"] == null)
-                return RedirectToAction("Login");
+                case "Collection Agent":
+                    var centerId = _centerRepository.GetCenterIdByStaffId(user.StaffId ?? 0);
+                    HttpContext.Session.SetInt32("CenterId", centerId);
+                    return RedirectToAction("Dashboard", "CollectionCenter");
 
-            int userId = Convert.ToInt32(TempData["OtpUserId"]);
-            string username = TempData["OtpUsername"]?.ToString();
-            string fullName = TempData["OtpFullName"]?.ToString();
-            string email = TempData["OtpEmail"]?.ToString();
+                //case "Production Manager":
+                //    // GetPlantIdByStaffId → returns int directly 
+                //    var plantInfo = _plantRepository.GetPlantByStaffId(user.StaffId ?? 0);
 
-            // Get real email from DB since TempData has masked version
-            var user = _adminRepo.GetUserByUsername(username);
+                //    if (plantInfo.PlantId == 0)
+                //    {
+                //        ViewBag.Error = "You are not assigned to any plant.";
+                //        return View();
+                //    }
+                //Added By Zaid
+                case "Plant Manager":
 
-            var otp = _authRepo.GenerateOtp(userId, "Login");
-            _adminRepo.SendOtpEmail(user.Email, fullName, otp, "Login");
+                    var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
+                    if (plantId.HasValue)
+                    {
+                        HttpContext.Session.SetInt32("PlantId", plantId.Value);
+                        var plant = _adminRepo.getPlantById(plantId.Value);
+                        if (plant != null)
+                            HttpContext.Session.SetString("PlantName", plant.PlantName);
+                    }
+                    return RedirectToAction("Index", "Production");
+
+                //case "Collection Agent":
+                //    return RedirectToAction("Index", "Production");
+
+                //    HttpContext.Session.SetInt32("PlantId", plantInfo.PlantId);
+                //    HttpContext.Session.SetString("PlantName", plantInfo.PlantName ?? "");
+                //    HttpContext.Session.SetString("Name", plantInfo.StaffName ?? "");
+                //    return RedirectToAction("Index", "Plant");
+
+                //case "Finance Manager":
+                //    return RedirectToAction("Index", "Finance");
 
             // Keep TempData alive
             TempData["OtpUserId"] = userId;
@@ -472,7 +486,7 @@ namespace DairyIndustry.Controllers
         // DASHBOARD
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult Index()
         {
             // ── Core entity lists ──────────────────────────────────────────
@@ -591,8 +605,8 @@ namespace DairyIndustry.Controllers
         // ROLES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
-        public IActionResult Roles(int page = 1, int pageSize = 5)
+        //[SessionAuthorize("Admin")]
+        public IActionResult Roles()
         {
             var allRoles = _adminRepo.GetAllRoles();
 
@@ -609,7 +623,7 @@ namespace DairyIndustry.Controllers
             return View(roles);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult CreateRole(string roleName)
         {
@@ -621,8 +635,8 @@ namespace DairyIndustry.Controllers
         // USERS
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
-        public IActionResult Users(int page = 1, int pageSize = 10)
+        //[SessionAuthorize("Admin")]
+        public IActionResult Users()
         {
             var allUsers = _adminRepo.GetAllUsers();
 
@@ -717,7 +731,7 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult RegisterUser(string username, string password, int staffId)
         {
@@ -737,7 +751,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult UpdateUserStatus(int userId, bool isActive)
         {
@@ -745,59 +759,65 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Users");
         }
 
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult AssignUserToPlant()
-        {
-            ViewBag.Users = _adminRepo.GetAllUsers();
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
-            return View();
-        }
+        // ════════════════════════════════════════════════════════
+        // AUDIT LOGS
+        // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
-        [HttpPost]
-        public IActionResult AssignUserToPlant(int userId, int plantId)
-        {
-            if (userId == 0 || plantId == 0)
-            {
-                ViewBag.Error = "Please select both user and plant.";
-                ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
-                return View();
-            }
-            _adminRepo.AssignUserToPlant(userId, plantId);
-            TempData["Success"] = "User assigned to plant successfully.";
-            return RedirectToAction("AssignUserToPlant");
-        }
+        ////[SessionAuthorize("Admin")]
+        //public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
+        //[SessionAuthorize("Admin")]
+        //[HttpGet]
+        //public IActionResult AssignUserToPlant()
+        //{
+        //    ViewBag.Users = _adminRepo.GetAllUsers();
+        //    ViewBag.Plants = _adminRepo.GetAllPlants();
+        //    ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
+        //    return View();
+        //}
 
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult AssignUserToCenter()
-        {
-            ViewBag.Users = _adminRepo.GetAllUsers();
-            ViewBag.Centers = _adminRepo.GetAllCenters();
-            ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
-            return View();
-        }
+        //[SessionAuthorize("Admin")]
+        //[HttpPost]
+        //public IActionResult AssignUserToPlant(int userId, int plantId)
+        //{
+        //    if (userId == 0 || plantId == 0)
+        //    {
+        //        ViewBag.Error = "Please select both user and plant.";
+        //        ViewBag.Users = _adminRepo.GetAllUsers();
+        //        ViewBag.Plants = _adminRepo.GetAllPlants();
+        //        ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
+        //        return View();
+        //    }
+        //    _adminRepo.AssignUserToPlant(userId, plantId);
+        //    TempData["Success"] = "User assigned to plant successfully.";
+        //    return RedirectToAction("AssignUserToPlant");
+        //}
 
-        [SessionAuthorize("Admin")]
-        [HttpPost]
-        public IActionResult AssignUserToCenter(int userId, int centerId)
-        {
-            if (userId == 0 || centerId == 0)
-            {
-                ViewBag.Error = "Please select both user and center.";
-                ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.Centers = _adminRepo.GetAllCenters();
-                ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
-                return View();
-            }
-            _adminRepo.AssignUserToCenter(userId, centerId);
-            TempData["Success"] = "User assigned to center successfully.";
-            return RedirectToAction("AssignUserToCenter");
-        }
+        //[SessionAuthorize("Admin")]
+        //[HttpGet]
+        //public IActionResult AssignUserToCenter()
+        //{
+        //    ViewBag.Users = _adminRepo.GetAllUsers();
+        //    ViewBag.Centers = _adminRepo.GetAllCenters();
+        //    ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
+        //    return View();
+        //}
+
+        ////[SessionAuthorize("Admin")]
+        //[HttpPost]
+        //public IActionResult AssignUserToCenter(int userId, int centerId)
+        //{
+        //    if (userId == 0 || centerId == 0)
+        //    {
+        //        ViewBag.Error = "Please select both user and center.";
+        //        ViewBag.Users = _adminRepo.GetAllUsers();
+        //        ViewBag.Centers = _adminRepo.GetAllCenters();
+        //        ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
+        //        return View();
+        //    }
+        //    _adminRepo.AssignUserToCenter(userId, centerId);
+        //    TempData["Success"] = "User assigned to center successfully.";
+        //    return RedirectToAction("AssignUserToCenter");
+        //}
 
         // ════════════════════════════════════════════════════════
         // AUDIT LOGS
@@ -847,6 +867,12 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Location");
         }
 
+        // ════════════════════════════════════════════════════════
+        // LOCATION — VILLAGE
+        // ════════════════════════════════════════════════════════
+
+        //[SessionAuthorize("Admin")]
+        //public IActionResult Villages()
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddCity(string cityName, int stateId)
@@ -857,7 +883,7 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Location");
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddVillage(string villageName, int cityId)
         {
@@ -874,7 +900,7 @@ namespace DairyIndustry.Controllers
             return Json(cities);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         public IActionResult GetVillagesByCity(int cityId)
         {
             var villages = _adminRepo.GetVillagesByCity(cityId);
@@ -885,14 +911,14 @@ namespace DairyIndustry.Controllers
         // MILK TYPES
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         public IActionResult MilkTypes()
         {
             var milkTypes = _adminRepo.GetAllMilkTypes();
             return View(milkTypes);
         }
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddMilkType(string milkTypeName)
         {
@@ -904,7 +930,7 @@ namespace DairyIndustry.Controllers
         // RATE CHART
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         public IActionResult RateChart()
         {
             var rateCharts = _adminRepo.GetAllRateCharts();
@@ -912,7 +938,7 @@ namespace DairyIndustry.Controllers
             return View(rateCharts);
         }
 
-        [SessionAuthorize("Admin")]
+      //  [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddRateChart(int milkTypeId, decimal fatFrom, decimal fatTo,
                                           decimal clrFrom, decimal clrTo,
@@ -926,8 +952,8 @@ namespace DairyIndustry.Controllers
         // STAFF
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
-        public IActionResult Staff(int page = 1, int pageSize = 10)
+        //[SessionAuthorize("Admin")]
+        public IActionResult Staff()
         {
             var staffList = _adminRepo.GetAllStaff();
             var totalStaff = staffList.Count();
@@ -937,13 +963,8 @@ namespace DairyIndustry.Controllers
                 .Take(pageSize)
                 .ToList();
 
-            ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalStaff / pageSize);
-            ViewBag.PageSize = pageSize;
-            ViewBag.TotalStaff = totalStaff;
-
-            return View(staff);
-        }
+        //[SessionAuthorize("Admin")]
+        // Update GET action to pass plants and centers to view
         [SessionAuthorize("Admin")]
         private string BuildStaffHtml(List<StaffModel> staff)
         {
@@ -1070,14 +1091,7 @@ namespace DairyIndustry.Controllers
             );
         }
 
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult AddStaff()
-        {
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Centers = _adminRepo.GetAllCenters();
-            return View(_adminRepo.GetAllRoles());
-        }
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         [SessionAuthorize("Admin")]
         [RequestSizeLimit(5 * 1024 * 1024)]
@@ -1213,7 +1227,7 @@ namespace DairyIndustry.Controllers
             return View(staff);
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult ToggleStaffActive(int staffId, int isActive)
         {
@@ -1271,7 +1285,7 @@ namespace DairyIndustry.Controllers
         // PLANT
         // ════════════════════════════════════════════════════════
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpGet]
         public ActionResult AddPlant()
         {

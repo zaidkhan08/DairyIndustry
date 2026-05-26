@@ -1,0 +1,259 @@
+@using DairyIndustry.Models.FarmerModel
+@model List<FarmerViewModel>
+
+@{
+    ViewData["Title"] = "Farmers Management";
+    Layout = "_CollectionCenterLayout";
+    int rowNumber = 1;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="row align-items-center mb-3">
+        <div class="col-auto">
+            <a asp-controller="Farmer" asp-action="FarmerRegistrationByCenter"
+               class="btn btn-primary px-4 shadow-sm">
+                <i class="bi bi-person-plus-fill me-2"></i> Register New Farmer
+            </a>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+
+                <!-- SEARCH -->
+                <div class="col-md-3">
+                    <input type="text" id="farmerSearch" class="form-control"
+                           placeholder="Search farmer / phone / code..." />
+                </div>
+
+                <!-- LOCATION -->
+                <div class="col-md-3">
+                    <input type="text" id="locationFilter" class="form-control"
+                           placeholder="Filter by village / city..." />
+                </div>
+
+                <!-- BANK -->
+                <div class="col-md-2">
+                    <select id="bankFilter" class="form-select">
+                        <option value="">Bank Status</option>
+                        <option value="added">Added</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+
+                <!-- ACTIVE -->
+                <div class="col-md-2">
+                    <select id="activeFilter" class="form-select">
+                        <option value="">Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <!-- RESET -->
+                <div class="col-md-2">
+                    <button class="btn btn-outline-danger w-100" onclick="resetFilters()">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="bg-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Farmer Profile</th>
+                        <th>Phone</th>
+                        <th>Location</th>
+                        <th class="text-center">Bank</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Action</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var item in Model)
+                    {
+                        <tr class="data-row"
+                            data-bank="@(string.IsNullOrEmpty(item.BankName) ? "pending" : "added")"
+                            data-active="@(item.IsActive ? "active" : "inactive")"
+                            data-location="@($"{item.VillageName} {item.CityName}")">
+
+                            <td class="fw-semibold text-muted">@rowNumber</td>
+
+                            <!-- FARMER -->
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(string.IsNullOrEmpty(item.ProfilePhoto) ? "/images/user.png" : item.ProfilePhoto)"
+                                         width="45" height="45"
+                                         class="rounded-circle border me-3" />
+
+                                    <div>
+                                        <div class="fw-bold">@item.FarmerName</div>
+                                        <div class="text-primary small">ID: @item.FarmerCode</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- PHONE -->
+                            <td>@item.Phone</td>
+
+                            <!-- LOCATION -->
+                            <td>
+                                <div class="fw-semibold">@item.VillageName</div>
+                                <div class="text-muted small">@item.CityName</div>
+                            </td>
+
+                            <!-- BANK -->
+                            <td class="text-center">
+                                @if (!string.IsNullOrEmpty(item.BankName))
+                                {
+                                    <span class="badge bg-success-subtle text-success px-3 py-2">
+                                        Added
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-dark px-3 py-2">
+                                        Pending
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- STATUS -->
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success px-3 py-2">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger px-3 py-2">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- ACTION -->
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <a asp-action="ToggleStatus"
+                                       asp-route-id="@item.FarmerId"
+                                       asp-route-isActive="false"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Deactivate
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-action="ToggleStatus"
+                                       asp-route-id="@item.FarmerId"
+                                       asp-route-isActive="true"
+                                       class="btn btn-sm btn-outline-success">
+                                        Activate
+                                    </a>
+                                }
+                            </td>
+
+                            <!-- ACTIONS -->
+                            <td class="text-end">
+                                <a asp-action="CenterFarmerDetails"
+                                   asp-route-id="@item.FarmerId"
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.FarmerId"
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+
+                        </tr>
+
+                        rowNumber++;
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER SCRIPT -->
+<script>
+    const searchBox = document.getElementById("farmerSearch");
+    const locationFilter = document.getElementById("locationFilter");
+    const bankFilter = document.getElementById("bankFilter");
+    const activeFilter = document.getElementById("activeFilter");
+
+    const rows = document.querySelectorAll(".data-row");
+
+    function filterTable() {
+
+        const search = searchBox.value.toLowerCase();
+        const location = locationFilter.value.toLowerCase();
+        const bank = bankFilter.value;
+        const active = activeFilter.value;
+
+        rows.forEach(row => {
+
+            const text = row.innerText.toLowerCase();
+            const loc = row.getAttribute("data-location").toLowerCase();
+            const bankStatus = row.getAttribute("data-bank");
+            const activeStatus = row.getAttribute("data-active");
+
+            const matchSearch = text.includes(search);
+            const matchLocation = loc.includes(location);
+            const matchBank = bank === "" || bank === bankStatus;
+            const matchActive = active === "" || active === activeStatus;
+
+            row.style.display =
+                (matchSearch && matchLocation && matchBank && matchActive)
+                ? ""
+                : "none";
+        });
+    }
+
+    searchBox.addEventListener("keyup", filterTable);
+    locationFilter.addEventListener("keyup", filterTable);
+    bankFilter.addEventListener("change", filterTable);
+    activeFilter.addEventListener("change", filterTable);
+
+    function resetFilters() {
+        searchBox.value = "";
+        locationFilter.value = "";
+        bankFilter.value = "";
+        activeFilter.value = "";
+        filterTable();
+    }
+</script>

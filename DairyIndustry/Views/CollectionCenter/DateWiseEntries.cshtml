@@ -1,0 +1,146 @@
+﻿@using DairyIndustry.Models.Collection
+@model List<AllMilkEntriesModel>
+
+@{
+    ViewData["Title"] = "All Entries";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid mt-4" style="max-width:1200px;">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">All Milk Entries</h3>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-warning shadow-sm">
+            No entries available.
+        </div>
+    }
+    else
+    {
+        <form method="get" class="row g-2 mb-4">
+
+                <!-- Search -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text"
+                           name="search"
+                           value="@Context.Request.Query["search"]"
+                           class="form-control"
+                           placeholder="Farmer name or code..." />
+                </div>
+
+                <!-- Shift -->
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Shift</label>
+                    <select name="shift" class="form-select">
+                        <option value="">All Shifts</option>
+                        <option value="Morning"
+                                selected="@(Context.Request.Query["shift"] == "Morning")">
+                            Morning
+                        </option>
+                        <option value="Evening"
+                                selected="@(Context.Request.Query["shift"] == "Evening")">
+                            Evening
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Date -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Collection Date</label>
+                    <input type="date"
+                           name="date"
+                           value="@Context.Request.Query["date"]"
+                           class="form-control" />
+                </div>
+
+                <!-- Buttons -->
+                <div class="col-md-3">
+                    <label class="form-label d-block">&nbsp;</label> <!-- for alignment -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-50">
+                            <i class="bi bi-search"></i> Filter
+                        </button>
+
+                        <a asp-action="DateWiseEntries" class="btn btn-secondary w-50">
+                            Reset
+                        </a>
+                    </div>
+                </div>
+
+            </form>
+        <!-- TABLE -->
+        <div class="card shadow-sm border-0">
+            
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Farmer</th>
+                            <th>Code</th>
+                            <th>Collection Date</th>
+                            <th>Shift</th>
+                            <th>Qty</th>
+                            <th>Fat</th>
+                            <th>CLR</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var shiftClass = item.Shift == "Morning"
+                            ? "bg-warning text-dark"
+                            : "bg-info";
+
+                            <tr>
+                                <td class="fw-semibold">@item.FarmerName</td>
+                                <td>@item.FarmerCode</td>
+                                <td>@item.CollectionDate.ToString("dd-MM-yyyy")</td>
+
+                                <td>
+                                    <span class="badge @shiftClass">@item.Shift</span>
+                                </td>
+
+                                <td>@item.Quantity</td>
+                                <td>@item.AppliedFat</td>
+                                <td>@item.AppliedCLR</td>
+                                <td>₹ @item.RatePerLiter</td>
+                                <td class="fw-semibold text-success">₹ @item.Amount</td>
+
+                                <td>
+                                    <a asp-action="EntryDetail"
+                                       asp-route-id="@item.CollectionId"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="3">Total</td>
+                            <td>@Model.Sum(x => x.Quantity)</td>
+                            <td colspan="3"></td>
+                            <td class="text-success">₹ @Model.Sum(x => x.Amount)</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,514 @@
+@model List<DairyIndustry.Models.FarmerModel.PendingApprovalModel>
+
+@{
+    ViewData["Title"] = "Pending Farmer Approvals";
+    Layout = "_CollectionCenterLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
+<style>
+    :root {
+        --amber: #f59e0b;
+        --green: #16a34a;
+        --red: #dc2626;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --bg: #f9fafb;
+    }
+
+    /* ── Page Layout Adjustments ───────────────────────────── */
+    .page-header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pending-badge {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fcd34d;
+        font-size: .75rem;
+        padding: .25rem .65rem;
+        border-radius: 99px;
+        font-weight: 600;
+    }
+
+    /* ── Farmer Card Structure (Spans Full Dashboard Width) ── */
+    .farmer-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+        margin-bottom: 1.25rem;
+        overflow: hidden;
+        width: 100%;
+        transition: box-shadow .15s ease-in-out, border-color .15s ease-in-out;
+    }
+
+        .farmer-card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border-color: #d1d5db;
+        }
+
+    /* ── CHANGED: Crisp White Card Header Configuration ── */
+    .farmer-card-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.25rem 1.5rem;
+        cursor: pointer;
+        user-select: none;
+        background: #ffffff; /* Changed to white */
+        color: #1e293b; /* Dark text for contrast */
+        transition: background .15s;
+    }
+
+        .farmer-card-header:hover {
+            background: #f8fafc; /* Subtle light gray hover state */
+        }
+
+    /* Darkened profile boundary line for clear definition against the white background */
+    .farmer-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #e2e8f0;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .farmer-avatar-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #94a3b8;
+        flex-shrink: 0;
+        border: 2px dashed #cbd5e1;
+    }
+
+    .farmer-card-header .name {
+        font-weight: 700;
+        font-size: 1.15rem;
+        margin: 0;
+        color: #1e293b;
+        letter-spacing: -0.01em;
+    }
+
+    .farmer-card-header .sub {
+        color: #64748b;
+        font-size: .85rem;
+        margin: 0;
+        margin-top: 2px;
+    }
+
+    .toggle-icon {
+        margin-left: auto;
+        color: #64748b;
+        transition: transform .2s, color .2s;
+    }
+
+    .farmer-card-header:hover .toggle-icon {
+        color: #1e293b;
+    }
+
+    .farmer-card.open .toggle-icon {
+        transform: rotate(180deg);
+        color: #1e293b;
+    }
+
+    /* Gray Chip variant for dynamic tracking on white backgrounds */
+    .days-chip {
+        font-size: .75rem;
+        padding: .25rem .75rem;
+        border-radius: 99px;
+        background: #f1f5f9;
+        color: #475569;
+        white-space: nowrap;
+        font-weight: 500;
+        border: 1px solid #e2e8f0;
+    }
+
+        .days-chip.urgent {
+            background: #ef4444;
+            color: #ffffff;
+            border-color: #ef4444;
+            font-weight: 600;
+        }
+
+    /* ── Detail body with CSS transitions ─────────────────────────── */
+    .farmer-card-body {
+        display: block;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), padding 0.3s ease;
+        padding: 0 1.5rem;
+        background: var(--bg);
+    }
+
+    .farmer-card.open .farmer-card-body {
+        max-height: 2000px;
+        transition: max-height 0.4s ease-in-out;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Content Layout Grids adapted for wide monitors */
+    .detail-grid-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    @@media (max-width: 992px) {
+        .detail-grid-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .detail-section {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        height: 100%;
+    }
+
+    .detail-section-title {
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #4b5563;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        border-bottom: 1px solid #f3f4f6;
+        padding-bottom: 0.5rem;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .field-item label {
+        display: block;
+        font-size: .7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+        letter-spacing: 0.02em;
+    }
+
+    .field-item span {
+        font-size: .92rem;
+        color: #111827;
+        font-weight: 500;
+        word-break: break-word;
+    }
+
+    .missing {
+        color: #9ca3af;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    /* Custom badges to maintain rich color accents over a pure white bar */
+    .verify-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .75rem;
+        font-weight: 600;
+        padding: .25rem .65rem;
+        border-radius: 99px;
+    }
+
+        .verify-pill.ok {
+            background: #dcfce7;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .verify-pill.miss {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+    .doc-preview {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        text-decoration: none;
+        color: #1f2937;
+        background: #fff;
+        font-size: .88rem;
+        font-weight: 500;
+        transition: all .15s ease;
+    }
+
+        .doc-preview:hover {
+            background: #f8fafc;
+            color: #4f46e5;
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .doc-preview i {
+            font-size: 1.25rem;
+            color: #4f46e5;
+        }
+
+    .doc-missing {
+        padding: .75rem 1rem;
+        border: 1px dashed #d1d5db;
+        border-radius: 8px;
+        color: #9ca3af;
+        background: #f9fafb;
+        font-size: .85rem;
+    }
+
+    .action-bar {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        flex-wrap: wrap;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        margin-top: 1.25rem;
+    }
+
+    .btn-approve {
+        background: var(--green);
+        color: #fff;
+        border: none;
+        padding: .6rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        cursor: pointer;
+        font-size: .9rem;
+        transition: background .15s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+        .btn-approve:hover {
+            background: #15803d;
+        }
+
+    .btn-reject {
+        background: #fff;
+        color: var(--red);
+        border: 1.5px solid var(--red);
+        padding: .55rem 1.3rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        text-decoration: none;
+        font-size: .9rem;
+        transition: all .15s;
+    }
+
+        .btn-reject:hover {
+            background: #fee2e2;
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        background: #fff;
+    }
+</style>
+
+<div class="container-fluid px-4 mt-4">
+
+    <div class="page-header d-flex align-items-center justify-content-between">
+        <div>
+            <h4 class="mb-1 fw-bold text-dark">
+                Pending Farmer Approvals
+                @if (Model != null && Model.Count > 0)
+                {
+                    <span class="pending-badge ms-2">@Model.Count pending</span>
+                }
+            </h4>
+            <p class="text-muted small mb-0">
+                Review each self-registered farmer's details and documents, then approve or reject.
+            </p>
+        </div>
+        <a asp-controller="CollectionCenter" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm px-3 fw-medium">
+            <i class="bi bi-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="empty-state shadow-sm">
+            <i class="bi bi-person-check d-block mb-3 text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-semibold text-dark">All Caught Up!</h5>
+            <p class="text-muted small mb-0">All self-registered farmers have been reviewed.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var f in Model)
+        {
+            <div class="farmer-card shadow-sm" id="card-@f.FarmerId">
+
+                <div class="farmer-card-header" onclick="toggleCard(@f.FarmerId)">
+                    @if (!string.IsNullOrEmpty(f.ProfilePhoto))
+                    {
+                        <img src="@f.ProfilePhoto" class="farmer-avatar" alt="Photo" />
+                    }
+                    else
+                    {
+                        <div class="farmer-avatar-placeholder"><i class="bi bi-person"></i></div>
+                    }
+
+                    <div class="flex-grow-1">
+                        <p class="name">@f.FarmerName</p>
+                        <p class="sub">
+                            <i class="bi bi-telephone me-1 opacity-75"></i>@f.Phone
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-geo-alt me-1 opacity-75"></i>@f.VillageName, @f.CityName
+                        </p>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center flex-wrap me-2">
+                        <span class="verify-pill @(f.HasAadhaarDoc ? "ok" : "miss")"><i class="bi bi-card-text"></i> Aadhaar</span>
+                        <span class="verify-pill @(f.HasBankDetails ? "ok" : "miss")"><i class="bi bi-bank"></i> Bank</span>
+                        <span class="days-chip @(f.DaysPending > 3 ? "urgent" : "")">
+                            @(f.DaysPending == 0 ? "Today" : f.DaysPending + "d ago")
+                        </span>
+                    </div>
+                    <i class="bi bi-chevron-down toggle-icon fs-5"></i>
+                </div>
+
+                <div class="farmer-card-body">
+
+                    <div class="detail-grid-container">
+
+                        <div class="d-flex flex-column gap-3">
+                            <div class="detail-section">
+                                <div class="detail-section-title">
+                                    <i class="bi bi-person-lines-fill text-primary"></i> Personal Details
+                                </div>
+                                <div class="field-grid">
+                                    <div class="field-item"><label>Full Name</label><span>@f.FarmerName</span></div>
+                                    <div class="field-item"><label>Phone</label><span>@f.Phone</span></div>
+                                    <div class="field-item"><label>Email Address</label><span>@(!string.IsNullOrEmpty(f.Email) ? f.Email : "Not provided")</span></div>
+                                    <div class="field-item"><label>Gender</label><span>@(!string.IsNullOrEmpty(f.Gender) ? f.Gender : "Not provided")</span></div>
+                                    <div class="field-item">
+                                        <label>Date of Birth</label>
+                                        <span>@(f.DateOfBirth.HasValue? f.DateOfBirth.Value.ToString("dd MMM yyyy") : "Not provided")</span>
+                                    </div>
+                                    <div class="field-item"><label>Applied On</label><span>@(f.CreatedDate.HasValue? f.CreatedDate.Value.ToString("dd MMM yyyy, hh:mm tt") : "—")</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <div class="detail-section-title"><i class="bi bi-shield-check text-warning"></i> Aadhaar Verification</div>
+                                <div class="field-grid mb-3">
+                                    <div class="field-item"><label>Aadhaar Number</label><span class="font-monospace fw-bold">@f.AadhaarMasked</span></div>
+                                </div>
+                                @if (f.HasAadhaarDoc)
+                                {
+                                    <a href="@f.AadhaarCardPath" target="_blank" class="doc-preview">
+                                        <i class="bi bi-file-earmark-image"></i><span>View Aadhaar Card Document</span><i class="bi bi-box-arrow-up-right ms-auto text-muted small"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <div class="doc-missing"><i class="bi bi-file-earmark-x me-2 text-danger"></i>Missing registration upload.</div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column gap-3">
+                            <div class="detail-section">
+                                <div class="detail-section-title"><i class="bi bi-geo-alt text-success"></i> Regional Location</div>
+                                <div class="field-grid" style="grid-template-columns: 1fr 1fr;">
+                                    <div class="field-item"><label>Village</label><span>@f.VillageName</span></div>
+                                    <div class="field-item"><label>City</label><span>@f.CityName</span></div>
+                                    <div class="field-item"><label>State</label><span>@f.StateName</span></div>
+                                    <div class="field-item"><label>Center</label><span>@f.CenterName</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <div class="detail-section-title"><i class="bi bi-bank text-info"></i> Bank Account Settlement</div>
+                                @if (f.HasBankDetails)
+                                {
+                                    <div class="field-grid mb-2" style="grid-template-columns: 1fr;">
+                                        <div class="field-item"><label>Bank</label><span class="fw-bold">@f.BankName</span></div>
+                                        <div class="field-item"><label>Account / IFSC</label><span class="font-monospace">@f.AccountNumber (@f.IFSCCode)</span></div>
+                                    </div>
+                                    @if (f.HasPassbookDoc)
+                                    {
+                                        <a href="@f.PassbookPath" target="_blank" class="doc-preview py-2">
+                                            <i class="bi bi-file-earmark-image"></i><span>Passbook Copy</span><i class="bi bi-box-arrow-up-right ms-auto text-muted small"></i>
+                                        </a>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-muted small mb-0"><i class="bi bi-info-circle"></i> Configure post-approval phase.</p>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="action-bar">
+                        <form method="post" asp-controller="CollectionCenter" asp-action="ApproveFarmer" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="farmerId" value="@f.FarmerId" />
+                            <button type="submit" class="btn-approve" onclick="return confirm('Confirm profile validation approval?')">
+                                <i class="bi bi-check-circle-fill"></i> Approve Registration
+                            </button>
+                        </form>
+                        <a asp-controller="CollectionCenter" asp-action="RejectFarmer" asp-route-farmerId="@f.FarmerId" class="btn-reject">
+                            <i class="bi bi-x-circle"></i> Reject Application
+                        </a>
+                        <span class="text-muted small ms-auto font-monospace bg-light px-2 py-1 rounded border">SYS-ID: #@f.FarmerId</span>
+                    </div>
+
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCard(id) {
+            document.getElementById('card-' + id).classList.toggle('open');
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            const first = document.querySelector('.farmer-card');
+            if (first) first.classList.add('open');
+        });
+    </script>
+}
