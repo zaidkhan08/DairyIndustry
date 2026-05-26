@@ -1,0 +1,141 @@
+﻿@model List<DairyIndustry.Models.Collection.AllBatchsModel>
+
+@{
+    ViewData["Title"] = "All Batch Details";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="card border-0 shadow-sm rounded-4">
+
+        <div class="card-header text-white rounded-top-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-calendar-check"></i>
+                    All Batch Details
+                </h4>
+
+                <span class="badge bg-light text-dark fs-6">
+                    Total Batches: @Model.Count
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            @if (!Model.Any())
+            {
+                <div class="alert alert-warning">
+                    No batch records found.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Batch ID</th>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Center</th>
+                                <th>Farmers</th>
+                                <th>Milk Qty</th>
+                                <th>Avg Fat</th>
+                                <th>Avg CLR</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        <span class="fw-bold text-primary">
+                                            #@item.BatchId
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @item.BatchDate.ToString("dd-MM-yyyy")
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-info text-dark">
+                                            @item.Shift
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @item.CenterName
+                                    </td>
+
+                                    <td>
+                                        @item.TotalFarmers
+                                    </td>
+
+                                    <td>
+                                        <span class="fw-semibold text-success">
+                                            @item.TotalMilkCollected L
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @item.AvgFat %
+                                    </td>
+
+                                    <td>
+                                        @item.AvgCLR
+                                    </td>
+
+                                    <td>
+                                        <span class="fw-bold text-warning">
+                                            ₹@item.TotalAmount
+                                        </span>
+                                    </td>
+
+                                    <td>
+
+                                        @if (item.Status == "Open")
+                                        {
+                                            <span class="badge bg-success">
+                                                Open
+                                            </span>
+                                        }
+                                        else if (item.Status == "Closed")
+                                        {
+                                            <span class="badge bg-danger">
+                                                Closed
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                @item.Status
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

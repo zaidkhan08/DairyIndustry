@@ -1,0 +1,96 @@
+﻿@model DairyIndustry.Models.Collection.FarmerMilkReceiptModel
+
+@{
+    ViewData["Title"] = "Milk Receipt";
+    Layout = "_FarmerLayout";
+}
+
+<div class="container py-4" style="max-width:600px;">
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-white text-center">
+            <h4 class="fw-bold mb-0">Milk Receipt</h4>
+            <small class="text-muted">Dairy Management System</small>
+        </div>
+
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between">
+                <strong>Receipt No:</strong>
+                <span>@Model.ReceiptNumber</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Farmer:</strong>
+                <span>@Model.FarmerName (@Model.FarmerCode)</span>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between">
+                <strong>Date:</strong>
+                <span>@Model.CollectionDate.ToString("dd-MM-yyyy")</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Shift:</strong>
+                <span>@Model.Shift</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Center:</strong>
+                <span>@Model.CenterName</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Milk Type:</strong>
+                <span>@Model.MilkTypeName</span>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between">
+                <strong>Quantity:</strong>
+                <span>@Model.Quantity L</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Fat:</strong>
+                <span>@Model.AppliedFat</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>CLR:</strong>
+                <span>@Model.AppliedCLR</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <strong>Rate:</strong>
+                <span>₹@Model.RatePerLiter</span>
+            </div>
+
+            <hr />
+
+            <h5 class="text-success fw-bold">
+                Total: ₹@Model.Amount
+            </h5>
+
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-between">
+
+            <a href="/Farmer/AllMilkEntriesFarmer"
+               class="btn btn-outline-secondary btn-sm">
+                Back
+            </a>
+
+            <a href="/Farmer/DownloadReceipt/@Model.CollectionId"
+               class="btn btn-dark btn-sm">
+                Download PDF
+            </a>
+
+        </div>
+
+    </div>
+</div>

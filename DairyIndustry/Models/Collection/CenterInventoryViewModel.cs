@@ -20,5 +20,8 @@ namespace DairyIndustry.Models.Collection
         public decimal AvailableQuantity { get; set; } = 0;
 
         public DateTime LastUpdated { get; set; }
+
+        public decimal TotalCollected { get; set; }   // total milk collected (from batches)
+        public decimal TotalDispatched { get; set; }   // total milk dispatched (from transfer table)
     }
 }

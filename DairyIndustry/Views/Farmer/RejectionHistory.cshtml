@@ -3,86 +3,159 @@
 @{
     ViewData["Title"] = "Rejection History";
     Layout = "_FarmerLayout";
+
+    int srNo = 1;
 }
 
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0 text-dark">Milk Rejections</h4>
-        <div class="bg-white border rounded px-3 py-2 shadow-sm">
-            <span class="text-muted small fw-bold">TOTAL REJECTED:</span>
-            <span class="text-danger fw-bold ms-1">@Model.Sum(x => x.Quantity).ToString("F2") L</span>
+
+    <!-- HEADER & SUMMARY -->
+    <div class="row align-items-center g-3 mb-4">
+        <div class="col-12 col-sm-6">
+            <h4 class="mb-1 text-dark fw-bold tracking-tight">Milk Rejections</h4>
+            <p class="text-muted small mb-0">Historical log of unaccepted milk deliveries and quality anomalies.</p>
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-2 col-6">
-                    <label class="form-label small text-muted fw-bold">From Date</label>
-                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
-                </div>
-                <div class="col-md-2 col-6">
-                    <label class="form-label small text-muted fw-bold">To Date</label>
-                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
-                </div>
-                <div class="col-md-4 col-12">
-                    <button type="submit" class="btn btn-primary px-4">Filter</button>
-                    <a href="@Url.Action("RejectionHistory")" class="btn btn-light border ms-1">Clear</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <!-- NOTIFICATIONS -->
     @if (TempData["Info"] != null)
     {
-        <div class="alert alert-info border-0 shadow-sm mb-4">@TempData["Info"]</div>
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i>
+            <div>@TempData["Info"]</div>
+        </div>
     }
+    <!-- FILTER BAR -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
 
-    <!-- Table with Separated Columns -->
-    <div class="card border-0 shadow-sm">
+                <!-- SEARCH -->
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Search</label>
+                    <input type="text" id="searchBox" class="form-control form-control-sm"
+                           placeholder="Milk type / Reason / Center / Staff..." />
+                </div>
+
+                <!-- SHIFT -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Shift</label>
+                    <select id="shiftFilter" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="Morning">Morning</option>
+                        <option value="Evening">Evening</option>
+                    </select>
+                </div>
+
+                <!-- DATE FROM -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">From</label>
+                    <input type="date" id="fromDate" class="form-control form-control-sm" />
+                </div>
+
+                <!-- DATE TO -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">To</label>
+                    <input type="date" id="toDate" class="form-control form-control-sm" />
+                </div>
+
+                <!-- RESET -->
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-dark btn-sm w-100" onclick="resetFilters()">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- RECORDS TABLE -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
         <div class="card-body p-0">
-            @if (Model.Count > 0)
+            @if (Model != null && Model.Any())
             {
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="text-muted small">
-                                <th class="ps-4 border-0">DATE</th>
-                                <th class="border-0 text-center">SHIFT</th>
-                                <th class="border-0">TYPE</th>
-                                <th class="border-0 text-end">QTY (L)</th>
-                                <th class="border-0 text-end">FAT</th>
-                                <th class="border-0 text-end">CLR</th>
-                                <th class="border-0">REASON</th>
-                                <th class="border-0">REMARKS</th>
-                                <th class="border-0 pe-4">CENTER</th>
+                        <thead class="table-light text-uppercase tracking-wider" style="font-size: 0.75rem;">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted fw-semibold">#</th>
+                                <th class="ps-4 py-3 text-muted fw-semibold">Date</th>
+                                <th class="py-3 text-muted fw-semibold">Shift</th>
+                                <th class="py-3 text-muted fw-semibold">Type</th>
+                                <th class="py-3 text-muted fw-semibold text-end">Qty (L)</th>
+                                <th class="py-3 text-muted fw-semibold text-end">Fat %</th>
+                                <th class="py-3 text-muted fw-semibold text-end">CLR</th>
+                                <th class="py-3 text-muted fw-semibold" style="min-width: 120px;">Reason</th>
+                                <th class="py-3 text-muted fw-semibold" style="min-width: 180px;">Remarks</th>
+                                <th class="py-3 text-muted fw-semibold">Center</th>
+                                <th class="pe-4 py-3 text-muted fw-semibold">Staff</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="border-top-0" style="font-size: 0.85rem;">
                             @foreach (var r in Model)
                             {
                                 <tr>
-                                    <td class="ps-4 fw-bold">@r.RejectionDate.ToString("dd-MM-yyyy")</td>
-                                    <td class="text-center">
+                                    <td class="ps-4 text-muted small">@srNo</td>
+                                    <!-- DATE -->
+                                    <td class="ps-4 fw-semibold text-dark">
+                                        @r.RejectionDate.ToString("dd-MM-yyyy")
+                                    </td>
+
+                                    <!-- SHIFT -->
+                                    <td>
                                         @if (r.Shift == "Morning")
                                         {
-                                            <span class="badge bg-warning text-dark px-2">M</span>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Morning</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-primary px-2">E</span>
+                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2 py-1">Evening</span>
                                         }
                                     </td>
-                                    <td><span class="small text-secondary">@r.MilkTypeName</span></td>
-                                    <td class="text-end fw-bold">@r.Quantity.ToString("F2")</td>
-                                    <td class="text-end text-muted">@(r.AppliedFat?.ToString("F1") ?? "-")</td>
-                                    <td class="text-end text-muted">@(r.AppliedCLR?.ToString("F1") ?? "-")</td>
-                                    <td><span class="text-danger fw-medium">@r.RejectionReason</span></td>
-                                    <td class="small text-muted">@(string.IsNullOrEmpty(r.Remarks) ? "-" : r.Remarks)</td>
-                                    <td class="pe-4 small">@r.CenterName</td>
+
+                                    <!-- MILK TYPE -->
+                                    <td class="text-secondary fw-medium">
+                                        @r.MilkTypeName
+                                    </td>
+
+                                    <!-- QTY -->
+                                    <td class="text-end fw-bold text-danger">
+                                        @r.Quantity.ToString("0.00")
+                                    </td>
+
+                                    <!-- FAT -->
+                                    <td class="text-end text-muted font-monospace">
+                                        @(r.AppliedFat?.ToString("0.0") ?? "—")
+                                    </td>
+
+                                    <!-- CLR -->
+                                    <td class="text-end text-muted font-monospace">
+                                        @(r.AppliedCLR?.ToString("0.0") ?? "—")
+                                    </td>
+
+                                    <!-- REASON -->
+                                    <td>
+                                        <span class="d-inline-block text-danger fw-semibold bg-danger-subtle px-2 py-1 rounded-1 small border border-danger-subtle" style="white-space: nowrap;">
+                                            @r.RejectionReason
+                                        </span>
+                                    </td>
+
+                                    <!-- REMARKS -->
+                                    <td class="text-muted text-truncate" style="max-width: 200px;" title="@r.Remarks">
+                                        @(string.IsNullOrEmpty(r.Remarks) ? "—" : r.Remarks)
+                                    </td>
+
+                                    <!-- CENTER -->
+                                    <td class="text-dark fw-medium">
+                                        @r.CenterName
+                                    </td>
+
+                                    <!-- STAFF -->
+                                    <td class="pe-4 text-muted small">
+                                        @r.RecordedByStaff
+                                    </td>
                                 </tr>
+                                srNo++;
                             }
                         </tbody>
                     </table>
@@ -90,10 +163,80 @@
             }
             else
             {
-                <div class="text-center py-5">
-                    <p class="text-muted mb-0">No records found for the selected dates.</p>
+                <div class="text-center py-5 my-4">
+                    <div class="bg-light text-muted rounded-circle d-inline-flex p-3 mb-3">
+                        <i class="bi bi-folder-x fs-3"></i>
+                    </div>
+                    <h5 class="text-dark fw-semibold mb-1">No Rejections Recorded</h5>
+                    <p class="text-muted small mb-0">All milk deliveries look great! No rejection items found.</p>
                 </div>
             }
         </div>
     </div>
 </div>
+<script>
+    const searchBox = document.getElementById("searchBox");
+    const shiftFilter = document.getElementById("shiftFilter");
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+
+    const rows = document.querySelectorAll("tbody tr");
+
+    function filterTable() {
+
+        const search = searchBox.value.toLowerCase();
+        const shift = shiftFilter.value;
+        const from = fromDate.value ? new Date(fromDate.value) : null;
+        const to = toDate.value ? new Date(toDate.value) : null;
+
+        rows.forEach(row => {
+
+            const dateText = row.children[0].innerText.trim();
+            const shiftText = row.children[1].innerText.trim();
+            const milkType = row.children[2].innerText.toLowerCase();
+            const qty = row.children[3].innerText.toLowerCase();
+            const reason = row.children[6].innerText.toLowerCase();
+            const remarks = row.children[7].innerText.toLowerCase();
+            const center = row.children[8].innerText.toLowerCase();
+            const staff = row.children[9].innerText.toLowerCase();
+
+            const rowDate = new Date(dateText.split("-").reverse().join("-"));
+
+            let match = true;
+
+            // SEARCH FILTER
+            if (search &&
+                !milkType.includes(search) &&
+                !reason.includes(search) &&
+                !remarks.includes(search) &&
+                !center.includes(search) &&
+                !staff.includes(search)) {
+                match = false;
+            }
+
+            // SHIFT FILTER
+            if (shift && !shiftText.includes(shift)) {
+                match = false;
+            }
+
+            // DATE FILTER
+            if (from && rowDate < from) match = false;
+            if (to && rowDate > to) match = false;
+
+            row.style.display = match ? "" : "none";
+        });
+    }
+
+    function resetFilters() {
+        searchBox.value = "";
+        shiftFilter.value = "";
+        fromDate.value = "";
+        toDate.value = "";
+        filterTable();
+    }
+
+    searchBox.addEventListener("keyup", filterTable);
+    shiftFilter.addEventListener("change", filterTable);
+    fromDate.addEventListener("change", filterTable);
+    toDate.addEventListener("change", filterTable);
+</script>

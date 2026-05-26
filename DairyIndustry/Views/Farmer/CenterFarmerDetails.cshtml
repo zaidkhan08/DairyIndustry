@@ -1,0 +1,206 @@
+﻿@model DairyIndustry.Models.FarmerModel.FarmerEditModel
+
+@{
+    ViewData["Title"] = "Farmer Details";
+    Layout = "_CollectionCenterLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <a asp-action="ListAllFarmers" class="btn btn-sm btn-link link-secondary text-decoration-none ps-0">
+            <i class="bi bi-arrow-left me-1"></i> Back to Farmer List
+        </a>
+
+        <a asp-action="Edit" asp-route-id="@Model.FarmerId" class="btn btn-outline-dark btn-sm px-3 rounded-2 shadow-sm">
+            <i class="bi bi-pencil-square me-1"></i> Edit Profile
+        </a>
+    </div>
+
+    <div class="card bg-white border shadow-sm rounded-3 p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-auto">
+                <img src="@(string.IsNullOrEmpty(Model.ProfilePhoto) ? "/images/user.png" : Model.ProfilePhoto)"
+                     alt="Farmer Profile"
+                     class="rounded-circle border"
+                     style="width: 80px; height: 80px; object-fit: cover;" />
+            </div>
+            <div class="col">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <h3 class="mb-0 fw-bold text-dark">@Model.FarmerName</h3>
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded">Inactive</span>
+                    }
+                </div>
+                <p class="mb-0 text-muted small">
+                    <span class="fw-semibold text-secondary">Farmer ID Code:</span> <code class="text-dark fw-bold">@Model.FarmerCode</code>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-8">
+
+            <div class="card border shadow-sm rounded-3 mb-4">
+                <div class="card-body p-4">
+
+                    <h6 class="text-uppercase tracking-wider text-secondary fw-bold mb-4 d-flex align-items-center gap-2" style="font-size: 12px;">
+                        <i class="bi bi-person text-primary"></i> Personal Profile
+                    </h6>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Full Name</small>
+                            <span class="text-dark fw-semibold">@Model.FarmerName</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Gender</small>
+                            <span class="text-dark fw-semibold">@Model.Gender</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Date of Birth</small>
+                            <span class="text-dark fw-semibold">
+                                @(Model.DateOfBirth.HasValue? Model.DateOfBirth.Value.ToString("dd MMM yyyy") : "—")
+                            </span>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Aadhaar Number</small>
+                            <span class="text-dark fw-semibold">
+                                @(string.IsNullOrEmpty(Model.AadhaarNumber) ? "—" : "XXXX-XXXX-" + Model.AadhaarNumber[^4..])
+                            </span>
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase tracking-wider text-secondary fw-bold pt-3 mb-4 border-top d-flex align-items-center gap-2" style="font-size: 12px;">
+                        <i class="bi bi-telephone text-primary"></i> Contact Information
+                    </h6>
+
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Phone Number</small>
+                            <span class="text-dark fw-semibold">@Model.Phone</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Email Address</small>
+                            <span class="text-dark text-break fw-semibold">@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card border shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase tracking-wider text-secondary fw-bold mb-3 d-flex align-items-center gap-2" style="font-size: 12px;">
+                        <i class="bi bi-file-earmark-text text-primary"></i> Attached Verification Docs
+                    </h6>
+
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-light p-2 rounded border text-muted">
+                                    <i class="bi bi-file-earmark-id fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark small">Aadhaar Card Copy</h6>
+                                    <span class="text-muted extra-small" style="font-size: 12px;">Identity Proof</span>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
+                            {
+                                <a href="@Model.AadhaarCardPath" target="_blank" class="btn btn-sm btn-light border px-3">View Document</a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border fw-normal px-2.5 py-1.5">Not Provided</span>
+                            }
+                        </div>
+
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3 border-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-light p-2 rounded border text-muted">
+                                    <i class="bi bi-bank fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark small">Bank Passbook Copy</h6>
+                                    <span class="text-muted extra-small" style="font-size: 12px;">Account Destination Verification</span>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.PassbookPath))
+                            {
+                                <a href="@Model.PassbookPath" target="_blank" class="btn btn-sm btn-light border px-3">View Document</a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border fw-normal px-2.5 py-1.5">Not Provided</span>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="d-flex flex-column gap-4">
+
+                <div class="card border shadow-sm rounded-3">
+                    <div class="card-body p-4">
+                        <h6 class="text-uppercase tracking-wider text-secondary fw-bold mb-4 d-flex align-items-center gap-2" style="font-size: 12px;">
+                            <i class="bi bi-geo-alt text-danger"></i> Regional Location
+                        </h6>
+
+                        <div class="mb-3">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Village</small>
+                            <span class="fw-bold text-dark fs-5">@Model.VillageName</span>
+                        </div>
+
+                        <div class="mb-3 pt-2 border-top">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">City / Taluka</small>
+                            <span class="fw-semibold text-dark">@Model.CityName</span>
+                        </div>
+
+                        <div class="pt-2 border-top">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">State</small>
+                            <span class="fw-semibold text-dark">@Model.StateName</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border shadow-sm rounded-3">
+                    <div class="card-body p-4">
+                        <h6 class="text-uppercase tracking-wider text-secondary fw-bold mb-4 d-flex align-items-center gap-2" style="font-size: 12px;">
+                            <i class="bi bi-credit-card text-success"></i> Settlement Account
+                        </h6>
+
+                        <div class="mb-3">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Bank Name</small>
+                            <span class="fw-bold text-dark fs-6"><i class="bi bi-bank me-1 text-muted"></i> @Model.BankName</span>
+                        </div>
+
+                        <div class="mb-3 pt-2 border-top">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">Account Number</small>
+                            <span class="text-dark fw-bold font-monospace">@Model.AccountNumber</span>
+                        </div>
+
+                        <div class="pt-2 border-top">
+                            <small class="text-muted text-uppercase d-block mb-1" style="font-size: 11px; font-weight: 600;">IFSC Code</small>
+                            <span class="text-dark fw-bold font-monospace text-uppercase">@Model.IFSCCode</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

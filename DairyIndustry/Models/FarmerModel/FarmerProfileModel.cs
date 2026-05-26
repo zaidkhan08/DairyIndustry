@@ -18,6 +18,10 @@
         public string AccountNumber { get; set; }
         public string IFSCCode { get; set; }
         public DateTime? LastLogin { get; set; }
+        public string AadhaarNumber { get; set; }
+        public string Email { get; set; }
+        public string Gender { get; set; }
+        public DateTime DateOfBirth { get; set; }
     }
 
 }

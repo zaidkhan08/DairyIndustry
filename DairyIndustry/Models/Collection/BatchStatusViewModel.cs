@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DairyIndustry.Models.Collection
+﻿namespace DairyIndustry.Models.Collection
 {
     public class BatchStatusViewModel
     {
@@ -14,15 +12,21 @@ namespace DairyIndustry.Models.Collection
 
         public decimal TotalQuantity { get; set; }
 
+        public decimal? TotalAmount { get; set; }
+
         public decimal? AvgFat { get; set; }
 
         public decimal? AvgCLR { get; set; }
 
         public int EntryCount { get; set; }
 
+        public int RejectionCount { get; set; }
+
         public bool IsCurrentShift { get; set; }
 
         public DateTime BatchDate { get; set; }
 
+        public List<TodayMilkEntryModel> TodayEntries { get; set; }
+            = new List<TodayMilkEntryModel>();
     }
 }

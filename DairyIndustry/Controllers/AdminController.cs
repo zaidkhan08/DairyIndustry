@@ -7,124 +7,20 @@ using Microsoft.VisualBasic;
 
 namespace DairyIndustry.Controllers
 {
-    //    [ServiceFilter(typeof(ActionLogFilter))]
+    [ServiceFilter(typeof(ActionLogFilter))]
     public class AdminController : Controller
     {
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly ICollectionCenterRepository _centerRepository;
-        private readonly IPlantRepository _plantRepository;
-
-
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository,IPlantRepository plantRepository)
-        {@model List<DairyIndustry.Models.FarmerModel.FarmerRejectionViewModel>
-
-@{
-    ViewData["Title"] = "Rejection History";
-    Layout = "_FarmerLayout";
-}
-
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0 text-dark">Milk Rejections</h4>
-        <div class="bg-white border rounded px-3 py-2 shadow-sm">
-            <span class="text-muted small fw-bold">TOTAL REJECTED:</span>
-            <span class="text-danger fw-bold ms-1">@Model.Sum(x => x.Quantity).ToString("F2") L</span>
-        </div>
-    </div>
-
-    <!-- Filter Bar -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-2 col-6">
-                    <label class="form-label small text-muted fw-bold">From Date</label>
-                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
-                </div>
-                <div class="col-md-2 col-6">
-                    <label class="form-label small text-muted fw-bold">To Date</label>
-                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
-                </div>
-                <div class="col-md-4 col-12">
-                    <button type="submit" class="btn btn-primary px-4">Filter</button>
-                    <a href="@Url.Action("RejectionHistory")" class="btn btn-light border ms-1">Clear</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    @if (TempData["Info"] != null)
-    {
-        <div class="alert alert-info border-0 shadow-sm mb-4">@TempData["Info"]</div>
-    }
-
-    <!-- Table with Separated Columns -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            @if (Model.Count > 0)
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="text-muted small">
-                                <th class="ps-4 border-0">DATE</th>
-                                <th class="border-0 text-center">SHIFT</th>
-                                <th class="border-0">TYPE</th>
-                                <th class="border-0 text-end">QTY (L)</th>
-                                <th class="border-0 text-end">FAT</th>
-                                <th class="border-0 text-end">CLR</th>
-                                <th class="border-0">REASON</th>
-                                <th class="border-0">REMARKS</th>
-                                <th class="border-0 pe-4">CENTER</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var r in Model)
-                            {
-                                <tr>
-                                    <td class="ps-4 fw-bold">@r.RejectionDate.ToString("dd-MM-yyyy")</td>
-                                    <td class="text-center">
-                                        @if (r.Shift == "Morning")
-                                        {
-                                            <span class="badge bg-warning text-dark px-2">M</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-primary px-2">E</span>
-                                        }
-                                    </td>
-                                    <td><span class="small text-secondary">@r.MilkTypeName</span></td>
-                                    <td class="text-end fw-bold">@r.Quantity.ToString("F2")</td>
-                                    <td class="text-end text-muted">@(r.AppliedFat?.ToString("F1") ?? "-")</td>
-                                    <td class="text-end text-muted">@(r.AppliedCLR?.ToString("F1") ?? "-")</td>
-                                    <td><span class="text-danger fw-medium">@r.RejectionReason</span></td>
-                                    <td class="small text-muted">@(string.IsNullOrEmpty(r.Remarks) ? "-" : r.Remarks)</td>
-                                    <td class="pe-4 small">@r.CenterName</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5">
-                    <p class="text-muted mb-0">No records found for the selected dates.</p>
-                </div>
-            }
-        </div>
-    </div>
-</div>
-            _centerRepository = centerRepository;
-            _plantRepository = plantRepository;
         private readonly IReportRepository _reportRepo;
 
 
-        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, IReportRepository reportRepo)
+        public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo, ICollectionCenterRepository centerRepository,IReportRepository reportRepo)
         {
-            _adminRepo = adminRepo;
-            _logisticsRepo = logisticsRepo;
+            _adminRepo = adminRepo; 
+            _logisticsRepo=logisticsRepo;
+            _centerRepository = centerRepository;
             _reportRepo = reportRepo;
         }
 
@@ -141,6 +37,7 @@ namespace DairyIndustry.Controllers
         public IActionResult Login(string username, string password)
         {
             var user = _adminRepo.GetUserByUsername(username);
+            
 
             if (user == null)
             {
@@ -180,21 +77,21 @@ namespace DairyIndustry.Controllers
 
                 case "Collection Agent":
                     var centerId = _centerRepository.GetCenterIdByStaffId(user.StaffId ?? 0);
-
                     HttpContext.Session.SetInt32("CenterId", centerId);
                     return RedirectToAction("Dashboard", "CollectionCenter");
 
-                case "Production Manager":
-                    // GetPlantIdByStaffId → returns int directly 
-                    var plantInfo = _plantRepository.GetPlantByStaffId(user.StaffId ?? 0);
+                //case "Production Manager":
+                //    // GetPlantIdByStaffId → returns int directly 
+                //    var plantInfo = _plantRepository.GetPlantByStaffId(user.StaffId ?? 0);
 
-                    if (plantInfo.PlantId == 0)
-                    {
-                        ViewBag.Error = "You are not assigned to any plant.";
-                        return View();
-                    }
+                //    if (plantInfo.PlantId == 0)
+                //    {
+                //        ViewBag.Error = "You are not assigned to any plant.";
+                //        return View();
+                //    }
                 //Added By Zaid
                 case "Plant Manager":
+
                     var plantId = _adminRepo.GetPlantIdByUser(user.UserId);
                     if (plantId.HasValue)
                     {
@@ -205,13 +102,13 @@ namespace DairyIndustry.Controllers
                     }
                     return RedirectToAction("Index", "Production");
 
-                case "Collection Agent":
-                    return RedirectToAction("Index", "Production");
+                //case "Collection Agent":
+                //    return RedirectToAction("Index", "Production");
 
-                    HttpContext.Session.SetInt32("PlantId", plantInfo.PlantId);
-                    HttpContext.Session.SetString("PlantName", plantInfo.PlantName ?? "");
-                    HttpContext.Session.SetString("Name", plantInfo.StaffName ?? "");
-                    return RedirectToAction("Index", "Plant");
+                //    HttpContext.Session.SetInt32("PlantId", plantInfo.PlantId);
+                //    HttpContext.Session.SetString("PlantName", plantInfo.PlantName ?? "");
+                //    HttpContext.Session.SetString("Name", plantInfo.StaffName ?? "");
+                //    return RedirectToAction("Index", "Plant");
 
                 //case "Finance Manager":
                 //    return RedirectToAction("Index", "Finance");
@@ -322,61 +219,61 @@ namespace DairyIndustry.Controllers
         // AUDIT LOGS
         // ════════════════════════════════════════════════════════
 
+        ////[SessionAuthorize("Admin")]
+        //public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
         //[SessionAuthorize("Admin")]
-        public IActionResult AuditLogs(int? userId, string? entityName, DateTime? fromDate, DateTime? toDate)
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult AssignUserToPlant()
-        {
-            ViewBag.Users = _adminRepo.GetAllUsers();
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
-            return View();
-        }
-
-        [SessionAuthorize("Admin")]
-        [HttpPost]
-        public IActionResult AssignUserToPlant(int userId, int plantId)
-        {
-            if (userId == 0 || plantId == 0)
-            {
-                ViewBag.Error = "Please select both user and plant.";
-                ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
-                return View();
-            }
-            _adminRepo.AssignUserToPlant(userId, plantId);
-            TempData["Success"] = "User assigned to plant successfully.";
-            return RedirectToAction("AssignUserToPlant");
-        }
-
-        [SessionAuthorize("Admin")]
-        [HttpGet]
-        public IActionResult AssignUserToCenter()
-        {
-            ViewBag.Users = _adminRepo.GetAllUsers();
-            ViewBag.Centers = _adminRepo.GetAllCenters();
-            ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
-            return View();
-        }
+        //[HttpGet]
+        //public IActionResult AssignUserToPlant()
+        //{
+        //    ViewBag.Users = _adminRepo.GetAllUsers();
+        //    ViewBag.Plants = _adminRepo.GetAllPlants();
+        //    ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
+        //    return View();
+        //}
 
         //[SessionAuthorize("Admin")]
-        [HttpPost]
-        public IActionResult AssignUserToCenter(int userId, int centerId)
-        {
-            if (userId == 0 || centerId == 0)
-            {
-                ViewBag.Error = "Please select both user and center.";
-                ViewBag.Users = _adminRepo.GetAllUsers();
-                ViewBag.Centers = _adminRepo.GetAllCenters();
-                ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
-                return View();
-            }
-            _adminRepo.AssignUserToCenter(userId, centerId);
-            TempData["Success"] = "User assigned to center successfully.";
-            return RedirectToAction("AssignUserToCenter");
-        }
+        //[HttpPost]
+        //public IActionResult AssignUserToPlant(int userId, int plantId)
+        //{
+        //    if (userId == 0 || plantId == 0)
+        //    {
+        //        ViewBag.Error = "Please select both user and plant.";
+        //        ViewBag.Users = _adminRepo.GetAllUsers();
+        //        ViewBag.Plants = _adminRepo.GetAllPlants();
+        //        ViewBag.Assignments = _adminRepo.GetAllUserPlantAssignments();
+        //        return View();
+        //    }
+        //    _adminRepo.AssignUserToPlant(userId, plantId);
+        //    TempData["Success"] = "User assigned to plant successfully.";
+        //    return RedirectToAction("AssignUserToPlant");
+        //}
+
+        //[SessionAuthorize("Admin")]
+        //[HttpGet]
+        //public IActionResult AssignUserToCenter()
+        //{
+        //    ViewBag.Users = _adminRepo.GetAllUsers();
+        //    ViewBag.Centers = _adminRepo.GetAllCenters();
+        //    ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
+        //    return View();
+        //}
+
+        ////[SessionAuthorize("Admin")]
+        //[HttpPost]
+        //public IActionResult AssignUserToCenter(int userId, int centerId)
+        //{
+        //    if (userId == 0 || centerId == 0)
+        //    {
+        //        ViewBag.Error = "Please select both user and center.";
+        //        ViewBag.Users = _adminRepo.GetAllUsers();
+        //        ViewBag.Centers = _adminRepo.GetAllCenters();
+        //        ViewBag.Assignments = _adminRepo.GetAllUserCenterAssignments();
+        //        return View();
+        //    }
+        //    _adminRepo.AssignUserToCenter(userId, centerId);
+        //    TempData["Success"] = "User assigned to center successfully.";
+        //    return RedirectToAction("AssignUserToCenter");
+        //}
 
         // ════════════════════════════════════════════════════════
         // AUDIT LOGS
@@ -413,7 +310,7 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
 
         //[SessionAuthorize("Admin")]
-        public IActionResult Villages()
+        //public IActionResult Villages()
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult AddCity(string cityName, int stateId)

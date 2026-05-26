@@ -5,6 +5,7 @@ using DairyIndustry.Models.FarmerModel;
 using DairyIndustry.Repositories;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using CenterDropdownModel = DairyIndustry.Models.FarmerModel.CenterDropdownModel;
 
 namespace DairyIndustry.Repository
 {
@@ -21,106 +22,207 @@ namespace DairyIndustry.Repository
         {
             var now = DateTime.Now.TimeOfDay;
 
-            // Morning: 9:55 AM to 10:21 AM
-            if (now >= new TimeSpan(9, 55, 0) && now < new TimeSpan(13, 0
+            if (now >= new TimeSpan(08, 00, 0) && now < new TimeSpan(13, 0
                 , 0))
                 return "Morning";
 
-            // Evening: 4:00 PM to 7:00 PM
             if (now >= new TimeSpan(16, 0, 0) && now < new TimeSpan(19, 0, 0))
                 return "Evening";
 
             return "No Active Shift";
         }
-        public StaffDashboardViewModel GetStaffDashboard(int staffId)
+
+
+        /* ============================================================
+           1. STAFF + CENTER INFO
+           SP: Collection.usp_Dashboard_StaffCenter
+           ============================================================ */
+        public StaffCenterModel GetStaffCenter(int staffId)
         {
-            var model = new StaffDashboardViewModel();
+            using SqlConnection con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Collection.usp_Dashboard_StaffCenter", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
 
-            using var con = _dbHelper.GetConnection();
             con.Open();
+            using var r = cmd.ExecuteReader();
 
-            // =========================
-            // 1️⃣ STAFF INFO
-            // =========================
-            using (var cmd = new SqlCommand("Collection.usp_Staff_Info", con))
+            if (!r.Read())
+                return null;
+
+            return new StaffCenterModel
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@StaffId", staffId);
+                StaffId = Convert.ToInt32(r["StaffId"]),
+                StaffName = r["StaffName"].ToString(),
+                Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                StaffPhone = r["StaffPhone"] == DBNull.Value ? null : r["StaffPhone"].ToString(),
+                StaffPhoto = r["StaffPhoto"] == DBNull.Value ? null : r["StaffPhoto"].ToString(),
+                DOJ = r["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(r["DOJ"]),
+                RoleId = Convert.ToInt32(r["RoleId"]),
+                RoleName = r["RoleName"].ToString(),
 
-                using var reader = cmd.ExecuteReader();
+                CenterId = Convert.ToInt32(r["CenterId"]),
+                CenterName = r["CenterName"].ToString(),
+                Capacity = r["Capacity"] == DBNull.Value ? null : Convert.ToDecimal(r["Capacity"]),
 
-                if (reader.Read())
-                {
-                    model.StaffId = Convert.ToInt32(reader["StaffId"]);
-                    model.StaffName = reader["StaffName"]?.ToString();
-                    model.StaffType = reader["StaffType"]?.ToString();
-                    model.StaffPhoto = reader["StaffPhoto"]?.ToString();
-
-                    model.CenterId = Convert.ToInt32(reader["CenterId"]);
-                    model.CenterName = reader["CenterName"]?.ToString();
-                    model.VillageName = reader["VillageName"]?.ToString();
-                    model.CityName = reader["CityName"]?.ToString();
-                    model.StateName = reader["StateName"]?.ToString();
-
-                    //  NEW
-                    model.Capacity = reader["Capacity"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["Capacity"]);
-                    model.CurrentStock = reader["CurrentStock"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["CurrentStock"]);
-                    model.AvailableSpace = reader["AvailableSpace"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["AvailableSpace"]);
-                }
-            }
-
-            // =========================
-            // 2️⃣ SHIFTS
-            // =========================
-            using (var cmd = new SqlCommand("Collection.usp_Staff_Shifts", con))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-                using var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    model.Shifts.Add(new ShiftBatchInfo
-                    {
-                        Shift = reader["Shift"]?.ToString(),
-                        ShiftWindow = reader["ShiftWindow"]?.ToString(),
-                        BatchId = reader["BatchId"] == DBNull.Value ? null : Convert.ToInt32(reader["BatchId"]),
-                        BatchStatus = reader["BatchStatus"]?.ToString(),
-                        TotalQuantity = reader["TotalQuantity"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["TotalQuantity"]),
-                        AvgFat = reader["AvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["AvgFat"]),
-                        AvgCLR = reader["AvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["AvgCLR"]),
-                        EntryCount = reader["EntryCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["EntryCount"]),
-                        IsCurrentShift = reader["IsCurrentShift"] != DBNull.Value && Convert.ToInt32(reader["IsCurrentShift"]) == 1
-                    });
-                }
-            }
-
-            // =========================
-            // 3️⃣ SUMMARY
-            // =========================
-            using (var cmd = new SqlCommand("Collection.usp_Staff_Summary", con))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-                using var reader = cmd.ExecuteReader();
-
-                if (reader.Read())
-                {
-                    model.TotalMilkToday = reader["TotalMilkToday"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["TotalMilkToday"]);
-                    model.TotalAmountToday = reader["TotalAmountToday"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["TotalAmountToday"]);
-                    model.TotalEntriesToday = reader["TotalEntriesToday"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TotalEntriesToday"]);
-                    model.ActiveFarmerCount = reader["ActiveFarmerCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ActiveFarmerCount"]);
-                    model.PendingPaymentAmount = reader["PendingPaymentAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["PendingPaymentAmount"]);
-                }
-            }
-
-            return model;
+                VillageId = Convert.ToInt32(r["VillageId"]),
+                VillageName = r["VillageName"].ToString(),
+                CityId = Convert.ToInt32(r["CityId"]),
+                CityName = r["CityName"].ToString(),
+                StateId = Convert.ToInt32(r["StateId"]),
+                StateName = r["StateName"].ToString()
+            };
         }
 
-        public int AddMilkCollection(int staffId, int farmerId, int milkTypeId,
-                             decimal quantity, decimal appliedFat, decimal appliedCLR)
+        /* ============================================================
+           2. TODAY'S SUMMARY
+           SP: Collection.usp_Dashboard_TodaySummary
+           ============================================================ */
+        public TodaySummaryModel GetTodaySummary(int staffId)
+        {
+
+            using SqlConnection con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Collection.usp_Dashboard_TodaySummary", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            if (!r.Read())
+                return new TodaySummaryModel();
+
+            return new TodaySummaryModel
+            {
+                TotalMilkToday = r["TotalMilkToday"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalMilkToday"]),
+                MorningQty = r["MorningQty"] == DBNull.Value ? 0 : Convert.ToDecimal(r["MorningQty"]),
+                EveningQty = r["EveningQty"] == DBNull.Value ? 0 : Convert.ToDecimal(r["EveningQty"]),
+
+                TotalAmountToday = r["TotalAmountToday"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalAmountToday"]),
+                MorningAmount = r["MorningAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["MorningAmount"]),
+                EveningAmount = r["EveningAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["EveningAmount"]),
+
+                TotalEntriesToday = r["TotalEntriesToday"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalEntriesToday"]),
+                MorningEntries = r["MorningEntries"] == DBNull.Value ? 0 : Convert.ToInt32(r["MorningEntries"]),
+                EveningEntries = r["EveningEntries"] == DBNull.Value ? 0 : Convert.ToInt32(r["EveningEntries"]),
+
+                AvgFatToday = r["AvgFatToday"] == DBNull.Value ? null : Convert.ToDecimal(r["AvgFatToday"]),
+                AvgCLRToday = r["AvgCLRToday"] == DBNull.Value ? null : Convert.ToDecimal(r["AvgCLRToday"]),
+
+                PendingPaymentAmount = r["PendingPaymentAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["PendingPaymentAmount"]),
+
+                RejectionsToday = r["RejectionsToday"] == DBNull.Value ? 0 : Convert.ToInt32(r["RejectionsToday"]),
+                RejectedQtyToday = r["RejectedQtyToday"] == DBNull.Value ? 0 : Convert.ToDecimal(r["RejectedQtyToday"])
+            };
+        }
+
+
+        /* ============================================================
+           3. SHIFT STATUS (Morning + Evening)
+           SP: Collection.usp_Dashboard_ShiftStatus
+           ============================================================ */
+        public List<ShiftStatusModel> GetShiftStatus(int staffId)
+        {
+            var list = new List<ShiftStatusModel>();
+
+
+            using SqlConnection con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Collection.usp_Dashboard_ShiftStatus", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new ShiftStatusModel
+                {
+                    Shift = r["Shift"].ToString(),
+                    ShiftWindow = r["ShiftWindow"].ToString(),
+                    BatchId = r["BatchId"] == DBNull.Value ? null : Convert.ToInt32(r["BatchId"]),
+                    BatchStatus = r["BatchStatus"].ToString(),
+                    TotalQuantity = r["TotalQuantity"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalQuantity"]),
+                    AvgFat = r["AvgFat"] == DBNull.Value ? null : Convert.ToDecimal(r["AvgFat"]),
+                    AvgCLR = r["AvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["AvgCLR"]),
+                    EntryCount = r["EntryCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["EntryCount"]),
+                    RejectionCount = r["RejectionCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["RejectionCount"]),
+                    IsCurrentShift = r["IsCurrentShift"] != DBNull.Value && Convert.ToInt32(r["IsCurrentShift"]) == 1,
+                    BatchDate = Convert.ToDateTime(r["BatchDate"])
+                });
+            }
+
+            return list;
+        }
+
+
+        /* ============================================================
+           4. INVENTORY
+           SP: Collection.usp_Dashboard_Inventory
+           ============================================================ */
+        public List<InventoryModel> GetInventory(int staffId)
+        {
+            var list = new List<InventoryModel>();
+
+            using SqlConnection con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Collection.usp_Dashboard_Inventory", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new InventoryModel
+                {
+                    InventoryId = Convert.ToInt32(r["InventoryId"]),
+                    MilkTypeId = Convert.ToInt32(r["MilkTypeId"]),
+                    MilkTypeName = r["MilkTypeName"].ToString(),
+                    AvailableQuantity = r["AvailableQuantity"] == DBNull.Value ? 0 : Convert.ToDecimal(r["AvailableQuantity"]),
+                    CenterCapacity = r["CenterCapacity"] == DBNull.Value ? null : Convert.ToDecimal(r["CenterCapacity"]),
+                    CapacityUsedPct = r["CapacityUsedPct"] == DBNull.Value ? 0 : Convert.ToDecimal(r["CapacityUsedPct"]),
+                    CollectedTodayQty = r["CollectedTodayQty"] == DBNull.Value ? 0 : Convert.ToDecimal(r["CollectedTodayQty"]),
+                    LastUpdated = Convert.ToDateTime(r["LastUpdated"])
+                });
+            }
+
+            return list;
+        }
+
+
+        /* ============================================================
+           5. FARMER STATS
+           SP: Collection.usp_Dashboard_FarmerStats
+           ============================================================ */
+        public FarmerStatsModel GetFarmerStats(int staffId)
+        {
+
+            using SqlConnection con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Collection.usp_Dashboard_FarmerStats", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            if (!r.Read())
+                return new FarmerStatsModel();
+
+            return new FarmerStatsModel
+            {
+                TotalFarmers = r["TotalFarmers"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalFarmers"]),
+                ActiveFarmers = r["ActiveFarmers"] == DBNull.Value ? 0 : Convert.ToInt32(r["ActiveFarmers"]),
+                InactiveFarmers = r["InactiveFarmers"] == DBNull.Value ? 0 : Convert.ToInt32(r["InactiveFarmers"]),
+                PendingApprovals = r["PendingApprovals"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingApprovals"]),
+                RejectedFarmers = r["RejectedFarmers"] == DBNull.Value ? 0 : Convert.ToInt32(r["RejectedFarmers"]),
+                FarmersDeliveredToday = r["FarmersDeliveredToday"] == DBNull.Value ? 0 : Convert.ToInt32(r["FarmersDeliveredToday"]),
+                FarmersPendingPayment = r["FarmersPendingPayment"] == DBNull.Value ? 0 : Convert.ToInt32(r["FarmersPendingPayment"]),
+                TotalPendingPaymentAmount = r["TotalPendingPaymentAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalPendingPaymentAmount"])
+            };
+        }
+
+        public int AddMilkCollection(int staffId, int farmerId, int milkTypeId,decimal quantity, decimal appliedFat, decimal appliedCLR)
         {
             using var con = _dbHelper.GetConnection();
             using var cmd = new SqlCommand("Collection.usp_AddMilkEntry", con);
@@ -151,13 +253,10 @@ namespace DairyIndustry.Repository
 
         // ─────────────────────────────────────────────────────────────
         // GET TODAY'S ENTRIES — Collection.usp_GetTodayEntries
-        // FIX: Old code used wrong SP "SP_07_MilkEntry_GetToday",
-        //      passed @CenterId (SP wants @StaffId), and only mapped
-        //      5 fields. SP returns 2 result sets — we read set 1 (entries).
         // ─────────────────────────────────────────────────────────────
-        public List<MilkCollectionViewModel> GetTodayMilkEntries(int staffId, string shift = null)
+        public List<MilkCollectionModel> GetTodayMilkEntries(int staffId, string shift = null)
         {
-            var list = new List<MilkCollectionViewModel>();
+            var list = new List<MilkCollectionModel>();
 
             using var con = _dbHelper.GetConnection();
             using var cmd = new SqlCommand("Collection.usp_GetTodayEntries", con);
@@ -172,7 +271,7 @@ namespace DairyIndustry.Repository
             // Result set 1 — individual entries
             while (reader.Read())
             {
-                list.Add(new MilkCollectionViewModel
+                list.Add(new MilkCollectionModel
                 {
                     CollectionId = Convert.ToInt32(reader["CollectionId"]),
                     CollectionDate = Convert.ToDateTime(reader["CollectionDate"]),
@@ -194,35 +293,20 @@ namespace DairyIndustry.Repository
             return list;
         }
 
-        public int RejectMilkEntry(MilkRejectionViewModel model, int staffId)
+        public int RejectMilkEntry(MilkRejectionModel model, int staffId)
         {
             using var con = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand("Collection.usp_RejectMilkEntry", con);
+            using var cmd = new SqlCommand("Collection.usp_RejectMilkEntryCenter", con);
             cmd.CommandType = CommandType.StoredProcedure;
 
             cmd.Parameters.AddWithValue("@StaffId", staffId);
             cmd.Parameters.AddWithValue("@FarmerId", model.FarmerId);
             cmd.Parameters.AddWithValue("@MilkTypeId", model.MilkTypeId);
-
-            cmd.Parameters.AddWithValue("@AppliedFat",
-                model.AppliedFat.HasValue
-                ? model.AppliedFat.Value
-                : DBNull.Value);
-
-            cmd.Parameters.AddWithValue("@AppliedCLR",
-                model.AppliedCLR.HasValue
-                ? model.AppliedCLR.Value
-                : DBNull.Value);
-
+            cmd.Parameters.AddWithValue("@AppliedFat", model.AppliedFat.HasValue? model.AppliedFat.Value: DBNull.Value);
+            cmd.Parameters.AddWithValue("@AppliedCLR",model.AppliedCLR.HasValue? model.AppliedCLR.Value: DBNull.Value);
             cmd.Parameters.AddWithValue("@Quantity", model.Quantity);
-
-            // FIX: string directly — no .ToString() needed
             cmd.Parameters.AddWithValue("@RejectionReason", model.RejectionReason);
-
-            cmd.Parameters.AddWithValue("@Remarks",
-                string.IsNullOrWhiteSpace(model.Remarks)
-                ? DBNull.Value
-                : model.Remarks);
+            cmd.Parameters.AddWithValue("@Remarks",string.IsNullOrWhiteSpace(model.Remarks)? DBNull.Value: model.Remarks);
 
             try
             {
@@ -241,15 +325,15 @@ namespace DairyIndustry.Repository
         }
 
 
-        public List<MilkRejectionViewModel> GetRejectionsByCenter(int centerId)
+
+        public List<MilkRejectionModel> GetRejectionsByFarmer(int farmerId)
         {
-            var list = new List<MilkRejectionViewModel>();
+            var list = new List<MilkRejectionModel>();
 
             using var con = _dbHelper.GetConnection();
             using var cmd = new SqlCommand(@"
-            SELECT
+                SELECT
                 mr.RejectionId,
-                mr.BatchId,
                 mr.RejectionDate,
                 mr.Shift,
                 mr.AppliedFat,
@@ -262,74 +346,12 @@ namespace DairyIndustry.Repository
                 mt.MilkTypeName,
                 cc.CenterName
             FROM Collection.MilkRejections mr
-            INNER JOIN Farmer.Farmers f  ON f.FarmerId    = mr.FarmerId
-            INNER JOIN Finance.MilkTypes mt ON mt.MilkTypeId = mr.MilkTypeId
-            INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = mr.CenterId
-            WHERE mr.CenterId = @CenterId
-            ORDER BY mr.RejectionDate DESC, mr.RejectionId DESC
+            INNER JOIN Farmer.Farmers               f  ON f.FarmerId    = mr.FarmerId
+            INNER JOIN Finance.MilkTypes            mt ON mt.MilkTypeId = mr.MilkTypeId
+            INNER JOIN Collection.CollectionCenters cc ON cc.CenterId   = mr.CenterId
+            WHERE mr.FarmerId = @FarmerId
+            ORDER BY mr.RejectionDate DESC
             ", con);
-
-            cmd.Parameters.AddWithValue("@CenterId", centerId);
-
-            con.Open();
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                list.Add(new MilkRejectionViewModel
-                {
-                    RejectionId = Convert.ToInt32(reader["RejectionId"]),
-                    BatchId = Convert.ToInt32(reader["BatchId"]),
-                    RejectionDate = Convert.ToDateTime(reader["RejectionDate"]),
-                    Shift = reader["Shift"]?.ToString(),
-
-                    AppliedFat = reader["AppliedFat"] == DBNull.Value
-                        ? (decimal?)null
-                        : Convert.ToDecimal(reader["AppliedFat"]),
-
-                    AppliedCLR = reader["AppliedCLR"] == DBNull.Value
-                        ? (decimal?)null
-                        : Convert.ToDecimal(reader["AppliedCLR"]),
-
-                    Quantity = Convert.ToDecimal(reader["Quantity"]),
-                    RejectionReason = reader["RejectionReason"]?.ToString(),
-                    Remarks = reader["Remarks"]?.ToString(),
-                    FarmerName = reader["FarmerName"]?.ToString(),
-                    FarmerCode = reader["FarmerCode"]?.ToString(),
-                    MilkTypeName = reader["MilkTypeName"]?.ToString(),
-                    CenterName = reader["CenterName"]?.ToString()
-                });
-            }
-
-            return list;
-        }
-
-        public List<MilkRejectionViewModel> GetRejectionsByFarmer(int farmerId)
-        {
-            var list = new List<MilkRejectionViewModel>();
-
-            using var con = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand(@"
-        SELECT
-            mr.RejectionId,
-            mr.RejectionDate,
-            mr.Shift,
-            mr.AppliedFat,
-            mr.AppliedCLR,
-            mr.Quantity,
-            mr.RejectionReason,
-            mr.Remarks,
-            f.FarmerName,
-            f.FarmerCode,
-            mt.MilkTypeName,
-            cc.CenterName
-        FROM Collection.MilkRejections mr
-        INNER JOIN Farmer.Farmers               f  ON f.FarmerId    = mr.FarmerId
-        INNER JOIN Finance.MilkTypes            mt ON mt.MilkTypeId = mr.MilkTypeId
-        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId   = mr.CenterId
-        WHERE mr.FarmerId = @FarmerId
-        ORDER BY mr.RejectionDate DESC
-    ", con);
 
             cmd.Parameters.AddWithValue("@FarmerId", farmerId);
 
@@ -338,26 +360,15 @@ namespace DairyIndustry.Repository
 
             while (reader.Read())
             {
-                list.Add(new MilkRejectionViewModel
+                list.Add(new MilkRejectionModel
                 {
                     RejectionId = Convert.ToInt32(reader["RejectionId"]),
                     RejectionDate = Convert.ToDateTime(reader["RejectionDate"]),
                     Shift = reader["Shift"]?.ToString(),
-
-                    AppliedFat = reader["AppliedFat"] == DBNull.Value
-                        ? (decimal?)null
-                        : Convert.ToDecimal(reader["AppliedFat"]),
-
-                    AppliedCLR = reader["AppliedCLR"] == DBNull.Value
-                        ? (decimal?)null
-                        : Convert.ToDecimal(reader["AppliedCLR"]),
-
+                    AppliedFat = reader["AppliedFat"] == DBNull.Value? (decimal?)null: Convert.ToDecimal(reader["AppliedFat"]),
+                    AppliedCLR = reader["AppliedCLR"] == DBNull.Value? (decimal?)null: Convert.ToDecimal(reader["AppliedCLR"]),
                     Quantity = Convert.ToDecimal(reader["Quantity"]),
-
-                    //  FIX: string directly — no Enum.TryParse needed
-                    // DB stores "Low Quality", "Adulterated" etc as is
                     RejectionReason = reader["RejectionReason"]?.ToString(),
-
                     Remarks = reader["Remarks"]?.ToString(),
                     FarmerName = reader["FarmerName"]?.ToString(),
                     FarmerCode = reader["FarmerCode"]?.ToString(),
@@ -368,96 +379,91 @@ namespace DairyIndustry.Repository
 
             return list;
         }
-        // ─────────────────────────────────────────────────────────────
-        // GET BATCH ENTRIES — Collection.usp_GetTodayEntries (with shift filter)
-        // Used by ViewCollectionBatch page. Same SP as GetTodayMilkEntries
-        // but always called with a specific shift.
-        // ─────────────────────────────────────────────────────────────
-        public List<MilkCollectionViewModel> GetBatchEntries(int staffId, string shift)
-        {
-            return GetTodayMilkEntries(staffId, shift);
-        }
-
-        // ─────────────────────────────────────────────────────────────
-        // GET MILK ENTRY BY ID — Collection.usp_GetMilkEntryById
-        // FIX: Old code used wrong SP "SP_08_MilkEntry_GetById",
-        //      was missing @StaffId param (SP enforces center ownership),
-        //      and only mapped 5 fields.
-        // ─────────────────────────────────────────────────────────────
-        public MilkCollectionViewModel GetMilkEntryById(int staffId, int collectionId)
-        {
-            using var con = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand("Collection.usp_GetMilkEntryById", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-            cmd.Parameters.AddWithValue("@CollectionId", collectionId);
-
-            con.Open();
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return new MilkCollectionViewModel
-            {
-                CollectionId = Convert.ToInt32(reader["CollectionId"]),
-                CollectionDate = Convert.ToDateTime(reader["CollectionDate"]),
-                Shift = reader["Shift"]?.ToString(),
-                ShiftWindow = reader["ShiftWindow"]?.ToString(),
-                FarmerId = Convert.ToInt32(reader["FarmerId"]),
-                FarmerCode = reader["FarmerCode"]?.ToString(),
-                FarmerName = reader["FarmerName"]?.ToString(),
-                MilkTypeId = Convert.ToInt32(reader["MilkTypeId"]),
-                MilkTypeName = reader["MilkTypeName"]?.ToString(),
-                Quantity = Convert.ToDecimal(reader["Quantity"]),
-                AppliedFat = reader["AppliedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["AppliedFat"]),
-                AppliedCLR = reader["AppliedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["AppliedCLR"]),
-                RatePerLiter = reader["RatePerLiter"] == DBNull.Value ? null : Convert.ToDecimal(reader["RatePerLiter"]),
-                Amount = reader["Amount"] == DBNull.Value ? null : Convert.ToDecimal(reader["Amount"]),
-                ReceiptNumber = reader["ReceiptNumber"]?.ToString(),
-                BatchId = Convert.ToInt32(reader["BatchId"]),
-                CenterId = Convert.ToInt32(reader["CenterId"])
-            };
-        }
+       
 
         // ─────────────────────────────────────────────────────────────
         // BATCH STATUS — Collection.usp_GetTodayBatchStatus
-        // Always returns exactly 2 rows: Morning + Evening.
-        // Status is auto-computed by SP from server time and batch table.
-        // Staff cannot manually open/close — that is done by SQL Agent.
         // ─────────────────────────────────────────────────────────────
         public List<BatchStatusViewModel> GetTodayBatchStatus(int staffId)
         {
-            var list = new List<BatchStatusViewModel>();
+            List<BatchStatusViewModel> batches =new List<BatchStatusViewModel>();
 
-            using var conn = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand("Collection.usp_GetTodayBatchStatus", conn);
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-            conn.Open();
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (SqlConnection con = _dbHelper.GetConnection())
             {
-                list.Add(new BatchStatusViewModel
+                using (SqlCommand cmd = new SqlCommand("Collection.usp_GetTodayBatchStatus", con))
                 {
-                    BatchId = reader["BatchId"] == DBNull.Value ? null : Convert.ToInt32(reader["BatchId"]),
-                    Shift = reader["Shift"]?.ToString(),
-                    ShiftWindow = reader["ShiftWindow"]?.ToString(),
-                    BatchStatus = reader["BatchStatus"]?.ToString(),
-                    TotalQuantity = reader["TotalQuantity"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["TotalQuantity"]),
-                    AvgFat = reader["AvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["AvgFat"]),
-                    AvgCLR = reader["AvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["AvgCLR"]),
-                    EntryCount = reader["EntryCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["EntryCount"]),
-                    IsCurrentShift = reader["IsCurrentShift"] != DBNull.Value && Convert.ToBoolean(reader["IsCurrentShift"]),
-                    BatchDate = Convert.ToDateTime(reader["BatchDate"])
-                });
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        //------------------------------------------------
+                        // SHIFT CARDS
+                        //------------------------------------------------
+
+                        while (reader.Read())
+                        {
+                            batches.Add(new BatchStatusViewModel
+                            {
+                                BatchId = reader["BatchId"] == DBNull.Value? null: Convert.ToInt32(reader["BatchId"]),
+                                Shift = reader["Shift"]?.ToString(),
+                                ShiftWindow = reader["ShiftWindow"]?.ToString(),
+                                BatchStatus = reader["BatchStatus"]?.ToString(),
+                                TotalQuantity = reader["TotalQuantity"] == DBNull.Value? 0: Convert.ToDecimal(reader["TotalQuantity"]),
+                                AvgFat = reader["AvgFat"] == DBNull.Value? null: Convert.ToDecimal(reader["AvgFat"]),
+                                AvgCLR = reader["AvgCLR"] == DBNull.Value? null: Convert.ToDecimal(reader["AvgCLR"]),
+                                EntryCount = reader["EntryCount"] == DBNull.Value? 0: Convert.ToInt32(reader["EntryCount"]),
+                                RejectionCount = reader["RejectionCount"] != DBNull.Value? Convert.ToInt32(reader["RejectionCount"]): 0,
+                                TotalAmount = reader["TotalAmount"] == DBNull.Value? 0: Convert.ToDecimal(reader["TotalAmount"]),
+                                IsCurrentShift = reader["IsCurrentShift"] != DBNull.Value && Convert.ToBoolean(reader["IsCurrentShift"]),
+                                BatchDate = reader["BatchDate"] == DBNull.Value? DateTime.Today: Convert.ToDateTime(reader["BatchDate"])
+                            });
+                        }
+
+                        //------------------------------------------------
+                        // TODAY ENTRIES
+                        //------------------------------------------------
+
+                        reader.NextResult();
+
+                        List<TodayMilkEntryModel> todayEntries =new List<TodayMilkEntryModel>();
+
+                        while (reader.Read())
+                        {
+                            todayEntries.Add(new TodayMilkEntryModel
+                            {
+                                FarmerName = reader["FarmerName"].ToString(),
+                                FarmerCode = reader["FarmerCode"].ToString(),
+                                Shift = reader["Shift"].ToString(),
+                                Quantity = reader["Quantity"] != DBNull.Value? Convert.ToDecimal(reader["Quantity"]): null,
+                                Fat = reader["Fat"] != DBNull.Value? Convert.ToDecimal(reader["Fat"]): null,
+                                CLR = reader["CLR"] != DBNull.Value? Convert.ToDecimal(reader["CLR"]): null,
+                                Amount = reader["Amount"] != DBNull.Value? Convert.ToDecimal(reader["Amount"]): null,
+                                Status = reader["Status"].ToString(),
+                                RejectionReason =reader["RejectionReason"] != DBNull.Value? reader["RejectionReason"].ToString(): null,
+                                EntryTime =Convert.ToDateTime(reader["EntryTime"])
+                            });
+                        }
+
+                        //------------------------------------------------
+                        // ASSIGN SAME TODAY ENTRIES
+                        //------------------------------------------------
+
+                        foreach (var batch in batches)
+                        {
+                            batch.TodayEntries = todayEntries;
+                        }
+                    }
+                }
             }
 
-            return list;
+            return batches;
         }
+
+
         public List<FarmerViewModel> GetFarmers(int centerId)
         {
             var farmers = new List<FarmerViewModel>();
@@ -484,13 +490,13 @@ namespace DairyIndustry.Repository
 
             return farmers;
         }
-
         public int GetCenterIdByStaffId(int staffId)
         {
             using var con = _dbHelper.GetConnection();
+
             using var cmd = new SqlCommand(@"
-            SELECT TOP 1 CenterId 
-            FROM Collection.StaffCenters 
+            SELECT CenterId
+            FROM HR.Staffs
             WHERE StaffId = @StaffId
             ", con);
 
@@ -500,12 +506,10 @@ namespace DairyIndustry.Repository
 
             var result = cmd.ExecuteScalar();
 
-            if (result != null && result != DBNull.Value)
-                return Convert.ToInt32(result);
-
-            return 0; // fallback (no mapping found)
+            return result != null && result != DBNull.Value
+                ? Convert.ToInt32(result)
+                : 0;
         }
-
         public List<MilkTypes> GetMilkTypes()
         {
             var list = new List<MilkTypes>();
@@ -528,57 +532,96 @@ namespace DairyIndustry.Repository
             return list;
         }
 
-
-
-        public List<DateWiseMilkEntryViewModel> GetAllEntries(int centerId)
+        //All Milk Entries for center
+        public List<AllMilkEntriesModel> GetAllEntries(int centerId)
         {
-            var list = new List<DateWiseMilkEntryViewModel>();
+            List<AllMilkEntriesModel> list = new List<AllMilkEntriesModel>();
 
             using (SqlConnection con = _dbHelper.GetConnection())
-            using (SqlCommand cmd = new SqlCommand(@"
-                SELECT
-                    mc.CollectionId,
-                    mc.CollectionDate,
-                    mc.Shift,
-                    mc.Quantity,
-                    mc.AppliedFat,
-                    mc.AppliedCLR,
-                    mc.RatePerLiter,
-                    mc.Amount,
-                    f.FarmerName,
-                    f.FarmerCode
-                FROM Collection.MilkCollection mc
-                INNER JOIN Farmer.Farmers f ON mc.FarmerId = f.FarmerId
-                WHERE mc.CenterId = @CenterId
-                ORDER BY mc.CollectionDate DESC, mc.CollectionId DESC
-                ", con))
             {
-                cmd.Parameters.AddWithValue("@CenterId", centerId);
+                string query = @"
+                    SELECT
+                        mc.CollectionId,
+                        mc.CollectionDate,
+                        f.FarmerName,
+                        f.FarmerCode,
+                        mc.Shift,
+                        mc.Quantity,
+                        mc.AppliedFat,
+                        mc.AppliedCLR,
+                        mc.RatePerLiter,
+                        mc.Amount,
+                        mc.BatchId,
+                        'Accepted' AS Status,
+                        NULL AS RejectionReason,
+                        NULL As Remarks
 
-                con.Open();
-                using (var reader = cmd.ExecuteReader())
+                    FROM Collection.MilkCollection mc
+                    INNER JOIN Farmer.Farmers f
+                        ON mc.FarmerId = f.FarmerId
+                    WHERE mc.CenterId = @CenterId
+
+                    UNION ALL
+
+                    SELECT
+                        0 AS CollectionId,
+                        mr.RejectionDate AS CollectionDate,
+                        f.FarmerName,
+                        f.FarmerCode,
+                        mr.Shift,
+                        mr.Quantity,
+                        mr.AppliedFat,
+                        mr.AppliedCLR,
+                        0 AS RatePerLiter,
+                        0 AS Amount,
+                        mr.BatchId,
+                        'Rejected' AS Status,
+                        mr.RejectionReason,
+                        mr.Remarks
+
+                    FROM Collection.MilkRejections mr
+                    INNER JOIN Farmer.Farmers f
+                        ON mr.FarmerId = f.FarmerId
+                    WHERE mr.CenterId = @CenterId
+
+                    ORDER BY CollectionDate DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
                 {
-                    while (reader.Read())
+                    cmd.Parameters.AddWithValue("@CenterId", centerId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        list.Add(new DateWiseMilkEntryViewModel
+                        while (reader.Read())
                         {
-                            CollectionId = (int)reader["CollectionId"],
-                            CollectionDate = (DateTime)reader["CollectionDate"],
-                            Shift = reader["Shift"].ToString(),
-                            Quantity = (decimal)reader["Quantity"],
-                            AppliedFat = (decimal)reader["AppliedFat"],
-                            AppliedCLR = (decimal)reader["AppliedCLR"],
-                            RatePerLiter = (decimal)reader["RatePerLiter"],
-                            Amount = (decimal)reader["Amount"],
-                            FarmerName = reader["FarmerName"].ToString(),
-                            FarmerCode = reader["FarmerCode"].ToString()
-                        });
+                            list.Add(new AllMilkEntriesModel
+                            {
+                                CollectionId = Convert.ToInt32(reader["CollectionId"]),
+                                CollectionDate = Convert.ToDateTime(reader["CollectionDate"]),
+                                FarmerName = reader["FarmerName"].ToString(),
+                                FarmerCode = reader["FarmerCode"].ToString(),
+                                Shift = reader["Shift"].ToString(),
+
+                                Quantity = reader["Quantity"] as decimal?,
+                                AppliedFat = reader["AppliedFat"] as decimal?,
+                                AppliedCLR = reader["AppliedCLR"] as decimal?,
+                                RatePerLiter = reader["RatePerLiter"] as decimal?,
+                                Amount = reader["Amount"] as decimal?,
+                                BatchId = reader["BatchId"] != DBNull.Value? Convert.ToInt32(reader["BatchId"]): 0,
+                                Status = reader["Status"].ToString(),
+                                RejectionReason = reader["RejectionReason"]?.ToString(),
+                                Remarks = reader["Remarks"]?.ToString()
+                            });
+                        }
                     }
                 }
             }
 
             return list;
         }
+
         //Inventory by center 
         public List<CenterInventoryViewModel> GetInventoryByCenter(int centerId)
         {
@@ -610,34 +653,34 @@ namespace DairyIndustry.Repository
 
 
         //Farmer receipt
-        public FarmerReceiptViewModel GetReceiptByCollectionId(int id)
+        public FarmerMilkReceiptModel GetReceiptByCollectionId(int id)
         {
             using var con = _dbHelper.GetConnection();
             using var cmd = new SqlCommand(@"
-        SELECT 
-            fr.ReceiptId,
-            fr.ReceiptNumber,
-            fr.ReceiptDate,
-            mc.CollectionId,
-            mc.CollectionDate,
-            mc.Shift,
-            mc.Quantity,
-            mc.AppliedFat,
-            mc.AppliedCLR,
-            mc.RatePerLiter,
-            mc.Amount,
-            f.FarmerId,
-            f.FarmerName,
-            f.FarmerCode,
-            mt.MilkTypeName,
-            cc.CenterName
-        FROM Collection.FarmerReceipts fr
-        JOIN Collection.MilkCollection mc ON mc.CollectionId = fr.CollectionId
-        JOIN Farmer.Farmers f ON f.FarmerId = mc.FarmerId
-        JOIN Finance.MilkTypes mt ON mt.MilkTypeId = mc.MilkTypeId
-        JOIN Collection.CollectionCenters cc ON cc.CenterId = mc.CenterId
-        WHERE mc.CollectionId = @Id
-    ", con);
+                    SELECT 
+                    fr.ReceiptId,
+                    fr.ReceiptNumber,
+                    fr.ReceiptDate,
+                    mc.CollectionId,
+                    mc.CollectionDate,
+                    mc.Shift,
+                    mc.Quantity,
+                    mc.AppliedFat,
+                    mc.AppliedCLR,
+                    mc.RatePerLiter,
+                    mc.Amount,
+                    f.FarmerId,
+                    f.FarmerName,
+                    f.FarmerCode,
+                    mt.MilkTypeName,
+                    cc.CenterName
+                FROM Collection.FarmerReceipts fr
+                JOIN Collection.MilkCollection mc ON mc.CollectionId = fr.CollectionId
+                JOIN Farmer.Farmers f ON f.FarmerId = mc.FarmerId
+                JOIN Finance.MilkTypes mt ON mt.MilkTypeId = mc.MilkTypeId
+                JOIN Collection.CollectionCenters cc ON cc.CenterId = mc.CenterId
+                WHERE mc.CollectionId = @Id
+            ", con);
 
             cmd.Parameters.AddWithValue("@Id", id);
 
@@ -646,7 +689,7 @@ namespace DairyIndustry.Repository
 
             if (!reader.Read()) return null;
 
-            return new FarmerReceiptViewModel
+            return new FarmerMilkReceiptModel
             {
                 ReceiptId = Convert.ToInt32(reader["ReceiptId"]),
                 ReceiptNumber = reader["ReceiptNumber"].ToString(),
@@ -732,8 +775,7 @@ namespace DairyIndustry.Repository
 
         // ─────────────────────────────────────────────────────────────
         // Closed/partially-dispatched batches that still have milk left.
-        // SP: Collection.usp_GetClosedBatchesForDispatch  (FIXED)
-        // Returns RemainingQty so dropdown shows how much is left.
+        // SP: Collection.usp_GetClosedBatchesForDispatch 
         // ─────────────────────────────────────────────────────────────
         public List<ClosedBatchDropdownItem> GetClosedBatchesForDispatch(int centerId)
         {
@@ -820,16 +862,41 @@ namespace DairyIndustry.Repository
 
             return list;
         }
-        public int DispatchMilkTransfer(int batchId, int milkTypeId, 
-                                         int vehicleId, int plantId,
-                                         decimal dispatchQty, DateTime dispatchDate)
+
+        public (decimal totalQty, decimal availableQty)GetMilkTypeBatchDetails(int batchId, int milkTypeId)
         {
             using var con = _dbHelper.GetConnection();
+
             using var cmd = new SqlCommand(
-                "Production.usp_Production_DispatchMilkTransfer", con);
+                "Collection.usp_GetMilkTypeBatchDetails",
+                con);
+
             cmd.CommandType = CommandType.StoredProcedure;
 
             cmd.Parameters.AddWithValue("@BatchId", batchId);
+            cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);
+
+            con.Open();
+
+            using var reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                return (
+                    Convert.ToDecimal(reader["TotalMilkTypeQty"]),
+                    Convert.ToDecimal(reader["AvailableQty"])
+                );
+            }
+
+            return (0, 0);
+        }
+        public int DispatchMilkTransfer(int batchId, int milkTypeId, int vehicleId, int plantId,decimal dispatchQty, DateTime dispatchDate)
+        {
+            using var con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Production.usp_Production_DispatchMilkTransferNew", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@BatchId", batchId); 
             cmd.Parameters.AddWithValue("@MilkTypeId", milkTypeId);  
             cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
             cmd.Parameters.AddWithValue("@PlantId", plantId);
@@ -884,8 +951,67 @@ namespace DairyIndustry.Repository
                     DriverName = reader["DriverName"]?.ToString(),
                     TransferStatus = reader["TransferStatus"]?.ToString(),
 
-                    //  NEW
+                   
                     MilkTypeName = reader["MilkTypeName"]?.ToString()
+                });
+            }
+
+            return list;
+        }
+
+        public List<AllBatchsModel> GetAllBatchDetails(int staffId)
+        {
+            List<AllBatchsModel> list = new();
+
+            using var con = _dbHelper.GetConnection();
+
+            using SqlCommand cmd =
+                new SqlCommand("Collection.usp_GetAllBatchDetails", con);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+
+            using SqlDataReader dr = cmd.ExecuteReader();
+
+            while (dr.Read())
+            {
+                list.Add(new AllBatchsModel
+                {
+                    BatchId = Convert.ToInt32(dr["BatchId"]),
+
+                    CenterName = dr["CenterName"].ToString(),
+
+                    Shift = dr["Shift"].ToString(),
+
+                    BatchDate = Convert.ToDateTime(dr["BatchDate"]),
+
+                    TotalQuantity = dr["TotalQuantity"] == DBNull.Value
+                        ? 0
+                        : Convert.ToDecimal(dr["TotalQuantity"]),
+
+                    AvgFat = dr["AvgFat"] == DBNull.Value
+                        ? 0
+                        : Convert.ToDecimal(dr["AvgFat"]),
+
+                    AvgCLR = dr["AvgCLR"] == DBNull.Value
+                        ? 0
+                        : Convert.ToDecimal(dr["AvgCLR"]),
+
+                    Status = dr["Status"].ToString(),
+
+                    TotalFarmers = dr["TotalFarmers"] == DBNull.Value
+                        ? 0
+                        : Convert.ToInt32(dr["TotalFarmers"]),
+
+                    TotalMilkCollected = dr["TotalMilkCollected"] == DBNull.Value
+                        ? 0
+                        : Convert.ToDecimal(dr["TotalMilkCollected"]),
+
+                    TotalAmount = dr["TotalAmount"] == DBNull.Value
+                        ? 0
+                        : Convert.ToDecimal(dr["TotalAmount"])
                 });
             }
 

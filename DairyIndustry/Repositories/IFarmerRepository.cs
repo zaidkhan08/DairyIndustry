@@ -11,15 +11,27 @@ namespace DairyIndustry.Repositories
         List<CityModel> GetCitiesByState(int stateId);
         List<VillageModel> GetVillagesByCity(int cityId);
 
-        FarmerViewModel AddFarmer(FarmerViewModel model, int staffId);
+        //Registration of farmer will be done by Collection Center
+        RegByCenterModel AddFarmer(RegByCenterModel model, int staffId);
 
         List<FarmerViewModel> GetAllFarmers(int staffId, bool? isActive = null, string search = null);
 
         void ToggleFarmerStatus(int staffId, int farmerId, bool isActive);
 
-        int UpdateFarmer(FarmerViewModel model, int staffId);
+        List<CenterRejectedFarmerModel> GetRejectedFarmersByCenter(int staffId);
 
-        FarmerViewModel GetFarmerById(int farmerId, int staffId);
+        // Update basic farmer details
+        //int UpdateFarmer(FarmerViewModel model, int staffId);
+
+        //// Update farmer documents
+        //int UpdateFarmerDocuments(int staffId,int farmerId,string documentType,string filePath);
+        //FarmerViewModel GetFarmerById(int farmerId, int staffId);
+
+        FarmerEditModel GetFarmerById(int farmerId, int staffId);
+
+        int UpdateFarmer(FarmerEditModel model, int staffId);
+
+        int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath);
 
         //Farmer Module
 
@@ -31,12 +43,10 @@ namespace DairyIndustry.Repositories
 
         //today milk entries
 
-        List<MilkCollectionViewModel> GetTodayMilkEntries(int farmerId);
+        List<MilkCollectionModel> GetTodayMilkEntries(int farmerId);
 
-        //List<MilkCollectionViewModel> GetFarmerTodayMilkEntries(int farmerId);
-        //all milk enties
-
-        List<MilkCollectionViewModel> GetAllMilkEntries(int farmerId);
+        List<AllMilkHistoryModel> GetAllMilkEntriesFarmer(int farmerId);
+        FarmerMilkReceiptModel GetReceiptByCollectionId(int collectionId);
         //dashboard
         FarmerDashboardViewModel GetDashboard(int farmerId);
 
@@ -48,7 +58,7 @@ namespace DairyIndustry.Repositories
         FarmerStatusViewModel GetFarmerStatusByPhone(string phone);
 
         // Pending approvals list for a staff member's center
-        List<PendingApprovalViewModel> GetPendingApprovals(int staffId);
+        List<PendingApprovalModel> GetPendingApprovals(int staffId);
 
         // Approve a pending farmer — returns FarmerCode + DefaultPassword
         ApprovalResultModel ApproveFarmer(int staffId, int farmerId);
@@ -60,5 +70,9 @@ namespace DairyIndustry.Repositories
         //milk rejection entries (history) for farmer
         List<FarmerRejectionViewModel> GetRejectionHistory(
         int farmerId, DateTime? fromDate = null, DateTime? toDate = null);
+
+        string GenerateOtp(string email);
+        bool VerifyOtp(string email, string otp);
+        string ChangePassword(int farmerId, string currentPassword, string newPassword);
     }
 }

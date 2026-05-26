@@ -2,54 +2,47 @@ using DairyIndustry.Data;
 using DairyIndustry.Filters;
 using DairyIndustry.Repositories;
 using DairyIndustry.Repository;
+using DairyIndustry.Services;
 using DinkToPdf;
 using DinkToPdf.Contracts;
-using System.Runtime.Loader;
 using Stripe;
-
-var builder = WebApplication.CreateBuilder(args);
-
-//  LOAD DLL
-var context = new CustomAssemblyLoadContext();
-context.LoadUnmanagedLibrary(
-    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
-);
-
-//  REGISTER DinkToPdf
-builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
-
-builder.Services.AddSingleton<DbHelper>();
-builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
-builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
-
-builder.Services.AddScoped<IPlantRepository, PlantRepository>();
-builder.Services.AddScoped<ActionLogFilter>();
-builder.Services.AddScoped<IAdminRepository, AdminRepository>();
-
-builder.Services.AddScoped<ILogisticsRepository, LogisticsRepository>();
-builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
-
-builder.Services.AddControllersWithViews(options =>
+using System.Runtime.Loader;
+namespace DairyIndustry
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
 
+            //  LOAD DLL
+            var context = new CustomAssemblyLoadContext();
+            context.LoadUnmanagedLibrary(
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
+            );
+
+
+            var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSingleton<DbHelper>();
-            builder.Services.AddScoped<ActionLogFilter>();       
+            //builder.Services.AddControllersWithViews(options =>
+            builder.Services.AddScoped<ActionLogFilter>();
+            builder.Services.AddScoped<EmailService>();
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
-            builder.Services.AddScoped<ILogisticsRepository,LogisticsRepository>();
-            builder.Services.AddScoped<IProductionRepository,ProductionRepository>();
+            builder.Services.AddScoped<ILogisticsRepository, LogisticsRepository>();
+            builder.Services.AddScoped<IProductionRepository, ProductionRepository>();
             builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
+            builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
+            builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
+            builder.Services.AddScoped<FileUploadService>();
+
+
+            //  REGISTER DinkToPdf
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
-        
+
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-            builder.Services.AddControllersWithViews(options =>  
+            builder.Services.AddControllersWithViews(options =>
             {
                 options.Filters.Add<ExceptionHandlerFilter>();
                 options.Filters.Add<ResultInfoFilter>();
@@ -61,7 +54,7 @@ builder.Services.AddControllersWithViews(options =>
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
-            
+
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())

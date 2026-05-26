@@ -1,0 +1,343 @@
+﻿@model DairyIndustry.Models.Collection.FarmerMilkReceiptModel
+
+@{
+    ViewData["Title"] = "Milk Receipt";
+    Layout = "_CollectionCenterLayout";
+}
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+<div class="container py-4">
+
+    <div class="mx-auto" style="max-width:700px;">
+
+        <!-- ACTION BUTTONS -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <a asp-action="AllMilkEntries"
+               class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+
+            <a asp-action="DownloadReceipt"
+               asp-route-id="@Model.CollectionId"
+               class="btn rounded-pill px-4 text-white"
+               style="background:#0f172a;">
+                <i class="bi bi-download me-1"></i> Download PDF
+            </a>
+
+        </div>
+
+        <!-- RECEIPT CARD -->
+        <div class="card border-0 shadow-sm"
+             style="border-radius:18px;
+                    overflow:hidden;
+                    background:#ffffff;">
+
+            <!-- HEADER -->
+            <div class="text-center text-white"
+                 style="background:#0f172a;
+                        padding:35px 25px;">
+
+                <div class="mb-2"
+                     style="font-size:2rem;">
+                    🥛
+                </div>
+
+                <h2 class="fw-bold mb-1"
+                    style="letter-spacing:.5px;">
+                    DAIRY MANAGEMENT SYSTEM
+                </h2>
+
+                <div style="font-size:.95rem; opacity:.85;">
+                    @Model.CenterName
+                </div>
+
+            </div>
+
+            <!-- BODY -->
+            <div class="card-body p-4">
+
+                <!-- RECEIPT TOP -->
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-6">
+
+                        <div class="border rounded-4 p-3 h-100"
+                             style="background:#f8fafc;">
+
+                            <div class="text-muted small mb-1">
+                                Receipt Number
+                            </div>
+
+                            <div class="fw-bold"
+                                 style="font-size:1.1rem;
+                                        color:#0f172a;">
+
+                                #@Model.ReceiptNumber
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="border rounded-4 p-3 h-100"
+                             style="background:#f8fafc;">
+
+                            <div class="text-muted small mb-1">
+                                Collection Date
+                            </div>
+
+                            <div class="fw-bold"
+                                 style="font-size:1.1rem;
+                                        color:#0f172a;">
+
+                                @Model.CollectionDate.ToString("dd MMM yyyy")
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- SHIFT -->
+                <div class="border rounded-4 p-3 mb-4"
+                     style="background:#f8fafc;">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <div class="text-muted small mb-1">
+                                Shift
+                            </div>
+
+                            <div class="fw-semibold"
+                                 style="color:#0f172a;">
+                                Milk Collection Shift
+                            </div>
+
+                        </div>
+
+                        <span class="badge rounded-pill px-3 py-2"
+                              style="background:#dbeafe;
+                                     color:#1e3a8a;
+                                     font-size:.85rem;">
+
+                            <i class="bi bi-clock me-1"></i>
+                            @Model.Shift
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <!-- FARMER DETAILS -->
+                <div class="mb-4">
+
+                    <h5 class="fw-bold mb-3"
+                        style="color:#0f172a;">
+                        Farmer Details
+                    </h5>
+
+                    <div class="table-responsive">
+
+                        <table class="table table-bordered align-middle mb-0">
+
+                            <tbody>
+
+                                <tr>
+                                    <th width="35%"
+                                        style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Farmer Code
+                                    </th>
+
+                                    <td class="fw-semibold">
+                                        @Model.FarmerCode
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Farmer Name
+                                    </th>
+
+                                    <td class="fw-semibold">
+                                        @Model.FarmerName
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+                <!-- MILK DETAILS -->
+                <div class="mb-4">
+
+                    <h5 class="fw-bold mb-3"
+                        style="color:#0f172a;">
+                        Milk Details
+                    </h5>
+
+                    <div class="table-responsive">
+
+                        <table class="table table-bordered align-middle mb-0">
+
+                            <tbody>
+
+                                <tr>
+                                    <th width="35%"
+                                        style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Milk Type
+                                    </th>
+
+                                    <td>
+                                        @Model.MilkTypeName
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Quantity
+                                    </th>
+
+                                    <td>
+                                        @Model.Quantity.ToString("F2") L
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Fat %
+                                    </th>
+
+                                    <td>
+                                        @(Model.AppliedFat?.ToString("F2") ?? "—")
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        CLR
+                                    </th>
+
+                                    <td>
+                                        @(Model.AppliedCLR?.ToString("F2") ?? "—")
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+                <!-- PAYMENT DETAILS -->
+                <div class="mb-4">
+
+                    <h5 class="fw-bold mb-3"
+                        style="color:#0f172a;">
+                        Payment Details
+                    </h5>
+
+                    <div class="table-responsive">
+
+                        <table class="table table-bordered align-middle mb-0">
+
+                            <tbody>
+
+                                <tr>
+                                    <th width="35%"
+                                        style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Rate Per Liter
+                                    </th>
+
+                                    <td>
+                                        ₹ @Model.RatePerLiter?.ToString("F2")
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th style="background:#f8fafc;
+                                               color:#0f172a;">
+                                        Quantity
+                                    </th>
+
+                                    <td>
+                                        @Model.Quantity.ToString("F2") L
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+                <!-- TOTAL -->
+                <div class="rounded-4 text-center p-4 mb-4"
+                     style="background:#f8fafc;
+                            border:2px solid #dbeafe;">
+
+                    <div class="text-muted mb-2"
+                         style="font-size:1rem;">
+                        Total Amount
+                    </div>
+
+                    <div class="fw-bold"
+                         style="font-size:2.2rem;
+                                color:#0f172a;">
+
+                        ₹ @Model.Amount?.ToString("F2")
+
+                    </div>
+
+                </div>
+
+                <!-- FOOTER -->
+                <div class="text-center pt-3 border-top">
+
+                    <div class="fw-semibold"
+                         style="color:#0f172a;">
+                        Thank You!
+                    </div>
+
+                    <div class="text-muted small">
+                        Computer Generated Receipt
+                    </div>
+
+                    <div class="text-muted small mt-1">
+                        @DateTime.Now.ToString("dd MMM yyyy hh:mm tt")
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

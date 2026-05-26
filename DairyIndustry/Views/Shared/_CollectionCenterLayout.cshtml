@@ -409,7 +409,7 @@
             <div class="sidebar-label">Farmer Management</div>
 
             <a class="sidebar-link"
-               asp-controller="Farmer" asp-action="Index">
+               asp-controller="Farmer" asp-action="ListAllFarmers">
                 <i class="bi bi-person-lines-fill"></i> Farmer List
             </a>
 
@@ -417,11 +417,14 @@
                asp-controller="CollectionCenter" asp-action="PendingApprovals">
                 <i class="bi bi-person-check-fill"></i> Approve/Reject
             </a>
-
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="RejectedFarmersByCenter">
+                <i class="bi bi-person-check-fill"></i> Rejected Farmers
+            </a>
             <div class="sidebar-label">Milk Management</div>
 
             <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="Create">
+               asp-controller="CollectionCenter" asp-action="AddMilkCollection">
                 <i class="bi bi-droplet-half"></i> Milk Entry
             </a>
 
@@ -443,14 +446,14 @@
             </a>
 
             <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="DateWiseEntries">
-                <i class="bi bi-table"></i> All Entries
+               asp-controller="CollectionCenter" asp-action="AllBatchDetails">
+                <i class="bi bi-calendar-check"></i>All Batches
+            </a>
+            <a class="sidebar-link"
+               asp-controller="CollectionCenter" asp-action="AllMilkEntriesCenter">
+                <i class="bi bi-table"></i> All Milk Entries
             </a>
            
-            <a class="sidebar-link"
-               asp-controller="CollectionCenter" asp-action="RejectionHistoryCenter">
-                <i class="bi bi-table"></i> Rejectected Entries
-            </a>
             <div class="sidebar-label">Transfer Management</div>
 
             <a class="sidebar-link"
@@ -462,15 +465,7 @@
                asp-controller="CollectionCenter" asp-action="DispatchHistory">
                 <i class="bi bi-clock-history"></i> Dispatch Milk History
             </a>
-            <a class="sidebar-link"
-               asp-controller="Plant" asp-action="IncomingTransfers">
-                <i class="bi bi-calendar-check"></i> IncomingTransfers
-            </a>
-
-            <a class="sidebar-link"
-               asp-controller="Plant" asp-action="ReceiveMilk">
-                <i class="bi bi-table"></i> All Entries
-            </a>
+     
         </div>
 
         <!-- Sidebar bottom user info -->

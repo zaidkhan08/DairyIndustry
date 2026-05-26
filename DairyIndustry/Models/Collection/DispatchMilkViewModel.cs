@@ -1,6 +1,4 @@
-﻿using DairyIndustry.Models.Logistics;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace DairyIndustry.Models.Collection
@@ -10,7 +8,6 @@ namespace DairyIndustry.Models.Collection
         [Required(ErrorMessage = "Please select a batch")]
         public int BatchId { get; set; }
 
-        // ✅ NEW
         [Required(ErrorMessage = "Please select milk type")]
         public int MilkTypeId { get; set; }
 
@@ -28,16 +25,18 @@ namespace DairyIndustry.Models.Collection
         [Required(ErrorMessage = "Dispatch date is required")]
         public DateTime DispatchDate { get; set; } = DateTime.Today;
 
+        public decimal MilkTypeTotalQty { get; set; }
+
+        public decimal MilkTypeAvailableQty { get; set; }
+
         // dropdowns — populated in GET, not validated on POST
         [ValidateNever] public List<ClosedBatchDropdownItem> ClosedBatches { get; set; } = new();
         [ValidateNever] public List<VehicleDropdownItem> Vehicles { get; set; } = new();
         [ValidateNever] public List<PlantDropdownItem> Plants { get; set; } = new();
 
 
-        // ✅ NEW
         [ValidateNever] public List<MilkTypes> MilkTypes { get; set; } = new();
 
-        // ✅ NEW — available qty for selected milk type (shown in UI)
         public decimal AvailableQty { get; set; }
     }
     public class ClosedBatchDropdownItem
@@ -93,7 +92,7 @@ namespace DairyIndustry.Models.Collection
 
         // "In Transit" | "Received"  (set by SP)
         public string TransferStatus { get; set; }
-        // ✅ NEW
+       
         public string MilkTypeName { get; set; }
         public bool IsReceived => TransferStatus == "Received";
         public bool IsInTransit => TransferStatus == "In Transit";

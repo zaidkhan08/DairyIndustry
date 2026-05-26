@@ -5,7 +5,9 @@
         // 🔹 RESULT SET 1 (Staff + Center)
         public int StaffId { get; set; }
         public string StaffName { get; set; }
-        public string StaffType { get; set; }
+
+        public int RoleId { get; set; }         
+        public string RoleName { get; set; }
         public string StaffPhoto { get; set; }
 
         public int CenterId { get; set; }
@@ -19,7 +21,15 @@
         public decimal CurrentStock { get; set; }
         public decimal AvailableSpace { get; set; }
 
+        public int TotalFarmers { get; set; }
 
+        public int ActiveFarmers { get; set; }
+
+        public int InactiveFarmers { get; set; }
+
+        public int PendingApprovals { get; set; }
+
+        public int RejectedApprovals { get; set; }
 
         //  RESULT SET 2 (Shift + Batch)
         public List<ShiftBatchInfo> Shifts { get; set; } = new();
