@@ -2,7 +2,8 @@
 @using DairyIndustry.Models.Production
 @{
     ViewData["Title"] = "Plant Inventory";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var plantName = Context.Session.GetString("PlantName");
     var plantLabel = plantName ?? Model.FirstOrDefault()?.PlantName ?? "Unknown Plant";
     var grouped = Model.GroupBy(x => x.PlantName);
@@ -11,484 +12,513 @@
     var lastSync = Model.Any() ? Model.Max(x => x.LastUpdated) : DateTime.Now;
 }
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
 <style>
+    :root {
+        --bg: #F4F5F7;
+        --surface: #FFFFFF;
+        --surface-2: #F9FAFB;
+        --border: #E4E7EC;
+        --border-2: #D0D5DD;
+        --text-1: #101828;
+        --text-2: #344054;
+        --text-3: #667085;
+        --text-4: #98A2B3;
+        --accent: #1D4ED8;
+        --accent-bg: #EFF4FF;
+        --accent-bd: #C7D7FD;
+        --green: #027A48;
+        --green-bg: #ECFDF3;
+        --green-bd: #ABEFC6;
+        --radius: 10px;
+        --radius-lg: 14px;
+        --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1);
+        --shadow-md: 0 4px 8px -2px rgba(16,24,40,.08), 0 2px 4px -2px rgba(16,24,40,.04);
+    }
+
     .inv {
-        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        font-size: 14px;
-        color: #0F172A;
-        padding: 1.25rem 0 3rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+        padding: 2rem 1.75rem 4rem;
+        color: var(--text-1);
     }
 
-    /* ── Designer Hero Card ─────────────────────────── */
-    .inv-hero {
-        border-radius: 18px;
-        border: 1px solid #E2E8F0;
-        overflow: hidden;
-        margin-bottom: 1.5rem;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 16px rgba(15,23,42,.04);
+    /* ── TOP BAR ── */
+    .inv-topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 1.75rem;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
-    .inv-hero-top {
-        background: #1E3A5F;
-        padding: 1.6rem 1.8rem;
-    }
-
-    .inv-hero-eyebrow {
-        font-size: 11.5px;
-        font-weight: 500;
-        color: rgba(255,255,255,.45);
+    .inv-page-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
         text-transform: uppercase;
         letter-spacing: .08em;
         margin-bottom: 6px;
     }
 
-    .inv-hero-main-title {
-        font-size: 30px;
+    .inv-page-title {
+        font-size: 26px;
         font-weight: 700;
-        color: #fff;
-        letter-spacing: -.5px;
-        line-height: 1.1;
-    }
-
-    .inv-hero-plant-name {
-        font-size: 14px;
-        color: rgba(255,255,255,.5);
-        margin-top: 6px;
-        font-weight: 400;
-    }
-
-    .inv-hero-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        border-top: 1px solid #E2E8F0;
-    }
-
-    .inv-stat {
-        padding: 1rem 1.25rem;
-        border-right: 1px solid #E2E8F0;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-        .inv-stat:last-child {
-            border-right: none;
-        }
-
-    .inv-stat-label {
-        font-size: 11px;
-        font-weight: 600;
-        color: #94A3B8;
-        text-transform: uppercase;
-        letter-spacing: .05em;
-    }
-
-    .inv-stat-value {
-        font-size: 22px;
-        font-weight: 700;
-        color: #0F172A;
+        color: var(--text-1);
         letter-spacing: -.4px;
         line-height: 1.1;
     }
 
-        .inv-stat-value .u {
-            font-size: 12px;
-            font-weight: 400;
-            color: #94A3B8;
-            margin-left: 2px;
-        }
-
-    .inv-stat-caption {
-        font-size: 11px;
-        color: #94A3B8;
-    }
-
-    /* ── Plant section header ───────────────────────── */
-    .inv-plant-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-        padding: 0 2px;
-    }
-
-    .inv-plant-head-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .inv-plant-label {
+    .inv-page-plant {
         font-size: 13px;
-        font-weight: 600;
-        color: #0F172A;
+        color: var(--text-3);
+        margin-top: 5px;
+        font-weight: 400;
     }
 
-    .inv-type-pill {
-        font-size: 11px;
-        font-weight: 500;
-        background: #EFF6FF;
-        color: #1D4ED8;
-        border: 1px solid #BFDBFE;
-        border-radius: 20px;
-        padding: 2px 8px;
-    }
-
-    .inv-plant-net {
-        font-size: 14px;
-        font-weight: 600;
-        color: #0F172A;
-        font-variant-numeric: tabular-nums;
-    }
-
-        .inv-plant-net .u {
-            font-size: 11px;
-            font-weight: 400;
-            color: #94A3B8;
-            margin-left: 3px;
-        }
-
-    /* ── Inventory Lanes ────────────────────────────── */
-    .inv-lanes {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 1.25rem;
-    }
-
-    .inv-lane {
-        background: #fff;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        padding: .9rem 1.15rem .9rem 0;
-        display: grid;
-        grid-template-columns: 5px 160px 1fr 130px;
-        align-items: center;
-        gap: 1.1rem;
-        overflow: hidden;
-        transition: border-color .15s, box-shadow .15s;
-    }
-
-        .inv-lane:hover {
-            border-color: #CBD5E1;
-            box-shadow: 0 2px 8px rgba(15,23,42,.05);
-        }
-
-    .inv-lane-accent {
-        height: 100%;
-        width: 5px;
-        flex-shrink: 0;
-        border-radius: 0;
-    }
-
-        .inv-lane-accent.good {
-            background: #22C55E;
-        }
-
-        .inv-lane-accent.mid {
-            background: #F59E0B;
-        }
-
-        .inv-lane-accent.high {
-            background: #EF4444;
-        }
-
-    .inv-lane-left {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        padding-left: 4px;
-    }
-
-    .inv-lane-type {
-        font-size: 13.5px;
-        font-weight: 600;
-        color: #0F172A;
-    }
-
-    .inv-status {
+    .inv-sync-tag {
         display: inline-flex;
         align-items: center;
-        font-size: 11px;
-        font-weight: 500;
-        border-radius: 20px;
-        padding: 2px 8px;
-        width: fit-content;
-    }
-
-        .inv-status.good {
-            background: #F0FDF4;
-            color: #15803D;
-            border: 1px solid #BBF7D0;
-        }
-
-        .inv-status.mid {
-            background: #FFFBEB;
-            color: #B45309;
-            border: 1px solid #FDE68A;
-        }
-
-        .inv-status.high {
-            background: #FEF2F2;
-            color: #DC2626;
-            border: 1px solid #FECACA;
-        }
-
-    .inv-lane-mid {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .inv-bar-track {
-        height: 9px;
-        background: #F1F5F9;
-        border-radius: 5px;
-        overflow: hidden;
-    }
-
-    .inv-bar-fill {
-        height: 100%;
-        border-radius: 5px;
-        transition: width 1s cubic-bezier(.4,0,.2,1);
-    }
-
-        .inv-bar-fill.good {
-            background: #22C55E;
-        }
-
-        .inv-bar-fill.mid {
-            background: #F59E0B;
-        }
-
-        .inv-bar-fill.high {
-            background: #EF4444;
-        }
-
-    .inv-bar-meta {
-        display: flex;
-        justify-content: space-between;
-        font-size: 10.5px;
-        color: #94A3B8;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .inv-lane-right {
-        text-align: right;
-        padding-right: 4px;
-    }
-
-    .inv-lane-qty {
-        font-size: 20px;
-        font-weight: 700;
-        color: #0F172A;
-        letter-spacing: -.3px;
-        font-variant-numeric: tabular-nums;
-    }
-
-        .inv-lane-qty .u {
-            font-size: 11px;
-            font-weight: 400;
-            color: #94A3B8;
-            margin-left: 2px;
-        }
-
-    .inv-lane-pct {
+        gap: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 13px;
         font-size: 12px;
-        color: #94A3B8;
-        margin-top: 2px;
-        font-variant-numeric: tabular-nums;
+        color: var(--text-3);
+        font-weight: 500;
+        box-shadow: var(--shadow);
+        white-space: nowrap;
     }
 
-    /* ── Net Total Lane ─────────────────────────────── */
-    .inv-total-lane {
-        background: #F0F7FF;
-        border: 1px solid #BFDBFE;
-        border-radius: 14px;
-        padding: .8rem 1.15rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 4px;
+    .sync-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #17B26A;
+        flex-shrink: 0;
+        animation: blink 2.4s ease-in-out infinite;
+    }
+    @@keyframes blink {
+        0%,100%
+
+    {
+        opacity: 1
     }
 
-    .inv-total-label {
-        font-size: 11.5px;
+    50% {
+        opacity: .4
+    }
+
+    }
+
+    /* ── KPI CARDS ── */
+    .inv-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .875rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .inv-kpi {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.35rem 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .kpi-label {
+        font-size: 11px;
         font-weight: 600;
-        color: #1D4ED8;
+        color: var(--text-4);
         text-transform: uppercase;
-        letter-spacing: .05em;
+        letter-spacing: .07em;
+        margin-bottom: 10px;
     }
 
-    .inv-total-value {
-        font-size: 15px;
+    .kpi-val {
+        font-size: 28px;
         font-weight: 700;
-        color: #1D4ED8;
+        color: var(--text-1);
+        letter-spacing: -.6px;
+        line-height: 1;
         font-variant-numeric: tabular-nums;
     }
 
-        .inv-total-value .u {
-            font-size: 11px;
-            font-weight: 400;
-            color: #60A5FA;
+        .kpi-val .u {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-4);
             margin-left: 3px;
         }
 
-    /* ── Empty state ────────────────────────────────── */
-    .inv-empty {
-        background: #fff;
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        padding: 3.5rem 2rem;
-        text-align: center;
-        color: #64748B;
-        font-size: 14px;
+    .kpi-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 6px;
     }
 
-    /* ── System footer ──────────────────────────────── */
-    .inv-footer {
+    /* ── SECTION ── */
+    .inv-section {
+        margin-bottom: 1.75rem;
+    }
+
+    .inv-section-header {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 6px;
-        margin-top: 1.5rem;
-        font-size: 11.5px;
-        color: #CBD5E1;
+        justify-content: space-between;
+        margin-bottom: .75rem;
     }
 
-    .inv-fdot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #22C55E;
-        display: inline-block;
+    .inv-section-left {
+        display: flex;
+        align-items: center;
+        gap: 9px;
     }
 
-    @@media (max-width: 640px) {
-        .inv-lane {
-            grid-template-columns: 5px 1fr;
+    .section-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .section-pill {
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--accent-bg);
+        color: var(--accent);
+        border: 1px solid var(--accent-bd);
+        border-radius: 20px;
+        padding: 2px 9px;
+    }
+
+    .section-total {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ── TABLE ── */
+    .inv-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .inv-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .inv-tbl thead tr {
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
         }
 
-        .inv-lane-mid, .inv-lane-right {
-            grid-column: 2 / -1;
-        }
-
-        .inv-lane-right {
+        .inv-tbl thead th {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            padding: 11px 20px;
             text-align: left;
         }
 
-        .inv-hero-stats {
-            grid-template-columns: 1fr 1fr;
+            .inv-tbl thead th.right {
+                text-align: right;
+            }
+
+        .inv-tbl tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
         }
 
-        .inv-stat:nth-child(2) {
-            border-right: none;
+            .inv-tbl tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .inv-tbl tbody tr:hover {
+                background: var(--surface-2);
+            }
+
+        .inv-tbl td {
+            padding: 15px 20px;
+            vertical-align: middle;
         }
 
-        .inv-stat:nth-child(3) {
-            grid-column: 1 / -1;
-            border-right: none;
-            border-top: 1px solid #E2E8F0;
+    /* rank */
+    .td-num {
+        width: 48px;
+    }
+
+    .row-num {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* type */
+    .milk-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .milk-meta {
+        font-size: 11.5px;
+        color: var(--text-4);
+        margin-top: 3px;
+    }
+
+    /* status */
+    .td-status {
+        width: 130px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--green-bg);
+        color: var(--green);
+        border: 1px solid var(--green-bd);
+        border-radius: 20px;
+        padding: 3px 10px;
+    }
+
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #17B26A;
+            flex-shrink: 0;
         }
+
+    /* qty */
+    .td-qty {
+        text-align: right;
+    }
+
+    .qty-num {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-1);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.3px;
+    }
+
+        .qty-num .u {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-4);
+            margin-left: 3px;
+        }
+
+    /* table footer */
+    .tbl-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 20px;
+        background: var(--surface-2);
+        border-top: 1px solid var(--border);
+    }
+
+    .tbl-foot-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .tbl-foot-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .tbl-foot-val .u {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-4);
+            margin-left: 3px;
+        }
+
+    /* ── EMPTY ── */
+    .inv-empty {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 4rem 2rem;
+        text-align: center;
+        color: var(--text-3);
+        font-size: 14px;
+    }
+
+    /* ── FOOTER ── */
+    .inv-footer {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 11.5px;
+        color: var(--text-4);
+    }
+
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 680px) {
+        .inv-kpis
+
+    {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .inv-kpi:last-child {
+        grid-column: 1/-1;
+    }
+
+    .hide-sm {
+        display: none;
+    }
+
+    }
+    @@media (max-width: 440px) {
+        .inv-kpis
+
+    {
+        grid-template-columns: 1fr;
+    }
+
+    .inv-kpi:last-child {
+        grid-column: auto;
+    }
+
     }
 </style>
 
 <div class="inv">
 
-    <div class="inv-hero">
-        <div class="inv-hero-top">
-            <div class="inv-hero-eyebrow">Plant overview</div>
-            <div class="inv-hero-main-title">Milk Inventory</div>
-            <div class="inv-hero-plant-name">@plantLabel</div>
+    <!-- TOP BAR -->
+    <div class="inv-topbar">
+        <div>
+            <div class="inv-page-label">Production · Raw Milk</div>
+            <div class="inv-page-title">Milk Inventory</div>
+            <div class="inv-page-plant">@plantLabel</div>
         </div>
-        <div class="inv-hero-stats">
-            <div class="inv-stat">
-                <div class="inv-stat-label">Total inventory</div>
-                <div class="inv-stat-value">@globalTotal.ToString("N0") <span class="u">L</span></div>
-                <div class="inv-stat-caption">All milk types combined</div>
-            </div>
-            <div class="inv-stat">
-                <div class="inv-stat-label">Milk types</div>
-                <div class="inv-stat-value">@totalTypes</div>
-                <div class="inv-stat-caption">Active in this plant</div>
-            </div>
-            <div class="inv-stat">
-                <div class="inv-stat-label">Last logged</div>
-                <div class="inv-stat-value" style="font-size:17px;">@lastSync.ToString("dd MMM yyyy")</div>
-                <div class="inv-stat-caption">@lastSync.ToString("h:mm tt")</div>
-            </div>
+        <div class="inv-sync-tag">
+            <span class="sync-dot"></span>
+            Updated @lastSync.ToString("dd MMM yyyy, h:mm tt")
         </div>
     </div>
 
+    <!-- KPI STRIP -->
+    <div class="inv-kpis">
+        <div class="inv-kpi">
+            <div class="kpi-label">Total Inventory</div>
+            <div class="kpi-val">@globalTotal.ToString("N0")<span class="u">L</span></div>
+            <div class="kpi-sub">All milk types combined</div>
+        </div>
+        <div class="inv-kpi">
+            <div class="kpi-label">Milk Types</div>
+            <div class="kpi-val">@totalTypes</div>
+            <div class="kpi-sub">Active varieties</div>
+        </div>
+        <div class="inv-kpi">
+            <div class="kpi-label">Last Logged</div>
+            <div class="kpi-val" style="font-size:20px;letter-spacing:-.3px;">@lastSync.ToString("dd MMM yyyy")</div>
+            <div class="kpi-sub">@lastSync.ToString("h:mm tt")</div>
+        </div>
+    </div>
 
+    <!-- PLANT SECTIONS -->
     @if (!Model.Any())
     {
-        <div class="inv-empty">
-            No inventory records found for @plantLabel.
-        </div>
+        <div class="inv-empty">No inventory records found for @plantLabel.</div>
     }
     else
     {
         @foreach (var plant in grouped)
         {
             decimal plantTotal = plant.Sum(x => x.Quantity);
+            var rows = plant.OrderByDescending(x => x.Quantity).ToList();
 
-            <div style="margin-bottom:1.25rem;">
-
-                <div class="inv-plant-head">
-                    <div class="inv-plant-head-left">
-                        <span class="inv-plant-label">@plant.Key</span>
-                        <span class="inv-type-pill">@plant.Count() types</span>
+            <div class="inv-section">
+                <div class="inv-section-header">
+                    <div class="inv-section-left">
+                        <span class="section-name">@plant.Key</span>
+                        <span class="section-pill">@plant.Count() types</span>
                     </div>
-                    <span class="inv-plant-net">@plantTotal.ToString("N0") <span class="u">L</span></span>
+                    <span class="section-total">@plantTotal.ToString("N0") L</span>
                 </div>
 
-                <div class="inv-lanes">
-                    @foreach (var milk in plant.OrderByDescending(x => x.Quantity))
-                    {
-                        decimal maxCap = 100000m;
-                        decimal pct = Math.Min(Math.Round((milk.Quantity / maxCap) * 100m, 1), 100m);
-                        string barCls = pct > 80 ? "high" : pct > 50 ? "mid" : "good";
-                        string statusLabel = pct > 80 ? "High usage" : pct > 50 ? "Moderate" : "Healthy";
-
-                        <div class="inv-lane">
-                            <div class="inv-lane-accent @barCls"></div>
-                            <div class="inv-lane-left">
-                                <div class="inv-lane-type">@milk.MilkTypeName</div>
-                                <div class="inv-status @barCls">@statusLabel</div>
-                            </div>
-                            <div class="inv-lane-mid">
-                                <div class="inv-bar-track">
-                                    <div class="inv-bar-fill @barCls" style="width:@pct%;"></div>
-                                </div>
-                                <div class="inv-bar-meta">
-                                    <span>@pct% of capacity</span>
-                                    <span>@maxCap.ToString("N0") L</span>
-                                </div>
-                            </div>
-                            <div class="inv-lane-right">
-                                <div class="inv-lane-qty">@milk.Quantity.ToString("N0") <span class="u">L</span></div>
-                                <div class="inv-lane-pct">@pct%</div>
-                            </div>
-                        </div>
-                    }
-
-                    <div class="inv-total-lane">
-                        <span class="inv-total-label">Net total — @plant.Key</span>
-                        <span class="inv-total-value">@plantTotal.ToString("N0") <span class="u">L</span></span>
+                <div class="inv-card">
+                    <table class="inv-tbl">
+                        <thead>
+                            <tr>
+                                <th class="hide-sm" style="width:52px;">#</th>
+                                <th>Milk Type</th>
+                                <th class="hide-sm">Status</th>
+                                <th class="right">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < rows.Count; i++)
+                            {
+                                var milk = rows[i];
+                                <tr>
+                                    <td class="td-num hide-sm"><div class="row-num">@(i + 1)</div></td>
+                                    <td>
+                                        <div class="milk-name">@milk.MilkTypeName</div>
+                                        <div class="milk-meta">@plant.Key · Raw Milk</div>
+                                    </td>
+                                    <td class="td-status hide-sm">
+                                        <span class="status-badge">Available</span>
+                                    </td>
+                                    <td class="td-qty">
+                                        <span class="qty-num">@milk.Quantity.ToString("N0")<span class="u">L</span></span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="tbl-foot">
+                        <span class="tbl-foot-label">Net Total — @plant.Key</span>
+                        <span class="tbl-foot-val">@plantTotal.ToString("N0")<span class="u">L</span></span>
                     </div>
                 </div>
-
             </div>
         }
     }
 
+    <!-- FOOTER -->
     <div class="inv-footer">
-        <span class="inv-fdot"></span>
-        System online &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; &copy; @DateTime.Now.Year Dairy Management System
+        <span>© @DateTime.Now.Year Dairy Management System · v1.0</span>
+        <span>All quantities in litres (L)</span>
     </div>
 
 </div>

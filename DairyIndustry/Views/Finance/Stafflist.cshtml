@@ -1,7 +1,8 @@
 ﻿@model DairyIndustry.Models.Finance.PlantStaffViewModel
 @{
     ViewData["Title"] = "Staff List";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     string role = ViewBag.Role as string ?? "";
     string plantLabel = ViewBag.PlantName as string ?? "All Plants";
     bool isPlantManager = role == "Plant Manager";

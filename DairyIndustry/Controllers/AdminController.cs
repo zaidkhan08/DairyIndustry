@@ -96,7 +96,7 @@ namespace DairyIndustry.Controllers
                         HttpContext.Session.SetInt32("PlantId", plantId.Value);
                         var plant = _adminRepo.getPlantById(plantId.Value);
                         if (plant != null)
-                            HttpContext.Session.SetString("PlantName", plant.PlantName);
+                            HttpContext.Session.SetString("PlantName", plant.PlantName);   
                     }
                     return RedirectToAction("Dashboard", "Production");
 

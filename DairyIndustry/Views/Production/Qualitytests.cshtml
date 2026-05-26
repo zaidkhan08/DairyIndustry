@@ -2,7 +2,8 @@
 @using DairyIndustry.Models.Production
 @{
     ViewData["Title"] = "Quality Tests";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
 
     var totalTests = Model.Count;
     var normalCount = Model.Count(t => t.QualityResult == "Normal");

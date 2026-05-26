@@ -1,663 +1,779 @@
 ﻿@model List<DairyIndustry.Models.Finance.CenterPaymentModel>
 @{
     ViewData["Title"] = "Center Payments";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    int total = Model.Count;
+    int processed = Model.Count(p => p.PaymentStatus == "Processed");
+    int pending = Model.Count(p => p.PaymentStatus == "Pending");
+    int cancelled = Model.Count(p => p.PaymentStatus == "Cancelled");
+    int failed = Model.Count(p => p.PaymentStatus == "Failed");
+    decimal totalAmt = Model
+        .Where(p => p.PaymentStatus != "Cancelled")
+        .Sum(p => p.TotalAmount);
 }
 
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
 <style>
-    :root {
-        --bg: #f5f7ff;
-        --surface: rgba(255,255,255,.85);
-        --surface-solid: #fff;
-        --border: rgba(226,232,240,.7);
-        --ink: #0f172a;
-        --muted: #64748b;
-        --blue: #2563eb;
-        --blue-bg: #eff6ff;
-        --green: #059669;
-        --green-bg: #ecfdf5;
-        --amber: #d97706;
-        --amber-bg: #fffbeb;
-        --red: #e11d48;
-        --red-bg: #fff1f2;
-        --slate: #64748b;
-        --slate-bg: #f8fafc;
-        --violet: #7c3aed;
-        --violet-bg: #f5f3ff;
-        --shadow: 0 10px 40px rgba(15,23,42,.06), 0 2px 12px rgba(15,23,42,.03);
-        --shadow-hover: 0 24px 60px rgba(15,23,42,.12), 0 6px 20px rgba(15,23,42,.06);
-        --radius: 24px;
-        --pill: 999px;
-    }
-
-    * {
+    *, *::before, *::after {
+        box-sizing: border-box;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
+    }
+
+    :root {
+        --bg: #F4F5F7;
+        --surface: #FFFFFF;
+        --surface-2: #F9FAFB;
+        --border: #E4E7EC;
+        --border-2: #D0D5DD;
+        --text-1: #101828;
+        --text-2: #344054;
+        --text-3: #667085;
+        --text-4: #98A2B3;
+        --blue: #2563EB;
+        --blue-bg: #EFF4FF;
+        --blue-bd: #C7D7FD;
+        --blue-text: #1E40AF;
+        --green: #027A48;
+        --green-bg: #ECFDF3;
+        --green-bd: #ABEFC6;
+        --amber: #B54708;
+        --amber-bg: #FFFAEB;
+        --amber-bd: #FEDF89;
+        --red: #B42318;
+        --red-bg: #FEF3F2;
+        --red-bd: #FECDCA;
+        --slate: #344054;
+        --slate-bg: #F2F4F7;
+        --slate-bd: #D0D5DD;
+        --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1);
+        --radius: 10px;
+        --radius-lg: 14px;
     }
 
     body {
-        background: radial-gradient(circle at top left, rgba(37,99,235,.07), transparent 30%), radial-gradient(circle at bottom right, rgba(124,58,237,.06), transparent 35%), linear-gradient(to bottom,#f8f9ff,#f5f7fc);
+        background: var(--bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--text-1);
+        -webkit-font-smoothing: antialiased;
     }
 
-    .cp-root {
-        font-family: 'Figtree',sans-serif;
-        color: var(--ink);
-        padding: 32px;
+    .cp-page {
+        padding: 2rem 1.75rem 4rem;
     }
 
-    /* HERO */
-
-    .cp-hero {
+    /* ── Header ── */
+    .cp-header {
         display: flex;
-        justify-content: space-between;
         align-items: flex-end;
-        gap: 20px;
-        margin-bottom: 28px;
-        background: rgba(255,255,255,.55);
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,.6);
-        border-radius: 32px;
-        padding: 36px;
-        box-shadow: var(--shadow);
-        position: relative;
-        overflow: hidden;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
-        .cp-hero::before {
-            content: '';
-            position: absolute;
-            width: 420px;
-            height: 420px;
-            background: radial-gradient(circle,rgba(37,99,235,.12),transparent 70%);
-            right: -120px;
-            top: -120px;
-        }
-
-    .cp-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 14px;
-        border-radius: 999px;
-        background: var(--blue-bg);
-        color: var(--blue);
+    .cp-page-label {
         font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 1px;
+        font-weight: 600;
+        color: var(--text-4);
         text-transform: uppercase;
-        margin-bottom: 14px;
+        letter-spacing: .08em;
+        margin-bottom: 5px;
     }
-
-        .cp-badge::before {
-            content: '';
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--blue);
-        }
 
     .cp-title {
-        font-size: 42px;
-        font-weight: 800;
-        letter-spacing: -2px;
-        margin-bottom: 10px;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.4px;
     }
 
-    .cp-sub {
-        color: var(--muted);
-        font-size: 15px;
+    .cp-subtitle {
+        font-size: 13px;
+        color: var(--text-3);
+        margin-top: 4px;
     }
 
-    .cp-btn {
+    .cp-new-btn {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 14px 24px;
-        border-radius: 999px;
-        background: linear-gradient(135deg,#2563eb,#4f46e5);
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: var(--radius);
+        background: var(--text-1);
         color: #fff;
+        font-size: 13px;
+        font-weight: 600;
         text-decoration: none;
-        font-weight: 700;
-        box-shadow: 0 10px 24px rgba(37,99,235,.28);
-        transition: .25s;
+        border: none;
+        cursor: pointer;
+        transition: opacity .15s;
+        white-space: nowrap;
     }
 
-        .cp-btn:hover {
-            transform: translateY(-2px);
+        .cp-new-btn:hover {
+            opacity: .85;
             color: #fff;
         }
 
-    /* KPI */
+        .cp-new-btn svg {
+            width: 15px;
+            height: 15px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            fill: none;
+        }
 
+    /* ── KPIs ── */
     .cp-kpis {
         display: grid;
-        grid-template-columns: repeat(5,1fr);
-        gap: 18px;
-        margin-bottom: 28px;
+        grid-template-columns: repeat(5, minmax(0,1fr));
+        gap: .875rem;
+        margin-bottom: 1.5rem;
     }
 
     .cp-kpi {
-        background: rgba(255,255,255,.7);
-        backdrop-filter: blur(20px);
-        border-radius: 28px;
-        padding: 24px;
-        border: 1px solid rgba(255,255,255,.7);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.2rem 1.4rem;
         box-shadow: var(--shadow);
-        transition: .25s;
-        position: relative;
-        overflow: hidden;
     }
 
-        .cp-kpi:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .cp-kpi::after {
-            content: '';
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            right: -30px;
-            bottom: -30px;
-            opacity: .08;
-        }
-
-        .cp-kpi.blue::after {
-            background: var(--blue);
-        }
-
-        .cp-kpi.green::after {
-            background: var(--green);
-        }
-
-        .cp-kpi.amber::after {
-            background: var(--amber);
-        }
-
-        .cp-kpi.red::after {
-            background: var(--red);
-        }
-
-        .cp-kpi.violet::after {
-            background: var(--violet);
-        }
-
-    .cp-kpi-label {
+    .kpi-label {
         font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 1px;
+        font-weight: 600;
         text-transform: uppercase;
-        color: #94a3b8;
-        margin-bottom: 12px;
+        letter-spacing: .07em;
+        color: var(--text-4);
+        margin-bottom: 8px;
     }
 
-    .cp-kpi-value {
-        font-size: 38px;
-        font-weight: 800;
-        letter-spacing: -2px;
+    .kpi-val {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.5px;
         line-height: 1;
     }
 
-    .cp-kpi-sub {
-        margin-top: 10px;
-        color: #94a3b8;
+        .kpi-val.mono {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -.3px;
+        }
+
+    .kpi-hint {
         font-size: 12px;
+        color: var(--text-3);
+        margin-top: 5px;
     }
 
-    /* PANEL */
+    .kpi-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 5px;
+        vertical-align: 1px;
+    }
 
+    /* ── Panel ── */
     .cp-panel {
-        background: rgba(255,255,255,.7);
-        backdrop-filter: blur(18px);
-        border-radius: 32px;
-        border: 1px solid rgba(255,255,255,.8);
-        box-shadow: var(--shadow);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
         overflow: hidden;
+        box-shadow: var(--shadow);
     }
 
-    /* TOOLBAR */
-
+    /* ── Toolbar ── */
     .cp-toolbar {
-        padding: 24px;
-        border-bottom: 1px solid rgba(226,232,240,.55);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
         flex-wrap: wrap;
     }
 
     .cp-toolbar-left {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
-    .cp-toolbar-title {
-        font-size: 18px;
-        font-weight: 700;
+    .cp-panel-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
     }
 
-    .cp-count {
-        padding: 4px 12px;
+    .cp-count-badge {
+        padding: 2px 9px;
         border-radius: 999px;
-        background: #eef2ff;
-        color: #4f46e5;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 500;
+        color: var(--text-3);
     }
-
-    /* FILTERS */
 
     .cp-filters {
         display: flex;
-        gap: 8px;
+        gap: 5px;
         flex-wrap: wrap;
     }
 
-    .cp-filter {
-        height: 36px;
-        padding: 0 16px;
+    .cp-filter-btn {
+        padding: 5px 13px;
         border-radius: 999px;
-        border: none;
+        border: 1px solid var(--border);
+        background: transparent;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-3);
         cursor: pointer;
-        background: #fff;
-        color: #64748b;
-        font-weight: 600;
-        transition: .2s;
+        transition: all .15s;
+        font-family: inherit;
     }
 
-        .cp-filter:hover,
-        .cp-filter.active {
-            background: #eff6ff;
-            color: #2563eb;
+        .cp-filter-btn:hover, .cp-filter-btn.active {
+            background: var(--blue-bg);
+            border-color: var(--blue-bd);
+            color: var(--blue-text);
         }
-
-    /* SEARCH */
 
     .cp-search {
         position: relative;
     }
 
-        .cp-search input {
-            width: 240px;
-            height: 40px;
-            border-radius: 999px;
-            border: 1px solid rgba(226,232,240,.7);
-            padding: 0 16px 0 42px;
-            background: rgba(255,255,255,.7);
-            font-family: 'Figtree',sans-serif;
-        }
-
         .cp-search svg {
             position: absolute;
-            left: 14px;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            color: #94a3b8;
+            width: 14px;
+            height: 14px;
+            stroke: var(--text-4);
+            stroke-width: 2;
+            fill: none;
+            pointer-events: none;
         }
 
-    /* TRANSACTION LIST */
+        .cp-search input {
+            width: 210px;
+            padding: 7px 12px 7px 32px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            font-size: 13px;
+            color: var(--text-1);
+            font-family: inherit;
+            outline: none;
+            transition: border-color .15s;
+        }
 
-    .cp-list {
-        padding: 12px;
-    }
+            .cp-search input:focus {
+                border-color: var(--blue);
+                background: var(--surface);
+            }
 
-    .cp-item {
+            .cp-search input::placeholder {
+                color: var(--text-4);
+            }
+
+    /* ── Table Head ── */
+    .cp-thead {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr auto;
-        gap: 18px;
+        grid-template-columns: 2.2fr 1fr 1fr 1.3fr 1fr 96px;
+        gap: 12px;
+        padding: 10px 18px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .cp-th {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-4);
+    }
+
+        .cp-th.right {
+            text-align: right;
+        }
+
+        .cp-th.center {
+            text-align: center;
+        }
+
+    /* ── Rows ── */
+    .cp-row {
+        display: grid;
+        grid-template-columns: 2.2fr 1fr 1fr 1.3fr 1fr 96px;
+        gap: 12px;
         align-items: center;
-        padding: 22px;
-        border-radius: 24px;
-        transition: .2s;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        transition: background .12s;
     }
 
-        .cp-item:hover {
-            background: rgba(37,99,235,.04);
+        .cp-row:last-child {
+            border-bottom: none;
         }
 
-        .cp-item + .cp-item {
-            margin-top: 8px;
+        .cp-row:hover {
+            background: var(--surface-2);
         }
 
-    .cp-id {
+    /* identity */
+    .cp-row-id {
         font-size: 11px;
-        color: #94a3b8;
-        font-family: 'DM Mono',monospace;
-        margin-bottom: 5px;
+        color: var(--text-4);
+        margin-bottom: 3px;
+        font-variant-numeric: tabular-nums;
     }
 
-    .cp-center {
-        font-size: 15px;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-
-    .cp-plant {
-        color: #64748b;
+    .cp-row-center {
         font-size: 13px;
+        font-weight: 600;
+        color: var(--text-1);
+        margin-bottom: 2px;
     }
 
-    .cp-batch {
-        display: inline-flex;
-        margin-top: 8px;
-        padding: 4px 10px;
-        border-radius: 10px;
-        background: #eff6ff;
-        color: #2563eb;
-        font-size: 11px;
-        font-family: 'DM Mono',monospace;
-    }
-
-    .cp-metric {
-        text-align: right;
-    }
-
-    .cp-metric-value {
-        font-weight: 700;
-        font-family: 'DM Mono',monospace;
-    }
-
-    .cp-metric-label {
-        font-size: 11px;
-        color: #94a3b8;
-        margin-top: 3px;
-    }
-
-    .cp-amount {
-        text-align: right;
-    }
-
-        .cp-amount strong {
-            font-size: 18px;
-            font-family: 'DM Mono',monospace;
-        }
-
-    .cp-date {
-        color: #64748b;
+    .cp-row-plant {
         font-size: 12px;
-        font-family: 'DM Mono',monospace;
+        color: var(--text-3);
     }
 
-    /* STATUS */
+    .cp-row-batch {
+        display: inline-flex;
+        margin-top: 5px;
+        padding: 2px 7px;
+        border-radius: 5px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        font-size: 10px;
+        color: var(--text-4);
+    }
+
+    /* numeric cells */
+    .cp-cell-num {
+        text-align: right;
+    }
+
+    .cp-cell-val {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cp-cell-hint {
+        font-size: 11px;
+        color: var(--text-4);
+        margin-top: 2px;
+    }
+
+    /* amount */
+    .cp-row-amount {
+        text-align: right;
+    }
+
+    .cp-amount-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-1);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cp-amount-date {
+        font-size: 11px;
+        color: var(--text-4);
+        margin-top: 2px;
+    }
+
+    /* status */
+    .cp-row-status {
+        display: flex;
+        justify-content: center;
+    }
 
     .cp-status {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
+        gap: 5px;
+        padding: 4px 11px;
         border-radius: 999px;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 600;
+        border: 1px solid transparent;
     }
 
         .cp-status::before {
             content: '';
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
-            background: currentColor;
+            flex-shrink: 0;
         }
 
         .cp-status.processed {
             background: var(--green-bg);
             color: var(--green);
+            border-color: var(--green-bd);
         }
+
+            .cp-status.processed::before {
+                background: var(--green);
+            }
 
         .cp-status.pending {
             background: var(--amber-bg);
             color: var(--amber);
+            border-color: var(--amber-bd);
         }
+
+            .cp-status.pending::before {
+                background: var(--amber);
+            }
 
         .cp-status.failed {
             background: var(--red-bg);
             color: var(--red);
+            border-color: var(--red-bd);
         }
+
+            .cp-status.failed::before {
+                background: var(--red);
+            }
 
         .cp-status.cancelled {
             background: var(--slate-bg);
             color: var(--slate);
+            border-color: var(--slate-bd);
         }
 
-    /* ACTIONS */
+            .cp-status.cancelled::before {
+                background: var(--slate);
+            }
 
-    .cp-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .cp-icon-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
-        border: none;
-        background: #fff;
-        cursor: pointer;
+    /* actions */
+    .cp-row-actions {
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: .2s;
+        gap: 6px;
     }
 
-        .cp-icon-btn:hover {
-            transform: scale(1.08);
+    .cp-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all .15s;
+        color: var(--text-3);
+    }
+
+        .cp-action-btn svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
         }
 
-    .cp-view {
-        color: #2563eb;
-        background: #eff6ff;
+        .cp-action-btn.view {
+            color: var(--blue);
+            border-color: var(--blue-bd);
+            background: var(--blue-bg);
+        }
+
+            .cp-action-btn.view:hover {
+                background: #dbeafe;
+                border-color: #93c5fd;
+            }
+
+        .cp-action-btn.cancel {
+            color: var(--red);
+            border-color: var(--red-bd);
+            background: var(--red-bg);
+        }
+
+            .cp-action-btn.cancel:hover {
+                background: #fee2e2;
+                border-color: #fca5a5;
+            }
+
+    /* empty */
+    .cp-empty {
+        padding: 56px 20px;
+        text-align: center;
+        color: var(--text-3);
+        font-size: 14px;
     }
 
-    .cp-cancel {
-        color: #e11d48;
-        background: #fff1f2;
+    /* ── Responsive ── */
+    @@media (max-width: 1100px) {
+        .cp-kpis {
+            grid-template-columns: repeat(3,1fr);
+        }
     }
 
-    @@media(max-width:1200px) {
+    @@media (max-width: 860px) {
+        .cp-page {
+            padding: 20px 16px;
+        }
+
         .cp-kpis {
             grid-template-columns: repeat(2,1fr);
         }
 
-        .cp-item {
-            grid-template-columns: 1fr;
+        .cp-thead {
+            display: none;
         }
 
-        .cp-metric,
-        .cp-amount {
+        .cp-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding: 16px;
+        }
+
+        .cp-cell-num, .cp-row-amount, .cp-row-status, .cp-row-actions {
             text-align: left;
+            justify-content: flex-start;
         }
     }
 </style>
 
-<div class="cp-root">
+<div class="cp-page">
 
-    <div class="cp-hero">
+    <!-- Header -->
+    <div class="cp-header">
         <div>
-            <div class="cp-badge">
-                Finance Intelligence
-            </div>
-
-            <h1 class="cp-title">
-                Center Payments
-            </h1>
-
-            <p class="cp-sub">
-                Milk transfer payments & finance operations dashboard
-            </p>
+            <div class="cp-page-label">Finance · Payments</div>
+            <h1 class="cp-title">Center Payments</h1>
+            <p class="cp-subtitle">Milk transfer payments &amp; finance operations</p>
         </div>
-
-        <a asp-action="CreateCenterPayment" class="cp-btn">
-            + New Payment
+        <a asp-action="CreateCenterPayment" class="cp-new-btn">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            New Payment
         </a>
     </div>
 
-    @{
-        int total = Model.Count;
-        int processed = Model.Count(p => p.PaymentStatus == "Processed");
-        int pending = Model.Count(p => p.PaymentStatus == "Pending");
-        int cancelled = Model.Count(p => p.PaymentStatus == "Cancelled");
-        decimal totalAmt = Model.Where(p => p.PaymentStatus != "Cancelled").Sum(p => p.TotalAmount);
-    }
-
+    <!-- KPIs -->
     <div class="cp-kpis">
-
-        <div class="cp-kpi blue">
-            <div class="cp-kpi-label">Total Records</div>
-            <div class="cp-kpi-value">@total</div>
-            <div class="cp-kpi-sub">All payments</div>
+        <div class="cp-kpi">
+            <div class="kpi-label">Total Records</div>
+            <div class="kpi-val">@total</div>
+            <div class="kpi-hint">All payments</div>
         </div>
-
-        <div class="cp-kpi green">
-            <div class="cp-kpi-label">Processed</div>
-            <div class="cp-kpi-value">@processed</div>
-            <div class="cp-kpi-sub">Successfully settled</div>
+        <div class="cp-kpi">
+            <div class="kpi-label">Processed</div>
+            <div class="kpi-val"><span class="kpi-dot" style="background:#027A48"></span>@processed</div>
+            <div class="kpi-hint">Successfully settled</div>
         </div>
-
-        <div class="cp-kpi amber">
-            <div class="cp-kpi-label">Pending</div>
-            <div class="cp-kpi-value">@pending</div>
-            <div class="cp-kpi-sub">Awaiting settlement</div>
+        <div class="cp-kpi">
+            <div class="kpi-label">Pending</div>
+            <div class="kpi-val"><span class="kpi-dot" style="background:#B54708"></span>@pending</div>
+            <div class="kpi-hint">Awaiting settlement</div>
         </div>
-
-        <div class="cp-kpi red">
-            <div class="cp-kpi-label">Cancelled</div>
-            <div class="cp-kpi-value">@cancelled</div>
-            <div class="cp-kpi-sub">Voided payments</div>
+        <div class="cp-kpi">
+            <div class="kpi-label">Cancelled</div>
+            <div class="kpi-val"><span class="kpi-dot" style="background:#344054"></span>@cancelled</div>
+            <div class="kpi-hint">Voided payments</div>
         </div>
-
-        <div class="cp-kpi violet">
-            <div class="cp-kpi-label">Total Paid</div>
-            <div class="cp-kpi-value" style="font-size:28px">
-                ₹@totalAmt.ToString("N0")
-            </div>
-            <div class="cp-kpi-sub">Net transaction volume</div>
+        <div class="cp-kpi">
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-val mono">₹@totalAmt.ToString("N0")</div>
+            <div class="kpi-hint">Net transaction volume</div>
         </div>
-
     </div>
 
+    <!-- Panel -->
     <div class="cp-panel">
 
+        <!-- Toolbar -->
         <div class="cp-toolbar">
-
             <div class="cp-toolbar-left">
-                <div class="cp-toolbar-title">
-                    Payment Activity
-                </div>
-
-                <div class="cp-count">
-                    @Model.Count
-                </div>
+                <span class="cp-panel-title">Payment Activity</span>
+                <span class="cp-count-badge" id="cp-visible-count">@Model.Count</span>
             </div>
-
             <div class="cp-filters">
-                <button class="cp-filter active">All</button>
-                <button class="cp-filter">Processed</button>
-                <button class="cp-filter">Pending</button>
-                <button class="cp-filter">Failed</button>
-                <button class="cp-filter">Cancelled</button>
+                <button class="cp-filter-btn active" data-status="all">All</button>
+                <button class="cp-filter-btn" data-status="processed">Processed</button>
+                <button class="cp-filter-btn" data-status="pending">Pending</button>
+                <button class="cp-filter-btn" data-status="failed">Failed</button>
+                <button class="cp-filter-btn" data-status="cancelled">Cancelled</button>
             </div>
-
             <div class="cp-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-
-                <input type="text" placeholder="Search payments..." />
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                <input type="text" id="cp-search-input" placeholder="Search payments…" />
             </div>
-
         </div>
 
-        <div class="cp-list">
+        <!-- Table Head -->
+        <div class="cp-thead">
+            <div class="cp-th">Payment</div>
+            <div class="cp-th right">Quantity</div>
+            <div class="cp-th right">Rate / L</div>
+            <div class="cp-th right">Amount</div>
+            <div class="cp-th center">Status</div>
+            <div class="cp-th center">Actions</div>
+        </div>
 
-            @foreach (var p in Model)
+        <!-- Rows -->
+        <div class="cp-tbody" id="cp-tbody">
+            @if (!Model.Any())
             {
-                string statusClass = p.PaymentStatus.ToLower();
-
-                <div class="cp-item">
-
-                    <div>
-                        <div class="cp-id">
-                            CP-@p.CenterPaymentId.ToString("D4")
-                        </div>
-
-                        <div class="cp-center">
-                            @p.CenterName
-                        </div>
-
-                        <div class="cp-plant">
-                            @p.PlantName
-                        </div>
-
-                        <div class="cp-batch">
-                            @p.BatchRef
-                        </div>
-                    </div>
-
-                    <div class="cp-metric">
-                        <div class="cp-metric-value">
-                            @p.ReceivedQty.ToString("N2") L
-                        </div>
-
-                        <div class="cp-metric-label">
-                            Quantity
-                        </div>
-                    </div>
-
-                    <div class="cp-metric">
-                        <div class="cp-metric-value">
-                            ₹@p.RatePerLiter.ToString("N2")
-                        </div>
-
-                        <div class="cp-metric-label">
-                            Rate/L
-                        </div>
-                    </div>
-
-                    <div class="cp-amount">
-                        <strong>
-                            ₹@p.TotalAmount.ToString("N2")
-                        </strong>
-
-                        <div class="cp-date">
-                            @p.PaymentDate.ToString("dd MMM yyyy")
-                        </div>
-                    </div>
-
-                    <div class="cp-actions">
-
-                        <span class="cp-status @statusClass">
-                            @p.PaymentStatus
-                        </span>
-
-                        <a asp-action="CenterPaymentDetail"
-                           asp-route-id="@p.CenterPaymentId"
-                           class="cp-icon-btn cp-view">
-                            →
-                        </a>
-
-                        @if (p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed")
-                        {
-                            <button class="cp-icon-btn cp-cancel">
-                                ×
-                            </button>
-                        }
-
-                    </div>
-
-                </div>
+                <div class="cp-empty">No payment records found.</div>
             }
+            else
+            {
+                foreach (var p in Model)
+                {
+                    string sc = p.PaymentStatus?.ToLower() ?? "pending";
+                    bool canCancel = p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed";
 
+                    <div class="cp-row"
+                         data-status="@sc"
+                         data-search="@($"{p.CenterName} {p.PlantName} {p.BatchRef}".ToLower())">
+
+                        <!-- Identity -->
+                        <div>
+                            <div class="cp-row-id">CP-@p.CenterPaymentId.ToString("D4")</div>
+                            <div class="cp-row-center">@p.CenterName</div>
+                            <div class="cp-row-plant">@p.PlantName</div>
+                            <div class="cp-row-batch">@p.BatchRef</div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="cp-cell-num">
+                            <div class="cp-cell-val">@p.ReceivedQty.ToString("N2") L</div>
+                            <div class="cp-cell-hint">Received</div>
+                        </div>
+
+                        <!-- Rate -->
+                        <div class="cp-cell-num">
+                            <div class="cp-cell-val">₹@p.RatePerLiter.ToString("N2")</div>
+                            <div class="cp-cell-hint">Per litre</div>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="cp-row-amount">
+                            <div class="cp-amount-val">₹@p.TotalAmount.ToString("N2")</div>
+                            <div class="cp-amount-date">@p.PaymentDate.ToString("dd MMM yyyy")</div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="cp-row-status">
+                            <span class="cp-status @sc">@p.PaymentStatus</span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="cp-row-actions">
+                            <a asp-action="CenterPaymentDetail"
+                               asp-route-id="@p.CenterPaymentId"
+                               class="cp-action-btn view"
+                               title="View details">
+                                <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                            </a>
+
+                            @if (canCancel)
+                            {
+                                <button class="cp-action-btn cancel"
+                                        title="Cancel payment"
+                                        onclick="confirmCancel(@p.CenterPaymentId)">
+                                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                </button>
+                            }
+                        </div>
+
+                    </div>
+                }
+            }
         </div>
 
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        /* ── Filter + Search ── */
+        (function () {
+            const rows    = Array.from(document.querySelectorAll('.cp-row'));
+            const filters = document.querySelectorAll('.cp-filter-btn');
+            const search  = document.getElementById('cp-search-input');
+            const badge   = document.getElementById('cp-visible-count');
+
+            let activeStatus = 'all';
+            let searchTerm   = '';
+
+            function applyFilters() {
+                let visible = 0;
+                rows.forEach(function (row) {
+                    const statusMatch = activeStatus === 'all' || row.dataset.status === activeStatus;
+                    const searchMatch = searchTerm === '' || row.dataset.search.includes(searchTerm);
+                    if (statusMatch && searchMatch) { row.style.display = ''; visible++; }
+                    else { row.style.display = 'none'; }
+                });
+                badge.textContent = visible;
+            }
+
+            filters.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    filters.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    activeStatus = btn.dataset.status;
+                    applyFilters();
+                });
+            });
+
+            search.addEventListener('input', function () {
+                searchTerm = search.value.toLowerCase().trim();
+                applyFilters();
+            });
+        })();
+
+        /* ── Cancel via POST form (fixes [HttpPost] requirement) ── */
+        function confirmCancel(id) {
+            if (!confirm('Cancel payment CP-' + String(id).padStart(4, '0') + '?\nThis action cannot be undone.')) return;
+
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Finance/CancelCenterPayment';
+
+            // Include antiforgery token if present
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                var t = document.createElement('input');
+                t.type  = 'hidden';
+                t.name  = '__RequestVerificationToken';
+                t.value = token.value;
+                form.appendChild(t);
+            }
+
+            var input = document.createElement('input');
+            input.type  = 'hidden';
+            input.name  = 'centerPaymentId';   // matches controller param exactly
+            input.value = id;
+            form.appendChild(input);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+}

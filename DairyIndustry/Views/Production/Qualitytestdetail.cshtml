@@ -1,7 +1,8 @@
 ﻿@model DairyIndustry.Models.Production.QualityTestModel
 @{
     ViewData["Title"] = $"Quality Test — T-{Model.TransferId}";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var fatDiff = (Model.TestedFat.HasValue && Model.BatchAvgFat.HasValue)
                     ? (Model.TestedFat.Value - Model.BatchAvgFat.Value) : (decimal?)null;
     var clrDiff = (Model.TestedCLR.HasValue && Model.BatchAvgCLR.HasValue)

@@ -2,7 +2,8 @@
 @using DairyIndustry.Models.Production
 @{
     ViewData["Title"] = "Transfer Loss Log";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
 
     var summary = ViewBag.Summary as List<LossSummaryModel> ?? new List<LossSummaryModel>();
 
