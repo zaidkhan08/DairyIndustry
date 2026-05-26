@@ -2,7 +2,8 @@
 @using DairyIndustry.Models.Production
 @{
     ViewData["Title"] = "Plant Inventory";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var plantName = Context.Session.GetString("PlantName");
     var plantLabel = plantName ?? Model.FirstOrDefault()?.PlantName ?? "Unknown Plant";
     var grouped = Model.GroupBy(x => x.PlantName);
@@ -11,417 +12,513 @@
     var lastSync = Model.Any() ? Model.Max(x => x.LastUpdated) : DateTime.Now;
 }
 
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
 <style>
-    .inv {
-        --c-bg: #f5f6f8;
-        --c-surface: #ffffff;
-        --c-border: #e2e5ea;
-        --c-text: #111827;
-        --c-text-2: #374151;
-        --c-text-3: #6b7280;
-        --c-accent: #2563eb;
-        --c-accent-bg: #eff6ff;
-        --c-accent-text: #1d4ed8;
-        --c-green: #16a34a;
-        --c-green-border: #bbf7d0;
-        --c-amber: #d97706;
-        --c-red: #dc2626;
-        --c-row-hover: #f9fafb;
-        --r: 6px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        font-size: 14px;
-        color: var(--c-text);
+    :root {
+        --bg: #F4F5F7;
+        --surface: #FFFFFF;
+        --surface-2: #F9FAFB;
+        --border: #E4E7EC;
+        --border-2: #D0D5DD;
+        --text-1: #101828;
+        --text-2: #344054;
+        --text-3: #667085;
+        --text-4: #98A2B3;
+        --accent: #1D4ED8;
+        --accent-bg: #EFF4FF;
+        --accent-bd: #C7D7FD;
+        --green: #027A48;
+        --green-bg: #ECFDF3;
+        --green-bd: #ABEFC6;
+        --radius: 10px;
+        --radius-lg: 14px;
+        --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1);
+        --shadow-md: 0 4px 8px -2px rgba(16,24,40,.08), 0 2px 4px -2px rgba(16,24,40,.04);
     }
 
-    /* Toolbar row: plant info + last log on same line */
-    .inv-toolbar {
+    .inv {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+        padding: 2rem 1.75rem 4rem;
+        color: var(--text-1);
+    }
+
+    /* ── TOP BAR ── */
+    .inv-topbar {
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         justify-content: space-between;
-        margin-bottom: 14px;
-        gap: 12px;
+        margin-bottom: 1.75rem;
+        gap: 1rem;
         flex-wrap: wrap;
     }
 
-    .inv-plant-pill {
+    .inv-page-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 6px;
+    }
+
+    .inv-page-title {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.4px;
+        line-height: 1.1;
+    }
+
+    .inv-page-plant {
+        font-size: 13px;
+        color: var(--text-3);
+        margin-top: 5px;
+        font-weight: 400;
+    }
+
+    .inv-sync-tag {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--c-text-2);
-    }
-
-    .inv-live-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--c-green);
-        flex-shrink: 0;
-        animation: inv-blink 2.5s ease-in-out infinite;
-    }
-
-    @@keyframes inv-blink {
-        0%, 100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: .3;
-        }
-    }
-
-    .inv-log-info {
+        gap: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 13px;
         font-size: 12px;
-        color: var(--c-text-3);
-    }
-
-    /* Summary */
-    .inv-summary {
-        display: flex;
-        background: var(--c-surface);
-        border: 1px solid var(--c-border);
-        border-radius: var(--r);
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
-
-    .inv-summary-cell {
-        flex: 1;
-        padding: 14px 20px;
-        border-right: 1px solid var(--c-border);
-        min-width: 0;
-    }
-
-        .inv-summary-cell:last-child {
-            border-right: none;
-        }
-
-    .inv-summary-label {
-        font-size: 11px;
+        color: var(--text-3);
         font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--c-text-3);
-        margin-bottom: 5px;
+        box-shadow: var(--shadow);
+        white-space: nowrap;
     }
 
-    .inv-summary-value {
-        font-size: 22px;
+    .sync-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #17B26A;
+        flex-shrink: 0;
+        animation: blink 2.4s ease-in-out infinite;
+    }
+    @@keyframes blink {
+        0%,100%
+
+    {
+        opacity: 1
+    }
+
+    50% {
+        opacity: .4
+    }
+
+    }
+
+    /* ── KPI CARDS ── */
+    .inv-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .875rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .inv-kpi {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.35rem 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .kpi-label {
+        font-size: 11px;
         font-weight: 600;
-        color: var(--c-text);
-        letter-spacing: -0.5px;
-        line-height: 1;
+        color: var(--text-4);
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        margin-bottom: 10px;
     }
 
-        .inv-summary-value .unit {
+    .kpi-val {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.6px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+        .kpi-val .u {
             font-size: 13px;
-            font-weight: 400;
-            color: var(--c-text-3);
-            margin-left: 2px;
+            font-weight: 500;
+            color: var(--text-4);
+            margin-left: 3px;
         }
 
-    .inv-summary-sub {
-        font-size: 11px;
-        color: var(--c-text-3);
-        margin-top: 4px;
+    .kpi-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 6px;
     }
 
-    /* Plant section */
-    .inv-plant-section {
-        background: var(--c-surface);
-        border: 1px solid var(--c-border);
-        border-radius: var(--r);
-        overflow: hidden;
-        margin-bottom: 12px;
+    /* ── SECTION ── */
+    .inv-section {
+        margin-bottom: 1.75rem;
     }
 
-    .inv-plant-header {
+    .inv-section-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 11px 16px;
-        background: #fafbfc;
-        border-bottom: 1px solid var(--c-border);
-        gap: 12px;
+        margin-bottom: .75rem;
     }
 
-    .inv-plant-name-row {
+    .inv-section-left {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 9px;
     }
 
-    .inv-plant-name {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--c-text);
-    }
-
-    .inv-badge {
-        font-size: 11px;
-        font-weight: 500;
-        background: var(--c-accent-bg);
-        color: var(--c-accent-text);
-        border: 1px solid #bfdbfe;
-        border-radius: 4px;
-        padding: 1px 7px;
-        line-height: 1.6;
-    }
-
-    .inv-plant-total {
+    .section-name {
         font-size: 14px;
         font-weight: 600;
-        color: var(--c-text);
+        color: var(--text-1);
     }
 
-        .inv-plant-total .unit {
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--c-text-3);
-            margin-left: 2px;
-        }
+    .section-pill {
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--accent-bg);
+        color: var(--accent);
+        border: 1px solid var(--accent-bd);
+        border-radius: 20px;
+        padding: 2px 9px;
+    }
 
-    /* Table */
-    .inv-table {
+    .section-total {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-2);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ── TABLE ── */
+    .inv-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .inv-tbl {
         width: 100%;
         border-collapse: collapse;
     }
 
-        .inv-table th {
-            font-size: 11px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--c-text-3);
-            padding: 8px 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--c-border);
-            background: #fafbfc;
-            white-space: nowrap;
+        .inv-tbl thead tr {
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
         }
 
-            .inv-table th.r {
+        .inv-tbl thead th {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            padding: 11px 20px;
+            text-align: left;
+        }
+
+            .inv-tbl thead th.right {
                 text-align: right;
             }
 
-        .inv-table td {
-            padding: 11px 16px;
-            border-bottom: 1px solid var(--c-border);
-            color: var(--c-text-2);
+        .inv-tbl tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+        }
+
+            .inv-tbl tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .inv-tbl tbody tr:hover {
+                background: var(--surface-2);
+            }
+
+        .inv-tbl td {
+            padding: 15px 20px;
             vertical-align: middle;
         }
 
-        .inv-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .inv-table tbody tr:hover td {
-            background: var(--c-row-hover);
-        }
-
-        .inv-table td.r {
-            text-align: right;
-        }
-
-    .inv-type-name {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--c-text);
+    /* rank */
+    .td-num {
+        width: 48px;
     }
 
-    .inv-qty {
-        font-size: 13px;
+    .row-num {
+        font-size: 11px;
         font-weight: 600;
-        color: var(--c-text);
-        font-variant-numeric: tabular-nums;
-    }
-
-        .inv-qty .unit {
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--c-text-3);
-            margin-left: 2px;
-        }
-
-    .inv-bar-wrap {
+        color: var(--text-4);
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
         display: flex;
         align-items: center;
-        gap: 10px;
+        justify-content: center;
     }
 
-    .inv-bar-track {
-        flex: 1;
-        height: 4px;
-        background: #e5e7eb;
-        border-radius: 2px;
-        overflow: hidden;
-        max-width: 200px;
+    /* type */
+    .milk-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
     }
 
-    .inv-bar-fill {
-        height: 100%;
-        border-radius: 2px;
-        transition: width 1s cubic-bezier(.4,0,.2,1);
+    .milk-meta {
+        font-size: 11.5px;
+        color: var(--text-4);
+        margin-top: 3px;
     }
 
-        .inv-bar-fill.low {
-            background: var(--c-accent);
-        }
-
-        .inv-bar-fill.mid {
-            background: var(--c-amber);
-        }
-
-        .inv-bar-fill.high {
-            background: var(--c-red);
-        }
-
-    .inv-pct {
-        font-size: 11px;
-        color: var(--c-text-3);
-        min-width: 36px;
-        text-align: right;
-        font-variant-numeric: tabular-nums;
+    /* status */
+    .td-status {
+        width: 130px;
     }
 
-    .inv-time {
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         font-size: 12px;
-        color: var(--c-text-3);
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
+        font-weight: 500;
+        background: var(--green-bg);
+        color: var(--green);
+        border: 1px solid var(--green-bd);
+        border-radius: 20px;
+        padding: 3px 10px;
     }
 
-    .inv-total-row td {
-        background: #f0f7ff !important;
-        border-top: 1px solid #dbeafe;
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #17B26A;
+            flex-shrink: 0;
+        }
+
+    /* qty */
+    .td-qty {
+        text-align: right;
+    }
+
+    .qty-num {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-1);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.3px;
+    }
+
+        .qty-num .u {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-4);
+            margin-left: 3px;
+        }
+
+    /* table footer */
+    .tbl-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 20px;
+        background: var(--surface-2);
+        border-top: 1px solid var(--border);
+    }
+
+    .tbl-foot-label {
         font-size: 12px;
         font-weight: 600;
-        color: var(--c-accent-text);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: .06em;
     }
 
-    .inv-total-row:hover td {
-        background: #e8f3ff !important;
+    .tbl-foot-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
     }
 
+        .tbl-foot-val .u {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-4);
+            margin-left: 3px;
+        }
+
+    /* ── EMPTY ── */
     .inv-empty {
-        padding: 48px 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 4rem 2rem;
         text-align: center;
-        color: var(--c-text-3);
-        font-size: 13px;
+        color: var(--text-3);
+        font-size: 14px;
     }
 
-    @@media (max-width: 768px) {
-        .inv-summary {
-            flex-direction: column;
-        }
+    /* ── FOOTER ── */
+    .inv-footer {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 11.5px;
+        color: var(--text-4);
+    }
 
-        .inv-summary-cell {
-            border-right: none;
-            border-bottom: 1px solid var(--c-border);
-        }
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 680px) {
+        .inv-kpis
 
-            .inv-summary-cell:last-child {
-                border-bottom: none;
-            }
+    {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .inv-kpi:last-child {
+        grid-column: 1/-1;
+    }
+
+    .hide-sm {
+        display: none;
+    }
+
+    }
+    @@media (max-width: 440px) {
+        .inv-kpis
+
+    {
+        grid-template-columns: 1fr;
+    }
+
+    .inv-kpi:last-child {
+        grid-column: auto;
+    }
+
     }
 </style>
 
 <div class="inv">
 
-    <!-- Single toolbar line: plant name left, last log right — no duplicate title/breadcrumb -->
-    <div class="inv-toolbar">
-        <span class="inv-plant-pill">
-            <span class="inv-live-dot"></span>
-            @plantLabel
-        </span>
-        <span class="inv-log-info">
-            Last log &nbsp;<strong>@lastSync.ToString("dd MMM yyyy")</strong>&nbsp; at &nbsp;<strong>@lastSync.ToString("h:mm tt")</strong>
-        </span>
-    </div>
-
-    <!-- Summary -->
-    <div class="inv-summary">
-        <div class="inv-summary-cell">
-            <div class="inv-summary-label">Total Inventory</div>
-            <div class="inv-summary-value">@globalTotal.ToString("N0") <span class="unit">L</span></div>
-            <div class="inv-summary-sub">@plantLabel</div>
+    <!-- TOP BAR -->
+    <div class="inv-topbar">
+        <div>
+            <div class="inv-page-label">Production · Raw Milk</div>
+            <div class="inv-page-title">Milk Inventory</div>
+            <div class="inv-page-plant">@plantLabel</div>
         </div>
-        <div class="inv-summary-cell">
-            <div class="inv-summary-label">Milk Types</div>
-            <div class="inv-summary-value">@totalTypes</div>
-            <div class="inv-summary-sub">Tracked in this plant</div>
-        </div>
-        <div class="inv-summary-cell">
-            <div class="inv-summary-label">Last Log Date</div>
-            <div class="inv-summary-value" style="font-size:17px;">@lastSync.ToString("dd MMM yyyy")</div>
-            <div class="inv-summary-sub">@lastSync.ToString("h:mm tt")</div>
+        <div class="inv-sync-tag">
+            <span class="sync-dot"></span>
+            Updated @lastSync.ToString("dd MMM yyyy, h:mm tt")
         </div>
     </div>
 
+    <!-- KPI STRIP -->
+    <div class="inv-kpis">
+        <div class="inv-kpi">
+            <div class="kpi-label">Total Inventory</div>
+            <div class="kpi-val">@globalTotal.ToString("N0")<span class="u">L</span></div>
+            <div class="kpi-sub">All milk types combined</div>
+        </div>
+        <div class="inv-kpi">
+            <div class="kpi-label">Milk Types</div>
+            <div class="kpi-val">@totalTypes</div>
+            <div class="kpi-sub">Active varieties</div>
+        </div>
+        <div class="inv-kpi">
+            <div class="kpi-label">Last Logged</div>
+            <div class="kpi-val" style="font-size:20px;letter-spacing:-.3px;">@lastSync.ToString("dd MMM yyyy")</div>
+            <div class="kpi-sub">@lastSync.ToString("h:mm tt")</div>
+        </div>
+    </div>
+
+    <!-- PLANT SECTIONS -->
     @if (!Model.Any())
     {
-        <div class="inv-plant-section">
-            <div class="inv-empty">No inventory records found for @plantLabel.</div>
-        </div>
+        <div class="inv-empty">No inventory records found for @plantLabel.</div>
     }
     else
     {
         @foreach (var plant in grouped)
         {
-            var plantTotal = plant.Sum(x => x.Quantity);
+            decimal plantTotal = plant.Sum(x => x.Quantity);
+            var rows = plant.OrderByDescending(x => x.Quantity).ToList();
 
-            <div class="inv-plant-section">
-                <div class="inv-plant-header">
-                    <div class="inv-plant-name-row">
-                        <span class="inv-plant-name">@plant.Key</span>
-                        <span class="inv-badge">@plant.Count() milk type(s)</span>
+            <div class="inv-section">
+                <div class="inv-section-header">
+                    <div class="inv-section-left">
+                        <span class="section-name">@plant.Key</span>
+                        <span class="section-pill">@plant.Count() types</span>
                     </div>
-                    <span class="inv-plant-total">@plantTotal.ToString("N0") <span class="unit">L</span></span>
+                    <span class="section-total">@plantTotal.ToString("N0") L</span>
                 </div>
 
-                <table class="inv-table">
-                    <thead>
-                        <tr>
-                            <th style="width:30%;">Milk Type</th>
-                            <th class="r" style="width:18%;">Quantity</th>
-                            <th style="width:32%;">Capacity Usage</th>
-                            <th class="r" style="width:20%;">Last Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var milk in plant.OrderByDescending(x => x.Quantity))
-                        {
-                            decimal maxCap = 100000m;
-                            decimal pct = Math.Min((milk.Quantity / maxCap) * 100m, 100m);
-                            string barClass = pct > 80 ? "high" : pct > 50 ? "mid" : "low";
-
+                <div class="inv-card">
+                    <table class="inv-tbl">
+                        <thead>
                             <tr>
-                                <td><span class="inv-type-name">@milk.MilkTypeName</span></td>
-                                <td class="r">
-                                    <span class="inv-qty">@milk.Quantity.ToString("N0") <span class="unit">L</span></span>
-                                </td>
-                                <td>
-                                    <div class="inv-bar-wrap">
-                                        <div class="inv-bar-track">
-                                            <div class="inv-bar-fill @barClass" style="width:@pct%;"></div>
-                                        </div>
-                                        <span class="inv-pct">@pct.ToString("N1")%</span>
-                                    </div>
-                                </td>
-                                <td class="r">
-                                    <span class="inv-time">@milk.LastUpdated.ToString("dd MMM, h:mm tt")</span>
-                                </td>
+                                <th class="hide-sm" style="width:52px;">#</th>
+                                <th>Milk Type</th>
+                                <th class="hide-sm">Status</th>
+                                <th class="right">Quantity</th>
                             </tr>
-                        }
-                        <tr class="inv-total-row">
-                            <td>Net Total — @plant.Key</td>
-                            <td class="r">@plantTotal.ToString("N0") <span style="font-size:11px;font-weight:400;">L</span></td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < rows.Count; i++)
+                            {
+                                var milk = rows[i];
+                                <tr>
+                                    <td class="td-num hide-sm"><div class="row-num">@(i + 1)</div></td>
+                                    <td>
+                                        <div class="milk-name">@milk.MilkTypeName</div>
+                                        <div class="milk-meta">@plant.Key · Raw Milk</div>
+                                    </td>
+                                    <td class="td-status hide-sm">
+                                        <span class="status-badge">Available</span>
+                                    </td>
+                                    <td class="td-qty">
+                                        <span class="qty-num">@milk.Quantity.ToString("N0")<span class="u">L</span></span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="tbl-foot">
+                        <span class="tbl-foot-label">Net Total — @plant.Key</span>
+                        <span class="tbl-foot-val">@plantTotal.ToString("N0")<span class="u">L</span></span>
+                    </div>
+                </div>
             </div>
         }
     }
+
+    <!-- FOOTER -->
+    <div class="inv-footer">
+        <span>© @DateTime.Now.Year Dairy Management System · v1.0</span>
+        <span>All quantities in litres (L)</span>
+    </div>
+
 </div>

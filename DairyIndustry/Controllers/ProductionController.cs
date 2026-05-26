@@ -11,14 +11,17 @@ namespace DairyIndustry.Controllers
         private readonly IProductionRepository _productionRepo;
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
+        private readonly IFinanceRepository _financeRepo;
 
         public ProductionController(IProductionRepository productionRepo,
                                     IAdminRepository adminRepo,
-                                    ILogisticsRepository logisticsRepo)
+                                    ILogisticsRepository logisticsRepo,
+                                    IFinanceRepository financeRepo)
         {
             _productionRepo = productionRepo;
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
+            _financeRepo = financeRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -54,6 +57,7 @@ namespace DairyIndustry.Controllers
                 ViewBag.Batches = _productionRepo.GetClosedBatches();
                 ViewBag.Plants = _adminRepo.GetAllPlants();
                 ViewBag.Vehicles = _productionRepo.GetAllVehicles();
+                ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();   // ← NEW: needed for milk type dropdown
                 return View();
             }
 
@@ -62,17 +66,27 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // CREATE — submit dispatch form
+        // milkTypeId now included so inventory is updated correctly
         // ════════════════════════════════════════════════════════
         [HttpPost]
-        public IActionResult Create(int batchId, int vehicleId, int plantId,
+        public IActionResult Create(int batchId, int milkTypeId, int vehicleId, int plantId,
                                     decimal dispatchQty, DateTime dispatchDate)
         {
             var roleName = HttpContext.Session.GetString("RoleName");
 
             if (roleName == "Plant Manager" || roleName == "Collection Agent")
             {
-                _productionRepo.DispatchMilkTransfer(batchId, vehicleId, plantId, dispatchQty, dispatchDate);
-                TempData["Success"] = "Milk batch dispatched successfully.";
+                try
+                {
+                    _productionRepo.DispatchMilkTransfer(batchId, milkTypeId, vehicleId, plantId,
+                                                          dispatchQty, dispatchDate);
+                    TempData["Success"] = "Milk batch dispatched successfully.";
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                }
+
                 return RedirectToAction("Index");
             }
 
@@ -100,6 +114,9 @@ namespace DairyIndustry.Controllers
                     TempData["Error"] = "This transfer has already been received.";
                     return RedirectToAction("Index");
                 }
+
+                var qualityTest = _productionRepo.GetQualityTestByTransfer(id);
+                ViewBag.QualityTest = qualityTest;
 
                 return View(transfer);
             }
@@ -284,7 +301,6 @@ namespace DairyIndustry.Controllers
             var batch = _productionRepo.GetProductionBatchById(id);
             if (batch == null) return NotFound();
 
-            // Pass milk types for the manual process wastage drawer
             ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
 
             return View(batch);
@@ -292,7 +308,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES — UPDATE STATUS
-        // Auto-logs QCFailed wastage in the repository layer.
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult UpdateBatchStatus(int productionBatchId, string batchStatus)
@@ -300,7 +315,7 @@ namespace DairyIndustry.Controllers
             _productionRepo.UpdateBatchStatus(productionBatchId, batchStatus);
 
             string message = batchStatus == "QCFailed"
-                ? $"Batch marked as QC Failed. Milk wastage has been automatically recorded."
+                ? "Batch marked as QC Failed. Milk wastage has been automatically recorded."
                 : $"Batch status updated to {batchStatus}.";
 
             TempData["Success"] = message;
@@ -308,7 +323,7 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
-        // PRODUCT WASTAGE — LIST  (finished-goods wastage)
+        // PRODUCT WASTAGE — LIST
         // ════════════════════════════════════════════════════════
         public IActionResult ProductWastage()
         {
@@ -368,9 +383,7 @@ namespace DairyIndustry.Controllers
         }
 
         // ════════════════════════════════════════════════════════
-        // MILK PROCESS WASTAGE — LIST  (raw-milk wastage)
-        // Shows both QCFailed (auto) and ProcessWastage (manual) entries.
-        // GET /Production/MilkProcessWastage
+        // MILK PROCESS WASTAGE — LIST
         // ════════════════════════════════════════════════════════
         public IActionResult MilkProcessWastage()
         {
@@ -387,8 +400,6 @@ namespace DairyIndustry.Controllers
 
         // ════════════════════════════════════════════════════════
         // MILK PROCESS WASTAGE — ADD MANUAL ENTRY (POST)
-        // Called from the drawer on BatchDetail page.
-        // GET /Production/AddMilkProcessWastage
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult AddMilkProcessWastage(int productionBatchId, int milkTypeId,
@@ -529,6 +540,67 @@ namespace DairyIndustry.Controllers
 
             ViewBag.Summary = summary;
             return View(logs);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // DASHBOARD — Production Overview
+        // ════════════════════════════════════════════════════════
+        public IActionResult Dashboard()
+        {
+            var roleName = HttpContext.Session.GetString("RoleName");
+
+            if (roleName != "Plant Manager" && roleName != "Collection Agent")
+                return RedirectToAction("AccessDenied", "Home");
+
+            int? plantId = null;
+            if (roleName == "Plant Manager")
+                plantId = HttpContext.Session.GetInt32("PlantId");
+
+            var transfers = _productionRepo.GetAllTransfers(plantId);
+            var batches = _productionRepo.GetAllProductionBatches(plantId);
+            var inventory = _productionRepo.GetRawMilkInventory(plantId);
+            var qualityTests = _productionRepo.GetAllQualityTests(plantId);
+            var lossLog = _productionRepo.GetTransferLossLog(plantId);
+            var productWaste = _productionRepo.GetAllProductWastage(plantId);
+            var milkWaste = _productionRepo.GetAllMilkProcessWastage(plantId);
+            var centerPayments = _financeRepo.GetAllCenterPayments(plantId);
+
+            var vm = new ProductionDashboardViewModel
+            {
+                TotalTransfers = transfers.Count,
+                PendingTransfers = transfers.Count(t => t.Status == "Dispatched"),
+                ReceivedTransfers = transfers.Count(t => t.Status == "Received"),
+
+                TotalBatches = batches.Count,
+                InProgressBatches = batches.Count(b => b.BatchStatus == "InProgress"),
+                CompletedBatches = batches.Count(b => b.BatchStatus == "Completed"),
+                QCFailedBatches = batches.Count(b => b.BatchStatus == "QCFailed"),
+
+                TotalRawMilkStock = inventory.Sum(i => i.Quantity),
+                LowStockCount = inventory.Count(i => i.Quantity <= 500),
+
+                TotalQualityTests = qualityTests.Count,
+                DeviatedTests = qualityTests.Count(q => q.QualityResult == "Deviated"),
+
+                TotalLossLitres = lossLog.Sum(l => l.LossQty),
+                AvgLossPct = lossLog.Any() ? lossLog.Average(l => l.LossPct) : 0,
+
+                PendingCenterPayments = centerPayments.Count(cp => cp.PaymentStatus == "Pending"),
+                TotalPaidToCenters = centerPayments
+                                            .Where(cp => cp.PaymentStatus == "Processed")
+                                            .Sum(cp => cp.TotalAmount),
+
+                TotalProductWastage = productWaste.Count,
+                TotalMilkProcessWastage = milkWaste.Sum(w => w.WastageQuantity),
+
+                RecentTransfers = transfers.OrderByDescending(t => t.DispatchDate).Take(6).ToList(),
+                RecentBatches = batches.OrderByDescending(b => b.ProductionDate).Take(6).ToList(),
+                Inventory = inventory,
+                RecentLosses = lossLog.OrderByDescending(l => l.RecordedAt).Take(6).ToList(),
+                RecentCenterPayments = centerPayments.OrderByDescending(c => c.PaymentDate).Take(6).ToList(),
+            };
+
+            return View(vm);
         }
     }
 }

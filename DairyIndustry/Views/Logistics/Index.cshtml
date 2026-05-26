@@ -3,286 +3,183 @@
     ViewData["Title"] = "Driver Dashboard";
     Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
 
-    
     var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
-    var vehicle = vehicles?.FirstOrDefault();
 
-    string DriverStatusBadge(string s) => s switch
+    // Local Helper for Status Badges
+    string GetStatusClass(string status) => status switch
     {
-        "Active" => "success",
-        "Pending" => "warning",
-        "Inactive" => "secondary",
-        "Suspended" => "danger",
-        _ => "secondary"
-    };
-
-    string VehicleStatusBadge(string s) => s switch
-    {
-        "Approved" => "success",
-        "Pending" => "warning",
-        "Rejected" => "danger",
-        _ => "secondary"
+        "Active" or "Approved" => "bg-success",
+        "Pending" => "bg-warning text-dark",
+        "Suspended" or "Rejected" => "bg-danger",
+        _ => "bg-secondary"
     };
 }
 
-<!-- ── Page Header ── -->
-<div class="bg-primary text-white py-4 px-4 mb-4 shadow-sm">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-            <h4 class="mb-1 fw-bold">
-                <i class="bi bi-speedometer2 me-2"></i>Driver Dashboard
-            </h4>
-            <p class="mb-0 opacity-75 small">
-                Welcome back, <strong>@Model?.DriverName</strong> &mdash;
-                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
-            </p>
-        </div>
-        <a asp-action="RegisterVehicle" asp-controller="Logistics"
-           class="btn btn-light btn-sm fw-semibold">
-            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
-        </a>
-    </div>
-</div>
+<div class="container-fluid p-4">
 
-<div class="container-fluid px-4 pb-5">
-
-    <!-- Alerts -->
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
+        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <div>@TempData["Success"]</div>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
     <div class="row g-4">
 
-        <!-- ══════════════════════════════
-             LEFT — Driver Profile Card
-        ══════════════════════════════ -->
-        <div class="col-lg-5 col-xl-4">
-            <div class="card border-0 shadow-sm h-100">
-
-                <!-- Blue top accent -->
-                <div class="bg-primary rounded-top" style="height:4px;"></div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="bg-primary" style="height: 5px;"></div>
 
                 <div class="card-body p-4">
-
                     @if (Model == null)
                     {
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-person-x display-4 d-block mb-3"></i>
-                            <p>Driver profile not found.</p>
+                        <div class="text-center py-5">
+                            <i class="bi bi-exclamation-triangle text-warning display-4"></i>
+                            <p class="mt-3 text-muted">Driver profile data is missing.</p>
                         </div>
                     }
                     else
                     {
-                        <!-- Avatar + Name -->
-                        <div class="d-flex align-items-center gap-3 mb-4">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center
-                                            justify-content-center fw-bold fs-3 flex-shrink-0"
-                                 style="width:68px; height:68px;">
-                                @Model.DriverName.Substring(0, 1).ToUpper()
+                        <div class="text-center mb-4">
+                            <div class="position-relative d-inline-block">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm mx-auto"
+                                     style="width: 80px; height: 80px; font-size: 2rem;">
+                                    @Model.DriverName[0].ToString().ToUpper()
+                                </div>
+                                <span class="position-absolute bottom-0 end-0 p-2 @(Model.IsActive ? "bg-success" : "bg-danger") border border-2 border-white rounded-circle"></span>
                             </div>
-                            <div>
-                                <h5 class="mb-0 fw-bold">@Model.DriverName</h5>
-                                <small class="text-muted">@@@Model.Username</small>
-                                <div class="mt-1">
-                                    <span class="badge bg-@DriverStatusBadge(Model.Status)">
-                                        @Model.Status
-                                    </span>
-                                    <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") ms-1">
-                                        @(Model.IsActive ? "Account Active" : "Inactive")
-                                    </span>
+                            <h5 class="mt-3 mb-0 fw-bold text-dark">@Model.DriverName</h5>
+                            <p class="text-muted small">@("@" + Model.Username)</p>
+                            <span class="badge rounded-pill @GetStatusClass(Model.Status) px-3 py-2">
+                                @Model.Status.ToUpper()
+                            </span>
+                        </div>
+
+                        <div class="border-top pt-3">
+                            <h6 class="text-uppercase fw-bold text-muted small mb-3" style="letter-spacing: 1px;">Information</h6>
+
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="topbar-icon-btn me-3 text-primary bg-primary bg-opacity-10">
+                                    <i class="bi bi-card-text"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">License Number</small>
+                                    <span class="fw-semibold">@Model.LicenseNo</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="topbar-icon-btn me-3 text-success bg-success bg-opacity-10">
+                                    <i class="bi bi-telephone"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Contact</small>
+                                    <span class="fw-semibold">@(Model.Phone ?? "Not Provided")</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center">
+                                <div class="topbar-icon-btn me-3 text-info bg-info bg-opacity-10">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Member Since</small>
+                                    <span class="fw-semibold">@Model.RegisteredOn.ToString("MMMM dd, yyyy")</span>
                                 </div>
                             </div>
                         </div>
-
-                        <hr class="my-3">
-
-                        <!-- Section Title -->
-                        <p class="text-uppercase text-muted fw-semibold small mb-3"
-                           style="letter-spacing:.6px; font-size:.72rem;">
-                            <i class="bi bi-person-lines-fill me-1"></i> Personal Details
-                        </p>
-
-                        <!-- Details List -->
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-hash me-2 text-primary"></i>Driver ID
-                                </span>
-                                <span class="fw-bold">#@Model.DriverId</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-file-earmark-text me-2 text-primary"></i>License No
-                                </span>
-                                <span class="fw-bold">@Model.LicenseNo</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-telephone me-2 text-primary"></i>Phone
-                                </span>
-                                <span class="fw-bold">
-                                    @(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)
-                                </span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-person me-2 text-primary"></i>Username
-                                </span>
-                                <span class="fw-bold">@Model.Username</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-calendar3 me-2 text-primary"></i>Registered On
-                                </span>
-                                <span class="fw-bold">@Model.RegisteredOn.ToString("dd MMM yyyy")</span>
-                            </li>
-                        </ul>
-
-                        <!-- Status Alerts -->
-                        @if (Model.Status == "Pending")
-                        {
-                            <div class="alert alert-warning mt-3 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-hourglass-split me-1"></i>
-                                Your account is <strong>pending</strong> admin approval.
-                            </div>
-                        }
-                        else if (Model.Status == "Suspended")
-                        {
-                            <div class="alert alert-danger mt-3 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-slash-circle me-1"></i>
-                                Your account has been <strong>suspended</strong>. Contact admin.
-                            </div>
-                        }
                     }
-
                 </div>
             </div>
         </div>
 
-        
-        <div class="col-lg-7 col-xl-8">
+        <div class="col-xl-8 col-lg-7">
             <div class="card border-0 shadow-sm h-100">
-
-                <div class="bg-success rounded-top" style="height:4px;"></div>
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-truck me-2 text-primary"></i>My Registered Vehicles
+                    </h6>
+                    <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3 shadow-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Vehicle
+                    </a>
+                </div>
 
                 <div class="card-body p-4">
-
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <p class="text-uppercase text-muted fw-semibold small mb-0"
-                           style="letter-spacing:.6px; font-size:.72rem;">
-                            <i class="bi bi-truck me-1"></i> My Vehicles
-                        </p>
-                        <a asp-action="RegisterVehicle" asp-controller="Logistics"
-                           class="btn btn-success btn-sm fw-semibold">
-                            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
-                        </a>
-                    </div>
-
                     @if (vehicles == null || !vehicles.Any())
                     {
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-truck display-3 d-block mb-3 text-secondary"></i>
-                            <h6 class="fw-semibold">No Vehicle Registered</h6>
-                            <p class="small mb-3">
-                                You haven't registered a vehicle yet.<br />
-                                Click the button above to get started.
-                            </p>
-                            <a asp-action="RegisterVehicle" asp-controller="Logistics"
-                               class="btn btn-outline-success btn-sm fw-semibold">
-                                <i class="bi bi-plus-circle me-1"></i> Register Now
-                            </a>
+                        <div class="text-center py-5">
+                            <img src="https://cdn-icons-png.flaticon.com/512/2144/2144772.png" alt="Empty" style="width: 120px; opacity: 0.5;">
+                            <h5 class="mt-4 fw-bold">No Vehicles Found</h5>
+                            <p class="text-muted">You haven't registered any transport vehicles yet.</p>
                         </div>
                     }
                     else
                     {
-                        @foreach (var v in vehicles)
-                        {
-                            string badgeColor = v.Status switch
-                            {
-                                "Approved" => "success",
-                                "Pending" => "warning",
-                                "Rejected" => "danger",
-                                _ => "secondary"
-                            };
-
-                            <div class="card border-0 bg-light mb-3">
-                                <div class="card-body p-3">
-
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="bg-success text-white rounded-3 d-flex align-items-center
-                                                    justify-content-center flex-shrink-0"
-                                             style="width:48px; height:48px; font-size:1.4rem;">
-                                            <i class="bi bi-truck"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 fw-bold">@v.VehicleNumber</h6>
-                                            <small class="text-muted">Vehicle ID: #@v.VehicleId</small>
-                                        </div>
-                                        <span class="badge bg-@badgeColor ms-auto">@v.Status</span>
-                                    </div>
-
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item px-0 bg-transparent
-                                                   d-flex justify-content-between align-items-center">
-                                            <span class="text-muted small fw-semibold">
-                                                <i class="bi bi-box-seam me-2 text-success"></i>Capacity
-                                            </span>
-                                            <span class="fw-bold">
-                                                @(v.Capacity > 0 ? v.Capacity.ToString("F2") + " Ltr" : "—")
-                                            </span>
-                                        </li>
-                                        <li class="list-group-item px-0 bg-transparent
-                                                   d-flex justify-content-between align-items-center">
-                                            <span class="text-muted small fw-semibold">
-                                                <i class="bi bi-calendar3 me-2 text-success"></i>Registered On
-                                            </span>
-                                            <span class="fw-bold">
-                                                @v.RegisteredOn.ToString("dd MMM yyyy")
-                                            </span>
-                                        </li>
-                                    </ul>
-
-                                    @if (v.Status == "Pending")
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-light">
+                                <thead class="table-light">
+                                    <tr class="small text-uppercase text-muted">
+                                        <th class="border-0 px-4">Vehicle Details</th>
+                                        <th class="border-0">Capacity</th>
+                                        <th class="border-0">Status</th>
+                                        @* <th class="border-0 text-end px-4">Actions</th> *@
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in vehicles)
                                     {
-                                        <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-hourglass-split me-1"></i>
-                                            Waiting for <strong>admin approval</strong>.
-                                        </div>
+                                        <tr>
+                                            <td class="px-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="rounded-3 bg-light p-2 me-3">
+                                                        <i class="bi bi-truck-flatbed text-primary fs-4"></i>
+                                                    </div>
+                                                    <div>
+                                                        <span class="fw-bold d-block text-dark">@v.VehicleNumber</span>
+                                                        <small class="text-muted">ID: #@v.VehicleId</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border fw-medium">
+                                                    <i class="bi bi-droplet-fill text-info me-1"></i>
+                                                    @v.Capacity.ToString("N0") Ltr
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusClass(v.Status) d-inline-flex align-items-center">
+                                                    <i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i>
+                                                    @v.Status
+                                                </span>
+                                            </td>
+                                            @* <td class="text-end px-4">
+                                                <button class="btn btn-light btn-sm rounded-pill border" title="Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </td> *@
+                                        </tr>
                                     }
-                                    else if (v.Status == "Rejected")
-                                    {
-                                        <div class="alert alert-danger mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-x-circle me-1"></i>
-                                            Registration <strong>rejected</strong>. Contact admin.
-                                        </div>
-                                    }
-                                    else if (v.Status == "Approved")
-                                    {
-                                        <div class="alert alert-success mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            Vehicle <strong>approved</strong> and ready for assignments.
-                                        </div>
-                                    }
-
-                                </div>
-                            </div>
-                        }
+                                </tbody>
+                            </table>
+                        </div>
                     }
-
                 </div>
+
+                @if (vehicles?.Count > 0)
+                {
+                    <div class="card-footer bg-light border-0 py-3 px-4">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Showing @vehicles.Count registered vehicle(s).
+                        </small>
+                    </div>
+                }
             </div>
         </div>
 
-    </div><!-- /row -->
-</div><!-- /container-fluid -->
+    </div>
+</div>

@@ -1,0 +1,152 @@
+﻿@model DairyIndustry.Models.Logistics.DriversModel
+@{
+    ViewData["Title"] = "My Vehicles";
+    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+
+    var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
+
+    // Badge Helper
+    string GetStatusClass(string s) => s switch
+    {
+        "Active" or "Approved" => "bg-success",
+        "Pending" => "bg-warning text-dark",
+        "Rejected" or "Suspended" => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid p-4">
+
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="bg-primary" style="height: 5px;"></div>
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
+                         style="width: 65px; height: 65px; font-size: 1.5rem;">
+                        @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
+                    </div>
+                </div>
+                <div class="col">
+                    <h5 class="mb-1 fw-bold text-dark">@Model?.DriverName</h5>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-person-badge me-1"></i> @Model?.LicenseNo &bull;
+                        <i class="bi bi-calendar3 me-1 ms-2"></i> Joined @Model?.RegisteredOn.ToString("MMM yyyy")
+                    </p>
+                </div>
+                <div class="col-md-auto mt-3 mt-md-0">
+                    <div class="d-flex gap-2">
+                        <span class="badge @GetStatusClass(Model?.Status) px-3 py-2 rounded-pill">
+                            Account: @Model?.Status
+                        </span>
+                        <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-plus-lg me-1"></i> Add Vehicle
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 pt-3 border-top g-3">
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Username</small>
+                    <span class="fw-semibold">@@@Model?.Username</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Contact</small>
+                    <span class="fw-semibold">@(Model?.Phone ?? "—")</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Total Fleet</small>
+                    <span class="fw-semibold text-primary">@(vehicles?.Count ?? 0) Vehicle(s)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+            <h6 class="mb-0 fw-bold text-dark">
+                <i class="bi bi-truck me-2 text-primary"></i>Vehicle List
+            </h6>
+        </div>
+
+        <div class="card-body p-0">
+            @if (vehicles == null || !vehicles.Any())
+            {
+                <div class="text-center py-5">
+                    <div class="bg-light d-inline-flex p-4 rounded-circle mb-3">
+                        <i class="bi bi-truck-flatbed display-4 text-muted"></i>
+                    </div>
+                    <h5 class="fw-bold">No Vehicles Registered</h5>
+                    <p class="text-muted small mb-4">You currently have no transport vehicles linked to your profile.</p>
+                    <a asp-action="RegisterVehicle" class="btn btn-outline-primary btn-sm px-4">
+                        Register Your First Vehicle
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="border-0 px-4">Vehicle Identity</th>
+                                <th class="border-0">Payload Capacity</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0">Reg. Date</th>
+                                @* <th class="border-0 text-end px-4">Action</th> *@
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in vehicles)
+                            {
+                                <tr>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-3 bg-primary bg-opacity-10 p-2 me-3">
+                                                <i class="bi bi-truck text-primary fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <span class="fw-bold d-block text-dark">@v.VehicleNumber</span>
+                                                <small class="text-muted">ID: #@v.VehicleId</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2 py-1 fw-medium">
+                                            <i class="bi bi-droplet-fill text-info me-1"></i>
+                                            @v.Capacity.ToString("N0") Ltr
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusClass(v.Status) px-3 py-2 rounded-pill shadow-xs">
+                                            @v.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@v.RegisteredOn.ToString("dd MMM yyyy")</small>
+                                    </td>
+                                    @* <td class="text-end px-4">
+                                        <button class="btn btn-light btn-sm border" title="View Logs">
+                                            <i class="bi bi-journal-text text-primary"></i>
+                                        </button>
+                                    </td> *@
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (vehicles?.Any() == true)
+        {
+            <div class="card-footer bg-light border-0 py-3 px-4">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    All vehicles require administrative verification before appearing in active logistics shifts.
+                </small>
+            </div>
+        }
+    </div>
+</div>

@@ -4,13 +4,11 @@ namespace DairyIndustry.Models.Admin
 {
     public class AdminOrderListModel
     {
-        // Filter inputs
         public int? DistributorId { get; set; }
         public string? OrderStatus { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
 
-        // Results
         public List<OrderSummary> Orders { get; set; } = new();
         public List<Distributor> DistributorList { get; set; } = new();
 

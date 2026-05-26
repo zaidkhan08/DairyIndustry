@@ -1,7 +1,8 @@
 ﻿@model DairyIndustry.Models.Production.QualityTestModel
 @{
     ViewData["Title"] = $"Quality Test — T-{Model.TransferId}";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var fatDiff = (Model.TestedFat.HasValue && Model.BatchAvgFat.HasValue)
                     ? (Model.TestedFat.Value - Model.BatchAvgFat.Value) : (decimal?)null;
     var clrDiff = (Model.TestedCLR.HasValue && Model.BatchAvgCLR.HasValue)
@@ -9,512 +10,632 @@
     bool passed = Model.QualityResult == "Normal";
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    .qtd-root {
-        --ink: #202124;
-        --ink-2: #3c4043;
-        --ink-m: #5f6368;
-        --ink-f: #9aa0a6;
-        --surface: #fff;
-        --bg: #f8f9fa;
-        --bg-3: #f1f3f4;
-        --border: #e0e0e0;
-        --accent: #1a73e8;
-        --accent-bg: #e8f0fe;
-        --green: #1e8e3e;
-        --green-bg: #e6f4ea;
-        --green-mid: #ceead6;
-        --red: #d93025;
-        --red-bg: #fce8e6;
-        --red-mid: #f5c6c2;
-        --yellow: #f29900;
-        --yellow-bg: #fef7e0;
-        --yellow-mid: #fce8b2;
-        --shadow: 0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
-        --shadow-sm: 0 1px 2px rgba(60,64,67,.2);
-        --r: 8px;
-        --r-lg: 12px;
-        font-family: 'Roboto',sans-serif;
-        color: var(--ink);
-        max-width: 760px;
+    .qd {
+        --c-surface: #ffffff;
+        --c-bg: #f5f6f8;
+        --c-bg2: #f0f1f4;
+        --c-border: #e2e5ea;
+        --c-border-lt: #eef0f3;
+        --c-text: #111827;
+        --c-text-2: #374151;
+        --c-text-3: #6b7280;
+        --c-text-4: #9ca3af;
+        --c-accent: #2563eb;
+        --c-green: #16a34a;
+        --c-green-bg: #f0fdf4;
+        --c-green-bd: #86efac;
+        --c-red: #dc2626;
+        --c-red-bg: #fef2f2;
+        --c-red-bd: #fca5a5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--c-text);
+        max-width: 860px;
     }
 
-    /* breadcrumb */
-    .qtd-bc {
+    .qd-bc {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--ink-f);
-        margin-bottom: 6px;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        color: var(--c-text-4);
+        margin-bottom: 14px;
+        text-transform: uppercase;
     }
 
-        .qtd-bc a {
-            color: var(--accent);
+        .qd-bc a {
+            color: var(--c-accent);
             text-decoration: none;
-            font-weight: 500;
         }
 
-            .qtd-bc a:hover {
+            .qd-bc a:hover {
                 text-decoration: underline;
             }
 
-        .qtd-bc i {
-            font-size: 10px;
+        .qd-bc i {
+            font-size: 9px;
         }
 
-    .qtd-title {
-        font-size: 22px;
-        font-weight: 400;
-        color: var(--ink);
-        margin: 0 0 4px;
-    }
-
-    .qtd-sub {
-        font-size: 13px;
-        color: var(--ink-m);
-        margin: 0 0 24px;
-    }
-
-    /* result banner */
-    .qtd-banner {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 16px 20px;
-        border-radius: var(--r-lg);
-        border: 1px solid;
-        margin-bottom: 24px;
-    }
-
-        .qtd-banner.pass {
-            background: var(--green-bg);
-            border-color: var(--green-mid);
-            color: var(--green);
-        }
-
-        .qtd-banner.fail {
-            background: var(--red-bg);
-            border-color: var(--red-mid);
-            color: var(--red);
-        }
-
-    .qtd-banner-icon {
-        font-size: 22px;
-        flex-shrink: 0;
-        margin-top: 1px;
-    }
-
-    .qtd-banner-title {
-        font-size: 15px;
-        font-weight: 500;
-        margin-bottom: 3px;
-    }
-
-    .qtd-banner-sub {
-        font-size: 13px;
-        opacity: .85;
-    }
-
-    /* section card */
-    .qtd-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 16px;
-    }
-
-    .qtd-card-hd {
+    .qd-titlerow {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 13px 20px;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg);
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--ink-2);
-    }
-
-        .qtd-card-hd i {
-            color: var(--accent);
-            font-size: 16px;
-        }
-
-    .qtd-card-body {
-        padding: 20px;
-    }
-
-    /* readings grid */
-    .qtd-readings {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .qtd-reading-box {
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        overflow: hidden;
-        transition: box-shadow .2s;
-    }
-
-        .qtd-reading-box:hover {
-            box-shadow: var(--shadow);
-        }
-
-        .qtd-reading-box.ok {
-            border-color: var(--green-mid);
-        }
-
-        .qtd-reading-box.bad {
-            border-color: var(--red-mid);
-        }
-
-    .qtd-reading-top {
-        padding: 16px 20px 12px;
-        text-align: center;
-    }
-
-        .qtd-reading-top.ok {
-            background: var(--green-bg);
-        }
-
-        .qtd-reading-top.bad {
-            background: var(--red-bg);
-        }
-
-    .qtd-reading-label {
-        font-size: 11px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: .6px;
-        margin-bottom: 6px;
-    }
-
-        .qtd-reading-label.ok {
-            color: var(--green);
-        }
-
-        .qtd-reading-label.bad {
-            color: var(--red);
-        }
-
-    .qtd-reading-value {
-        font-size: 36px;
-        font-weight: 300;
-        line-height: 1;
-    }
-
-        .qtd-reading-value.ok {
-            color: var(--green);
-        }
-
-        .qtd-reading-value.bad {
-            color: var(--red);
-        }
-
-    .qtd-reading-unit {
-        font-size: 14px;
-        font-weight: 400;
-    }
-
-    .qtd-reading-bottom {
-        padding: 12px 20px;
-        background: var(--bg);
-    }
-
-    .qtd-reading-compare {
-        display: flex;
         justify-content: space-between;
-        align-items: center;
-        font-size: 12px;
-        color: var(--ink-m);
-        margin-bottom: 6px;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
-        .qtd-reading-compare b {
-            color: var(--ink);
-        }
+    .qd-title {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.4px;
+        color: var(--c-text);
+        margin: 0 0 3px;
+    }
 
-    .qtd-variance {
+    .qd-title-sub {
+        font-size: 12px;
+        color: var(--c-text-3);
+    }
+
+    .qd-back {
         display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-        .qtd-variance.ok {
-            background: var(--green-bg);
-            color: var(--green);
-        }
-
-        .qtd-variance.bad {
-            background: var(--red-bg);
-            color: var(--red);
-        }
-
-    .qtd-deviated {
-        display: flex;
         align-items: center;
         gap: 6px;
         font-size: 12px;
         font-weight: 500;
-        color: var(--red);
-        margin-top: 8px;
-        padding: 6px 10px;
-        background: var(--red-bg);
-        border-radius: 6px;
+        color: var(--c-text-2);
+        padding: 6px 14px;
+        border: 1px solid var(--c-border);
+        border-radius: 5px;
+        background: var(--c-surface);
+        text-decoration: none;
+        transition: all .15s;
     }
 
-    /* transfer info table */
-    .qtd-info-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .qtd-info-row {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        padding: 10px 14px;
-        background: var(--bg);
-        border-radius: var(--r);
-        border: 1px solid var(--border);
-    }
-
-    .qtd-info-key {
-        font-size: 11px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        color: var(--ink-f);
-    }
-
-    .qtd-info-val {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--ink);
-    }
-
-        .qtd-info-val.mono {
-            font-family: 'Roboto Mono','Courier New',monospace;
+        .qd-back:hover {
+            background: var(--c-bg);
+            border-color: #c9cdd4;
         }
 
-    .qtd-transfer-badge {
+    /* Two-col layout */
+    .qd-layout {
+        display: grid;
+        grid-template-columns: 1fr 252px;
+        gap: 14px;
+        align-items: start;
+    }
+
+    /* Ledger */
+    .qd-ledger {
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--c-surface);
+    }
+
+    .qd-ledger-hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 18px;
+        background: var(--c-bg);
+        border-bottom: 1px solid var(--c-border);
+    }
+
+        .qd-ledger-hd + .qd-section-gap {
+            border-top: 1px solid var(--c-border);
+        }
+
+    .qd-ledger-hd-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: var(--c-text-3);
+    }
+
+    .qd-ledger-hd-note {
+        font-size: 11px;
+        color: var(--c-text-4);
+    }
+
+    /* Metric rows (3 cols: label | batch avg | tested) */
+    .qd-metric-row {
+        display: grid;
+        grid-template-columns: 180px 1fr 1fr;
+        border-bottom: 1px solid var(--c-border-lt);
+    }
+
+        .qd-metric-row:hover {
+            background: #f8f9fb;
+        }
+
+    .qd-metric-label {
+        padding: 14px 18px;
+        border-right: 1px solid var(--c-border-lt);
+        background: #fafbfc;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+    }
+
+    .qd-metric-label-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text-2);
+    }
+
+    .qd-metric-label-sub {
+        font-size: 11px;
+        color: var(--c-text-4);
+    }
+
+    .qd-metric-cell {
+        padding: 14px 18px;
+        border-right: 1px solid var(--c-border-lt);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+        .qd-metric-cell:last-child {
+            border-right: none;
+        }
+
+    .qd-metric-cell-lbl {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--c-text-4);
+        margin-bottom: 5px;
+    }
+
+    .qd-metric-val {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.6px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+        .qd-metric-val .u {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--c-text-4);
+            margin-left: 1px;
+        }
+
+        .qd-metric-val.avg {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--c-text-3);
+        }
+
+        .qd-metric-val.ok {
+            color: var(--c-green);
+        }
+
+        .qd-metric-val.dev {
+            color: var(--c-red);
+        }
+
+    .qd-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 3px;
+        margin-top: 6px;
+        width: fit-content;
+    }
+
+        .qd-pill.ok {
+            background: var(--c-green-bg);
+            color: var(--c-green);
+        }
+
+        .qd-pill.dev {
+            background: var(--c-red-bg);
+            color: var(--c-red);
+        }
+
+    .qd-flag {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--c-red);
+        margin-top: 4px;
+    }
+
+    /* Info rows (2 cols: label | value) */
+    .qd-section-sep {
+        border-top: 1px solid var(--c-border);
+    }
+
+    .qd-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        border-bottom: 1px solid var(--c-border-lt);
+    }
+
+        .qd-row:last-child {
+            border-bottom: none;
+        }
+
+        .qd-row:hover {
+            background: #f8f9fb;
+        }
+
+    .qd-row-lbl {
+        padding: 10px 18px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--c-text-3);
+        border-right: 1px solid var(--c-border-lt);
+        background: #fafbfc;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .qd-row-lbl i {
+            font-size: 11px;
+            color: var(--c-text-4);
+        }
+
+    .qd-row-val {
+        padding: 10px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
+        display: flex;
+        align-items: center;
+    }
+
+        .qd-row-val.mono {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+    .qd-tid {
         display: inline-flex;
         align-items: center;
         gap: 5px;
+        font-family: 'SF Mono', 'Consolas', monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--c-accent);
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
         padding: 3px 10px;
-        border-radius: 12px;
-        background: var(--accent-bg);
-        color: var(--accent);
-        font-size: 13px;
-        font-weight: 500;
+        border-radius: 4px;
     }
 
-    /* back btn */
-    .qtd-btn-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 36px;
-        padding: 0 16px;
-        border-radius: 18px;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--ink-2);
-        text-decoration: none;
-        cursor: pointer;
-        transition: background .2s, border-color .2s;
+    /* RIGHT panel */
+    .qd-panel {
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--c-surface);
     }
 
-        .qtd-btn-back:hover {
-            background: var(--bg-3);
-            border-color: #c0c0c0;
-            color: var(--ink);
+    .qd-panel-stamp {
+        padding: 24px 20px 20px;
+        text-align: center;
+        border-bottom: 1px solid var(--c-border);
+    }
+
+        .qd-panel-stamp.pass {
+            background: var(--c-green-bg);
         }
 
-    @@media(max-width:600px) {
-        .qtd-readings, .qtd-info-grid {
+        .qd-panel-stamp.fail {
+            background: var(--c-red-bg);
+        }
+
+    .qd-stamp-icon {
+        font-size: 38px;
+        display: block;
+        margin-bottom: 10px;
+        line-height: 1;
+    }
+
+    .qd-panel-stamp.pass .qd-stamp-icon {
+        color: var(--c-green);
+    }
+
+    .qd-panel-stamp.fail .qd-stamp-icon {
+        color: var(--c-red);
+    }
+
+    .qd-stamp-eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .qd-panel-stamp.pass .qd-stamp-eyebrow {
+        color: var(--c-green);
+    }
+
+    .qd-panel-stamp.fail .qd-stamp-eyebrow {
+        color: var(--c-red);
+    }
+
+    .qd-stamp-result {
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--c-text);
+        letter-spacing: -0.3px;
+    }
+
+    .qd-panel-section {
+        padding: 7px 16px 3px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--c-text-4);
+        background: var(--c-bg);
+        border-top: 1px solid var(--c-border);
+        border-bottom: 1px solid var(--c-border-lt);
+    }
+
+        .qd-panel-section:first-of-type {
+            border-top: none;
+        }
+
+    .qd-pstat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 16px;
+        border-bottom: 1px solid var(--c-border-lt);
+        font-size: 12px;
+    }
+
+        .qd-pstat:last-child {
+            border-bottom: none;
+        }
+
+    .qd-pstat-lbl {
+        color: var(--c-text-3);
+        font-weight: 500;
+    }
+
+    .qd-pstat-val {
+        font-weight: 600;
+        color: var(--c-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .qd-pstat-val.ok {
+            color: var(--c-green);
+        }
+
+        .qd-pstat-val.dev {
+            color: var(--c-red);
+        }
+
+    @@media (max-width: 680px) {
+        .qd-layout {
             grid-template-columns: 1fr;
+        }
+
+        .qd-metric-row {
+            grid-template-columns: 140px 1fr 1fr;
+        }
+
+        .qd-row {
+            grid-template-columns: 140px 1fr;
         }
     }
 </style>
 
-<div class="qtd-root">
+<div class="qd">
 
-    <!-- Breadcrumb -->
-    <div class="qtd-bc">
+    <div class="qd-bc">
         <a asp-action="Qualitytests">Quality Tests</a>
         <i class="bi bi-chevron-right"></i>
         <span>Transfer #@Model.TransferId</span>
     </div>
 
-    <!-- Title + back -->
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
+    <div class="qd-titlerow">
         <div>
-            <h1 class="qtd-title">Quality Test Detail</h1>
-            <p class="qtd-sub">Transfer #@Model.TransferId &nbsp;·&nbsp; Tested @Model.TestDate.ToString("dd MMM yyyy")</p>
+            <div class="qd-title">Quality Test — T-@Model.TransferId</div>
+            <div class="qd-title-sub">@Model.TestDate.ToString("dd MMM yyyy") &nbsp;·&nbsp; @Model.CenterName → @Model.PlantName</div>
         </div>
-        <a asp-action="Qualitytests" class="qtd-btn-back">
-            <i class="bi bi-arrow-left"></i> Back
+        <a asp-action="Qualitytests" class="qd-back">
+            <i class="bi bi-arrow-left"></i> Back to list
         </a>
     </div>
 
-    <!-- Result banner -->
-    <div class="qtd-banner @(passed ? "pass" : "fail")">
-        <i class="bi @(passed ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") qtd-banner-icon"></i>
-        <div>
-            <div class="qtd-banner-title">Quality Result: @Model.QualityResult</div>
-            <div class="qtd-banner-sub">
-                @if (passed)
-                {
-                    <span>All readings are within acceptable range compared to batch averages.</span>
-                }
-                else
-                {
-                    <span>
-                        One or more readings deviate from batch averages.
-                        @if (Model.IsFatDeviated)
-                        {
-                            <span>Fat is outside ±0.5% tolerance. </span>
-                        }
-                        @if (Model.IsCLRDeviated)
-                        {
-                            <span>CLR is outside ±2 tolerance.</span>
-                        }
-                    </span>
-                }
+    <div class="qd-layout">
+
+        <!-- LEFT: Ledger -->
+        <div class="qd-ledger">
+
+            <!-- Readings section -->
+            <div class="qd-ledger-hd">
+                <span class="qd-ledger-hd-label"><i class="bi bi-activity" style="margin-right:5px;"></i>Quality Readings</span>
+                <span class="qd-ledger-hd-note">Tested vs Batch Average</span>
             </div>
-        </div>
-    </div>
 
-    <!-- Readings -->
-    <div class="qtd-card">
-        <div class="qtd-card-hd">
-            <i class="bi bi-graph-up"></i> Quality Readings vs Batch Averages
-        </div>
-        <div class="qtd-card-body">
-            <div class="qtd-readings">
-
-                <!-- FAT -->
-                @{
-                    string fatClass = Model.IsFatDeviated ? "bad" : "ok";
-                }
-                <div class="qtd-reading-box @fatClass">
-                    <div class="qtd-reading-top @fatClass">
-                        <div class="qtd-reading-label @fatClass">Fat</div>
-                        <div class="qtd-reading-value @fatClass">
-                            @(Model.TestedFat?.ToString("F2") ?? "—")<span class="qtd-reading-unit">%</span>
-                        </div>
+            <div class="qd-metric-row">
+                <div class="qd-metric-label">
+                    <span class="qd-metric-label-name">Fat Content</span>
+                    <span class="qd-metric-label-sub">Tolerance ±0.5%</span>
+                </div>
+                <div class="qd-metric-cell">
+                    <div class="qd-metric-cell-lbl">Batch Average</div>
+                    <div class="qd-metric-val avg">@(Model.BatchAvgFat?.ToString("F2") ?? "—")<span class="u">%</span></div>
+                </div>
+                <div class="qd-metric-cell">
+                    <div class="qd-metric-cell-lbl">Tested Reading</div>
+                    <div class="qd-metric-val @(Model.IsFatDeviated ? "dev" : "ok")">
+                        @(Model.TestedFat?.ToString("F2") ?? "—")<span class="u">%</span>
                     </div>
-                    <div class="qtd-reading-bottom">
-                        <div class="qtd-reading-compare">
-                            <span>Batch Average</span>
-                            <b>@(Model.BatchAvgFat?.ToString("F2") ?? "—")%</b>
+                    @if (fatDiff.HasValue)
+                    {
+                        <div class="qd-pill @(Model.IsFatDeviated ? "dev" : "ok")">
+                            <i class="bi @(fatDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
+                            @(fatDiff.Value >= 0 ? "+" : "")@fatDiff.Value.ToString("F2") var
                         </div>
-                        @if (fatDiff.HasValue)
-                        {
-                            <span class="qtd-variance @fatClass">
-                                <i class="bi @(fatDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
-                                @(fatDiff.Value >= 0 ? "+" : "")@fatDiff.Value.ToString("F2") variance
-                            </span>
-                        }
-                        @if (Model.IsFatDeviated)
-                        {
-                            <div class="qtd-deviated"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±0.5% tolerance</div>
-                        }
-                    </div>
-                </div>
-
-                <!-- CLR -->
-                @{
-                    string clrClass = Model.IsCLRDeviated ? "bad" : "ok";
-                }
-                <div class="qtd-reading-box @clrClass">
-                    <div class="qtd-reading-top @clrClass">
-                        <div class="qtd-reading-label @clrClass">CLR</div>
-                        <div class="qtd-reading-value @clrClass">
-                            @(Model.TestedCLR?.ToString("F2") ?? "—")
-                        </div>
-                    </div>
-                    <div class="qtd-reading-bottom">
-                        <div class="qtd-reading-compare">
-                            <span>Batch Average</span>
-                            <b>@(Model.BatchAvgCLR?.ToString("F2") ?? "—")</b>
-                        </div>
-                        @if (clrDiff.HasValue)
-                        {
-                            <span class="qtd-variance @clrClass">
-                                <i class="bi @(clrDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
-                                @(clrDiff.Value >= 0 ? "+" : "")@clrDiff.Value.ToString("F2") variance
-                            </span>
-                        }
-                        @if (Model.IsCLRDeviated)
-                        {
-                            <div class="qtd-deviated"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±2 tolerance</div>
-                        }
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Transfer info -->
-    <div class="qtd-card">
-        <div class="qtd-card-hd">
-            <i class="bi bi-truck"></i> Transfer Information
-        </div>
-        <div class="qtd-card-body">
-            <div class="qtd-info-grid">
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Transfer ID</span>
-                    <span class="qtd-transfer-badge"><i class="bi bi-arrow-left-right"></i> T-@Model.TransferId</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Test Date</span>
-                    <span class="qtd-info-val">@Model.TestDate.ToString("dd MMM yyyy")</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">From (Center)</span>
-                    <span class="qtd-info-val">@Model.CenterName</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">To (Plant)</span>
-                    <span class="qtd-info-val">@Model.PlantName</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Vehicle</span>
-                    <span class="qtd-info-val mono">@Model.VehicleNumber</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Driver</span>
-                    <span class="qtd-info-val">@Model.DriverName</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Dispatch Date</span>
-                    <span class="qtd-info-val">@Model.DispatchDate.ToString("dd MMM yyyy")</span>
-                </div>
-                <div class="qtd-info-row">
-                    <span class="qtd-info-key">Dispatched Qty</span>
-                    <span class="qtd-info-val mono">@Model.DispatchQty.ToString("F2") L</span>
-                </div>
-                <div class="qtd-info-row" style="grid-column:1/-1;">
-                    <span class="qtd-info-key">Received Qty</span>
-                    <span class="qtd-info-val mono">@(Model.ReceivedQty?.ToString("F2") ?? "—") L</span>
+                    }
+                    @if (Model.IsFatDeviated)
+                    {
+                        <div class="qd-flag"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±0.5% tolerance</div>
+                    }
                 </div>
             </div>
-        </div>
-    </div>
 
+            <div class="qd-metric-row" style="border-bottom:none;">
+                <div class="qd-metric-label">
+                    <span class="qd-metric-label-name">CLR</span>
+                    <span class="qd-metric-label-sub">Tolerance ±2</span>
+                </div>
+                <div class="qd-metric-cell">
+                    <div class="qd-metric-cell-lbl">Batch Average</div>
+                    <div class="qd-metric-val avg">@(Model.BatchAvgCLR?.ToString("F2") ?? "—")</div>
+                </div>
+                <div class="qd-metric-cell">
+                    <div class="qd-metric-cell-lbl">Tested Reading</div>
+                    <div class="qd-metric-val @(Model.IsCLRDeviated ? "dev" : "ok")">
+                        @(Model.TestedCLR?.ToString("F2") ?? "—")
+                    </div>
+                    @if (clrDiff.HasValue)
+                    {
+                        <div class="qd-pill @(Model.IsCLRDeviated ? "dev" : "ok")">
+                            <i class="bi @(clrDiff.Value >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i>
+                            @(clrDiff.Value >= 0 ? "+" : "")@clrDiff.Value.ToString("F2") var
+                        </div>
+                    }
+                    @if (Model.IsCLRDeviated)
+                    {
+                        <div class="qd-flag"><i class="bi bi-exclamation-triangle-fill"></i> Outside ±2 tolerance</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Transfer info section -->
+            <div class="qd-ledger-hd qd-section-sep">
+                <span class="qd-ledger-hd-label"><i class="bi bi-truck" style="margin-right:5px;"></i>Transfer Information</span>
+            </div>
+
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-hash"></i> Transfer ID</div>
+                <div class="qd-row-val"><span class="qd-tid"><i class="bi bi-arrow-left-right"></i> T-@Model.TransferId</span></div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-calendar3"></i> Test Date</div>
+                <div class="qd-row-val">@Model.TestDate.ToString("dd MMMM yyyy")</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-geo-alt"></i> From (Center)</div>
+                <div class="qd-row-val">@Model.CenterName</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-building"></i> To (Plant)</div>
+                <div class="qd-row-val">@Model.PlantName</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-truck"></i> Vehicle</div>
+                <div class="qd-row-val mono">@Model.VehicleNumber</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-person"></i> Driver</div>
+                <div class="qd-row-val">@Model.DriverName</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-calendar-check"></i> Dispatch Date</div>
+                <div class="qd-row-val">@Model.DispatchDate.ToString("dd MMMM yyyy")</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-droplet"></i> Dispatched Qty</div>
+                <div class="qd-row-val mono">@Model.DispatchQty.ToString("F2") L</div>
+            </div>
+            <div class="qd-row">
+                <div class="qd-row-lbl"><i class="bi bi-droplet-fill"></i> Received Qty</div>
+                <div class="qd-row-val mono">@(Model.ReceivedQty?.ToString("F2") ?? "—") L</div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: Verdict panel -->
+        <div class="qd-panel">
+
+            <div class="qd-panel-stamp @(passed ? "pass" : "fail")">
+                <i class="bi @(passed ? "bi-patch-check-fill" : "bi-patch-exclamation-fill") qd-stamp-icon"></i>
+                <div class="qd-stamp-eyebrow">Official Result</div>
+                <div class="qd-stamp-result">@Model.QualityResult</div>
+            </div>
+
+            <div class="qd-panel-section">Fat</div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Batch avg</span>
+                <span class="qd-pstat-val">@(Model.BatchAvgFat?.ToString("F2") ?? "—")%</span>
+            </div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Tested</span>
+                <span class="qd-pstat-val @(Model.IsFatDeviated ? "dev" : "ok")">@(Model.TestedFat?.ToString("F2") ?? "—")%</span>
+            </div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Status</span>
+                <span class="qd-pstat-val @(Model.IsFatDeviated ? "dev" : "ok")">
+                    @(Model.IsFatDeviated ? "⚠ Deviated" : "✓ Normal")
+                </span>
+            </div>
+
+            <div class="qd-panel-section">CLR</div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Batch avg</span>
+                <span class="qd-pstat-val">@(Model.BatchAvgCLR?.ToString("F2") ?? "—")</span>
+            </div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Tested</span>
+                <span class="qd-pstat-val @(Model.IsCLRDeviated ? "dev" : "ok")">@(Model.TestedCLR?.ToString("F2") ?? "—")</span>
+            </div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Status</span>
+                <span class="qd-pstat-val @(Model.IsCLRDeviated ? "dev" : "ok")">
+                    @(Model.IsCLRDeviated ? "⚠ Deviated" : "✓ Normal")
+                </span>
+            </div>
+
+            <div class="qd-panel-section">Transfer</div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Dispatched</span>
+                <span class="qd-pstat-val">@Model.DispatchQty.ToString("F0") L</span>
+            </div>
+            <div class="qd-pstat">
+                <span class="qd-pstat-lbl">Received</span>
+                <span class="qd-pstat-val">@(Model.ReceivedQty?.ToString("F0") ?? "—") L</span>
+            </div>
+            @if (Model.ReceivedQty.HasValue)
+            {
+                var loss = Model.DispatchQty - Model.ReceivedQty.Value;
+                <div class="qd-pstat">
+                    <span class="qd-pstat-lbl">Loss</span>
+                    <span class="qd-pstat-val @(loss > 0 ? "dev" : "ok")">@loss.ToString("F0") L</span>
+                </div>
+            }
+
+        </div>
+
+    </div>
 </div>

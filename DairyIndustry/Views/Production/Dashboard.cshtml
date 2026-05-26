@@ -1,0 +1,2163 @@
+﻿@model DairyIndustry.Models.Production.ProductionDashboardViewModel
+@{
+    ViewData["Title"] = "Production Dashboard";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+    :root {
+        --bg: #f5f6fb;
+        --surface: rgba(255,255,255,0.85);
+        --surface-solid: #ffffff;
+        --border: rgba(220,224,240,0.7);
+        --border-light: rgba(220,224,240,0.4);
+        --text: #0f172a;
+        --text-mid: #334155;
+        --text-muted: #64748b;
+        --text-light: #94a3b8;
+        --mint: #10b981;
+        --mint-bg: #ecfdf5;
+        --mint-text: #065f46;
+        --aqua: #06b6d4;
+        --aqua-bg: #ecfeff;
+        --aqua-text: #155e75;
+        --lavender: #8b5cf6;
+        --lavender-bg: #f5f3ff;
+        --lavender-text: #4c1d95;
+        --amber: #f59e0b;
+        --amber-bg: #fffbeb;
+        --amber-text: #78350f;
+        --blue: #3b82f6;
+        --blue-bg: #eff6ff;
+        --blue-text: #1e3a8a;
+        --coral: #f43f5e;
+        --coral-bg: #fff1f2;
+        --coral-text: #881337;
+        --shadow-card: 0 8px 32px rgba(15,23,42,0.05), 0 2px 8px rgba(15,23,42,0.03);
+        --shadow-hover: 0 20px 48px rgba(15,23,42,0.10), 0 4px 16px rgba(15,23,42,0.06);
+        --shadow-sm: 0 2px 8px rgba(15,23,42,0.04);
+        --radius-xl: 24px;
+        --radius-lg: 18px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --radius-pill: 100px;
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--text);
+        font-size: 14px;
+        min-height: 100vh;
+    }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 800px 600px at 10% 20%, rgba(139,92,246,0.04) 0%, transparent 60%), radial-gradient(ellipse 600px 500px at 85% 80%, rgba(59,130,246,0.04) 0%, transparent 60%), radial-gradient(ellipse 500px 400px at 50% 50%, rgba(16,185,129,0.03) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+    /* ── Buttons ── */
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(99,102,241,0.30);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(99,102,241,0.40);
+            color: #fff;
+        }
+
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--surface-solid);
+        color: var(--text-mid);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .btn-outline:hover {
+            background: var(--bg);
+            border-color: rgba(99,102,241,0.3);
+            color: var(--lavender);
+            transform: translateY(-1px);
+        }
+
+    /* ── Dash Body ── */
+    .dash-body {
+        position: relative;
+        z-index: 1;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+    }
+
+    /* ══════════════════════════════════════
+           WELCOME TYPOGRAPHY
+        ══════════════════════════════════════ */
+    .welcome-block {
+        padding: 0.25rem 0 0;
+    }
+
+    .welcome-date {
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 10px;
+    }
+
+    .welcome-title {
+        font-size: 46px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -1.5px;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .welcome-name {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .welcome-sub {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-top: 10px;
+        font-weight: 500;
+    }
+
+        .welcome-sub strong {
+            color: var(--text-mid);
+        }
+
+    .welcome-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 1.25rem;
+    }
+
+    /* ══════════════════════════════════════
+           NEW FINANCIAL KPI CARDS
+        ══════════════════════════════════════ */
+    .fin-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    /* Base card */
+    .fin-card {
+        border-radius: var(--radius-xl);
+        padding: 1.6rem 1.75rem;
+        box-shadow: var(--shadow-card);
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .fin-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Card variants */
+        .fin-card.card-dark {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .fin-card.card-white {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .fin-card.card-green {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .fin-card.card-red {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+    .icon-blue {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .todo-card {
+        min-height: 295px;
+        width: 100%;
+    }
+
+    .todo-list {
+        flex: 1;
+    }
+
+    .fin-card {
+        height: 100%;
+    }
+
+    .todo-input-wrap {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        margin-bottom: 18px;
+    }
+
+    .todo-input {
+        flex: 1;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 0 14px;
+        font-size: 13px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        outline: none;
+        background: #fff;
+        transition: 0.2s ease;
+    }
+
+        .todo-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.08);
+        }
+
+    .todo-add-btn {
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg,#3b82f6,#6366f1);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s ease;
+        flex-shrink: 0;
+    }
+
+        .todo-add-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(99,102,241,0.35);
+        }
+
+    .todo-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        max-height: 180px;
+        padding-right: 4px;
+    }
+
+    .todo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px 14px;
+        transition: 0.2s ease;
+    }
+
+        .todo-item:hover {
+            background: #f1f5f9;
+        }
+
+    .todo-text {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.5;
+    }
+
+    .todo-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .todo-btn {
+        border: none;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 7px 10px;
+        border-radius: 8px;
+        transition: 0.2s ease;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .todo-edit {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .todo-delete {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .todo-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .todo-empty {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+        padding: 30px 10px;
+    }
+
+
+    /* Card header row */
+    .fin-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.1rem;
+    }
+
+    .fin-card-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: inherit;
+        opacity: 0.85;
+    }
+
+    .fin-card-label-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .fin-card-label-icon svg {
+            width: 14px;
+            height: 14px;
+        }
+
+    /* Dark card icon */
+    .icon-dark-blue {
+        background: rgba(59,130,246,0.2);
+        color: #60a5fa;
+    }
+    /* Green card icon */
+    .icon-green {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+    /* Red card icon */
+    .icon-red {
+        background: #ffe4e6;
+        color: #e11d48;
+    }
+
+    .fin-pill {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: var(--radius-pill);
+        white-space: nowrap;
+    }
+
+        .fin-pill.dark {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+        }
+
+        .fin-pill.green-pill {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .fin-pill.red-pill {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+
+        .fin-pill.amber-pill {
+            background: var(--amber-bg);
+            color: #b45309;
+        }
+
+    /* Big value */
+    .fin-value {
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -1.5px;
+        margin-bottom: 4px;
+    }
+
+    .fin-card.card-dark .fin-value {
+        color: #fff;
+    }
+
+    .fin-card.card-white .fin-value,
+    .fin-card.card-green .fin-value,
+    .fin-card.card-red .fin-value {
+        color: var(--text);
+    }
+
+    .fin-delta {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 6px;
+    }
+
+        .fin-delta.up {
+            color: #16a34a;
+        }
+
+        .fin-delta.down {
+            color: #e11d48;
+        }
+
+        .fin-delta.neutral {
+            color: var(--text-muted);
+        }
+
+        .fin-delta svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+    /* Dark card action buttons */
+    .fin-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 1.5rem;
+    }
+
+    .fin-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+        .fin-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .fin-btn.solid {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+            .fin-btn.solid:hover {
+                background: #2563eb;
+            }
+
+        .fin-btn.ghost {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+            .fin-btn.ghost:hover {
+                background: rgba(255,255,255,0.14);
+            }
+
+    /* Divider rows inside card */
+    .fin-divider {
+        height: 1px;
+        background: rgba(220,224,240,0.5);
+        margin: 1rem 0;
+    }
+
+        .fin-divider.dark {
+            background: rgba(255,255,255,0.08);
+        }
+
+    /* Sub rows (e.g. Salary / Freelance) */
+    .fin-sub-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.6rem;
+    }
+
+    .fin-sub-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .fin-sub-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .fin-sub-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'DM Mono', monospace;
+    }
+
+    /* Progress / mini bar */
+    .fin-bar-wrap {
+        margin-top: 1rem;
+    }
+
+    .fin-bar-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .fin-bar-track {
+        height: 7px;
+        background: #f1f5f9;
+        border-radius: 100px;
+        overflow: hidden;
+    }
+
+    .fin-bar-fill {
+        height: 100%;
+        border-radius: 100px;
+        transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .fill-blue {
+        background: linear-gradient(90deg, #3b82f6, #6366f1);
+    }
+
+    .fill-green {
+        background: linear-gradient(90deg, #10b981, #06b6d4);
+    }
+
+    .fill-red {
+        background: linear-gradient(90deg, #f43f5e, #f97316);
+    }
+
+    /* Segment bar (expense breakdown) */
+    .seg-bar {
+        display: flex;
+        height: 7px;
+        border-radius: 100px;
+        overflow: hidden;
+        margin-top: 1rem;
+        gap: 2px;
+    }
+
+    .seg-bar-chunk {
+        border-radius: 100px;
+    }
+
+    .seg-legend {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .seg-dot {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+        .seg-dot::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .seg-dot.blue::before {
+            background: #3b82f6;
+        }
+
+        .seg-dot.green::before {
+            background: #10b981;
+        }
+
+        .seg-dot.amber::before {
+            background: #f59e0b;
+        }
+
+    /* ── Panel (existing) ── */
+    .panel {
+        background: var(--surface);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.25s ease;
+    }
+
+        .panel:hover {
+            box-shadow: 0 12px 40px rgba(15,23,42,0.07), 0 2px 12px rgba(15,23,42,0.04);
+        }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.5rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .panel-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        letter-spacing: -0.2px;
+    }
+
+    .panel-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .panel-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .panel-icon.amber {
+            background: var(--amber-bg);
+            color: var(--amber);
+        }
+
+        .panel-icon.mint {
+            background: var(--mint-bg);
+            color: var(--mint);
+        }
+
+        .panel-icon.blue {
+            background: var(--blue-bg);
+            color: var(--blue);
+        }
+
+        .panel-icon.coral {
+            background: var(--coral-bg);
+            color: var(--coral);
+        }
+
+        .panel-icon.lavender {
+            background: var(--lavender-bg);
+            color: var(--lavender);
+        }
+
+        .panel-icon.aqua {
+            background: var(--aqua-bg);
+            color: var(--aqua);
+        }
+
+    .panel-view-all {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--blue);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        opacity: 0.8;
+        transition: opacity 0.15s;
+    }
+
+        .panel-view-all:hover {
+            opacity: 1;
+        }
+
+    .panel-body {
+        padding: 1.25rem 1.5rem;
+        flex: 1;
+    }
+
+    .panel-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    /* ── Batch Grid ── */
+    .batch-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .batch-cell {
+        border-radius: var(--radius-lg);
+        padding: 1.25rem 1rem 1rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+
+        .batch-cell:hover {
+            transform: scale(1.02);
+        }
+
+        .batch-cell::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            opacity: 0.15;
+        }
+
+        .batch-cell.amber-bg {
+            background: linear-gradient(145deg,#fffbeb,#fef3c7);
+        }
+
+            .batch-cell.amber-bg::after {
+                background: var(--amber);
+            }
+
+        .batch-cell.teal-bg {
+            background: linear-gradient(145deg,#ecfdf5,#d1fae5);
+        }
+
+            .batch-cell.teal-bg::after {
+                background: var(--mint);
+            }
+
+        .batch-cell.red-bg {
+            background: linear-gradient(145deg,#fff1f2,#ffe4e6);
+        }
+
+            .batch-cell.red-bg::after {
+                background: var(--coral);
+            }
+
+        .batch-cell.gray-bg {
+            background: linear-gradient(145deg,#f8fafc,#f1f5f9);
+        }
+
+            .batch-cell.gray-bg::after {
+                background: #94a3b8;
+            }
+
+    .batch-num {
+        font-size: 38px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 6px;
+        letter-spacing: -1.5px;
+    }
+
+        .batch-num.amber {
+            color: #d97706;
+        }
+
+        .batch-num.teal {
+            color: var(--mint);
+        }
+
+        .batch-num.red {
+            color: var(--coral);
+        }
+
+        .batch-num.gray {
+            color: #94a3b8;
+        }
+
+    .batch-lbl {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-muted);
+    }
+
+    .view-all-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        background: transparent;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-mid);
+        text-decoration: none;
+        cursor: pointer;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s ease;
+    }
+
+        .view-all-btn:hover {
+            background: var(--bg);
+            transform: translateY(-1px);
+        }
+
+        .view-all-btn.amber-btn {
+            border-color: rgba(245,158,11,0.4);
+            color: #d97706;
+        }
+
+            .view-all-btn.amber-btn:hover {
+                background: var(--amber-bg);
+                border-color: var(--amber);
+            }
+
+    /* ── Transfer rows ── */
+    .transfer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--border-light);
+        font-size: 13px;
+    }
+
+        .transfer-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .transfer-row .t-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .transfer-row .t-value {
+            font-weight: 700;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+        }
+
+            .transfer-row .t-value.red {
+                color: var(--coral);
+            }
+
+    .progress-wrap {
+        margin-top: 16px;
+    }
+
+    .progress-track {
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: var(--radius-pill);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: var(--radius-pill);
+        background: linear-gradient(90deg, var(--mint), var(--aqua));
+        transition: width 1s cubic-bezier(0.4,0,0.2,1);
+        position: relative;
+    }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 100%;
+            background: rgba(255,255,255,0.4);
+            border-radius: var(--radius-pill);
+            animation: shimmer 2s infinite;
+        }
+
+    @@keyframes shimmer {
+        0% {
+            opacity: 0
+        }
+
+        50% {
+            opacity: 1
+        }
+
+        100% {
+            opacity: 0
+        }
+    }
+
+    .progress-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    /* ── Tables ── */
+    .dash-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .dash-table thead {
+            background: #f8fafc;
+        }
+
+        .dash-table th {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 10px 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .dash-table td {
+            padding: 13px 1.5rem;
+            color: var(--text-mid);
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            font-weight: 500;
+        }
+
+        .dash-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dash-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+            .dash-table tbody tr:hover td {
+                background: rgba(59,130,246,0.03);
+            }
+
+    /* ── Pills ── */
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 11px;
+        border-radius: var(--radius-pill);
+        white-space: nowrap;
+        letter-spacing: 0.2px;
+    }
+
+    .pill-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .pill-inactive {
+        background: var(--coral-bg);
+        color: var(--coral-text);
+    }
+
+    .pill-inprogress {
+        background: #fef9c3;
+        color: #713f12;
+    }
+
+    .pill-completed {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .pill-failed {
+        background: var(--coral-bg);
+        color: var(--coral-text);
+    }
+
+    .pill-cancelled {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .pill-pending {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    .panel-action-bar {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-light);
+        display: flex;
+        gap: 10px;
+        background: #fafbfc;
+    }
+
+    /* ── Grid layouts ── */
+    .mid-grid, .bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* Todo list */
+
+    .ops-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 8px;
+    }
+
+    .ops-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: 0.2s ease;
+    }
+
+        .ops-item:hover {
+            background: #f1f5f9;
+            transform: translateY(-1px);
+        }
+
+    .ops-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ops-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .ops-icon.blue {
+            background: #dbeafe;
+        }
+
+        .ops-icon.green {
+            background: #dcfce7;
+        }
+
+        .ops-icon.red {
+            background: #fee2e2;
+        }
+
+        .ops-icon.amber {
+            background: #fef3c7;
+        }
+
+    .ops-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .ops-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .ops-badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+        .ops-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .ops-badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .ops-badge.danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .ops-badge.info {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+    @@media (max-width: 1200px) {
+        .fin-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @@media (max-width: 1024px) {
+        .fin-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .mid-grid, .bottom-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .dash-body {
+            padding: 1.25rem;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+        }
+
+        .fin-value {
+            font-size: 30px;
+        }
+
+        .batch-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+
+    }
+</style>
+
+<!-- ═══ SVG DEFS ═══ -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="icon-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13" rx="2" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+    </symbol>
+    <symbol id="icon-factory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 20h20M6 20V10l6 4V10l6 4V4" /><path d="M6 4v6" />
+    </symbol>
+    <symbol id="icon-droplet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+    </symbol>
+    <symbol id="icon-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3h6M9 3v8l-4.5 9.5A1 1 0 0 0 5.4 22h13.2a1 1 0 0 0 .9-1.5L15 11V3M9 3h6" />
+    </symbol>
+    <symbol id="icon-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+    </symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" /><path d="M3 8l9 5 9-5M12 13v8" />
+    </symbol>
+    <symbol id="icon-trend-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
+    </symbol>
+    <symbol id="icon-trend-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </symbol>
+    <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+    </symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+    </symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    </symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+    </symbol>
+</svg>
+
+@{
+    var totalDispatched = Model.RecentTransfers.Sum(t => t.DispatchQty);
+    var receivedQty = Model.RecentTransfers.Where(t => t.Status == "Received").Sum(t => t.DispatchQty);
+    var receivedPct = totalDispatched > 0 ? (int)Math.Round(receivedQty / totalDispatched * 100) : 0;
+    var totalCenterPaid = Model.TotalPaidToCenters;
+    var pendingCenterAmt = Model.RecentCenterPayments.Where(x => x.PaymentStatus == "Pending").Sum(x => x.TotalAmount);
+    var processedAmt = Model.RecentCenterPayments.Where(x => x.PaymentStatus == "Processed").Sum(x => x.TotalAmount);
+
+    // Expense segment %
+    var totalWaste = (double)(Model.TotalMilkProcessWastage + Model.TotalProductWastage);
+    var totalLoss = (double)Model.TotalLossLitres;
+    var totalStock = (double)Model.TotalRawMilkStock;
+    var grandOps = totalWaste + totalLoss + totalStock;
+    var wastePct = grandOps > 0 ? (int)(totalWaste / grandOps * 100) : 33;
+    var lossPct2 = grandOps > 0 ? (int)(totalLoss / grandOps * 100) : 33;
+    var stockPct = 100 - wastePct - lossPct2;
+}
+
+<div class="dash-body">
+
+    <!-- ═══ WELCOME ═══════════════════════════════════════ -->
+    <div class="welcome-block">
+        <p class="welcome-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</p>
+        <h1 class="welcome-title">
+            Welcome back,<br>
+
+            <span class="welcome-name">
+                @Context.Session.GetString("Username")
+            </span>
+
+            👋
+        </h1>
+        <p class="welcome-sub">
+            Here's what's happening at
+            <strong>@Context.Session.GetString("PlantName")</strong> today.
+        </p>
+        <div class="welcome-actions">
+            <a href="@Url.Action("StartBatch", "Production")" class="btn-primary">
+                <svg width="14" height="14"><use href="#icon-plus" /></svg>
+                Start Batch
+            </a>
+            <a href="@Url.Action("Index", "Production")" class="btn-outline">
+                <svg width="14" height="14"><use href="#icon-list" /></svg>
+                All Records
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ FINANCIAL KPI CARDS ══════════════════════════ -->
+    <div class="fin-grid">
+
+        <!-- Card 1: My Balance (dark) -->
+        <div class="fin-card card-dark">
+            <div class="fin-card-head">
+                <div class="fin-card-label">
+                    <div class="fin-card-label-icon icon-dark-blue">
+                        <svg><use href="#icon-card" /></svg>
+                    </div>
+                    Center Payments
+                </div>
+                <span class="fin-pill dark">ALL TIME</span>
+            </div>
+
+            <div class="fin-value">₹@((totalCenterPaid / 100000m).ToString("F2"))L</div>
+
+            @if (pendingCenterAmt > 0)
+            {
+                <div class="fin-delta down">
+                    <svg><use href="#icon-trend-down" /></svg>
+                    ₹@pendingCenterAmt.ToString("N0") pending settlement
+                </div>
+            }
+            else
+            {
+                <div class="fin-delta up">
+                    <svg><use href="#icon-trend-up" /></svg>
+                    All center payments settled
+                </div>
+            }
+
+            <div class="fin-divider dark"></div>
+
+            <div class="fin-actions">
+                <a href="@Url.Action("ProcessCenterPayment", "Finance")" class="fin-btn solid">
+                    <svg><use href="#icon-plus" /></svg>
+                    Process Payment
+                </a>
+                <a href="@Url.Action("CenterPayments", "Finance")" class="fin-btn ghost">
+                    <svg><use href="#icon-eye" /></svg>
+                    View All
+                </a>
+            </div>
+        </div>
+
+        <!-- Todo List Card -->
+               
+        <div class="fin-card card-white todo-card">
+
+            <div class="fin-card-head">
+
+                <div class="fin-card-label">
+
+                    <div class="fin-card-label-icon icon-blue">
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor"
+                             stroke-width="2">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+
+                    Pending Tasks
+
+                </div>
+
+                <span class="fin-pill amber-pill">
+
+                    @{
+                        int pendingCount = 0;
+
+                        if (Model.PendingTransfers > 0)
+                            pendingCount++;
+
+                        if (pendingCenterAmt > 0)
+                            pendingCount++;
+
+                        if (Model.QCFailedBatches > 0)
+                            pendingCount++;
+
+                        if (Model.InProgressBatches > 0)
+                            pendingCount++;
+                    }
+
+                    @pendingCount Pending
+
+                </span>
+
+            </div>
+
+            <div class="ops-list">
+
+                @if (Model.PendingTransfers > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon blue">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <rect x="1" y="3"
+                                          width="15"
+                                          height="13"></rect>
+
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+
+                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+
+                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Pending Milk Transfers
+                                </div>
+
+                                <div class="ops-sub">
+                                    Awaiting plant receipt
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge warning">
+                            @Model.PendingTransfers
+                        </span>
+
+                    </div>
+                }
+
+                @if (pendingCenterAmt > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon green">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <rect x="2" y="5"
+                                          width="20"
+                                          height="14"
+                                          rx="2"></rect>
+
+                                    <line x1="2" y1="10"
+                                          x2="22" y2="10"></line>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Pending Payments
+                                </div>
+
+                                <div class="ops-sub">
+                                    Center settlements due
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge danger">
+                            ₹@pendingCenterAmt.ToString("N0")
+                        </span>
+
+                    </div>
+                }
+
+                @if (Model.QCFailedBatches > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon red">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+
+                                    <line x1="12" y1="9"
+                                          x2="12" y2="13"></line>
+
+                                    <line x1="12" y1="17"
+                                          x2="12.01" y2="17"></line>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    QC Failed Batches
+                                </div>
+
+                                <div class="ops-sub">
+                                    Requires immediate review
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge danger">
+                            @Model.QCFailedBatches
+                        </span>
+
+                    </div>
+                }
+
+                @if (Model.InProgressBatches > 0)
+                {
+                    <div class="ops-item">
+
+                        <div class="ops-left">
+
+                            <div class="ops-icon amber">
+
+                                <svg width="18" height="18"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+
+                                    <path d="M6 22V12"></path>
+                                    <path d="M18 22V12"></path>
+                                    <path d="M2 12h20"></path>
+                                    <path d="M12 2v20"></path>
+
+                                </svg>
+
+                            </div>
+
+                            <div>
+
+                                <div class="ops-title">
+                                    Active Production
+                                </div>
+
+                                <div class="ops-sub">
+                                    Batches currently running
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <span class="ops-badge info">
+                            @Model.InProgressBatches
+                        </span>
+
+                    </div>
+                }
+
+                @if (pendingCount == 0)
+                {
+                    <div class="todo-empty">
+
+                        <svg width="42"
+                             height="42"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="#10b981"
+                             stroke-width="2">
+
+                            <path d="M20 6L9 17l-5-5"></path>
+
+                        </svg>
+
+                        <div style="margin-top:10px;font-weight:700;">
+                            No Pending Tasks
+                        </div>
+
+                        <div style="margin-top:4px;font-size:12px;color:var(--text-muted);">
+                            Everything looks good.
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <!-- ═══ ROW 2 — Batch Stats | Transfer Overview ════ -->
+    <div class="mid-grid">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon amber"><svg><use href="#icon-factory" /></svg></div>
+                    Production Batches
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="batch-grid">
+                    <div class="batch-cell amber-bg">
+                        <div class="batch-num amber">@Model.InProgressBatches</div>
+                        <div class="batch-lbl">In Progress</div>
+                    </div>
+                    <div class="batch-cell teal-bg">
+                        <div class="batch-num teal">@Model.CompletedBatches</div>
+                        <div class="batch-lbl">Completed</div>
+                    </div>
+                    <div class="batch-cell red-bg">
+                        <div class="batch-num red">@Model.QCFailedBatches</div>
+                        <div class="batch-lbl">QC Failed</div>
+                    </div>
+                    <div class="batch-cell gray-bg">
+                        <div class="batch-num gray">@(Model.TotalBatches - Model.InProgressBatches - Model.CompletedBatches - Model.QCFailedBatches)</div>
+                        <div class="batch-lbl">Cancelled</div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <a href="@Url.Action("Batches", "Production")" class="view-all-btn amber-btn">
+                    <svg width="14" height="14"><use href="#icon-list" /></svg>
+                    View All Batches
+                </a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon aqua"><svg><use href="#icon-truck" /></svg></div>
+                    Transfer Overview
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="transfer-row">
+                    <span class="t-label">Total Dispatched</span>
+                    <span class="t-value">@totalDispatched.ToString("N0") L</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Total Loss</span>
+                    <span class="t-value red">@Model.TotalLossLitres.ToString("N1") L</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Loss %</span>
+                    <span class="t-value red">@Model.AvgLossPct.ToString("F2")%</span>
+                </div>
+                <div class="transfer-row">
+                    <span class="t-label">Pending Receipt</span>
+                    <span class="t-value">
+                        @if (Model.PendingTransfers == 0)
+                        {
+                            <span class="pill pill-active">0</span>
+                        }
+                        else
+                        {
+                            <span class="pill pill-pending">@Model.PendingTransfers</span>
+                        }
+                    </span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:@receivedPct%"></div>
+                    </div>
+                    <p class="progress-label">@receivedPct% transfers received</p>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <a href="@Url.Action("Index", "Production")" class="view-all-btn">
+                    <svg width="14" height="14"><use href="#icon-list" /></svg>
+                    View All Transfers
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 3 — Recent Transfers | Recent Batches ══ -->
+    <div class="bottom-grid">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon aqua"><svg><use href="#icon-truck" /></svg></div>
+                    Recent Transfers
+                </div>
+                <a href="@Url.Action("Index", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentTransfers.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Batch Ref</th>
+                            <th>Center</th>
+                            <th>Dispatched</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.RecentTransfers.Take(6))
+                        {
+                            <tr>
+                                <td style="font-weight:700;font-size:12px;font-family:'DM Mono',monospace;color:var(--text)">@t.BatchRef</td>
+                                <td>@t.CenterName</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted)">@t.DispatchDate.ToString("dd MMM yy")</td>
+                                <td>
+                                    @if (t.Status == "Received")
+                                    {
+                                        <span class="pill pill-completed">Received</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pill pill-pending">Dispatched</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:13px;font-weight:500">No transfers recorded yet.</div>
+            }
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon amber"><svg><use href="#icon-factory" /></svg></div>
+                    Recent Batches
+                </div>
+                <a href="@Url.Action("Batches", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentBatches.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Plant</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.RecentBatches.Take(6))
+                        {
+                            <tr>
+                                <td style="font-weight:600;color:var(--text)">@b.ProductName</td>
+                                <td style="color:var(--text-muted)">@b.PlantName</td>
+                                <td style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text-muted)">@b.ProductionDate.ToString("dd MMM yy")</td>
+                                <td>
+                                    @switch (b.BatchStatus)
+                                    {
+                                        case "InProgress":
+                                            <span class="pill pill-inprogress">In Progress</span>
+                                            break;
+                                        case "Completed":
+
+                                            <span class="pill pill-completed">Completed</span>
+                                            break;
+                                        case "QCFailed":
+
+                                            <span class="pill pill-failed">QC Failed</span>
+                                            break;
+                                        case "Cancelled":
+
+                                            <span class="pill pill-cancelled">Cancelled</span>
+                                            break;
+                                        default:
+
+                                            <span class="pill pill-cancelled">@b.BatchStatus</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:13px;font-weight:500">No production batches found.</div>
+            }
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 4 — Raw Milk Inventory | Transfer Loss ══ -->
+    <div class="bottom-grid">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon mint"><svg><use href="#icon-droplet" /></svg></div>
+                    Raw Milk Inventory
+                </div>
+                <a href="@Url.Action("RawMilkInventory", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.Inventory.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr><th>Plant</th><th>Milk Type</th><th>Quantity</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var inv in Model.Inventory.Take(7))
+                        {
+                            <tr>
+                                <td style="font-size:12px;font-weight:600;color:var(--text)">@inv.PlantName</td>
+                                <td style="font-size:12px;color:var(--text-muted)">@inv.MilkTypeName</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600">@inv.Quantity.ToString("N0") L</td>
+                                <td>
+                                    @switch (inv.StockLabel)
+                                    {
+                                        case "Available":
+                                            <span class="pill pill-active">Available</span>
+                                            break;
+                                        case "Low":
+
+                                            <span class="pill pill-inprogress">Low</span>
+                                            break;
+                                        default:
+
+                                            <span class="pill pill-failed">Empty</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:13px;font-weight:500">No inventory data found.</div>
+            }
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon coral"><svg><use href="#icon-trend-down" /></svg></div>
+                    Transfer Loss Log
+                </div>
+                <a href="@Url.Action("TransferLossLog", "Production")" class="panel-view-all">View All</a>
+            </div>
+            @if (Model.RecentLosses.Any())
+            {
+                <table class="dash-table">
+                    <thead>
+                        <tr><th>Route</th><th>Loss (L)</th><th>Loss %</th><th>Category</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in Model.RecentLosses.Take(6))
+                        {
+                            <tr>
+                                <td>
+                                    <div style="font-size:12px;font-weight:600;color:var(--text)">@l.PlantName</div>
+                                    <div style="font-size:11px;color:var(--text-light);margin-top:1px">@l.DispatchDate.ToString("dd MMM")</div>
+                                </td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600">@l.LossQty.ToString("N1")</td>
+                                <td style="font-family:'DM Mono',monospace;font-size:12px">@l.LossPct.ToString("F1")%</td>
+                                <td>
+                                    @switch (l.LossCategory)
+                                    {
+                                        case "Severe":
+                                            <span class="pill pill-failed">Severe</span>
+                                            break;
+                                        case "Moderate":
+
+                                            <span class="pill pill-inprogress">Moderate</span>
+                                            break;
+                                        default:
+
+                                            <span class="pill pill-active">Minor</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:13px;font-weight:500">No loss records yet.</div>
+            }
+        </div>
+
+    </div>
+
+    <!-- ═══ ROW 5 — Center Payments Full Width ════════ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <div class="panel-icon blue"><svg><use href="#icon-card" /></svg></div>
+                Recent Center Payments
+            </div>
+            <a href="@Url.Action("CenterPayments", "Finance")" class="panel-view-all">View All</a>
+        </div>
+        @if (Model.RecentCenterPayments.Any())
+        {
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>Center</th>
+                        <th>Plant</th>
+                        <th>Qty (L)</th>
+                        <th>Rate / L</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cp in Model.RecentCenterPayments.Take(6))
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:700;color:var(--text)">@cp.CenterName</div>
+                                <div style="font-size:11px;color:var(--text-light);font-family:'DM Mono',monospace;margin-top:2px">@cp.BatchRef</div>
+                            </td>
+                            <td style="font-size:13px;color:var(--text-muted)">@cp.PlantName</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600">@cp.ReceivedQty.ToString("N0")</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:12px">₹@cp.RatePerLiter.ToString("F2")</td>
+                            <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">₹@cp.TotalAmount.ToString("N2")</td>
+                            <td style="font-size:12px;color:var(--text-muted)">@cp.PaymentDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @switch (cp.PaymentStatus)
+                                {
+                                    case "Processed":
+                                        <span class="pill pill-completed">Processed</span>
+                                        break;
+                                    case "Failed":
+
+                                        <span class="pill pill-failed">Failed</span>
+                                        break;
+                                    default:
+
+                                        <span class="pill pill-pending">Pending</span>
+                                        break;
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:13px;font-weight:500">No center payments recorded yet.</div>
+        }
+        <div class="panel-action-bar">
+            <a href="@Url.Action("ProcessCenterPayment", "Finance")" class="btn-primary">
+                <svg width="13" height="13"><use href="#icon-plus" /></svg>
+                Process Payment
+            </a>
+            <a href="@Url.Action("CenterPayments", "Finance")" class="btn-outline">
+                <svg width="13" height="13"><use href="#icon-list" /></svg>
+                All Payments
+            </a>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        // Counter animation
+        document.querySelectorAll('.fin-value').forEach(el => {
+            const txt = el.textContent.trim();
+            const hasCurr = txt.startsWith('₹');
+            const raw = txt.replace(/[^\d.]/g, '');
+            const num = parseFloat(raw);
+            if (isNaN(num) || num === 0) return;
+            const suffix = txt.replace(/[\d,. ₹]/g, '').trim();
+            const prefix = hasCurr ? '₹' : '';
+            const isFloat = txt.includes('.');
+            const decs = isFloat ? (txt.split('.')[1]?.replace(/\D/, '').length || 1) : 0;
+            const dur = 900;
+            const start = performance.now();
+            function tick(now) {
+                const p = Math.min((now - start) / dur, 1);
+                const ease = 1 - Math.pow(1 - p, 3);
+                const v = num * ease;
+                const disp = isFloat ? v.toFixed(decs) : Math.round(v).toLocaleString('en-IN');
+                el.textContent = prefix + disp + suffix;
+                if (p < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
+
+        // Bar animations
+        document.querySelectorAll('.fin-bar-fill, .progress-fill').forEach(el => {
+            const target = el.style.width;
+            el.style.width = '0%';
+            setTimeout(() => { el.style.width = target; }, 200);
+        });
+
+        // Card stagger entrance
+        document.querySelectorAll('.fin-card, .panel').forEach((card, i) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(16px)';
+            card.style.transition = 'opacity 0.45s ease, transform 0.45s ease, box-shadow 0.25s ease';
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 60 + i * 50);
+        });
+
+
+                let todos = [];
+
+        function renderTodos() {
+
+            const list = document.getElementById("todoList");
+            const count = document.getElementById("todoCount");
+
+            if (todos.length === 0) {
+
+                list.innerHTML = `
+                    <div class="todo-empty" id="todoEmpty">
+                        No tasks added yet.
+                    </div>
+                `;
+
+                count.innerText = "0";
+
+                return;
+            }
+
+            list.innerHTML = "";
+
+            todos.forEach((todo, index) => {
+
+                list.innerHTML += `
+                    <div class="todo-item">
+
+                        <div class="todo-text">
+                            ${todo}
+                        </div>
+
+                        <div class="todo-actions">
+
+                            <button type="button"
+                                    class="todo-btn todo-edit"
+                                    onclick="editTodo(${index})">
+
+                                Edit
+
+                            </button>
+
+                            <button type="button"
+                                    class="todo-btn todo-delete"
+                                    onclick="deleteTodo(${index})">
+
+                                Delete
+
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
+            });
+
+            count.innerText = todos.length;
+        }
+
+        function addTodo() {
+
+            const input = document.getElementById("todoInput");
+
+            const value = input.value.trim();
+
+            if (value === "")
+                return;
+
+            todos.unshift(value);
+
+            input.value = "";
+
+            renderTodos();
+        }
+
+        function deleteTodo(index) {
+
+            todos.splice(index, 1);
+
+            renderTodos();
+        }
+
+        function editTodo(index) {
+
+            const updated = prompt("Edit task", todos[index]);
+
+            if (updated === null)
+                return;
+
+            const clean = updated.trim();
+
+            if (clean === "")
+                return;
+
+            todos[index] = clean;
+
+            renderTodos();
+        }
+
+        document
+            .getElementById("todoInput")
+            .addEventListener("keypress", function (e) {
+
+                if (e.key === "Enter") {
+                    addTodo();
+                }
+            });
+
+        renderTodos();
+    </script>
+}

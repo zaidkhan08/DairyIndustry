@@ -2,69 +2,578 @@
 
 @{
     ViewData["Title"] = "Receive Transfer";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
+
+    var qt = ViewBag.QualityTest as DairyIndustry.Models.Production.QualityTestModel;
+    bool hasQT = qt != null;
 }
 
-<h4 class="mb-4">📥 Receive Milk Transfer</h4>
+<style>
+    .recv-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+        max-width: 1080px;
+    }
 
-<div class="card shadow-sm mb-4" style="max-width: 600px;">
-    <div class="card-header bg-secondary text-white">
-        <strong>Transfer Info — TR-@Model.TransferId</strong>
+    @@media (max-width: 860px) {
+        .recv-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .rc {
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+        .rc:last-child {
+            margin-bottom: 0;
+        }
+
+    .rc-head {
+        padding: 11px 18px;
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .rc-head.dark {
+            background: #0f172a;
+            border-bottom-color: #1e293b;
+        }
+
+    .rc-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .rc-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+        .rc-title.light {
+            color: #e2e8f0;
+        }
+
+    .rc-sub {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .info-rows {
+        padding: 2px 0;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 18px;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+    .ir-label {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    .ir-value {
+        font-size: 13px;
+        color: #0f172a;
+        font-weight: 600;
+        text-align: right;
+    }
+
+        .ir-value.mono {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+    .driver-block {
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .driver-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0e7490, #2563eb);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+    }
+
+    .driver-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .driver-tag {
+        display: inline-block;
+        margin-top: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        background: rgba(14,116,144,0.09);
+        color: #0e7490;
+        border: 1px solid rgba(14,116,144,0.18);
+        padding: 2px 8px;
+        border-radius: 20px;
+    }
+
+    .qt-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: #f1f5f9;
+    }
+
+    .qt-cell {
+        background: #fff;
+        padding: 18px;
+        text-align: center;
+    }
+
+    .qt-big {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.5px;
+    }
+
+    .qt-unit {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .qt-label {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+
+    .qt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 7px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+    .qt-ok {
+        background: rgba(34,197,94,0.1);
+        color: #16a34a;
+        border: 1px solid rgba(34,197,94,0.2);
+    }
+
+    .qt-dev {
+        background: rgba(239,68,68,0.1);
+        color: #dc2626;
+        border: 1px solid rgba(239,68,68,0.2);
+    }
+
+    .qt-meta {
+        padding: 10px 18px;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .qt-meta-label {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .qt-meta-value {
+        font-size: 12px;
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    .qt-none {
+        padding: 22px 18px;
+        text-align: center;
+    }
+
+    .qt-none-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #94a3b8;
+    }
+
+    .qt-none-sub {
+        font-size: 11px;
+        color: #cbd5e1;
+        margin-top: 3px;
+    }
+
+    .kpi-strip {
+        display: flex;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .kpi-cell {
+        flex: 1;
+        padding: 14px 18px;
+        text-align: center;
+        border-right: 1px solid #f1f5f9;
+    }
+
+        .kpi-cell:last-child {
+            border-right: none;
+        }
+
+    .kpi-num {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .kpi-unit {
+        font-size: 10px;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .kpi-label {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 5px;
+    }
+
+    .pill-transit {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(34,211,238,0.1);
+        color: #0891b2;
+        border: 1px solid rgba(8,145,178,0.2);
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+    .live-dot {
+        width: 5px;
+        height: 5px;
+        background: #0891b2;
+        border-radius: 50%;
+        animation: lpulse 1.4s ease-in-out infinite;
+    }
+
+    @@keyframes lpulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.3;
+            transform: scale(0.6);
+        }
+    }
+
+    .recv-body {
+        padding: 18px;
+    }
+
+    .f-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .f-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: inherit;
+        color: #0f172a;
+        background: #f8fafc;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+        .f-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            background: #fff;
+        }
+
+    .f-hint {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 5px;
+    }
+
+    .btn-confirm {
+        width: 100%;
+        padding: 13px;
+        background: #0f172a;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.15s;
+    }
+
+        .btn-confirm:hover {
+            background: #1e293b;
+        }
+
+    .btn-back {
+        width: 100%;
+        padding: 10px;
+        background: transparent;
+        color: #94a3b8;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        text-decoration: none;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.15s;
+    }
+
+        .btn-back:hover {
+            border-color: #cbd5e1;
+            color: #64748b;
+            background: #f8fafc;
+        }
+</style>
+
+<!-- ── Page header ─────────────────────────────────────────────── -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <div style="width:42px;height:42px;background:#0f172a;border-radius:12px;
+                display:flex;align-items:center;justify-content:center;
+                color:#22d3ee;font-size:20px;flex-shrink:0;">
+        <i class="bi bi-truck"></i>
     </div>
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-5">Batch</dt>
-            <dd class="col-sm-7">@Model.BatchRef</dd>
-
-            <dt class="col-sm-5">From Center</dt>
-            <dd class="col-sm-7">@Model.CenterName</dd>
-
-            <dt class="col-sm-5">To Plant</dt>
-            <dd class="col-sm-7">@Model.PlantName</dd>
-
-            <dt class="col-sm-5">Vehicle</dt>
-            <dd class="col-sm-7">@Model.VehicleNumber @(Model.DriverName != null ? "/ " + Model.DriverName : "")</dd>
-
-            <dt class="col-sm-5">Dispatched Qty</dt>
-            <dd class="col-sm-7"><strong>@Model.DispatchQty.ToString("N2") L</strong></dd>
-
-            <dt class="col-sm-5">Dispatch Date</dt>
-            <dd class="col-sm-7">@Model.DispatchDate.ToString("dd-MMM-yyyy")</dd>
-        </dl>
+    <div>
+        <div style="font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.3px;">
+            Receive Transfer
+            <span style="color:#94a3b8;font-weight:500;">TR-@Model.TransferId</span>
+        </div>
+        <div style="font-size:12px;color:#94a3b8;">
+            @Model.CenterName &rarr; @Model.PlantName
+            &nbsp;·&nbsp; @Model.DispatchDate.ToString("dd MMM yyyy")
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm" style="max-width: 600px;">
-    <div class="card-header bg-success text-white">
-        <strong>Enter Received Details</strong>
+<div class="recv-grid">
+
+    <!-- ══ LEFT ════════════════════════════════════════════════ -->
+    <div>
+
+        <!-- Driver & Vehicle -->
+        <div class="rc">
+            <div class="rc-head">
+                <div class="rc-icon" style="background:#0e4f6e;">
+                    <i class="bi bi-person-badge-fill" style="color:#bae6fd;"></i>
+                </div>
+                <div>
+                    <div class="rc-title">Driver &amp; Vehicle</div>
+                    <div class="rc-sub">Assigned for this transfer</div>
+                </div>
+                <div class="ms-auto">
+                    <span class="pill-transit">
+                        <span class="live-dot"></span>In Transit
+                    </span>
+                </div>
+            </div>
+
+            <div class="driver-block">
+                <div class="driver-avatar">👤</div>
+                <div>
+                    <div class="driver-name">@(Model.DriverName ?? "Not Assigned")</div>
+                    <span class="driver-tag">🚛 Milk Transport Driver</span>
+                </div>
+            </div>
+
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="ir-label">Vehicle Number</span>
+                    <span class="ir-value mono">@(Model.VehicleNumber ?? "—")</span>
+                </div>
+                <div class="info-row">
+                    <span class="ir-label">Vehicle Type</span>
+                    <span class="ir-value">Milk Tanker</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transfer Details -->
+        <div class="rc">
+            <div class="rc-head">
+                <div class="rc-icon" style="background:#1e1b4b;">
+                    <i class="bi bi-clipboard2-data-fill" style="color:#a5b4fc;"></i>
+                </div>
+                <div>
+                    <div class="rc-title">Transfer Details</div>
+                    <div class="rc-sub">Batch &amp; dispatch information</div>
+                </div>
+            </div>
+
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="ir-label">Transfer ID</span>
+                    <span class="ir-value mono">TR-@Model.TransferId</span>
+                </div>
+                <div class="info-row">
+                    <span class="ir-label">Batch Ref</span>
+                    <span class="ir-value mono">@Model.BatchRef</span>
+                </div>
+                <div class="info-row">
+                    <span class="ir-label">From Center</span>
+                    <span class="ir-value">@Model.CenterName</span>
+                </div>
+                <div class="info-row">
+                    <span class="ir-label">To Plant</span>
+                    <span class="ir-value">@Model.PlantName</span>
+                </div>
+                <div class="info-row">
+                    <span class="ir-label">Dispatch Date</span>
+                    <span class="ir-value">@Model.DispatchDate.ToString("dd MMM yyyy")</span>
+                </div>
+            </div>
+
+            <div class="kpi-strip">
+                <div class="kpi-cell">
+                    <div class="kpi-num">@Model.DispatchQty.ToString("N0")</div>
+                    <div class="kpi-unit">Litres</div>
+                    <div class="kpi-label">Dispatched Qty</div>
+                </div>
+                <div class="kpi-cell">
+                    <div class="kpi-num" style="color:#0e7490;">
+                        @(hasQT && qt.TestedFat.HasValue ? qt.TestedFat.Value.ToString("N1") : "—")
+                    </div>
+                    <div class="kpi-unit">% Fat</div>
+                    <div class="kpi-label">Center Fat</div>
+                </div>
+                <div class="kpi-cell">
+                    <div class="kpi-num" style="color:#0e7490;">
+                        @(hasQT && qt.TestedCLR.HasValue ? qt.TestedCLR.Value.ToString("N1") : "—")
+                    </div>
+                    <div class="kpi-unit">CLR</div>
+                    <div class="kpi-label">Center CLR</div>
+                </div>
+            </div>
+        </div>
+
+       
     </div>
-    <div class="card-body">
 
-        <form asp-action="Receive" method="post">
-            <input type="hidden" name="transferId" value="@Model.TransferId" />
+    <!-- ══ RIGHT ═══════════════════════════════════════════════ -->
+    <div>
 
-            <div class="mb-3">
-                <label class="form-label">Received Quantity (Litres)</label>
-                <input type="number" name="receivedQty" class="form-control"
-                       step="0.01" min="1" max="@Model.DispatchQty"
-                       placeholder="e.g. 498.50" required />
-                <small class="text-muted">Cannot exceed dispatched quantity (@Model.DispatchQty.ToString("N2") L)</small>
+        <!-- Confirm Receipt -->
+        <div class="rc">
+            <div class="rc-head dark">
+                <i class="bi bi-check2-circle" style="color:#22d3ee;font-size:16px;"></i>
+                <div class="ms-2">
+                    <div class="rc-title light">Confirm Receipt</div>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Received Date</label>
-                <input type="date" name="receivedDate" class="form-control"
-                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-            </div>
+            <div class="recv-body">
+                <form asp-action="Receive" method="post">
+                    <input type="hidden" name="transferId" value="@Model.TransferId" />
 
-            <div class="d-flex justify-content-between mt-4">
-                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn btn-success fw-bold">
-                    ✅ Confirm Received
-                </button>
+                    <div class="mb-3">
+                        <label class="f-label">Received Quantity (Litres)</label>
+                        <input type="number"
+                               name="receivedQty"
+                               class="f-input"
+                               step="0.01"
+                               min="1"
+                               max="@Model.DispatchQty"
+                               placeholder="e.g. @((Model.DispatchQty - 2).ToString("N2"))"
+                               required />
+                        <div class="f-hint">Max: @Model.DispatchQty.ToString("N2") L dispatched</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="f-label">Received Date</label>
+                        <input type="date"
+                               name="receivedDate"
+                               class="f-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               required />
+                    </div>
+
+                    <button type="submit" class="btn-confirm">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Confirm Received
+                    </button>
+                </form>
+
+                <a asp-action="Index" class="btn-back">
+                    <i class="bi bi-arrow-left"></i> Back to Transfers
+                </a>
             </div>
-        </form>
+        </div>
+
+
 
     </div>
 </div>

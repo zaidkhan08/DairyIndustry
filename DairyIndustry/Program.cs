@@ -1,5 +1,7 @@
 using DairyIndustry.Data;
 using DairyIndustry.Filters;
+using DairyIndustry.Interfaces;
+using DairyIndustry.Models.Admin;
 using DairyIndustry.Repositories;
 using DairyIndustry.Repository;
 using DairyIndustry.Services;
@@ -7,6 +9,8 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using Stripe;
 using System.Runtime.Loader;
+using Microsoft.AspNetCore.Http.Features;
+
 namespace DairyIndustry
 {
     public class Program
@@ -37,6 +41,8 @@ namespace DairyIndustry
 
 
             //  REGISTER DinkToPdf
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+
             builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
 
@@ -44,7 +50,7 @@ namespace DairyIndustry
 
             builder.Services.AddControllersWithViews(options =>
             {
-                options.Filters.Add<ExceptionHandlerFilter>();
+                //options.Filters.Add<ExceptionHandlerFilter>();
                 options.Filters.Add<ResultInfoFilter>();
             });
 
@@ -55,6 +61,12 @@ namespace DairyIndustry
                 options.Cookie.IsEssential = true;
             });
 
+            builder.Services.Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 5 * 1024 * 1024; // 5MB
+            });
+            builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())

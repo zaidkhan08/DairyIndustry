@@ -4,76 +4,158 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="card shadow">
+<div class="container mt-4">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
         <div class="card-header bg-dark text-white">
             <h4 class="mb-0">Place Order (Admin)</h4>
         </div>
         <div class="card-body">
 
-            @if (ViewBag.Message != null)
-            {
-                <div class="alert alert-success">@ViewBag.Message</div>
-            }
+            <form method="post" asp-action="AdminOrder" asp-controller="Admin" id="orderForm">
+                @Html.AntiForgeryToken()
 
-            <form method="post" asp-action="AdminOrder" asp-controller="Admin">
-
-                <div class="mb-3">
-                    <label class="form-label">Select Distributor</label>
-                    <select asp-for="DistributorId" class="form-select">
-                        <option value="">-- Select Distributor --</option>
-                        @foreach (var d in Model.DistributorList)
-                        {
-                            <option value="@d.DistributorId">@d.DistributorName</option>
-                        }
-                    </select>
-                    <span asp-validation-for="DistributorId" class="text-danger small"></span>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Select Plant</label>
-                    <select asp-for="PlantId" class="form-select">
-                        <option value="">-- Select Plant --</option>
-                        @foreach (var p in Model.PlantList)
-                        {
-                            <option value="@p.PlantId">@p.PlantName — @p.Location</option>
-                        }
-                    </select>
-                    <span asp-validation-for="PlantId" class="text-danger small"></span>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Select Product</label>
-                    <select asp-for="ProductId" class="form-select" id="productDropdown">
-                        <option value="">-- Select Product --</option>
-                        @foreach (var p in Model.ProductList)
-                        {
-                            <option value="@p.ProductId" data-price="@p.MRP">
-                                @p.ProductName — ₹@p.MRP
-                            </option>
-                        }
-                    </select>
-                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                @* ── Order Header ── *@
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Distributor</label>
+                        <select asp-for="DistributorId" class="form-select">
+                            <option value="">-- Select Distributor --</option>
+                            @foreach (var d in Model.DistributorList.Where(d => d.Status == "Approved"))
+                            {
+                                <option value="@d.DistributorId"
+                                        selected="@(Model.DistributorId == d.DistributorId)">
+                                    @d.DistributorName
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="DistributorId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Plant</label>
+                        <select asp-for="PlantId" class="form-select">
+                            <option value="">-- Select Plant --</option>
+                            @foreach (var p in Model.PlantList)
+                            {
+                                <option value="@p.PlantId"
+                                        selected="@(Model.PlantId == p.PlantId)">
+                                    @p.PlantName — @p.Location
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="PlantId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Order Date</label>
+                        <input asp-for="OrderDate" type="date" class="form-control"
+                               value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Quantity</label>
-                    <input asp-for="Quantity" type="number" step="0.01" class="form-control" placeholder="Enter quantity" />
-                    <span asp-validation-for="Quantity" class="text-danger small"></span>
+                @* ── Add Product to Cart ── *@
+                <div class="card bg-light border mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">Add Product to Cart</h6>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small">Product</label>
+                                <select id="productDropdown" class="form-select">
+                                    <option value="">-- Select Product --</option>
+                                    @foreach (var p in Model.ProductList)
+                                    {
+                                        <option value="@p.ProductId"
+                                                data-price="@p.MRP"
+                                                data-name="@p.ProductName"
+                                                data-unit="@p.Unit">
+                                            @p.ProductName (@p.Unit) — ₹@p.MRP
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Quantity</label>
+                                <input type="number" id="qtyInput" class="form-control"
+                                       min="0.01" step="0.01" placeholder="0" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Unit Price (₹)</label>
+                                <input type="number" id="priceInput" class="form-control"
+                                       min="0.01" step="0.01" placeholder="Auto-filled" />
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-dark w-100"
+                                        onclick="addToCart()">
+                                    + Add
+                                </button>
+                            </div>
+                        </div>
+                        <div id="addError" class="text-danger small mt-2" style="display:none"></div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Unit Price (₹)</label>
-                    <input asp-for="UnitPrice" type="number" step="0.01" class="form-control" placeholder="Auto-filled from product" />
-                    <span asp-validation-for="UnitPrice" class="text-danger small"></span>
+                @* ── Cart Table ── *@
+                <div class="mb-4">
+                    <h6 class="fw-semibold mb-2">
+                        Order Items
+                        <span id="cartBadge" class="badge bg-secondary ms-1" style="display:none">0</span>
+                    </h6>
+
+                    <div id="emptyCart" class="text-center text-muted py-4 border rounded">
+                        No products added yet. Use the form above to add items.
+                    </div>
+
+                    <div id="cartTableWrap" style="display:none">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Product</th>
+                                    <th>Unit</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Line Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartBody"></tbody>
+                            <tfoot>
+                                <tr class="table-light fw-semibold">
+                                    <td colspan="5" class="text-end">Order Total</td>
+                                    <td class="text-end" id="orderTotal">₹0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Order Date</label>
-                    <input asp-for="OrderDate" type="date" class="form-control"
-                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-                </div>
+                @* ── Hidden fields built by JS ── *@
+                <div id="hiddenCartFields"></div>
 
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-success">Place Order</button>
+                @* ── Cart validation error from server ── *@
+                @if (!ViewData.ModelState.IsValid &&
+                                ViewData.ModelState.ContainsKey("CartItems"))
+                {
+                    <div class="alert alert-danger">
+                        @ViewData.ModelState["CartItems"]!.Errors.First().ErrorMessage
+                    </div>
+                }
+
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="submit" class="btn btn-success px-4" id="submitBtn" disabled>
+                        Place Order
+                    </button>
+                    <span id="submitHint" class="text-muted small">
+                        Add at least one product to place the order.
+                    </span>
                 </div>
 
             </form>
@@ -84,9 +166,138 @@
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
     <script>
-        document.getElementById("productDropdown").addEventListener("change", function () {
-            var price = this.options[this.selectedIndex].getAttribute("data-price");
-            document.querySelector("input[name='UnitPrice']").value = price || '';
+        // ── State ──────────────────────────────────────────
+        let cart = [];
+
+        // ── Auto-fill price when product selected ──────────
+        document.getElementById('productDropdown').addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            document.getElementById('priceInput').value = opt.dataset.price || '';
+            document.getElementById('qtyInput').value   = '';
+            document.getElementById('addError').style.display = 'none';
+        });
+
+        // ── Add to cart ────────────────────────────────────
+        function addToCart() {
+            const sel    = document.getElementById('productDropdown');
+            const opt    = sel.options[sel.selectedIndex];
+            const errEl  = document.getElementById('addError');
+
+            const productId   = parseInt(sel.value);
+            const productName = opt.dataset.name   || '';
+            const unit        = opt.dataset.unit   || '';
+            const qty         = parseFloat(document.getElementById('qtyInput').value);
+            const price       = parseFloat(document.getElementById('priceInput').value);
+
+            errEl.style.display = 'none';
+
+            if (!productId) {
+                showError('Please select a product.'); return;
+            }
+            if (!qty || qty <= 0) {
+                showError('Please enter a valid quantity.'); return;
+            }
+            if (!price || price <= 0) {
+                showError('Please enter a valid unit price.'); return;
+            }
+            if (cart.some(i => i.productId === productId)) {
+                showError('This product is already in the cart. Remove it first to change.'); return;
+            }
+
+            cart.push({ productId, productName, unit, qty, price });
+
+            // Reset add-row
+            sel.value = '';
+            document.getElementById('qtyInput').value   = '';
+            document.getElementById('priceInput').value = '';
+
+            renderCart();
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('addError');
+            el.textContent     = msg;
+            el.style.display   = 'block';
+        }
+
+        // ── Remove from cart ───────────────────────────────
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        // ── Render cart UI + hidden fields ─────────────────
+        function renderCart() {
+            const empty   = document.getElementById('emptyCart');
+            const wrap    = document.getElementById('cartTableWrap');
+            const body    = document.getElementById('cartBody');
+            const badge   = document.getElementById('cartBadge');
+            const totalEl = document.getElementById('orderTotal');
+            const btn     = document.getElementById('submitBtn');
+            const hint    = document.getElementById('submitHint');
+            const hidden  = document.getElementById('hiddenCartFields');
+
+            hidden.innerHTML = '';
+
+            if (cart.length === 0) {
+                empty.style.display = 'block';
+                wrap.style.display  = 'none';
+                badge.style.display = 'none';
+                btn.disabled        = true;
+                hint.style.display  = '';
+                totalEl.textContent = '₹0.00';
+                return;
+            }
+
+            empty.style.display = 'none';
+            wrap.style.display  = 'block';
+            badge.style.display = 'inline';
+            badge.textContent   = cart.length;
+            btn.disabled        = false;
+            hint.style.display  = 'none';
+
+            let total = 0;
+            body.innerHTML = '';
+
+            cart.forEach((item, i) => {
+                const lineTotal = item.qty * item.price;
+                total += lineTotal;
+
+                // Table row
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${item.productName}</td>
+                    <td class="text-muted">${item.unit}</td>
+                    <td class="text-end">${item.qty.toLocaleString()}</td>
+                    <td class="text-end">₹${item.price.toFixed(2)}</td>
+                    <td class="text-end fw-semibold">
+                        ₹${lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="removeFromCart(${i})">✕</button>
+                    </td>`;
+                body.appendChild(tr);
+
+                // Hidden fields for model binding
+                hidden.innerHTML += `
+                    <input type="hidden" name="CartItems[${i}].ProductId"   value="${item.productId}" />
+                    <input type="hidden" name="CartItems[${i}].ProductName" value="${item.productName}" />
+                    <input type="hidden" name="CartItems[${i}].Quantity"    value="${item.qty}" />
+                    <input type="hidden" name="CartItems[${i}].UnitPrice"   value="${item.price}" />`;
+            });
+
+            totalEl.textContent = '₹' + total.toLocaleString('en-IN',
+                { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ── Guard submit ───────────────────────────────────
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            if (cart.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one product before placing the order.');
+            }
         });
     </script>
 }

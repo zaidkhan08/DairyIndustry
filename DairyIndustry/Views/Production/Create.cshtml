@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Dispatch Batch";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
 }
 
@@ -80,6 +80,7 @@
             <div class="card-body p-4 p-md-5">
                 <form asp-action="Create" method="post">
                     <div class="row g-4">
+
                         @* BATCH SELECTION *@
                         <div class="col-12">
                             <label class="form-label">Select Closed Batch</label>
@@ -94,6 +95,22 @@
                                 </select>
                             </div>
                             <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Only closed batches available for transport are listed here.</div>
+                        </div>
+
+                        @* MILK TYPE SELECTION — required for correct inventory update *@
+                        <div class="col-12">
+                            <label class="form-label">Milk Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text input-group-text-custom border"><i class="bi bi-droplet-half"></i></span>
+                                <select name="milkTypeId" class="form-select border-start-0" required>
+                                    <option value="">-- Select Milk Type --</option>
+                                    @foreach (var mt in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
+                                    {
+                                        <option value="@mt.MilkTypeId">@mt.MilkTypeName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Select the type of milk being dispatched. This updates the correct inventory row at the plant.</div>
                         </div>
 
                         @* PLANT SELECTION *@
@@ -160,6 +177,7 @@
                                 </button>
                             </div>
                         </div>
+
                     </div>
                 </form>
             </div>
