@@ -519,7 +519,7 @@ namespace DairyIndustry.Controllers
                     try
                     {
                         var loginUrl = $"{Request.Scheme}://{Request.Host}/Farmer/Login";
-                        _emailService.SendApprovalEmail(
+                        _emailService.SendApprovalEmailAsync(
                             result.Email,
                             result.FarmerCode,
                             result.DefaultPassword,

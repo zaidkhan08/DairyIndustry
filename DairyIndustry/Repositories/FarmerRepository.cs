@@ -108,19 +108,17 @@ namespace DairyIndustry.Repository
             return list;
         }
 
-        // Registration Farmer By CollectionCenter
-        public RegByCenterModel AddFarmer(RegByCenterModel model, int staffId)
+        public async Task<RegByCenterModel> AddFarmerAsync(RegByCenterModel model, int staffId)
         {
             using (SqlConnection con = _dbHelper.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_RegisterFarmer", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-
                 cmd.Parameters.AddWithValue("@StaffId", staffId);
                 cmd.Parameters.AddWithValue("@FarmerName", model.FarmerName);
                 cmd.Parameters.AddWithValue("@Gender", model.Gender);
-                cmd.Parameters.AddWithValue("@DateOfBirth",(object?)model.DateOfBirth ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Email",(object?)model.Email ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@DateOfBirth", (object?)model.DateOfBirth ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Email", (object?)model.Email ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@VillageId", model.VillageId);
                 cmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@BankName", (object?)model.BankName ?? DBNull.Value);
@@ -129,30 +127,93 @@ namespace DairyIndustry.Repository
                 cmd.Parameters.AddWithValue("@AadhaarNumber", model.AadhaarNumber);
                 cmd.Parameters.AddWithValue("@ProfilePhoto",
                     string.IsNullOrEmpty(model.ProfilePhoto) ? (object)DBNull.Value : model.ProfilePhoto);
-                cmd.Parameters.AddWithValue("@AadhaarCardPath",string.IsNullOrEmpty(model.AadhaarCardPath)
-                    ? (object)DBNull.Value: model.AadhaarCardPath);
-                cmd.Parameters.AddWithValue("@PassbookPath",string.IsNullOrEmpty(model.PassbookPath)
-                    ? (object)DBNull.Value: model.PassbookPath);
+                cmd.Parameters.AddWithValue("@AadhaarCardPath",
+                    string.IsNullOrEmpty(model.AadhaarCardPath) ? (object)DBNull.Value : model.AadhaarCardPath);
+                cmd.Parameters.AddWithValue("@PassbookPath",
+                    string.IsNullOrEmpty(model.PassbookPath) ? (object)DBNull.Value : model.PassbookPath);
 
-                con.Open();
-
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                await con.OpenAsync();
+                using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
                 {
-                    if (reader.Read())
+                    if (await reader.ReadAsync())
                     {
                         model.FarmerId = Convert.ToInt32(reader["NewFarmerId"]);
                         model.FarmerCode = reader["FarmerCode"].ToString();
-
                         if (!string.IsNullOrEmpty(model.Phone) && model.Phone.Length >= 4)
-                        {
                             model.DefaultPassword = model.Phone.Substring(model.Phone.Length - 4);
-                        }
                     }
                 }
             }
-
             return model;
         }
+
+        public async Task<string> GenerateOtpAsync(string email)
+        {
+            using var con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Farmer.usp_SendEmailOTP", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Email", email);
+            await con.OpenAsync();
+            var otp = (await cmd.ExecuteScalarAsync())?.ToString();
+            return otp;
+        }
+
+        public async Task<bool> VerifyOtpAsync(string email, string otp)
+        {
+            using var con = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand("Farmer.usp_VerifyEmailOTP", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Email", email);
+            cmd.Parameters.AddWithValue("@OTPCode", otp);
+            await con.OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result) == 1;
+        }
+        //// Registration Farmer By CollectionCenter
+        //public RegByCenterModel AddFarmer(RegByCenterModel model, int staffId)
+        //{
+        //    using (SqlConnection con = _dbHelper.GetConnection())
+        //    using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_RegisterFarmer", con))
+        //    {
+        //        cmd.CommandType = CommandType.StoredProcedure;
+
+        //        cmd.Parameters.AddWithValue("@StaffId", staffId);
+        //        cmd.Parameters.AddWithValue("@FarmerName", model.FarmerName);
+        //        cmd.Parameters.AddWithValue("@Gender", model.Gender);
+        //        cmd.Parameters.AddWithValue("@DateOfBirth",(object?)model.DateOfBirth ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@Email",(object?)model.Email ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@VillageId", model.VillageId);
+        //        cmd.Parameters.AddWithValue("@Phone", (object?)model.Phone ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@BankName", (object?)model.BankName ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@AccountNumber", (object?)model.AccountNumber ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@IFSCCode", (object?)model.IFSCCode ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@AadhaarNumber", model.AadhaarNumber);
+        //        cmd.Parameters.AddWithValue("@ProfilePhoto",
+        //            string.IsNullOrEmpty(model.ProfilePhoto) ? (object)DBNull.Value : model.ProfilePhoto);
+        //        cmd.Parameters.AddWithValue("@AadhaarCardPath",string.IsNullOrEmpty(model.AadhaarCardPath)
+        //            ? (object)DBNull.Value: model.AadhaarCardPath);
+        //        cmd.Parameters.AddWithValue("@PassbookPath",string.IsNullOrEmpty(model.PassbookPath)
+        //            ? (object)DBNull.Value: model.PassbookPath);
+
+        //        con.Open();
+
+        //        using (SqlDataReader reader = cmd.ExecuteReader())
+        //        {
+        //            if (reader.Read())
+        //            {
+        //                model.FarmerId = Convert.ToInt32(reader["NewFarmerId"]);
+        //                model.FarmerCode = reader["FarmerCode"].ToString();
+
+        //                if (!string.IsNullOrEmpty(model.Phone) && model.Phone.Length >= 4)
+        //                {
+        //                    model.DefaultPassword = model.Phone.Substring(model.Phone.Length - 4);
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    return model;
+        //}
 
 
         //  GET ALL FARMERS
@@ -258,194 +319,64 @@ namespace DairyIndustry.Repository
         // =========================
         // GET FARMER BY ID
         // =========================
-        public FarmerEditModel GetFarmerById(int farmerId, int staffId)
+
+
+        public async Task<FarmerEditModel> GetFarmerByIdAsync(int farmerId, int staffId)
         {
             FarmerEditModel model = null;
-
             using (SqlConnection con = _dbHelper.GetConnection())
             using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_GetFarmerById", con))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-
                 cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = farmerId;
                 cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
 
-                con.Open();
-
-                using (SqlDataReader r = cmd.ExecuteReader())
+                await con.OpenAsync();
+                using (SqlDataReader r = await cmd.ExecuteReaderAsync())
                 {
-                    if (r.Read())
+                    if (await r.ReadAsync())
                     {
                         model = new FarmerEditModel
                         {
                             FarmerId = Convert.ToInt32(r["FarmerId"]),
                             FarmerName = r["FarmerName"] == DBNull.Value ? null : r["FarmerName"].ToString(),
                             FarmerCode = r["FarmerCode"] == DBNull.Value ? null : r["FarmerCode"].ToString(),
-
                             Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
                             Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
                             Gender = r["Gender"] == DBNull.Value ? null : r["Gender"].ToString(),
-
-                            DateOfBirth = r["DateOfBirth"] == DBNull.Value
-                                ? (DateTime?)null
-                                : Convert.ToDateTime(r["DateOfBirth"]),
-
+                            DateOfBirth = r["DateOfBirth"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["DateOfBirth"]),
                             StateId = r["StateId"] == DBNull.Value ? 0 : Convert.ToInt32(r["StateId"]),
                             CityId = r["CityId"] == DBNull.Value ? 0 : Convert.ToInt32(r["CityId"]),
                             VillageId = r["VillageId"] == DBNull.Value ? 0 : Convert.ToInt32(r["VillageId"]),
-
                             StateName = r["StateName"] == DBNull.Value ? null : r["StateName"].ToString(),
                             CityName = r["CityName"] == DBNull.Value ? null : r["CityName"].ToString(),
                             VillageName = r["VillageName"] == DBNull.Value ? null : r["VillageName"].ToString(),
-
                             BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
                             AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
                             IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
-
                             AadhaarNumber = r["AadhaarNumber"] == DBNull.Value ? null : r["AadhaarNumber"].ToString(),
-
                             ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
                             AadhaarCardPath = r["AadhaarCardPath"] == DBNull.Value ? null : r["AadhaarCardPath"].ToString(),
                             PassbookPath = r["PassbookPath"] == DBNull.Value ? null : r["PassbookPath"].ToString(),
-
                             IsActive = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"]),
                             ApprovalStatus = r["ApprovalStatus"] == DBNull.Value ? null : r["ApprovalStatus"].ToString()
                         };
                     }
                 }
             }
-
             return model;
         }
-
-        // =========================
-        // UPDATE FARMER (NO VALIDATION)
-        // =========================
-        public int UpdateFarmer(FarmerEditModel model, int staffId)
-        {
-            using (SqlConnection con = _dbHelper.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_UpdateFarmer", con))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
-                cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = model.FarmerId;
-
-                cmd.Parameters.Add("@FarmerName", SqlDbType.VarChar).Value = (object?)model.FarmerName ?? DBNull.Value;
-                cmd.Parameters.Add("@VillageId", SqlDbType.Int).Value = model.VillageId;
-
-                cmd.Parameters.Add("@Phone", SqlDbType.VarChar).Value = (object?)model.Phone ?? DBNull.Value;
-                cmd.Parameters.Add("@Email", SqlDbType.VarChar).Value = (object?)model.Email ?? DBNull.Value;
-                cmd.Parameters.Add("@Gender", SqlDbType.VarChar).Value = (object?)model.Gender ?? DBNull.Value;
-                cmd.Parameters.Add("@DateOfBirth", SqlDbType.Date).Value = (object?)model.DateOfBirth ?? DBNull.Value;
-
-                cmd.Parameters.Add("@BankName", SqlDbType.VarChar).Value = (object?)model.BankName ?? DBNull.Value;
-                cmd.Parameters.Add("@AccountNumber", SqlDbType.VarChar).Value = (object?)model.AccountNumber ?? DBNull.Value;
-                cmd.Parameters.Add("@IFSCCode", SqlDbType.VarChar).Value = (object?)model.IFSCCode ?? DBNull.Value;
-
-                cmd.Parameters.Add("@ProfilePhoto", SqlDbType.VarChar).Value = (object?)model.ProfilePhoto ?? DBNull.Value;
-
-                con.Open();
-
-                object result = cmd.ExecuteScalar();
-                return result != null ? Convert.ToInt32(result) : 0;
-            }
-        }
-
-        // =========================
-        // DOCUMENT UPDATE
-        // =========================
-        public int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath)
-        {
-            using (SqlConnection con = _dbHelper.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("Farmer.usp_UpdateFarmerDocument", con))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
-                cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = farmerId;
-                cmd.Parameters.Add("@DocumentType", SqlDbType.VarChar).Value = documentType;
-                cmd.Parameters.Add("@FilePath", SqlDbType.VarChar).Value = filePath;
-
-                con.Open();
-
-                object result = cmd.ExecuteScalar();
-                return result != null ? Convert.ToInt32(result) : 0;
-            }
-        }
-
-
-        //public int UpdateFarmer(FarmerViewModel model,int staffId)
+        //public FarmerEditModel GetFarmerById(int farmerId, int staffId)
         //{
-        //    using (SqlConnection con =_dbHelper.GetConnection())
-
-        //    using (SqlCommand cmd =new SqlCommand("Farmer.usp_Center_UpdateFarmer",con))
-        //    {
-        //        cmd.CommandType =CommandType.StoredProcedure;
-
-        //        cmd.Parameters.AddWithValue("@StaffId",staffId);
-        //        cmd.Parameters.AddWithValue("@FarmerId",model.FarmerId);
-        //        cmd.Parameters.AddWithValue("@FarmerName",model.FarmerName);
-        //        cmd.Parameters.AddWithValue("@VillageId",model.VillageId);
-        //        cmd.Parameters.AddWithValue("@Phone",(object?)model.Phone?? DBNull.Value);
-        //        cmd.Parameters.AddWithValue("@Email",(object?)model.Email?? DBNull.Value);
-        //        cmd.Parameters.AddWithValue("@Gender",(object?)model.Gender?? DBNull.Value);
-        //        //cmd.Parameters.AddWithValue("@DateOfBirth",(object?)model.DateOfBirth?? DBNull.Value);
-        //        SqlParameter dobParam =new SqlParameter("@DateOfBirth", SqlDbType.Date);
-
-        //        dobParam.Value =
-        //            model.DateOfBirth.HasValue
-        //            ? model.DateOfBirth.Value.Date
-        //            : DBNull.Value;
-
-        //        cmd.Parameters.Add(dobParam);
-        //        cmd.Parameters.AddWithValue("@BankName",(object?)model.BankName?? DBNull.Value);
-        //        cmd.Parameters.AddWithValue("@AccountNumber",(object?)model.AccountNumber?? DBNull.Value);
-        //        cmd.Parameters.AddWithValue("@IFSCCode",(object?)model.IFSCCode?? DBNull.Value);
-        //        cmd.Parameters.AddWithValue("@ProfilePhoto",(object?)model.ProfilePhoto?? DBNull.Value);
-
-        //        con.Open();
-
-        //        object result =cmd.ExecuteScalar();
-
-        //        return result != null? Convert.ToInt32(result): 0;
-        //    }
-        //}
-
-        //public int UpdateFarmerDocuments(int staffId,int farmerId,string documentType,string filePath)
-        //{
-        //    using (SqlConnection con =_dbHelper.GetConnection())
-
-        //    using (SqlCommand cmd =new SqlCommand("Farmer.usp_UpdateFarmerDocument",con))
-        //    {
-        //        cmd.CommandType =CommandType.StoredProcedure;
-
-        //        cmd.Parameters.AddWithValue("@StaffId",staffId);
-        //        cmd.Parameters.AddWithValue("@FarmerId",farmerId);
-        //        cmd.Parameters.AddWithValue("@DocumentType",documentType);
-        //        cmd.Parameters.AddWithValue("@FilePath",filePath);
-
-        //        con.Open();
-
-        //        object result =cmd.ExecuteScalar();
-
-        //        return result != null? Convert.ToInt32(result): 0;
-        //    }
-        //}
-        //// ─────────────────────────────────────────────────────────────
-        //// REPLACE GetFarmerById in FarmerRepository.cs
-        //// Reads all new columns including AadhaarCardPath + PassbookPath
-        //// ─────────────────────────────────────────────────────────────
-        //public FarmerViewModel GetFarmerById(int farmerId, int staffId)
-        //{
-        //    FarmerViewModel model = null;
+        //    FarmerEditModel model = null;
 
         //    using (SqlConnection con = _dbHelper.GetConnection())
         //    using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_GetFarmerById", con))
         //    {
         //        cmd.CommandType = CommandType.StoredProcedure;
-        //        cmd.Parameters.AddWithValue("@FarmerId", farmerId);
-        //        cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+        //        cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = farmerId;
+        //        cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
 
         //        con.Open();
 
@@ -453,23 +384,24 @@ namespace DairyIndustry.Repository
         //        {
         //            if (r.Read())
         //            {
-        //                model = new FarmerViewModel
+        //                model = new FarmerEditModel
         //                {
         //                    FarmerId = Convert.ToInt32(r["FarmerId"]),
-        //                    FarmerName = r["FarmerName"]?.ToString(),
-        //                    FarmerCode = r["FarmerCode"]?.ToString(),
+        //                    FarmerName = r["FarmerName"] == DBNull.Value ? null : r["FarmerName"].ToString(),
+        //                    FarmerCode = r["FarmerCode"] == DBNull.Value ? null : r["FarmerCode"].ToString(),
+
         //                    Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
         //                    Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
         //                    Gender = r["Gender"] == DBNull.Value ? null : r["Gender"].ToString(),
-        //                    DateOfBirth = r["DateOfBirth"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["DateOfBirth"]),
-        //                    AadhaarNumber = r["AadhaarNumber"] == DBNull.Value ? null : r["AadhaarNumber"].ToString(),
-        //                    IsActive = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"]),
-        //                    ApprovalStatus = r["ApprovalStatus"] == DBNull.Value ? null : r["ApprovalStatus"].ToString(),
-        //                    ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
 
-        //                    StateId = r["StateId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["StateId"]),
-        //                    CityId = r["CityId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["CityId"]),
-        //                    VillageId = r["VillageId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["VillageId"]),
+        //                    DateOfBirth = r["DateOfBirth"] == DBNull.Value
+        //                        ? (DateTime?)null
+        //                        : Convert.ToDateTime(r["DateOfBirth"]),
+
+        //                    StateId = r["StateId"] == DBNull.Value ? 0 : Convert.ToInt32(r["StateId"]),
+        //                    CityId = r["CityId"] == DBNull.Value ? 0 : Convert.ToInt32(r["CityId"]),
+        //                    VillageId = r["VillageId"] == DBNull.Value ? 0 : Convert.ToInt32(r["VillageId"]),
+
         //                    StateName = r["StateName"] == DBNull.Value ? null : r["StateName"].ToString(),
         //                    CityName = r["CityName"] == DBNull.Value ? null : r["CityName"].ToString(),
         //                    VillageName = r["VillageName"] == DBNull.Value ? null : r["VillageName"].ToString(),
@@ -478,8 +410,14 @@ namespace DairyIndustry.Repository
         //                    AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
         //                    IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
 
+        //                    AadhaarNumber = r["AadhaarNumber"] == DBNull.Value ? null : r["AadhaarNumber"].ToString(),
+
+        //                    ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
         //                    AadhaarCardPath = r["AadhaarCardPath"] == DBNull.Value ? null : r["AadhaarCardPath"].ToString(),
         //                    PassbookPath = r["PassbookPath"] == DBNull.Value ? null : r["PassbookPath"].ToString(),
+
+        //                    IsActive = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"]),
+        //                    ApprovalStatus = r["ApprovalStatus"] == DBNull.Value ? null : r["ApprovalStatus"].ToString()
         //                };
         //            }
         //        }
@@ -487,6 +425,114 @@ namespace DairyIndustry.Repository
 
         //    return model;
         //}
+
+
+        // =========================
+        // UPDATE FARMER (NO VALIDATION)
+        // =========================
+        public async Task<int> UpdateFarmerAsync(FarmerEditModel model, int staffId)
+        {
+            using (SqlConnection con = _dbHelper.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_UpdateFarmer", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
+                cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = model.FarmerId;
+                cmd.Parameters.Add("@FarmerName", SqlDbType.VarChar).Value = (object?)model.FarmerName ?? DBNull.Value;
+                cmd.Parameters.Add("@VillageId", SqlDbType.Int).Value = model.VillageId;
+                cmd.Parameters.Add("@Phone", SqlDbType.VarChar).Value = (object?)model.Phone ?? DBNull.Value;
+                cmd.Parameters.Add("@Email", SqlDbType.VarChar).Value = (object?)model.Email ?? DBNull.Value;
+                cmd.Parameters.Add("@Gender", SqlDbType.VarChar).Value = (object?)model.Gender ?? DBNull.Value;
+                cmd.Parameters.Add("@DateOfBirth", SqlDbType.Date).Value = (object?)model.DateOfBirth ?? DBNull.Value;
+                cmd.Parameters.Add("@BankName", SqlDbType.VarChar).Value = (object?)model.BankName ?? DBNull.Value;
+                cmd.Parameters.Add("@AccountNumber", SqlDbType.VarChar).Value = (object?)model.AccountNumber ?? DBNull.Value;
+                cmd.Parameters.Add("@IFSCCode", SqlDbType.VarChar).Value = (object?)model.IFSCCode ?? DBNull.Value;
+                cmd.Parameters.Add("@ProfilePhoto", SqlDbType.VarChar).Value = (object?)model.ProfilePhoto ?? DBNull.Value;
+
+                await con.OpenAsync();
+                object result = await cmd.ExecuteScalarAsync();
+                return result != null ? Convert.ToInt32(result) : 0;
+            }
+        }
+
+        // =========================
+        // DOCUMENT UPDATE
+        // =========================
+        public async Task<int> UpdateFarmerDocumentAsync(int staffId, int farmerId, string documentType, string filePath)
+        {
+            using (SqlConnection con = _dbHelper.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Farmer.usp_UpdateFarmerDocument", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
+                cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = farmerId;
+                cmd.Parameters.Add("@DocumentType", SqlDbType.VarChar).Value = documentType;
+                cmd.Parameters.Add("@FilePath", SqlDbType.VarChar).Value = filePath;
+
+                await con.OpenAsync();
+                object result = await cmd.ExecuteScalarAsync();
+                return result != null ? Convert.ToInt32(result) : 0;
+            }
+        }
+
+
+        //// =========================
+        //// UPDATE FARMER (NO VALIDATION)
+        //// =========================
+        //public int UpdateFarmer(FarmerEditModel model, int staffId)
+        //{
+        //    using (SqlConnection con = _dbHelper.GetConnection())
+        //    using (SqlCommand cmd = new SqlCommand("Farmer.usp_Center_UpdateFarmer", con))
+        //    {
+        //        cmd.CommandType = CommandType.StoredProcedure;
+
+        //        cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
+        //        cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = model.FarmerId;
+
+        //        cmd.Parameters.Add("@FarmerName", SqlDbType.VarChar).Value = (object?)model.FarmerName ?? DBNull.Value;
+        //        cmd.Parameters.Add("@VillageId", SqlDbType.Int).Value = model.VillageId;
+
+        //        cmd.Parameters.Add("@Phone", SqlDbType.VarChar).Value = (object?)model.Phone ?? DBNull.Value;
+        //        cmd.Parameters.Add("@Email", SqlDbType.VarChar).Value = (object?)model.Email ?? DBNull.Value;
+        //        cmd.Parameters.Add("@Gender", SqlDbType.VarChar).Value = (object?)model.Gender ?? DBNull.Value;
+        //        cmd.Parameters.Add("@DateOfBirth", SqlDbType.Date).Value = (object?)model.DateOfBirth ?? DBNull.Value;
+
+        //        cmd.Parameters.Add("@BankName", SqlDbType.VarChar).Value = (object?)model.BankName ?? DBNull.Value;
+        //        cmd.Parameters.Add("@AccountNumber", SqlDbType.VarChar).Value = (object?)model.AccountNumber ?? DBNull.Value;
+        //        cmd.Parameters.Add("@IFSCCode", SqlDbType.VarChar).Value = (object?)model.IFSCCode ?? DBNull.Value;
+
+        //        cmd.Parameters.Add("@ProfilePhoto", SqlDbType.VarChar).Value = (object?)model.ProfilePhoto ?? DBNull.Value;
+
+        //        con.Open();
+
+        //        object result = cmd.ExecuteScalar();
+        //        return result != null ? Convert.ToInt32(result) : 0;
+        //    }
+        //}
+
+        //// =========================
+        //// DOCUMENT UPDATE
+        //// =========================
+        //public int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath)
+        //{
+        //    using (SqlConnection con = _dbHelper.GetConnection())
+        //    using (SqlCommand cmd = new SqlCommand("Farmer.usp_UpdateFarmerDocument", con))
+        //    {
+        //        cmd.CommandType = CommandType.StoredProcedure;
+
+        //        cmd.Parameters.Add("@StaffId", SqlDbType.Int).Value = staffId;
+        //        cmd.Parameters.Add("@FarmerId", SqlDbType.Int).Value = farmerId;
+        //        cmd.Parameters.Add("@DocumentType", SqlDbType.VarChar).Value = documentType;
+        //        cmd.Parameters.Add("@FilePath", SqlDbType.VarChar).Value = filePath;
+
+        //        con.Open();
+
+        //        object result = cmd.ExecuteScalar();
+        //        return result != null ? Convert.ToInt32(result) : 0;
+        //    }
+        //}
+
+
 
         //Famer login 
 
@@ -761,13 +807,11 @@ namespace DairyIndustry.Repository
             return vm;
         }
 
-
-        public void SelfRegisterFarmer(SelfRegisterViewModel model)
+        public async Task SelfRegisterFarmerAsync(SelfRegisterViewModel model)
         {
             using var con = _dbHelper.GetConnection();
             using var cmd = new SqlCommand("Farmer.usp_Farmer_SelfRegister", con);
             cmd.CommandType = CommandType.StoredProcedure;
-
             cmd.Parameters.AddWithValue("@FarmerName", model.FarmerName?.Trim());
             cmd.Parameters.AddWithValue("@VillageId", model.VillageId);
             cmd.Parameters.AddWithValue("@CenterId", model.CenterId);
@@ -783,35 +827,59 @@ namespace DairyIndustry.Repository
             cmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode ?? (object)DBNull.Value);
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
         }
+        //public void SelfRegisterFarmer(SelfRegisterViewModel model)
+        //{
+        //    using var con = _dbHelper.GetConnection();
+        //    using var cmd = new SqlCommand("Farmer.usp_Farmer_SelfRegister", con);
+        //    cmd.CommandType = CommandType.StoredProcedure;
 
-        public string GenerateOtp(string email)
-        {
-            using var con = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand("Farmer.usp_SendEmailOTP", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("@Email", email);
-            con.Open();
-            var otp = cmd.ExecuteScalar()?.ToString();
-            return otp;
-        }
+        //    cmd.Parameters.AddWithValue("@FarmerName", model.FarmerName?.Trim());
+        //    cmd.Parameters.AddWithValue("@VillageId", model.VillageId);
+        //    cmd.Parameters.AddWithValue("@CenterId", model.CenterId);
+        //    cmd.Parameters.AddWithValue("@Phone", model.Phone?.Trim());
+        //    cmd.Parameters.AddWithValue("@Email", model.Email ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@Gender", model.Gender ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@DateOfBirth", model.DateOfBirth ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@AadhaarNumber", model.AadhaarNumber ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@ProfilePhoto", model.ProfilePhotoPath ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@AadhaarDocPath", model.AadhaarDocPath ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@BankDocPath", model.PassbookDocPath ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@BankName", model.BankName ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@AccountNumber", model.AccountNumber ?? (object)DBNull.Value);
+        //    cmd.Parameters.AddWithValue("@IFSCCode", model.IFSCCode ?? (object)DBNull.Value);
 
-        public bool VerifyOtp(string email, string otp)
-        {
-            using var con = _dbHelper.GetConnection();
-            using var cmd = new SqlCommand("Farmer.usp_VerifyEmailOTP", con);
-            cmd.CommandType = CommandType.StoredProcedure;
+        //    con.Open();
+        //    cmd.ExecuteNonQuery();
+        //}
 
-            cmd.Parameters.AddWithValue("@Email", email);
-            cmd.Parameters.AddWithValue("@OTPCode", otp);
+        //public string GenerateOtp(string email)
+        //{
+        //    using var con = _dbHelper.GetConnection();
+        //    using var cmd = new SqlCommand("Farmer.usp_SendEmailOTP", con);
+        //    cmd.CommandType = CommandType.StoredProcedure;
+        //    cmd.Parameters.AddWithValue("@Email", email);
+        //    con.Open();
+        //    var otp = cmd.ExecuteScalar()?.ToString();
+        //    return otp;
+        //}
 
-            con.Open();
+        //public bool VerifyOtp(string email, string otp)
+        //{
+        //    using var con = _dbHelper.GetConnection();
+        //    using var cmd = new SqlCommand("Farmer.usp_VerifyEmailOTP", con);
+        //    cmd.CommandType = CommandType.StoredProcedure;
 
-            var result = cmd.ExecuteScalar();
-            return Convert.ToInt32(result) == 1;
-        }
+        //    cmd.Parameters.AddWithValue("@Email", email);
+        //    cmd.Parameters.AddWithValue("@OTPCode", otp);
+
+        //    con.Open();
+
+        //    var result = cmd.ExecuteScalar();
+        //    return Convert.ToInt32(result) == 1;
+        //}
         public FarmerStatusViewModel GetFarmerStatusByPhone(string phone)
         {
             using var con = _dbHelper.GetConnection();
