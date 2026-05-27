@@ -57,7 +57,10 @@ namespace DairyIndustry.Controllers
 
                 case "Collection Agent":
                     return RedirectToAction("Index", "Production");
-
+                case "Distributor":
+                    return RedirectToAction("Index", "Admin");
+                case "HR Manager":
+                    return RedirectToAction("Index", "Admin");
                 default:
                     return RedirectToAction("Login", "Admin");
             }
@@ -1987,7 +1990,7 @@ namespace DairyIndustry.Controllers
                 var count = _adminRepo.GetNotificationCount();
                 return Json(new { count });
             }
-            catch  
+            catch
             {
                 return Json(new { count = 0 });
             }
