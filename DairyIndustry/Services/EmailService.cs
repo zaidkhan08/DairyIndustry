@@ -106,10 +106,10 @@ namespace DairyIndustry.Services
             using var smtp = new SmtpClient();
             smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
             smtp.Connect(
-                _config["EmailSettings:SMTPServer"],
-                Convert.ToInt32(_config["EmailSettings:Port"]),
+                _config["EmailSettings:SmtpHost"],
+                Convert.ToInt32(_config["EmailSettings:SmtpPort"]),
                 SecureSocketOptions.StartTls);
-            smtp.Authenticate(_config["EmailSettings:SenderName"], _config["EmailSettings:AppPassword"]);
+            smtp.Authenticate(_config["EmailSettings:SenderEmail"], _config["EmailSettings:AppPassword"]);
             smtp.Send(message);
             smtp.Disconnect(true);
         }
