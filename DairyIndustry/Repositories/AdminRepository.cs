@@ -2013,6 +2013,7 @@ namespace DairyIndustry.Repositories
             message.Body = new TextPart("html") { Text = bodyHtml };
 
             using var client = new SmtpClient();
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
             client.Connect(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls);
             client.Authenticate(_settings.SenderEmail, _settings.AppPassword);
             client.Send(message);
