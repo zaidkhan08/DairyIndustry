@@ -2,54 +2,201 @@
 @model ChillingStorageModel
 
 @{
-    ViewData["Title"] = "Delete Entry";
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Delete Entry #" + Model.StorageId;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-semibold text-danger mb-0">Delete Entry</h3>
-        <small class="text-muted">This action cannot be undone</small>
-    </div>
-    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
-</div>
+@section Styles {
+    <style>
+        .cc-delete-wrap {
+            max-width: 520px;
+        }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card border-danger border-0 shadow-sm">
-            <div class="card-header bg-danger text-white">
-                <span class="fw-semibold">Confirm Deletion</span>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    Are you sure you want to delete this storage entry?
-                </p>
+        .cc-danger-banner {
+            border-radius: 14px;
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+            padding: 18px 22px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
 
-                <dl class="row mb-0">
-                    <dt class="col-sm-4 text-muted">Storage ID</dt>
-                    <dd class="col-sm-8">@Model.StorageId</dd>
+        .cc-danger-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #fee2e2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #dc2626;
+            flex-shrink: 0;
+        }
 
-                    <dt class="col-sm-4 text-muted">Plant</dt>
-                    <dd class="col-sm-8">@Model.PlantName</dd>
+        .cc-danger-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 2px;
+        }
 
-                    <dt class="col-sm-4 text-muted">Item</dt>
-                    <dd class="col-sm-8">@Model.ItemName</dd>
+        .cc-danger-sub {
+            font-size: 12px;
+            color: #94a3b8;
+        }
 
-                    <dt class="col-sm-4 text-muted">Quantity</dt>
-                    <dd class="col-sm-8">@Model.MilkQuantity.ToString("N2") L</dd>
+        .cc-summary-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+            border: 1.5px solid #fee2e2;
+        }
 
-                    <dt class="col-sm-4 text-muted">Date</dt>
-                    <dd class="col-sm-8">@Model.StoredDate.ToString("dd MMM yyyy")</dd>
-                </dl>
-            </div>
-            <div class="card-footer bg-white d-flex gap-2">
-                <form asp-action="Delete" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.StorageId" />
-                    <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
-                </form>
-                <a asp-action="Details" asp-route-id="@Model.StorageId"
-                   class="btn btn-outline-secondary px-4">Cancel</a>
-            </div>
+        .cc-summary-header {
+            padding: 14px 22px;
+            background: #fff7f7;
+            border-bottom: 1px solid #fee2e2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cc-summary-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #dc2626;
+        }
+
+        .cc-summary-grid {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+        }
+
+        .cc-summary-row-label {
+            padding: 12px 22px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #94a3b8;
+            border-bottom: 1px solid #f8fafc;
+            background: #fafafa;
+        }
+
+        .cc-summary-row-val {
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .cc-summary-footer {
+            padding: 16px 22px;
+            background: #fff7f7;
+            border-top: 1px solid #fee2e2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cc-btn-danger {
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s, box-shadow .15s;
+        }
+
+            .cc-btn-danger:hover {
+                background: #b91c1c;
+                box-shadow: 0 4px 12px rgba(220,38,38,.3);
+            }
+
+        .cc-btn-cancel {
+            background: #fff;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-cancel:hover {
+                background: #f8fafc;
+                color: #0f172a;
+                border-color: #cbd5e1;
+            }
+    </style>
+}
+
+<div class="cc-delete-wrap">
+
+    <!-- Danger Banner -->
+    <div class="cc-danger-banner">
+        <div class="cc-danger-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div>
+            <div class="cc-danger-title">Permanent deletion — cannot be undone</div>
+            <div class="cc-danger-sub">This entry will be permanently removed from the database. Please review the details below before confirming.</div>
         </div>
     </div>
+
+    <!-- Summary Card -->
+    <div class="cc-summary-card">
+        <div class="cc-summary-header">
+            <i class="bi bi-file-earmark-text" style="color:#dc2626;"></i>
+            <span class="cc-summary-title">Entry to be deleted</span>
+        </div>
+
+        <div class="cc-summary-grid">
+            <div class="cc-summary-row-label">Storage ID</div>
+            <div class="cc-summary-row-val">#@Model.StorageId</div>
+
+            <div class="cc-summary-row-label">Plant</div>
+            <div class="cc-summary-row-val">@Model.PlantName</div>
+
+            <div class="cc-summary-row-label">Item</div>
+            <div class="cc-summary-row-val">@Model.ItemName</div>
+
+            <div class="cc-summary-row-label">Quantity</div>
+            <div class="cc-summary-row-val">@Model.MilkQuantity.ToString("N2") L</div>
+
+            <div class="cc-summary-row-label">Date</div>
+            <div class="cc-summary-row-val" style="border-bottom:none;">@Model.StoredDate.ToString("dd MMM yyyy")</div>
+            <div class="cc-summary-row-label" style="border-bottom:none;"></div>
+        </div>
+
+        <div class="cc-summary-footer">
+            <form asp-action="Delete" method="post" style="display:contents;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.StorageId" />
+                <button type="submit" class="cc-btn-danger">
+                    <i class="bi bi-trash3-fill"></i> Yes, Delete Permanently
+                </button>
+            </form>
+            <a asp-action="Details" asp-route-id="@Model.StorageId" class="cc-btn-cancel">
+                Cancel
+            </a>
+        </div>
+    </div>
+
 </div>

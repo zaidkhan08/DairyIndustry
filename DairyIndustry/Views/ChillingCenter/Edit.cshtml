@@ -2,92 +2,301 @@
 @model ChillingStoreItemModel
 
 @{
-    ViewData["Title"] = "Edit Storage Entry";
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Edit Entry #" + Model.StorageId;
 }
 
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-semibold text-primary mb-0">Edit Storage Entry</h3>
-        <small class="text-muted">Entry # @Model.StorageId</small>
+@section Styles {
+    <style>
+        .cc-form-wrap {
+            max-width: 600px;
+        }
+
+        .cc-form-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-entry-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .cc-form-section {
+            padding: 24px 28px;
+        }
+
+            .cc-form-section + .cc-form-section {
+                border-top: 1px solid #f1f5f9;
+            }
+
+        .cc-section-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .cc-section-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .cc-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-section-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 1px;
+        }
+
+        .cc-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #475569;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .cc-input {
+            font-size: 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            width: 100%;
+            transition: border-color .15s, box-shadow .15s;
+            background: #fff;
+            color: #0f172a;
+            outline: none;
+        }
+
+            .cc-input:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+            }
+
+            .cc-input[readonly] {
+                background: #f8fafc;
+                color: #64748b;
+                cursor: not-allowed;
+            }
+
+        .cc-input-group {
+            display: flex;
+            align-items: stretch;
+        }
+
+            .cc-input-group .cc-input {
+                border-radius: 10px 0 0 10px;
+                flex: 1;
+            }
+
+        .cc-input-addon {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .cc-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .cc-error {
+            font-size: 11px;
+            color: #dc2626;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .field-wrap {
+            margin-bottom: 0;
+        }
+
+        .cc-readonly-field {
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .cc-lock-icon {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: 4px;
+        }
+
+        .cc-form-footer {
+            padding: 18px 28px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cc-btn-primary {
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, box-shadow .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .cc-btn-primary:hover {
+                background: #0b5ed7;
+                box-shadow: 0 4px 12px rgba(13,110,253,.3);
+            }
+
+        .cc-btn-cancel {
+            background: #fff;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-cancel:hover {
+                background: #f8fafc;
+                color: #0f172a;
+                border-color: #cbd5e1;
+            }
+    </style>
+}
+
+<div class="cc-form-wrap">
+
+    <div class="cc-entry-chip">
+        <i class="bi bi-pencil-square"></i> Editing Entry #@Model.StorageId
     </div>
-    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
-</div>
 
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <span class="fw-semibold">Edit Entry Details</span>
+    <div class="cc-form-card">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="StorageId" />
+
+            <!-- Section 1: Product -->
+            <div class="cc-form-section">
+                <div class="cc-section-head">
+                    <div class="cc-section-num">1</div>
+                    <div>
+                        <div class="cc-section-title">Product</div>
+                        <div class="cc-section-sub">Change the stored item if needed</div>
+                    </div>
+                </div>
+                <div class="field-wrap">
+                    <label asp-for="ProductId" class="cc-label"></label>
+                    <select asp-for="ProductId" asp-items="ViewBag.Products"
+                            class="cc-input" style="appearance:auto;">
+                        <option value="">— Raw Milk (no product) —</option>
+                    </select>
+                    <span asp-validation-for="ProductId" class="cc-error"></span>
+                </div>
             </div>
-            <div class="card-body">
-                <form asp-action="Edit" method="post">
-                    @Html.AntiForgeryToken()
 
-                    <!-- Hidden StorageId — must be posted back -->
-                    <input type="hidden" asp-for="StorageId" />
-
-                    <!-- Plant -->
-                    <div class="mb-3">
-                        <label asp-for="PlantId" class="form-label fw-semibold"></label>
-                        <select asp-for="PlantId" asp-items="ViewBag.Plants"
-                                class="form-select">
-                            <option value="">— Select Plant —</option>
-                        </select>
-                        <span asp-validation-for="PlantId" class="text-danger small"></span>
+            <!-- Section 2: Measurements -->
+            <div class="cc-form-section">
+                <div class="cc-section-head">
+                    <div class="cc-section-num">2</div>
+                    <div>
+                        <div class="cc-section-title">Measurements</div>
+                        <div class="cc-section-sub">Update quantity or temperature</div>
                     </div>
+                </div>
 
-                    <!-- Product -->
-                    <div class="mb-3">
-                        <label asp-for="ProductId" class="form-label fw-semibold"></label>
-                        <select asp-for="ProductId" asp-items="ViewBag.Products"
-                                class="form-select">
-                            <option value="">— Raw Milk (no product) —</option>
-                        </select>
-                        <span asp-validation-for="ProductId" class="text-danger small"></span>
-                    </div>
-
-                    <!-- Quantity and Temperature -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label asp-for="MilkQuantity" class="form-label fw-semibold"></label>
-                            <div class="input-group">
-                                <input asp-for="MilkQuantity" class="form-control"
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="field-wrap">
+                            <label asp-for="MilkQuantity" class="cc-label"></label>
+                            <div class="cc-input-group">
+                                <input asp-for="MilkQuantity" class="cc-input"
                                        type="number" step="0.01" min="0.01" />
-                                <span class="input-group-text">L</span>
+                                <div class="cc-input-addon">Litres</div>
                             </div>
-                            <span asp-validation-for="MilkQuantity" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="Temperature" class="form-label fw-semibold"></label>
-                            <div class="input-group">
-                                <input asp-for="Temperature" class="form-control"
-                                       type="number" step="0.1" />
-                                <span class="input-group-text">&deg;C</span>
-                            </div>
-                            <span asp-validation-for="Temperature" class="text-danger small"></span>
-                            <div class="form-text">Safe range: 0&deg;C to 5&deg;C</div>
+                            <span asp-validation-for="MilkQuantity" class="cc-error"></span>
                         </div>
                     </div>
-
-                    <!-- Date — readonly on edit, date cannot be changed -->
-                    <div class="mb-4">
-                        <label asp-for="StoredDate" class="form-label fw-semibold"></label>
-                        <input asp-for="StoredDate" class="form-control bg-light"
-                               type="date" readonly />
-                        <div class="form-text">Storage date cannot be changed after entry.</div>
+                    <div class="col-6">
+                        <div class="field-wrap">
+                            <label asp-for="Temperature" class="cc-label"></label>
+                            <div class="cc-input-group">
+                                <input asp-for="Temperature" class="cc-input"
+                                       id="tempInput" type="number" step="0.1" />
+                                <div class="cc-input-addon">°C</div>
+                            </div>
+                            <span asp-validation-for="Temperature" class="cc-error"></span>
+                            <div class="cc-hint" id="tempHint">Safe: 0°C – 5°C &nbsp;|&nbsp; Warning: 5–7°C &nbsp;|&nbsp; Critical: >7°C</div>
+                        </div>
                     </div>
+                </div>
 
-                    <!-- Buttons -->
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4">Update Entry</button>
-                        <a asp-action="Details" asp-route-id="@Model.StorageId"
-                           class="btn btn-outline-secondary px-4">Cancel</a>
-                    </div>
-
-                </form>
+                <div class="field-wrap">
+                    <label asp-for="StoredDate" class="cc-label">
+                        Stored Date <i class="bi bi-lock-fill cc-lock-icon"></i>
+                    </label>
+                    <input asp-for="StoredDate" class="cc-input" type="date" readonly />
+                    <div class="cc-hint">Storage date is locked and cannot be modified.</div>
+                </div>
             </div>
-        </div>
+
+            <!-- Footer -->
+            <div class="cc-form-footer">
+                <button type="submit" class="cc-btn-primary">
+                    <i class="bi bi-check-lg"></i> Save Changes
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.StorageId" class="cc-btn-cancel">Cancel</a>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -95,4 +304,14 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        document.getElementById('tempInput')?.addEventListener('input', function () {
+            var hint = document.getElementById('tempHint');
+            var val = parseFloat(this.value);
+            if (isNaN(val)) { hint.style.color = '#94a3b8'; hint.textContent = 'Safe: 0°C – 5°C | Warning: 5–7°C | Critical: >7°C'; return; }
+            if (val <= 5)       { hint.style.color = '#16a34a'; hint.textContent = '✓ Safe temperature'; }
+            else if (val <= 7)  { hint.style.color = '#ca8a04'; hint.textContent = '⚠ Warning — approaching limit'; }
+            else                { hint.style.color = '#dc2626'; hint.textContent = '✕ Critical — exceeds safe limit'; }
+        });
+    </script>
 }

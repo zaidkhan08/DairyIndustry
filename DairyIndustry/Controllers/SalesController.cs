@@ -1136,7 +1136,7 @@ namespace DairyIndustry.Controllers
                 return View("Register", model);
             }
         }
-
+    
         public IActionResult Success() => View("RegisterSuccess");
     }
 }

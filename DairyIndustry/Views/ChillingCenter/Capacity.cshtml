@@ -2,277 +2,327 @@
 @model List<ChillingPlantCapacityModel>
 
 @{
+    Layout = "_ChillingLayout";
     ViewData["Title"] = "Capacity Monitor";
-
-    // Max quantity across all plants — used to calculate fill %
     var maxQty = Model.Any() ? Model.Max(x => x.TotalStoredAllTime) : 1;
+    int totalAlerts = Model.Sum(x => x.AlertCount);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-semibold text-primary mb-0">Plant Capacity Monitor</h3>
-        <small class="text-muted">Visual storage summary per processing plant</small>
-    </div>
-    <a asp-action="Dashboard" class="btn btn-outline-primary">← Dashboard</a>
-</div>
+@section Styles {
+    <style>
+        .cc-stat {
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-top: 3px solid transparent;
+        }
 
-<!-- Summary bar -->
+        .cc-stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .cc-stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+        }
+
+        .cc-stat-val {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #0f172a;
+        }
+
+        .cc-stat-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .plant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+            gap: 20px;
+        }
+
+        .plant-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+            transition: box-shadow .2s, transform .2s;
+        }
+
+            .plant-card:hover {
+                box-shadow: 0 6px 20px rgba(0,0,0,.1);
+                transform: translateY(-2px);
+            }
+
+            .plant-card.has-alerts {
+                border: 1.5px solid #fecaca;
+            }
+
+        .plant-card-header {
+            padding: 16px 18px 0;
+        }
+
+        .plant-card-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .plant-card-loc {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .tank-wrap {
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+        .tank-outer {
+            width: 52px;
+            height: 120px;
+            border-radius: 26px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .tank-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0%;
+            transition: height 1.3s cubic-bezier(.4,0,.2,1);
+        }
+
+        .tank-shine {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 10px;
+            background: rgba(255,255,255,.25);
+            pointer-events: none;
+        }
+
+        .tank-pct {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+            z-index: 2;
+            text-shadow: 0 1px 3px rgba(255,255,255,.8);
+        }
+
+        .tank-stats {
+            flex: 1;
+        }
+
+        .tank-stat-row {
+            margin-bottom: 10px;
+        }
+
+        .tank-stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+        }
+
+        .tank-stat-num {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+
+        .tank-stat-unit {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-left: 2px;
+        }
+
+        .plant-card-footer {
+            padding: 10px 18px 14px;
+            border-top: 1px solid #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-view-entries {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .btn-view-entries:hover {
+                color: #1d4ed8;
+            }
+    </style>
+}
+
+<!-- Stat Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                    <svg width="22" height="22" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                </div>
-                <div>
-                    <div class="text-muted small">Total Plants</div>
-                    <div class="fs-4 fw-bold">@Model.Count</div>
-                </div>
+    <div class="col-sm-4">
+        <div class="cc-stat" style="border-top-color:#0d6efd;">
+            <div class="cc-stat-icon" style="background:#eff6ff;"><i class="bi bi-buildings" style="color:#0d6efd;"></i></div>
+            <div>
+                <div class="cc-stat-label">Plants</div>
+                <div class="cc-stat-val">@Model.Count</div>
+                <div class="cc-stat-sub">active plants</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                    <svg width="22" height="22" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                </div>
-                <div>
-                    <div class="text-muted small">Total Stored All Time</div>
-                    <div class="fs-4 fw-bold">@Model.Sum(x => x.TotalStoredAllTime).ToString("N0") L</div>
-                </div>
+    <div class="col-sm-4">
+        <div class="cc-stat" style="border-top-color:#0891b2;">
+            <div class="cc-stat-icon" style="background:#ecfeff;"><i class="bi bi-droplet-half" style="color:#0891b2;"></i></div>
+            <div>
+                <div class="cc-stat-label">All Time</div>
+                <div class="cc-stat-val">@Model.Sum(x => x.TotalStoredAllTime).ToString("N0") <span style="font-size:13px;color:#94a3b8;font-weight:500;">L</span></div>
+                <div class="cc-stat-sub">total litres stored</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="@(Model.Sum(x => x.AlertCount) > 0 ? "bg-danger" : "bg-success") bg-opacity-10 rounded-3 p-3">
-                    <svg width="22" height="22" fill="none" stroke="@(Model.Sum(x => x.AlertCount) > 0 ? "#dc3545" : "#198754")" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                </div>
-                <div>
-                    <div class="text-muted small">Total Alerts</div>
-                    <div class="fs-4 fw-bold @(Model.Sum(x => x.AlertCount) > 0 ? "text-danger" : "text-success")">
-                        @Model.Sum(x => x.AlertCount)
-                    </div>
-                </div>
+    <div class="col-sm-4">
+        <div class="cc-stat" style="border-top-color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");">
+            <div class="cc-stat-icon" style="background:@(totalAlerts > 0 ? "#fef2f2" : "#f0fdf4");">
+                <i class="bi bi-@(totalAlerts > 0 ? "exclamation-triangle" : "shield-check")" style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");"></i>
+            </div>
+            <div>
+                <div class="cc-stat-label">Alerts</div>
+                <div class="cc-stat-val" style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");">@totalAlerts</div>
+                <div class="cc-stat-sub">@(totalAlerts > 0 ? "needs attention" : "all safe")</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tank Visual Cards -->
-<div class="row g-4">
-    @foreach (var plant in Model)
-    {
-        // Calculate fill percentage based on all-time total vs max
-        var fillPct = maxQty > 0
-        ? (int)Math.Min(Math.Round((double)plant.TotalStoredAllTime / (double)maxQty * 100), 100)
-        : 0;
+<!-- Section Header -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div style="font-size:15px;font-weight:700;color:#0f172a;">Plant Storage Tanks</div>
+    <div style="font-size:12px;color:#94a3b8;">Fill level relative to highest-capacity plant</div>
+</div>
 
-        var tankColor = plant.AlertCount > 0 ? "#dc3545" : "#0d6efd";
-        var tankColorLt = plant.AlertCount > 0 ? "#f8a3ab" : "#93c5fd";
-        var statusText = plant.AlertCount > 0 ? "text-danger" : "text-success";
-        var statusDot = plant.AlertCount > 0 ? "bg-danger" : "bg-success";
+<!-- Plant Cards -->
+@if (Model.Any())
+{
+    <div class="plant-grid">
+        @foreach (var plant in Model)
+        {
+            var fillPct = maxQty > 0 ? (int)Math.Min(Math.Round((double)plant.TotalStoredAllTime / (double)maxQty * 100), 100) : 0;
+            var hasAlerts = plant.AlertCount > 0;
+            var fillColor = hasAlerts ? "linear-gradient(to top,#dc2626,#f87171)" : "linear-gradient(to top,#0d6efd,#60a5fa)";
+            var statusColor = hasAlerts ? "#dc2626" : "#16a34a";
+            var dotBg = hasAlerts ? "#dc2626" : "#16a34a";
 
-        <div class="col-sm-6 col-md-4 col-lg-3">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body d-flex flex-column align-items-center py-4">
-
-                    <!-- Plant name -->
-                    <div class="text-muted fw-bold text-uppercase mb-3"
-                         style="font-size:10px; letter-spacing:.15em;">
-                        @plant.PlantName
-                    </div>
-
-                    <!-- Tank visual -->
-                    <div class="position-relative mb-3"
-                         style="width:80px; height:160px;
-                                    background:#f1f5f9;
-                                    border-radius:2rem 2rem 2.5rem 2.5rem;
-                                    overflow:hidden;
-                                    border:4px solid #e2e8f0;">
-
-                        <!-- Fill level (animates on load) -->
-                        <div class="tank-fill position-absolute bottom-0 w-100 d-flex align-items-center justify-content-center"
-                             data-fill="@fillPct"
-                             style="height:0%;
-                                        background: linear-gradient(to top, @tankColor, @tankColorLt);
-                                        transition: height 1.2s cubic-bezier(0.4,0,0.2,1);">
-                            <span class="text-white fw-bold" style="font-size:13px; text-shadow:0 1px 3px rgba(0,0,0,.4);">
-                                @fillPct%
-                            </span>
-                        </div>
-
-                        <!-- Gloss overlay -->
-                        <div class="position-absolute top-0 end-0 h-100"
-                             style="width:16px; background:rgba(255,255,255,0.12); pointer-events:none;"></div>
-                    </div>
-
-                    <!-- Quantity -->
-                    <div class="fs-5 fw-bold text-dark">
-                        @plant.TotalStoredAllTime.ToString("N0")
-                        <span class="text-muted fw-normal" style="font-size:13px;">L</span>
-                    </div>
-
-                    <!-- Today -->
-                    <div class="text-muted mt-1" style="font-size:12px;">
-                        Today: <strong>@plant.StoredToday.ToString("N0") L</strong>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="d-flex align-items-center gap-1 mt-2 @statusText fw-semibold"
-                         style="font-size:12px;">
-                        <span class="rounded-circle @statusDot d-inline-block"
-                              style="width:8px;height:8px;"></span>
-                        @if (plant.AlertCount > 0)
-                        {
-                            <span>@plant.AlertCount alert(s)</span>
-                        }
-                        else
-                        {
-                            <span>Safe</span>
-                        }
-                    </div>
-
+            <div class="plant-card @(hasAlerts ? "has-alerts" : "")">
+                <div class="plant-card-header">
+                    <div class="plant-card-name">@plant.PlantName</div>
                     @if (!string.IsNullOrEmpty(plant.Location))
                     {
-                        <div class="text-muted mt-1" style="font-size:11px; letter-spacing:.05em;">
-                            @plant.Location
-                        </div>
+                        <div class="plant-card-loc"><i class="bi bi-geo-alt me-1"></i>@plant.Location</div>
                     }
                 </div>
 
-                <!-- Footer button -->
-                <div class="card-footer bg-white border-top-0 pb-3">
-                    <a asp-action="Index" asp-route-plantId="@plant.PlantId"
-                       class="btn btn-sm btn-outline-primary w-100">
-                        View Entries
+                <div class="tank-wrap">
+                    <div class="tank-outer">
+                        <div class="tank-fill" data-fill="@fillPct" style="background:@fillColor;"></div>
+                        <div class="tank-shine"></div>
+                        <div class="tank-pct">@fillPct%</div>
+                    </div>
+                    <div class="tank-stats">
+                        <div class="tank-stat-row">
+                            <div class="tank-stat-label">All Time</div>
+                            <div><span class="tank-stat-num">@plant.TotalStoredAllTime.ToString("N0")</span><span class="tank-stat-unit">L</span></div>
+                        </div>
+                        <div class="tank-stat-row">
+                            <div class="tank-stat-label">Today</div>
+                            <div><span class="tank-stat-num">@plant.StoredToday.ToString("N0")</span><span class="tank-stat-unit">L</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="plant-card-footer">
+                    <div>
+                        <span class="status-dot" style="background:@dotBg;"></span>
+                        <span class="status-label" style="color:@statusColor;">
+                            @(hasAlerts? plant.AlertCount + " alert" + (plant.AlertCount > 1 ? "s" : "") : "Safe")
+                        </span>
+                    </div>
+                    <a asp-action="Index" asp-route-plantId="@plant.PlantId" class="btn-view-entries">
+                        Entries <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
-        </div>
-    }
-</div>
-
-@if (!Model.Any())
+        }
+    </div>
+}
+else
 {
-    <div class="text-center text-muted py-5">
-        <div class="fs-5">No plants found.</div>
+    <div style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+        <div style="width:56px;height:56px;border-radius:16px;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;font-size:24px;color:#94a3b8;margin-bottom:12px;">
+            <i class="bi bi-buildings"></i>
+        </div>
+        <div style="font-size:15px;font-weight:600;color:#0f172a;margin-bottom:4px;">No plants found</div>
+        <div style="font-size:13px;color:#94a3b8;">Plant data will appear here once added.</div>
     </div>
 }
 
 @section Scripts {
     <script>
-        // Animate tank fill bars after page load
         window.addEventListener('load', function () {
             document.querySelectorAll('.tank-fill').forEach(function (el) {
                 var pct = el.getAttribute('data-fill');
-                setTimeout(function () { el.style.height = pct + '%'; }, 100);
+                setTimeout(function () { el.style.height = pct + '%'; }, 150);
             });
         });
     </script>
-}
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-semibold text-primary mb-0">Plant Capacity Monitor</h3>
-        <small class="text-muted">Storage summary per processing plant</small>
-    </div>
-    <a asp-action="Dashboard" class="btn btn-outline-primary">← Dashboard</a>
-</div>
-
-<!-- Summary bar -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 bg-primary text-white">
-            <div class="card-body py-3">
-                <div class="small text-white-50">Total Plants</div>
-                <div class="fs-3 fw-bold">@Model.Count</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 bg-primary text-white">
-            <div class="card-body py-3">
-                <div class="small text-white-50">Total Stored All Time (L)</div>
-                <div class="fs-3 fw-bold">@Model.Sum(x => x.TotalStoredAllTime).ToString("N2")</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 @(Model.Sum(x => x.AlertCount) > 0 ? "bg-danger" : "bg-success") text-white">
-            <div class="card-body py-3">
-                <div class="small text-white-50">Total Alerts</div>
-                <div class="fs-3 fw-bold">@Model.Sum(x => x.AlertCount)</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Per-plant cards -->
-@foreach (var plant in Model)
-{
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-            <div>
-                <span class="fw-semibold text-primary">@plant.PlantName</span>
-                @if (!string.IsNullOrEmpty(plant.Location))
-                {
-                    <small class="text-muted ms-2">@plant.Location</small>
-                }
-            </div>
-            @if (plant.AlertCount > 0)
-            {
-                <span class="badge bg-danger">@plant.AlertCount alert(s)</span>
-            }
-            else
-            {
-                <span class="badge bg-success">Safe</span>
-            }
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-6 col-md-3 text-center">
-                    <div class="text-muted small">Stored Today</div>
-                    <div class="fs-4 fw-bold text-primary">
-                        @plant.StoredToday.ToString("N2")
-                    </div>
-                    <div class="text-muted small">litres</div>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="text-muted small">All Time Total</div>
-                    <div class="fs-4 fw-bold text-primary">
-                        @plant.TotalStoredAllTime.ToString("N2")
-                    </div>
-                    <div class="text-muted small">litres</div>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="text-muted small">Total Entries</div>
-                    <div class="fs-4 fw-bold text-primary">@plant.TotalEntries</div>
-                    <div class="text-muted small">records</div>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="text-muted small">Temperature Alerts</div>
-                    <div class="fs-4 fw-bold @(plant.AlertCount > 0 ? "text-danger" : "text-success")">
-                        @plant.AlertCount
-                    </div>
-                    <div class="text-muted small">above 7°C</div>
-                </div>
-            </div>
-        </div>
-        <div class="card-footer bg-white">
-            <a asp-action="Index" asp-route-plantId="@plant.PlantId"
-               class="btn btn-sm btn-outline-primary">
-                View Entries for this Plant
-            </a>
-        </div>
-    </div>
-}
-
-@if (!Model.Any())
-{
-    <div class="text-center text-muted py-5">
-        <div class="fs-5">No plants found.</div>
-    </div>
 }

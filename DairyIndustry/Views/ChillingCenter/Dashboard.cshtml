@@ -2,297 +2,557 @@
 @model ChillingDashboardViewModel
 
 @{
-    ViewData["Title"] = "Chilling Center — Dashboard";
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Dashboard";
 
-    // Build chart labels and data from RecentEntries grouped by date
     var chartData = Model.RecentEntries
         .GroupBy(e => e.StoredDate.ToString("dd MMM"))
         .Select(g => new { Label = g.Key, Total = g.Sum(e => e.MilkQuantity) })
-        .OrderBy(x => x.Label)
-        .ToList();
-
+        .OrderBy(x => x.Label).ToList();
     var chartLabels = "[" + string.Join(",", chartData.Select(x => $"'{x.Label}'")) + "]";
     var chartValues = "[" + string.Join(",", chartData.Select(x => x.Total.ToString("F2"))) + "]";
 }
 
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-semibold text-primary mb-0">Chilling Center</h3>
-        <small class="text-muted">Dashboard — @Model.Summary.ReportDate.ToString("dd MMM yyyy")</small>
-    </div>
-    <a asp-action="Create" class="btn btn-primary px-4">+ New Entry</a>
-</div>
+@section Styles {
+    <style>
+        /* ── Stat Cards ── */
+        .cc-stat-row {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
 
-<!-- Success / Error -->
+        @@media (max-width:768px) {
+            .cc-stat-row {
+                grid-template-columns: repeat(2,1fr);
+            }
+        }
+
+        .cc-stat-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 18px 20px;
+            border-top: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .cc-stat-card::after {
+                content: '';
+                position: absolute;
+                right: -12px;
+                top: -12px;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                opacity: .06;
+            }
+
+            .cc-stat-card.blue {
+                border-top-color: #0d6efd;
+            }
+
+                .cc-stat-card.blue::after {
+                    background: #0d6efd;
+                }
+
+            .cc-stat-card.cyan {
+                border-top-color: #0891b2;
+            }
+
+                .cc-stat-card.cyan::after {
+                    background: #0891b2;
+                }
+
+            .cc-stat-card.green {
+                border-top-color: #16a34a;
+            }
+
+                .cc-stat-card.green::after {
+                    background: #16a34a;
+                }
+
+            .cc-stat-card.red {
+                border-top-color: #dc2626;
+            }
+
+                .cc-stat-card.red::after {
+                    background: #dc2626;
+                }
+
+        .cc-stat-icon {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .cc-stat-num {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cc-stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .cc-stat-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* ── Panel Grid ── */
+        .cc-panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @@media (max-width:900px) {
+            .cc-panel-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .cc-panel {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-panel-head {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cc-panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-panel-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-panel-body {
+            padding: 20px;
+        }
+
+        .cc-panel-body-flush {
+            padding: 0;
+        }
+
+        .cc-live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .cc-live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .4;
+            }
+        }
+
+        /* ── Feed List ── */
+        .cc-feed-item {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f8fafc;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: background .15s;
+        }
+
+            .cc-feed-item:hover {
+                background: #f8fafc;
+            }
+
+            .cc-feed-item:last-child {
+                border-bottom: none;
+            }
+
+        .cc-feed-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        .cc-feed-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .cc-feed-meta {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-feed-temp {
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+        }
+
+        /* ── Bottom Grid ── */
+        .cc-bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 20px;
+        }
+
+        @@media (max-width:900px) {
+            .cc-bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Capacity Mini Table ── */
+        .cc-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .cc-mini-table thead th {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: #94a3b8;
+                padding: 10px 18px;
+                border-bottom: 1px solid #f1f5f9;
+                text-align: left;
+            }
+
+                .cc-mini-table thead th.num {
+                    text-align: right;
+                }
+
+            .cc-mini-table tbody tr {
+                border-bottom: 1px solid #f8fafc;
+                transition: background .15s;
+            }
+
+                .cc-mini-table tbody tr:hover {
+                    background: #f8fafc;
+                }
+
+                .cc-mini-table tbody tr:last-child {
+                    border-bottom: none;
+                }
+
+            .cc-mini-table tbody td {
+                padding: 12px 18px;
+                font-size: 13px;
+                color: #334155;
+            }
+
+                .cc-mini-table tbody td.num {
+                    text-align: right;
+                    font-weight: 600;
+                    color: #0f172a;
+                    font-variant-numeric: tabular-nums;
+                }
+
+        /* ── Alert Items ── */
+        .cc-alert-item {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .cc-alert-item:last-child {
+                border-bottom: none;
+            }
+
+        .cc-alert-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .cc-alert-meta {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .cc-badge-warning {
+            background: #fefce8;
+            color: #ca8a04;
+        }
+
+        .cc-badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-badge-safe {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-view-all {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .cc-view-all:hover {
+                color: #1d4ed8;
+            }
+    </style>
+}
+
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
+         style="background:#f0fdf4;color:#15803d;font-size:13px;" role="alert">
+        <i class="bi bi-check-circle-fill"></i><span>@TempData["Success"]</span>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
     </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
+         style="background:#fef2f2;color:#dc2626;font-size:13px;" role="alert">
+        <i class="bi bi-exclamation-circle-fill"></i><span>@TempData["Error"]</span>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
     </div>
 }
 
-<!-- ── SUMMARY CARDS ─────────────────────────────────────── -->
-<div class="row g-3 mb-4">
-
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Today's Entries</span>
-                    <div class="bg-primary bg-opacity-10 rounded-3 p-2">
-                        <svg class="text-primary" width="18" height="18" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    </div>
-                </div>
-                <div class="fs-2 fw-bold text-dark">@Model.Summary.TotalEntries</div>
-                <div class="text-muted small">storage records</div>
-            </div>
-        </div>
+<!-- Stat Cards -->
+<div class="cc-stat-row">
+    <div class="cc-stat-card blue">
+        <div class="cc-stat-icon" style="color:#0d6efd;"><i class="bi bi-journal-text"></i></div>
+        <div class="cc-stat-num">@Model.Summary.TotalEntries</div>
+        <div class="cc-stat-label">Today's Entries</div>
+        <div class="cc-stat-sub">storage records</div>
     </div>
-
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Total Quantity</span>
-                    <div class="bg-primary bg-opacity-10 rounded-3 p-2">
-                        <svg width="18" height="18" fill="none" stroke="#0d6efd" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                    </div>
-                </div>
-                <div class="fs-2 fw-bold text-dark">@Model.Summary.TotalQuantity.ToString("N0")</div>
-                <div class="text-muted small">litres stored today</div>
-            </div>
-        </div>
+    <div class="cc-stat-card cyan">
+        <div class="cc-stat-icon" style="color:#0891b2;"><i class="bi bi-droplet-half"></i></div>
+        <div class="cc-stat-num">@Model.Summary.TotalQuantity.ToString("N0")</div>
+        <div class="cc-stat-label">Total Quantity</div>
+        <div class="cc-stat-sub">litres stored today</div>
     </div>
-
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Safe</span>
-                    <div class="bg-success bg-opacity-10 rounded-3 p-2">
-                        <svg width="18" height="18" fill="none" stroke="#198754" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                </div>
-                <div class="fs-2 fw-bold text-success">@Model.Summary.SafeCount</div>
-                <div class="text-muted small">temp &le; 5&deg;C</div>
-            </div>
-        </div>
+    <div class="cc-stat-card green">
+        <div class="cc-stat-icon" style="color:#16a34a;"><i class="bi bi-shield-check"></i></div>
+        <div class="cc-stat-num">@Model.Summary.SafeCount</div>
+        <div class="cc-stat-label">Safe</div>
+        <div class="cc-stat-sub">temp &le; 5°C</div>
     </div>
-
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Alerts</span>
-                    <div class="@(Model.Summary.CriticalAlerts > 0 ? "bg-danger" : "bg-secondary") bg-opacity-10 rounded-3 p-2">
-                        <svg width="18" height="18" fill="none" stroke="@(Model.Summary.CriticalAlerts > 0 ? "#dc3545" : "#6c757d")" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                    </div>
-                </div>
-                <div class="fs-2 fw-bold @(Model.Summary.CriticalAlerts > 0 ? "text-danger" : "text-secondary")">
-                    @(Model.Summary.CriticalAlerts + Model.Summary.Warnings)
-                </div>
-                <div class="text-muted small">@Model.Summary.CriticalAlerts critical &bull; @Model.Summary.Warnings warning</div>
-            </div>
-        </div>
+    <div class="cc-stat-card @(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "red" : "green")">
+        <div class="cc-stat-icon" style="color:@(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "#dc2626" : "#16a34a");"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="cc-stat-num" style="color:@(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "#dc2626" : "#16a34a");">@(Model.Summary.CriticalAlerts + Model.Summary.Warnings)</div>
+        <div class="cc-stat-label">Alerts</div>
+        <div class="cc-stat-sub">@Model.Summary.CriticalAlerts critical &bull; @Model.Summary.Warnings warning</div>
     </div>
-
 </div>
 
-<!-- ── CHART + TIMELINE ROW ──────────────────────────────── -->
-<div class="row g-3 mb-4">
+<!-- Chart + Live Feed -->
+<div class="cc-panel-grid">
 
-    <!-- Chart.js Line Chart -->
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-primary">Storage Quantity Trend</span>
-                <span class="text-muted small">Last @Model.RecentEntries.Count entries</span>
+    <!-- Chart -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div>
+                <div class="cc-panel-title">Storage Quantity Trend</div>
+                <div class="cc-panel-sub">Last @Model.RecentEntries.Count entries grouped by date</div>
             </div>
-            <div class="card-body">
-                <div style="height: 260px; position: relative;">
-                    <canvas id="storageChart"></canvas>
-                </div>
+            <span class="cc-live-badge"><span class="cc-live-dot"></span> Live</span>
+        </div>
+        <div class="cc-panel-body">
+            <div style="height:220px;position:relative;">
+                <canvas id="storageChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Timeline Feed -->
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-primary">Live Feed</span>
-                <a asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
-            </div>
-            <div class="card-body overflow-auto" style="max-height: 300px;">
-                @if (Model.RecentEntries.Any())
+    <!-- Live Feed -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div class="cc-panel-title">Recent Activity</div>
+            <a asp-action="Index" class="cc-view-all">All <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="cc-panel-body-flush" style="max-height:290px;overflow-y:auto;">
+            @if (Model.RecentEntries.Any())
+            {
+                @foreach (var entry in Model.RecentEntries)
                 {
-                    <div class="ps-2">
-                        @foreach (var entry in Model.RecentEntries)
+                    var dotBg = entry.TempBadgeClass == "success" ? "#16a34a"
+                    : entry.TempBadgeClass == "warning" ? "#ca8a04" : "#dc2626";
+                    var tempBadge = entry.TempBadgeClass == "success" ? "cc-badge-safe"
+                    : entry.TempBadgeClass == "warning" ? "cc-badge-warning" : "cc-badge-danger";
+                    <div class="cc-feed-item">
+                        <div class="cc-feed-dot" style="background:@dotBg;"></div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="cc-feed-name text-truncate">@entry.PlantName</div>
+                            <div class="cc-feed-meta">@entry.ItemName &mdash; @entry.MilkQuantity.ToString("N0") L</div>
+                            <div class="cc-feed-meta">@entry.StoredDate.ToString("dd MMM yyyy")</div>
+                        </div>
+                        @if (entry.Temperature.HasValue)
                         {
-                            <div class="d-flex gap-3 mb-3 position-relative">
-                                <!-- Colored dot based on TempStatus -->
-                                <div class="flex-shrink-0 mt-1">
-                                    <span class="d-block rounded-circle bg-@entry.TempBadgeClass"
-                                          style="width:12px;height:12px;margin-top:3px;"></span>
-                                </div>
-                                <div>
-                                    <div class="text-muted" style="font-size:11px;">
-                                        @entry.StoredDate.ToString("dd MMM yyyy")
-                                    </div>
-                                    <div class="fw-semibold" style="font-size:13px;">@entry.PlantName</div>
-                                    <div class="text-muted" style="font-size:12px;">
-                                        @entry.ItemName — @entry.MilkQuantity.ToString("N0") L
-                                        @if (entry.Temperature.HasValue)
-                                        {
-                                            <span class="badge bg-@entry.TempBadgeClass ms-1">
-                                                @entry.Temperature.Value.ToString("N1")&deg;C
-                                            </span>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
+                            <span class="cc-badge @tempBadge">@entry.Temperature.Value.ToString("N1")°C</span>
                         }
                     </div>
                 }
-                else
-                {
-                    <div class="text-center text-muted py-4 small">No recent entries.</div>
-                }
-            </div>
+            }
+            else
+            {
+                <div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px;">No recent entries.</div>
+            }
         </div>
     </div>
-
 </div>
 
-<!-- ── PLANT CAPACITY + ACTIVE ALERTS ROW ───────────────── -->
-<div class="row g-3 mb-4">
+<!-- Capacity + Alerts -->
+<div class="cc-bottom-grid">
 
-    <!-- Plant Capacity -->
-    <div class="col-md-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-primary">Plant Capacity Overview</span>
-                <a asp-action="Capacity" class="btn btn-sm btn-outline-primary">View All</a>
+    <!-- Capacity Table -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div>
+                <div class="cc-panel-title">Plant Capacity Overview</div>
+                <div class="cc-panel-sub">Storage summary per plant</div>
             </div>
-            <div class="card-body p-0">
-                @if (Model.PlantCapacity.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Plant</th>
-                                    <th class="text-end">Today (L)</th>
-                                    <th class="text-end">All Time (L)</th>
-                                    <th class="text-center">Alerts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var plant in Model.PlantCapacity)
-                                {
-                                    <tr>
-                                        <td>
-                                            <div class="fw-semibold">@plant.PlantName</div>
-                                            @if (!string.IsNullOrEmpty(plant.Location))
-                                            {
-                                                <small class="text-muted">@plant.Location</small>
-                                            }
-                                        </td>
-                                        <td class="text-end">@plant.StoredToday.ToString("N2")</td>
-                                        <td class="text-end">@plant.TotalStoredAllTime.ToString("N2")</td>
-                                        <td class="text-center">
-                                            @if (plant.AlertCount > 0)
-                                            {
-                                                <span class="badge bg-danger">@plant.AlertCount</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-success">0</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-center text-muted py-4">No plants found.</div>
-                }
-            </div>
+            <a asp-action="Capacity" class="cc-view-all">Monitor <i class="bi bi-arrow-right"></i></a>
         </div>
+        @if (Model.PlantCapacity.Any())
+        {
+            <table class="cc-mini-table">
+                <thead>
+                    <tr>
+                        <th>Plant</th>
+                        <th class="num">Today (L)</th>
+                        <th class="num">All Time (L)</th>
+                        <th style="text-align:center;">Alerts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plant in Model.PlantCapacity)
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;color:#0f172a;">@plant.PlantName</div>
+                                @if (!string.IsNullOrEmpty(plant.Location))
+                                {
+                                    <div style="font-size:11px;color:#94a3b8;">@plant.Location</div>
+                                }
+                            </td>
+                            <td class="num">@plant.StoredToday.ToString("N0")</td>
+                            <td class="num" style="color:#94a3b8;font-weight:500;">@plant.TotalStoredAllTime.ToString("N0")</td>
+                            <td style="text-align:center;">
+                                <span class="cc-badge @(plant.AlertCount > 0 ? "cc-badge-danger" : "cc-badge-safe")">@plant.AlertCount</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">No plant data.</div>
+        }
     </div>
 
     <!-- Active Alerts -->
-    <div class="col-md-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-danger">Active Alerts Today</span>
-                <a asp-action="Alerts" class="btn btn-sm btn-outline-danger">View All</a>
-            </div>
-            <div class="card-body p-0">
-                @if (Model.ActiveAlerts.Any())
-                {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var alert in Model.ActiveAlerts)
-                        {
-                            <li class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <div class="fw-semibold small">@alert.PlantName</div>
-                                        <small class="text-muted">@alert.ItemName — @alert.MilkQuantity.ToString("N0") L</small>
-                                    </div>
-                                    <span class="badge bg-@alert.TempBadgeClass">
-                                        @(alert.Temperature.HasValue? alert.Temperature.Value.ToString("N1") + "°C" : "—")
-                                    </span>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                }
-                else
-                {
-                    <div class="text-center py-4">
-                        <span class="text-success fw-semibold small">All temperatures safe today.</span>
-                    </div>
-                }
-            </div>
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div class="cc-panel-title">Active Alerts Today</div>
+            <a asp-action="Alerts" class="cc-view-all" style="color:#dc2626;">View <i class="bi bi-arrow-right"></i></a>
         </div>
-    </div>
-
-</div>
-
-<!-- ── QUICK NAV ─────────────────────────────────────────── -->
-<div class="row g-2">
-    <div class="col-6 col-md-3">
-        <a asp-action="Index" class="btn btn-outline-primary w-100">All Entries</a>
-    </div>
-    <div class="col-6 col-md-3">
-        <a asp-action="Create" class="btn btn-primary w-100">Add New Entry</a>
-    </div>
-    <div class="col-6 col-md-3">
-        <a asp-action="Alerts" class="btn btn-outline-danger w-100">Temperature Alerts</a>
-    </div>
-    <div class="col-6 col-md-3">
-        <a asp-action="Capacity" class="btn btn-outline-secondary w-100">Capacity Monitor</a>
+        @if (Model.ActiveAlerts.Any())
+        {
+            @foreach (var alert in Model.ActiveAlerts)
+            {
+                var tempBadge = alert.TempBadgeClass == "warning" ? "cc-badge-warning" : "cc-badge-danger";
+                <div class="cc-alert-item">
+                    <div>
+                        <div class="cc-alert-name">@alert.PlantName</div>
+                        <div class="cc-alert-meta">@alert.ItemName &mdash; @alert.MilkQuantity.ToString("N0") L</div>
+                    </div>
+                    <span class="cc-badge @tempBadge">
+                        @(alert.Temperature.HasValue? alert.Temperature.Value.ToString("N1") + "°C" : "—")
+                    </span>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px 20px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:#f0fdf4;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#16a34a;margin-bottom:10px;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div style="font-size:14px;font-weight:700;color:#16a34a;">All Clear</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">No temperature alerts today</div>
+            </div>
+        }
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script>
-        const ctx = document.getElementById('storageChart').getContext('2d');
-        new Chart(ctx, {
+        new Chart(document.getElementById('storageChart').getContext('2d'), {
             type: 'line',
             data: {
                 labels: @Html.Raw(chartLabels),
@@ -300,31 +560,25 @@
                     label: 'Quantity (L)',
                     data: @Html.Raw(chartValues),
                     borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.07)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#0d6efd',
-                    pointBorderWidth: 2
+                    backgroundColor: function(ctx) {
+                        var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 220);
+                        g.addColorStop(0, 'rgba(13,110,253,.15)');
+                        g.addColorStop(1, 'rgba(13,110,253,0)');
+                        return g;
+                    },
+                    fill: true, tension: 0.4, borderWidth: 2.5,
+                    pointRadius: 4, pointBackgroundColor: '#fff',
+                    pointBorderColor: '#0d6efd', pointBorderWidth: 2
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
                         beginAtZero: false,
                         grid: { color: '#f1f5f9' },
-                        ticks: {
-                            font: { size: 11 },
-                            color: '#94a3b8',
-                            callback: function(val) { return val.toLocaleString() + ' L'; }
-                        }
+                        ticks: { font: { size: 11 }, color: '#94a3b8', callback: v => v.toLocaleString() + ' L' }
                     },
                     x: {
                         grid: { display: false },
