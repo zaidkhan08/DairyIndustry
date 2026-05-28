@@ -84,19 +84,29 @@ namespace DairyIndustry.Controllers
             return View(data);
         }
 
-        //Details of farmer 
-        public IActionResult CenterFarmerDetails(int id)
+        ////Details of farmer 
+        //public IActionResult CenterFarmerDetails(int id)
+        //{
+        //    int staffId = Convert.ToInt32(HttpContext.Session.GetInt32("StaffId"));
+
+        //    var farmer = _farmerRepo.GetFarmerByIdAsync(id, staffId);
+
+        //    if (farmer == null)
+        //        return NotFound();
+
+        //    return View(farmer);
+        //}
+
+
+        // Details of farmer
+        public async Task<IActionResult> CenterFarmerDetails(int id)
         {
             int staffId = Convert.ToInt32(HttpContext.Session.GetInt32("StaffId"));
-
-            var farmer = _farmerRepo.GetFarmerById(id, staffId);
-
+            var farmer = await _farmerRepo.GetFarmerByIdAsync(id, staffId);
             if (farmer == null)
                 return NotFound();
-
             return View(farmer);
         }
-
         // Toggle Status - Activate/Decativate of farmer
         public IActionResult ToggleStatus(int id, bool isActive)
         {
@@ -112,30 +122,20 @@ namespace DairyIndustry.Controllers
 
             return RedirectToAction("ListAllfarmers");
         }
-        
-        //Send OTP for both self registration or center registration of farmer
+
+
         [HttpPost]
-        public JsonResult SendEmailOTP(string email)
+        public async Task<JsonResult> SendEmailOTP(string email)
         {
-            // 1. Generate OTP from DB (Stored Procedure)
-            string otp = _farmerRepo.GenerateOtp(email);
-
-            // 2. Send OTP via Email
-            _emailService.SendOtpEmail(email, otp);
-
-            return Json(new
-            {
-                success = true,
-                message = "OTP sent successfully"
-            });
+            string otp = await _farmerRepo.GenerateOtpAsync(email);
+            await _emailService.SendOtpEmailAsync(email, otp);
+            return Json(new { success = true, message = "OTP sent successfully" });
         }
 
-        //verifiaction of OTP
         [HttpPost]
-        public JsonResult VerifyEmailOTP(string email, string otp)
+        public async Task<JsonResult> VerifyEmailOTP(string email, string otp)
         {
-            bool isValid = _farmerRepo.VerifyOtp(email, otp);
-
+            bool isValid = await _farmerRepo.VerifyOtpAsync(email, otp);
             return Json(new
             {
                 success = isValid,
@@ -143,9 +143,8 @@ namespace DairyIndustry.Controllers
             });
         }
 
-        // =========================
-        // CREATE (GET)
-        // =========================
+        // GET
+        [HttpGet]
         public IActionResult FarmerRegistrationByCenter()
         {
             var model = new RegByCenterModel
@@ -154,107 +153,194 @@ namespace DairyIndustry.Controllers
                 Cities = new List<CityModel>(),
                 Villages = new List<VillageModel>()
             };
-
             return View(model);
         }
-        // =========================
-        // CREATE (POST)
-        // =========================
+
+        // POST
         [HttpPost]
-        public IActionResult FarmerRegistrationByCenter(RegByCenterModel model)
+        public async Task<IActionResult> FarmerRegistrationByCenter(RegByCenterModel model)
         {
             int staffId = GetStaffId();
-
             if (staffId == 0)
                 return RedirectToAction("Login", "Auth");
 
             model.States = _farmerRepo.GetStates();
-
-            model.Cities = model.StateId > 0? _farmerRepo.GetCitiesByState(model.StateId.Value): new List<CityModel>();
-
-            model.Villages = model.CityId > 0? _farmerRepo.GetVillagesByCity(model.CityId.Value): new List<VillageModel>();
+            model.Cities = model.StateId > 0 ? _farmerRepo.GetCitiesByState(model.StateId.Value) : new List<CityModel>();
+            model.Villages = model.CityId > 0 ? _farmerRepo.GetVillagesByCity(model.CityId.Value) : new List<VillageModel>();
 
             if (!string.IsNullOrEmpty(model.Email) && !model.IsEmailVerified)
-            {
                 ModelState.AddModelError("Email", "Please verify the email address first.");
-            }
 
             if (!ModelState.IsValid)
                 return View(model);
 
-            model.ProfilePhoto =_fileUploadService.SaveFile(model.PhotoFile,"profile");
+            // file uploads stay sync — local disk, no need for async
+            model.ProfilePhoto = _fileUploadService.SaveFile(model.PhotoFile, "profile");
+            model.AadhaarCardPath = _fileUploadService.SaveFile(model.AadhaarFile, "aadhaar");
+            model.PassbookPath = _fileUploadService.SaveFile(model.PassbookFile, "passbook");
 
-            model.AadhaarCardPath = _fileUploadService.SaveFile(model.AadhaarFile,"aadhaar");
+            var result = await _farmerRepo.AddFarmerAsync(model, staffId);
 
-            model.PassbookPath =_fileUploadService.SaveFile(model.PassbookFile,"passbook");
-
-            var result = _farmerRepo.AddFarmer(model, staffId);
-
-            //After Registartion Email will be sent to Farmer that It is Approved
             string emailNote = string.Empty;
-
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
                 try
                 {
                     string loginUrl = $"{Request.Scheme}://{Request.Host}/Farmer/Login";
-
-                    _emailService.SendApprovalEmail(
+                    await _emailService.SendApprovalEmailAsync(
                         toEmail: model.Email,
                         farmerCode: result.FarmerCode,
                         defaultPassword: result.DefaultPassword,
                         loginUrl: loginUrl);
-
                     emailNote = $" Credentials emailed to {model.Email}.";
                 }
                 catch (Exception mailEx)
                 {
-                    // SMTP failure — log it but do not crash the registration
                     emailNote = $" (Email could not be sent: {mailEx.Message} — share credentials manually.)";
                 }
             }
-            // ─────────────────────────────────────────────────────────────────
 
             TempData["FarmerCode"] = result.FarmerCode;
             TempData["Password"] = result.DefaultPassword;
             TempData["Success"] = "Farmer registered successfully!" + emailNote;
-
             return RedirectToAction("ListAllFarmers");
         }
+        //Send OTP for both self registration or center registration of farmer
+        //[HttpPost]
+        //public JsonResult SendEmailOTP(string email)
+        //{
+        //    // 1. Generate OTP from DB (Stored Procedure)
+        //    string otp = _farmerRepo.GenerateOtp(email);
+
+        //    // 2. Send OTP via Email
+        //    _emailService.SendOtpEmail(email, otp);
+
+        //    return Json(new
+        //    {
+        //        success = true,
+        //        message = "OTP sent successfully"
+        //    });
+        //}
+
+        ////verifiaction of OTP
+        //[HttpPost]
+        //public JsonResult VerifyEmailOTP(string email, string otp)
+        //{
+        //    bool isValid = _farmerRepo.VerifyOtp(email, otp);
+
+        //    return Json(new
+        //    {
+        //        success = isValid,
+        //        message = isValid ? "OTP verified" : "Invalid or expired OTP"
+        //    });
+        //}
+
+        // =========================
+        // CREATE (GET)
+        // =========================
+        //public IActionResult FarmerRegistrationByCenter()
+        //{
+        //    var model = new RegByCenterModel
+        //    {
+        //        States = _farmerRepo.GetStates(),
+        //        Cities = new List<CityModel>(),
+        //        Villages = new List<VillageModel>()
+        //    };
+
+        //    return View(model);
+        //}
+        // =========================
+        // CREATE (POST)
+        // =========================
+        //[HttpPost]
+        //public IActionResult FarmerRegistrationByCenter(RegByCenterModel model)
+        //{
+        //    int staffId = GetStaffId();
+
+        //    if (staffId == 0)
+        //        return RedirectToAction("Login", "Auth");
+
+        //    model.States = _farmerRepo.GetStates();
+
+        //    model.Cities = model.StateId > 0? _farmerRepo.GetCitiesByState(model.StateId.Value): new List<CityModel>();
+
+        //    model.Villages = model.CityId > 0? _farmerRepo.GetVillagesByCity(model.CityId.Value): new List<VillageModel>();
+
+        //    if (!string.IsNullOrEmpty(model.Email) && !model.IsEmailVerified)
+        //    {
+        //        ModelState.AddModelError("Email", "Please verify the email address first.");
+        //    }
+
+        //    if (!ModelState.IsValid)
+        //        return View(model);
+
+        //    model.ProfilePhoto =_fileUploadService.SaveFile(model.PhotoFile,"profile");
+
+        //    model.AadhaarCardPath = _fileUploadService.SaveFile(model.AadhaarFile,"aadhaar");
+
+        //    model.PassbookPath =_fileUploadService.SaveFile(model.PassbookFile,"passbook");
+
+        //    var result = _farmerRepo.AddFarmer(model, staffId);
+
+        //    //After Registartion Email will be sent to Farmer that It is Approved
+        //    string emailNote = string.Empty;
+
+        //    if (!string.IsNullOrWhiteSpace(model.Email))
+        //    {
+        //        try
+        //        {
+        //            string loginUrl = $"{Request.Scheme}://{Request.Host}/Farmer/Login";
+
+        //            _emailService.SendApprovalEmail(
+        //                toEmail: model.Email,
+        //                farmerCode: result.FarmerCode,
+        //                defaultPassword: result.DefaultPassword,
+        //                loginUrl: loginUrl);
+
+        //            emailNote = $" Credentials emailed to {model.Email}.";
+        //        }
+        //        catch (Exception mailEx)
+        //        {
+        //            // SMTP failure — log it but do not crash the registration
+        //            emailNote = $" (Email could not be sent: {mailEx.Message} — share credentials manually.)";
+        //        }
+        //    }
+        //    // ─────────────────────────────────────────────────────────────────
+
+        //    TempData["FarmerCode"] = result.FarmerCode;
+        //    TempData["Password"] = result.DefaultPassword;
+        //    TempData["Success"] = "Farmer registered successfully!" + emailNote;
+
+        //    return RedirectToAction("ListAllFarmers");
+        //}
+
+
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
             int staffId = GetStaffId();
             if (staffId == 0)
                 return RedirectToAction("Login", "Auth");
 
-            var model = _farmerRepo.GetFarmerById(id, staffId);
-
+            var model = await _farmerRepo.GetFarmerByIdAsync(id, staffId);
             if (model == null)
                 return NotFound();
 
             model.States = _farmerRepo.GetStates();
-
-            model.Cities = model.StateId > 0
-                ? _farmerRepo.GetCitiesByState(model.StateId)
-                : new List<CityModel>();
-
-            model.Villages = model.CityId > 0
-                ? _farmerRepo.GetVillagesByCity(model.CityId)
-                : new List<VillageModel>();
+            model.Cities = model.StateId > 0 ? _farmerRepo.GetCitiesByState(model.StateId) : new List<CityModel>();
+            model.Villages = model.CityId > 0 ? _farmerRepo.GetVillagesByCity(model.CityId) : new List<VillageModel>();
 
             return View(model);
         }
 
         [HttpPost]
-        public IActionResult Edit(FarmerEditModel model)
+        public async Task<IActionResult> Edit(FarmerEditModel model)
         {
             int staffId = GetStaffId();
             if (staffId == 0)
                 return RedirectToAction("Login", "Auth");
 
-            var existing = _farmerRepo.GetFarmerById(model.FarmerId, staffId);
-
+            var existing = await _farmerRepo.GetFarmerByIdAsync(model.FarmerId, staffId);
             if (existing == null)
                 return NotFound();
 
@@ -265,43 +351,36 @@ namespace DairyIndustry.Controllers
             model.Email = existing.Email;
 
             // =========================
-            // PROFILE PHOTO
+            // PROFILE PHOTO — stays sync (local disk)
             // =========================
-            if (model.PhotoFile != null && model.PhotoFile.Length > 0)
-            {
-                model.ProfilePhoto =
-                    _fileUploadService.SaveFile(model.PhotoFile, "profile");
-            }
-            else
-            {
-                model.ProfilePhoto = existing.ProfilePhoto;
-            }
+            model.ProfilePhoto = (model.PhotoFile != null && model.PhotoFile.Length > 0)
+                ? _fileUploadService.SaveFile(model.PhotoFile, "profile")
+                : existing.ProfilePhoto;
 
             try
             {
                 // =========================
                 // UPDATE FARMER
                 // =========================
-                int result = _farmerRepo.UpdateFarmer(model, staffId);
+                int result = await _farmerRepo.UpdateFarmerAsync(model, staffId);
 
                 // =========================
-                // DOCUMENTS
+                // DOCUMENTS — stays sync (local disk)
                 // =========================
-
                 if (model.AadhaarFile != null && model.AadhaarFile.Length > 0)
                 {
                     var path = _fileUploadService.SaveFile(model.AadhaarFile, "aadhaar");
-                    _farmerRepo.UpdateFarmerDocument(staffId,model.FarmerId,"AadhaarCard",path);
+                    await _farmerRepo.UpdateFarmerDocumentAsync(staffId, model.FarmerId, "AadhaarCard", path);
                 }
 
                 if (model.PassbookFile != null && model.PassbookFile.Length > 0)
                 {
                     var path = _fileUploadService.SaveFile(model.PassbookFile, "passbook");
-                    _farmerRepo.UpdateFarmerDocument(staffId,model.FarmerId,"BankPassbook",path);
+                    await _farmerRepo.UpdateFarmerDocumentAsync(staffId, model.FarmerId, "BankPassbook", path);
                 }
 
                 if (result > 0)
-                    return RedirectToAction("CenterFarmerDetails",new { id = model.FarmerId });
+                    return RedirectToAction("CenterFarmerDetails", new { id = model.FarmerId });
 
                 TempData["Error"] = "Update failed.";
             }
@@ -314,15 +393,88 @@ namespace DairyIndustry.Controllers
             // RELOAD DROPDOWNS ON ERROR
             // =========================
             model.States = _farmerRepo.GetStates();
-
-            model.Cities = model.StateId > 0? _farmerRepo.GetCitiesByState(model.StateId): new List<CityModel>();
-
-            model.Villages = model.CityId > 0? _farmerRepo.GetVillagesByCity(model.CityId): new List<VillageModel>();
-
+            model.Cities = model.StateId > 0 ? _farmerRepo.GetCitiesByState(model.StateId) : new List<CityModel>();
+            model.Villages = model.CityId > 0 ? _farmerRepo.GetVillagesByCity(model.CityId) : new List<VillageModel>();
             return View(model);
         }
 
-       
+        //[HttpPost]
+        //public IActionResult Edit(FarmerEditModel model)
+        //{
+        //    int staffId = GetStaffId();
+        //    if (staffId == 0)
+        //        return RedirectToAction("Login", "Auth");
+
+        //    var existing = _farmerRepo.GetFarmerById(model.FarmerId, staffId);
+
+        //    if (existing == null)
+        //        return NotFound();
+
+        //    // =========================
+        //    // LOCK SENSITIVE FIELDS
+        //    // =========================
+        //    model.AadhaarNumber = existing.AadhaarNumber;
+        //    model.Email = existing.Email;
+
+        //    // =========================
+        //    // PROFILE PHOTO
+        //    // =========================
+        //    if (model.PhotoFile != null && model.PhotoFile.Length > 0)
+        //    {
+        //        model.ProfilePhoto =
+        //            _fileUploadService.SaveFile(model.PhotoFile, "profile");
+        //    }
+        //    else
+        //    {
+        //        model.ProfilePhoto = existing.ProfilePhoto;
+        //    }
+
+        //    try
+        //    {
+        //        // =========================
+        //        // UPDATE FARMER
+        //        // =========================
+        //        int result = _farmerRepo.UpdateFarmer(model, staffId);
+
+        //        // =========================
+        //        // DOCUMENTS
+        //        // =========================
+
+        //        if (model.AadhaarFile != null && model.AadhaarFile.Length > 0)
+        //        {
+        //            var path = _fileUploadService.SaveFile(model.AadhaarFile, "aadhaar");
+        //            _farmerRepo.UpdateFarmerDocument(staffId,model.FarmerId,"AadhaarCard",path);
+        //        }
+
+        //        if (model.PassbookFile != null && model.PassbookFile.Length > 0)
+        //        {
+        //            var path = _fileUploadService.SaveFile(model.PassbookFile, "passbook");
+        //            _farmerRepo.UpdateFarmerDocument(staffId,model.FarmerId,"BankPassbook",path);
+        //        }
+
+        //        if (result > 0)
+        //            return RedirectToAction("CenterFarmerDetails",new { id = model.FarmerId });
+
+        //        TempData["Error"] = "Update failed.";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["Error"] = ex.Message;
+        //    }
+
+        //    // =========================
+        //    // RELOAD DROPDOWNS ON ERROR
+        //    // =========================
+        //    model.States = _farmerRepo.GetStates();
+
+        //    model.Cities = model.StateId > 0? _farmerRepo.GetCitiesByState(model.StateId): new List<CityModel>();
+
+        //    model.Villages = model.CityId > 0? _farmerRepo.GetVillagesByCity(model.CityId): new List<VillageModel>();
+
+        //    return View(model);
+        //}
+
+
 
         //farmer login
         public IActionResult Login()
@@ -519,7 +671,6 @@ namespace DairyIndustry.Controllers
             return View(model);
         }
 
-        // SELF REGISTRATION — GET
         [HttpGet]
         public IActionResult FarmerSelfRegistration()
         {
@@ -532,39 +683,34 @@ namespace DairyIndustry.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult FarmerSelfRegistration(SelfRegisterViewModel model,IFormFile AadhaarDoc,IFormFile BankDoc,IFormFile ProfilePhotoFile)
+        public async Task<IActionResult> FarmerSelfRegistration(SelfRegisterViewModel model, IFormFile AadhaarDoc, IFormFile BankDoc, IFormFile ProfilePhotoFile)
         {
             model.States = _farmerRepo.GetStates();
-
             if (model.StateId != null)
                 model.Cities = _farmerRepo.GetCitiesByState(model.StateId.Value);
-
             if (model.CityId != null)
                 model.Villages = _farmerRepo.GetVillagesByCity(model.CityId.Value);
-
             if (model.VillageId != null)
                 model.Centers = _collectionCenter.GetCentersByVillage(model.VillageId.Value);
 
             if (string.IsNullOrWhiteSpace(model.FarmerName))
                 return Error(model, "Farmer name required");
-
             if (model.CenterId == null)
                 return Error(model, "Select center");
-
             if (!model.IsEmailVerified)
             {
                 TempData["Error"] = "Please verify your email first.";
                 return View(model);
             }
-            model.ProfilePhotoPath =_fileUploadService.SaveFile(model.ProfilePhotoFile,"profile");
 
-            model.AadhaarDocPath =_fileUploadService.SaveFile(model.AadhaarFile,"aadhaar");
-
-            model.PassbookDocPath =_fileUploadService.SaveFile(model.PassbookFile,"passbook");
+            // file uploads stay sync — local disk
+            model.ProfilePhotoPath = _fileUploadService.SaveFile(model.ProfilePhotoFile, "profile");
+            model.AadhaarDocPath = _fileUploadService.SaveFile(model.AadhaarFile, "aadhaar");
+            model.PassbookDocPath = _fileUploadService.SaveFile(model.PassbookFile, "passbook");
 
             try
             {
-                _farmerRepo.SelfRegisterFarmer(model);
+                await _farmerRepo.SelfRegisterFarmerAsync(model);
                 return RedirectToAction("RegisterSuccess");
             }
             catch (Exception ex)
@@ -573,6 +719,61 @@ namespace DairyIndustry.Controllers
                 return View(model);
             }
         }
+
+        // SELF REGISTRATION — GET
+        //[HttpGet]
+        //public IActionResult FarmerSelfRegistration()
+        //{
+        //    var model = new SelfRegisterViewModel
+        //    {
+        //        States = _farmerRepo.GetStates()
+        //    };
+        //    return View(model);
+        //}
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public IActionResult FarmerSelfRegistration(SelfRegisterViewModel model,IFormFile AadhaarDoc,IFormFile BankDoc,IFormFile ProfilePhotoFile)
+        //{
+        //    model.States = _farmerRepo.GetStates();
+
+        //    if (model.StateId != null)
+        //        model.Cities = _farmerRepo.GetCitiesByState(model.StateId.Value);
+
+        //    if (model.CityId != null)
+        //        model.Villages = _farmerRepo.GetVillagesByCity(model.CityId.Value);
+
+        //    if (model.VillageId != null)
+        //        model.Centers = _collectionCenter.GetCentersByVillage(model.VillageId.Value);
+
+        //    if (string.IsNullOrWhiteSpace(model.FarmerName))
+        //        return Error(model, "Farmer name required");
+
+        //    if (model.CenterId == null)
+        //        return Error(model, "Select center");
+
+        //    if (!model.IsEmailVerified)
+        //    {
+        //        TempData["Error"] = "Please verify your email first.";
+        //        return View(model);
+        //    }
+        //    model.ProfilePhotoPath =_fileUploadService.SaveFile(model.ProfilePhotoFile,"profile");
+
+        //    model.AadhaarDocPath =_fileUploadService.SaveFile(model.AadhaarFile,"aadhaar");
+
+        //    model.PassbookDocPath =_fileUploadService.SaveFile(model.PassbookFile,"passbook");
+
+        //    try
+        //    {
+        //        _farmerRepo.SelfRegisterFarmer(model);
+        //        return RedirectToAction("RegisterSuccess");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["Error"] = ex.Message;
+        //        return View(model);
+        //    }
+        //}
 
         private IActionResult Error(SelfRegisterViewModel model, string msg)
         {

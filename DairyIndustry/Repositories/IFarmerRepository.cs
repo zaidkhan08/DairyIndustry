@@ -12,7 +12,12 @@ namespace DairyIndustry.Repositories
         List<VillageModel> GetVillagesByCity(int cityId);
 
         //Registration of farmer will be done by Collection Center
-        RegByCenterModel AddFarmer(RegByCenterModel model, int staffId);
+        //  RegByCenterModel AddFarmer(RegByCenterModel model, int staffId);
+
+
+        Task<RegByCenterModel> AddFarmerAsync(RegByCenterModel model, int staffId);
+        Task<string> GenerateOtpAsync(string email);
+        Task<bool> VerifyOtpAsync(string email, string otp);
 
         List<FarmerViewModel> GetAllFarmers(int staffId, bool? isActive = null, string search = null);
 
@@ -27,11 +32,15 @@ namespace DairyIndustry.Repositories
         //int UpdateFarmerDocuments(int staffId,int farmerId,string documentType,string filePath);
         //FarmerViewModel GetFarmerById(int farmerId, int staffId);
 
-        FarmerEditModel GetFarmerById(int farmerId, int staffId);
+        // //FarmerEditModel GetFarmerById(int farmerId, int staffId);
+        Task<FarmerEditModel> GetFarmerByIdAsync(int farmerId, int staffId);
 
-        int UpdateFarmer(FarmerEditModel model, int staffId);
+        Task<int> UpdateFarmerAsync(FarmerEditModel model, int staffId);
+        Task<int> UpdateFarmerDocumentAsync(int staffId, int farmerId, string documentType, string filePath);
 
-        int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath);
+        //int UpdateFarmer(FarmerEditModel model, int staffId);
+
+        //int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath);
 
         //Farmer Module
 
@@ -51,8 +60,9 @@ namespace DairyIndustry.Repositories
         FarmerDashboardViewModel GetDashboard(int farmerId);
 
 
-        // Self-registration (public page, no login)
-        void SelfRegisterFarmer(SelfRegisterViewModel model);
+        //// Self-registration (public page, no login)
+        //void SelfRegisterFarmer(SelfRegisterViewModel model);
+        Task SelfRegisterFarmerAsync(SelfRegisterViewModel model);
 
         // Status check by phone (public page)
         FarmerStatusViewModel GetFarmerStatusByPhone(string phone);
@@ -71,8 +81,8 @@ namespace DairyIndustry.Repositories
         List<FarmerRejectionViewModel> GetRejectionHistory(
         int farmerId, DateTime? fromDate = null, DateTime? toDate = null);
 
-        string GenerateOtp(string email);
-        bool VerifyOtp(string email, string otp);
+        //string GenerateOtp(string email);
+        //bool VerifyOtp(string email, string otp);
         string ChangePassword(int farmerId, string currentPassword, string newPassword);
     }
 }
