@@ -90,9 +90,28 @@
         </a>
     </div>
 </div>
-
+        <br />
         <div class="card-body p-0">
             <div class="table-responsive">
+                <div class="row p-3">
+
+                    <div class="col-md-4">
+                        <input type="text"
+                               id="searchInput"
+                               class="form-control"
+                               placeholder="Search name, role or phone...">
+                    </div>
+
+                    <div class="col-md-3">
+                        <select id="statusFilter" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                </div>
+                <br />
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -106,7 +125,7 @@
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="staffTable">
                         @if (!Model.Any())
                         {
                             <tr>
@@ -264,3 +283,51 @@
         font-weight: 500;
     }
 </style>
+<script>
+
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+
+    function filterTable() {
+
+        const search = searchInput.value.toLowerCase().trim();
+        const status = statusFilter.value.toLowerCase().trim();
+
+        const rows = document.querySelectorAll("#staffTable tr");
+
+        rows.forEach(row => {
+
+            const staffName =
+                row.cells[1]?.innerText.toLowerCase() || "";
+
+            const role =
+                row.cells[2]?.innerText.toLowerCase() || "";
+
+            const contact =
+                row.cells[4]?.innerText.toLowerCase() || "";
+
+            const currentStatus =
+                row.cells[6]?.innerText.toLowerCase().trim() || "";
+
+            const matchesSearch =
+                staffName.includes(search) ||
+                role.includes(search) ||
+                contact.includes(search);
+
+            const matchesStatus =
+                status === "" ||
+                currentStatus === status;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+
+        });
+    }
+
+    searchInput.addEventListener("keyup", filterTable);
+    statusFilter.addEventListener("change", filterTable);
+
+</script>

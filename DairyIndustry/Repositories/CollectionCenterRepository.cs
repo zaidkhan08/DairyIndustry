@@ -22,7 +22,7 @@ namespace DairyIndustry.Repository
         {
             var now = DateTime.Now.TimeOfDay;
 
-            if (now >= new TimeSpan(08, 00, 0) && now < new TimeSpan(13, 0
+            if (now >= new TimeSpan(11, 10, 0) && now < new TimeSpan(13, 0
                 , 0))
                 return "Morning";
 

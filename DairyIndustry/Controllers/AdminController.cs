@@ -1240,32 +1240,69 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         [SessionAuthorize("Admin")]
         [RequestSizeLimit(5 * 1024 * 1024)]
-        [HttpPost]
         public async Task<IActionResult> EditStaff(int staffId, string firstName, string lastName,
-    string phone, string email, int roleId, DateTime? doj, string bankName,
-    string accountNumber, string ifscCode, decimal salary, string profilePhoto,
-    IFormFile photoFile, int? centerId, int? plantId)
+            string phone, string email, int roleId, DateTime? doj, string bankName,
+            string accountNumber, string ifscCode, decimal salary, string existingPhoto,
+            IFormFile photoFile, int? centerId, int? plantId)
         {
-            string finalPhoto = profilePhoto;
-
-            if (photoFile != null && photoFile.Length > 0)
+            void ReloadViewBag()
             {
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(photoFile.FileName);
-                string filePath = Path.Combine(_env.WebRootPath, "uploads", "staff", fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await photoFile.CopyToAsync(stream);
-                }
-                finalPhoto = "/uploads/staff/" + fileName;
+                ViewBag.Roles = _adminRepo.GetAllRoles();
+                ViewBag.Centers = _adminRepo.GetAllCenters();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
             }
 
-            await _adminRepo.UpdateStaffAsync(staffId, firstName, lastName, phone, email,
-                roleId, doj, bankName, accountNumber, ifscCode, salary,
-                finalPhoto, centerId, plantId);
+            try
+            {
+                if (centerId.HasValue && plantId.HasValue)
+                {
+                    ViewBag.Error = "Assign staff to either a Collection Center or a Plant — not both.";
+                    ReloadViewBag();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
 
-            TempData["Message"] = "Staff updated successfully.";
-            return RedirectToAction("Staff");
+                
+                string finalPhoto = existingPhoto; 
+                if (photoFile != null && photoFile.Length > 0)
+                {
+                    var extension = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
+                    if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+                    {
+                        ViewBag.Error = "Only .jpg, .jpeg, .png allowed.";
+                        ReloadViewBag();
+                        return View(_adminRepo.GetStaffById(staffId));
+                    }
+                    if (photoFile.Length > 2 * 1024 * 1024)
+                    {
+                        ViewBag.Error = "Max photo size is 2MB.";
+                        ReloadViewBag();
+                        return View(_adminRepo.GetStaffById(staffId));
+                    }
+
+                    string uploadFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
+                    Directory.CreateDirectory(uploadFolder); 
+                    string fileName = Guid.NewGuid() + extension;
+                    string filePath = Path.Combine(uploadFolder, fileName);
+
+                    using var ms = new MemoryStream();
+                    await photoFile.CopyToAsync(ms);                          
+                    await System.IO.File.WriteAllBytesAsync(filePath, ms.ToArray()); 
+                    finalPhoto = "/uploads/staff/" + fileName;
+                }
+
+                await _adminRepo.UpdateStaffAsync(staffId, firstName, lastName, phone, email,
+                    roleId, doj, bankName, accountNumber, ifscCode, salary,
+                    finalPhoto, centerId, plantId);
+
+                TempData["Success"] = "Staff updated successfully.";
+                return RedirectToAction("Staff");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error: " + ex.Message;
+                ReloadViewBag();
+                return View(_adminRepo.GetStaffById(staffId));
+            }
         }
 
 
@@ -1556,6 +1593,86 @@ namespace DairyIndustry.Controllers
             ViewBag.Villages = _adminRepo.GetAllVillages();
             return View("EditCollection", collection);
         }
+
+        [SessionAuthorize("Admin")]
+        public IActionResult Batches(int? centerId = null, string status = null,
+                              DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var batches = _adminRepo.GetAllBatches(centerId, status, fromDate, toDate);
+
+            ViewBag.Centers = _adminRepo.GetAllCenters();
+            ViewBag.CenterId = centerId;
+            ViewBag.Status = status;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            // summary counts for the header cards
+            ViewBag.OpenCount = batches.Count(b => b.Status == "Open");
+            ViewBag.ClosedCount = batches.Count(b => b.Status == "Closed");
+            ViewBag.DispatchedCount = batches.Count(b => b.Status == "Dispatched");
+
+            return View(batches);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpGet]
+        public IActionResult BatchDetail(int id)
+        {
+            var batch = _adminRepo.GetBatchById(id);
+            if (batch == null)
+            {
+                TempData["Error"] = "Batch not found.";
+                return RedirectToAction("Batches");
+            }
+
+            var entries = _adminRepo.GetBatchCollections(id);
+            ViewBag.Entries = entries;
+
+            // summary totals for the detail header
+            ViewBag.TotalEntries = entries.Count;
+            ViewBag.TotalQty = entries.Sum(e => e.Quantity);
+            ViewBag.TotalAmount = entries.Sum(e => e.Amount ?? 0);
+
+            return View(batch);
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult OpenBatch(int centerId, string shift, DateTime batchDate)
+        {
+            try
+            {
+                int batchId = _adminRepo.OpenBatch(centerId, shift, batchDate);
+                TempData["Success"] = $"Batch #{batchId} opened successfully.";
+                return RedirectToAction("BatchDetail", new { id = batchId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message.Contains("already exists")
+                    ? "An open batch already exists for this center, shift and date."
+                    : "Error: " + ex.Message;
+                return RedirectToAction("Batches");
+            }
+        }
+
+        [SessionAuthorize("Admin")]
+        [HttpPost]
+        public IActionResult CloseBatch(int batchId)
+        {
+            try
+            {
+                _adminRepo.CloseBatch(batchId);
+                TempData["Success"] = $"Batch #{batchId} closed successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message.Contains("not Open")
+                    ? "Batch is not in Open status and cannot be closed."
+                    : "Error: " + ex.Message;
+            }
+            return RedirectToAction("BatchDetail", new { id = batchId });
+        }
+
         // ════════════════════════════════════════════════════════
         // Production
         // ════════════════════════════════════════════════════════

@@ -1,124 +1,133 @@
-﻿@model DairyIndustry.Models.Logistics.VehiclesModel
-@{
+﻿@{
     ViewData["Title"] = "Register Vehicle";
     Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
 }
 
 <div class="container-fluid p-4">
+
     <div class="row justify-content-center">
-        <div class="col-xl-5 col-lg-7 col-md-9">
+        <div class="col-xl-6 col-lg-8 col-md-10">
 
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <div>
-                    <h4 class="fw-bold text-dark mb-0">
-                        <i class="bi bi-truck-flatbed me-2 text-success"></i>Vehicle Registration
-                    </h4>
-                    <p class="text-muted small mb-0">Onboard a new transport unit to your profile</p>
-                </div>
-                <a asp-action="Index" class="btn btn-light btn-sm border px-3">
-                    <i class="bi bi-arrow-left me-1"></i> Dashboard
-                </a>
-            </div>
-
-            @if (TempData["Success"] != null || TempData["Error"] != null)
+            @if (ViewBag.Error != null)
             {
-                <div class="alert @(TempData["Success"] != null ? "alert-success" : "alert-danger") border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
-                    <i class="bi @(TempData["Success"] != null ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") me-2"></i>
-                    @(TempData["Success"] ?? TempData["Error"])
+                <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        <div>@ViewBag.Error</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        <div>@TempData["Success"]</div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             }
 
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-success bg-opacity-10 border-0 py-3 px-4">
-                    <div class="d-flex align-items-center">
-                        <div class="topbar-icon-btn bg-success text-white me-3 shadow-sm">
-                            <i class="bi bi-file-earmark-plus"></i>
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="bg-primary" style="height:4px;"></div>
+
+                <div class="card-header bg-white border-0 py-4 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:48px;height:48px;">
+                            <i class="bi bi-truck text-primary fs-4"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0 fw-bold text-success">Vehicle Configuration</h6>
-                            <small class="text-muted">Fill in the technical specifications</small>
+                            <h5 class="mb-0 fw-bold text-dark">Register a Vehicle</h5>
+                            <p class="text-muted small mb-0">Add a transport vehicle to your fleet. Admin will verify before use.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="card-body p-4 p-md-5">
-                    <form method="post" asp-action="RegisterVehicle" asp-controller="Logistics">
+                <div class="card-body px-4 pb-4 pt-2">
 
+                    <form method="post" asp-action="RegisterVehicle" asp-controller="Logistics"
+                          id="registerVehicleForm" novalidate>
+
+                        <!-- Vehicle Number -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary small text-uppercase">Vehicle Number</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-hash text-success"></i></span>
-                                <input type="text" name="vehicleNumber" class="form-control border-start-0 ps-1 fw-bold text-uppercase"
-                                       placeholder="GJ 05 XX 0000" required maxlength="15" />
+                            <label class="form-label fw-semibold">
+                                Vehicle Number <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    <i class="bi bi-truck-flatbed"></i>
+                                </span>
+                                <input type="text" name="vehicleNumber" id="vehicleNumber"
+                                       class="form-control border-start-0 ps-1 text-uppercase"
+                                       placeholder="e.g. GJ05AB1234"
+                                       maxlength="20" required
+                                       oninput="this.value = this.value.toUpperCase()" />
+                                <div class="invalid-feedback">Vehicle number is required.</div>
                             </div>
-                            <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i>Enter the registration number exactly as per RC Book.</div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Enter the registered vehicle plate number (e.g. GJ05AB1234).
+                            </div>
                         </div>
 
+                        <!-- Capacity -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary small text-uppercase">Tanker Capacity (Litres)</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-droplet text-success"></i></span>
-                                <input type="number" name="capacity" class="form-control border-start-0 border-end-0 ps-1"
-                                       placeholder="e.g. 5000" min="100" required />
-                                <span class="input-group-text bg-light fw-bold text-muted">LTR</span>
+                            <label class="form-label fw-semibold">
+                                Milk Capacity (Litres) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    <i class="bi bi-droplet-fill text-info"></i>
+                                </span>
+                                <input type="number" name="capacity" id="capacity"
+                                       class="form-control border-start-0 ps-1"
+                                       placeholder="e.g. 500"
+                                       min="50" max="50000" step="10" required />
+                                <span class="input-group-text bg-light text-muted">Ltr</span>
+                                <div class="invalid-feedback">Please enter a valid capacity (50–50,000 Ltr).</div>
                             </div>
-                            <div class="form-text mt-2">Specify the maximum milk storage volume.</div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Maximum milk load this vehicle can carry in a single trip.
+                            </div>
                         </div>
 
-                        <div class="alert bg-light border-0 d-flex align-items-start gap-3 p-3 mb-4">
-                            <i class="bi bi-shield-check text-success fs-4"></i>
-                            <div class="small text-muted">
-                                By submitting, you confirm that the vehicle meets the <strong>Safety and Hygiene Standards</strong> of the Dairy Management System.
+                        <!-- Info alert -->
+                        <div class="alert alert-info border-0 small d-flex align-items-start gap-2 mb-4">
+                            <i class="bi bi-shield-check text-info flex-shrink-0 mt-1"></i>
+                            <div>
+                                Your vehicle will appear as <strong>Pending</strong> until an administrator verifies it.
+                                Only <strong>Approved</strong> vehicles can be used in logistics shifts.
                             </div>
                         </div>
 
-                        <div class="row g-2">
-                            <div class="col-8">
-                                <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3">
-                                    <i class="bi bi-cloud-arrow-up me-2"></i> Submit for Approval
-                                </button>
-                            </div>
-                            <div class="col-4">
-                                <a asp-action="Index" class="btn btn-outline-secondary w-100 py-3 rounded-3">
-                                    Cancel
-                                </a>
-                            </div>
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-plus-circle me-2"></i> Register Vehicle
+                            </button>
+                            <a asp-action="MyVehicles" class="btn btn-outline-secondary px-4">Cancel</a>
                         </div>
+
                     </form>
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center p-3 h-100">
-                        <div class="topbar-icon-btn mx-auto mb-2 bg-success bg-opacity-10 text-success border-0">
-                            <i class="bi bi-pencil-square"></i>
-                        </div>
-                        <h6 class="small fw-bold mb-1">1. Register</h6>
-                        <p class="text-muted mb-0" style="font-size: 11px;">Submit technical specs for review.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center p-3 h-100">
-                        <div class="topbar-icon-btn mx-auto mb-2 bg-warning bg-opacity-10 text-warning border-0">
-                            <i class="bi bi-search"></i>
-                        </div>
-                        <h6 class="small fw-bold mb-1">2. Verification</h6>
-                        <p class="text-muted mb-0" style="font-size: 11px;">Admin verifies RC and capacity.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm text-center p-3 h-100">
-                        <div class="topbar-icon-btn mx-auto mb-2 bg-primary bg-opacity-10 text-primary border-0">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                        <h6 class="small fw-bold mb-1">3. Ready</h6>
-                        <p class="text-muted mb-0" style="font-size: 11px;">Assigned to shifts immediately.</p>
-                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Bootstrap validation
+        document.getElementById('registerVehicleForm').addEventListener('submit', function (e) {
+            if (!this.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            this.classList.add('was-validated');
+        });
+    </script>
+}
