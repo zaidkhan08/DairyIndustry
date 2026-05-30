@@ -168,6 +168,27 @@
                 color: #fff;
             }
 
+        .cc-btn-duplicate {
+            background: #fff;
+            color: #0891b2;
+            border: 1.5px solid #a5f3fc;
+            border-radius: 10px;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-duplicate:hover {
+                background: #ecfeff;
+                border-color: #67e8f9;
+                color: #0891b2;
+            }
+
         .cc-btn-del {
             background: #fff;
             color: #dc2626;
@@ -443,6 +464,9 @@
                 <a asp-action="Edit" asp-route-id="@Model.StorageId" class="cc-btn-edit">
                     <i class="bi bi-pencil"></i> Edit Entry
                 </a>
+                <a asp-action="Duplicate" asp-route-id="@Model.StorageId" class="cc-btn-duplicate">
+                    <i class="bi bi-copy"></i> Duplicate
+                </a>
                 <a asp-action="Delete" asp-route-id="@Model.StorageId" class="cc-btn-del">
                     <i class="bi bi-trash3"></i> Delete
                 </a>
@@ -461,7 +485,7 @@
             </div>
             <div class="cc-side-card-body">
                 @{
-                    double tempVal = Model.Temperature ?? 0;
+                    double tempVal = (double)(Model.Temperature ?? 0);
                     // Map 0–10°C range to -90deg to 90deg needle rotation
                     double clampedVal = Math.Max(0, Math.Min(10, tempVal));
                     double needleDeg = -90 + (clampedVal / 10.0 * 180);
@@ -550,6 +574,10 @@
                 </a>
                 <a asp-action="Capacity" class="cc-nav-link">
                     <span class="cc-nav-link-label"><i class="bi bi-bar-chart-line" style="color:#64748b;"></i> Capacity Monitor</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+                <a asp-action="Report" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-calendar2-week" style="color:#64748b;"></i> Daily Report</span>
                     <i class="bi bi-chevron-right cc-nav-link-icon"></i>
                 </a>
             </div>

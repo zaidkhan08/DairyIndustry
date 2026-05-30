@@ -313,11 +313,22 @@
 
 <div class="cc-page-grid">
 
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-0"
+             style="background:#ecfeff;color:#0891b2;font-size:13px;grid-column:1/-1;" role="alert">
+            <i class="bi bi-copy"></i>
+            <span>@TempData["Info"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
+        </div>
+    }
+
     <!-- ── LEFT: Form ── -->
     <div>
         <div class="cc-form-card">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PlantId" />
 
                 <!-- Section 1: Product -->
                 <div class="cc-form-section">

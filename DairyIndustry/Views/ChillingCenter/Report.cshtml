@@ -1,0 +1,808 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@model ChillingReportViewModel
+
+@{
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Report";
+
+    // ── By Date tab chart data ──
+    var chartRows = Model.DailyData.AsEnumerable().Reverse().ToList();
+    var chartLabels = "[" + string.Join(",", chartRows.Select(r => $"'{r.StoredDate:dd MMM}'")) + "]";
+    var chartQty = "[" + string.Join(",", chartRows.Select(r => r.TotalQuantity.ToString("F2"))) + "]";
+    var chartSafe = "[" + string.Join(",", chartRows.Select(r => r.SafeCount)) + "]";
+    var chartWarn = "[" + string.Join(",", chartRows.Select(r => r.WarningCount)) + "]";
+    var chartCrit = "[" + string.Join(",", chartRows.Select(r => r.CriticalCount)) + "]";
+
+    // ── By Product tab chart data ──
+    var prodLabels = "[" + string.Join(",", Model.ProductData.Select(p => "'" + p.ItemName.Replace("'", "") + "'")) + "]";
+    var prodQty = "[" + string.Join(",", Model.ProductData.Select(p => p.TotalQuantity.ToString("F2"))) + "]";
+}
+
+@section Styles {
+    <style>
+        /* ── Summary Strip ── */
+        .cc-report-strip {
+            display: grid;
+            grid-template-columns: repeat(5,1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .cc-strip-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 18px 20px;
+            border-top: 3px solid transparent;
+        }
+
+        .cc-strip-icon {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .cc-strip-num {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cc-strip-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* ── Filter Bar ── */
+        .cc-filter-bar {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+            .cc-filter-bar .form-label {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: #94a3b8;
+                margin-bottom: 4px;
+            }
+
+            .cc-filter-bar .form-control {
+                font-size: 13px;
+                border-color: #e2e8f0;
+                border-radius: 8px;
+                height: 36px;
+            }
+
+        /* ── Tabs ── */
+        .cc-tab-bar {
+            display: flex;
+            gap: 4px;
+            background: #fff;
+            border-radius: 14px 14px 0 0;
+            border-bottom: 2px solid #f1f5f9;
+            padding: 4px 20px 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            margin-bottom: 0;
+        }
+
+        .cc-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            border-radius: 8px 8px 0 0;
+        }
+
+            .cc-tab:hover {
+                color: #0d6efd;
+                background: #f8fafc;
+            }
+
+            .cc-tab.active {
+                color: #0d6efd;
+                border-bottom-color: #0d6efd;
+                background: transparent;
+            }
+
+        .cc-tab-panel {
+            display: none;
+        }
+
+            .cc-tab-panel.active {
+                display: block;
+            }
+
+        /* ── Chart Card ── */
+        .cc-chart-card {
+            background: #fff;
+            border-radius: 0 0 14px 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .cc-chart-head {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cc-chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-chart-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-chart-body {
+            padding: 20px;
+        }
+
+        /* ── Product tab layout ── */
+        .cc-prod-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* ── Table ── */
+        .cc-table-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+            .cc-table-card .card-header {
+                background: #fff;
+                border-bottom: 1px solid #f1f5f9;
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+        .cc-table thead tr {
+            background: #f8fafc;
+        }
+
+        .cc-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            border: none;
+            padding: 12px 16px;
+        }
+
+        .cc-table tbody tr {
+            border-bottom: 1px solid #f8fafc;
+            transition: background .15s;
+        }
+
+            .cc-table tbody tr:hover {
+                background: #f8fafc;
+            }
+
+                .cc-table tbody tr:hover td:first-child {
+                    box-shadow: inset 3px 0 0 #0d6efd;
+                }
+
+        .cc-table tbody td {
+            font-size: 13px;
+            color: #334155;
+            padding: 13px 16px;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .cc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .cc-badge-safe {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-badge-warning {
+            background: #fefce8;
+            color: #ca8a04;
+        }
+
+        .cc-badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-badge-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .cc-mini-bar-wrap {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .cc-mini-seg {
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        /* ── Pagination ── */
+        .cc-pagination-bar {
+            padding: 12px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .cc-pagination-info {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+            .cc-pagination-info span {
+                font-weight: 600;
+                color: #0f172a;
+            }
+
+        .cc-pages {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cc-page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .15s;
+            user-select: none;
+        }
+
+            .cc-page-btn:hover:not(.disabled):not(.active) {
+                background: #f8fafc;
+            }
+
+            .cc-page-btn.active {
+                background: #0d6efd;
+                border-color: #0d6efd;
+                color: #fff;
+                font-weight: 700;
+            }
+
+            .cc-page-btn.disabled {
+                opacity: .35;
+                cursor: not-allowed;
+            }
+
+        .cc-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .cc-empty-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: #f1f5f9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        /* Product rank badge */
+        .cc-rank {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .cc-rank-1 {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .cc-rank-2 {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .cc-rank-3 {
+            background: #fef2f2;
+            color: #9a3412;
+        }
+
+        .cc-rank-n {
+            background: #f8fafc;
+            color: #94a3b8;
+        }
+    </style>
+}
+
+<!-- Summary Strip (5 cards — combines both tabs) -->
+<div class="cc-report-strip">
+    <div class="cc-strip-card" style="border-top-color:#0d6efd;">
+        <div class="cc-strip-icon" style="color:#0d6efd;"><i class="bi bi-calendar3"></i></div>
+        <div class="cc-strip-num">@Model.TotalDays</div>
+        <div class="cc-strip-label">Days with entries</div>
+    </div>
+    <div class="cc-strip-card" style="border-top-color:#0891b2;">
+        <div class="cc-strip-icon" style="color:#0891b2;"><i class="bi bi-journal-text"></i></div>
+        <div class="cc-strip-num">@Model.TotalEntries</div>
+        <div class="cc-strip-label">Total entries</div>
+    </div>
+    <div class="cc-strip-card" style="border-top-color:#16a34a;">
+        <div class="cc-strip-icon" style="color:#16a34a;"><i class="bi bi-droplet-half"></i></div>
+        <div class="cc-strip-num">@Model.TotalQty.ToString("N0")</div>
+        <div class="cc-strip-label">Total Litres</div>
+    </div>
+    <div class="cc-strip-card" style="border-top-color:#8b5cf6;">
+        <div class="cc-strip-icon" style="color:#8b5cf6;"><i class="bi bi-box-seam"></i></div>
+        <div class="cc-strip-num">@Model.TotalProducts</div>
+        <div class="cc-strip-label">Products stored</div>
+    </div>
+    <div class="cc-strip-card" style="border-top-color:@(Model.TotalAlerts > 0 ? "#dc2626" : "#16a34a");">
+        <div class="cc-strip-icon" style="color:@(Model.TotalAlerts > 0 ? "#dc2626" : "#16a34a");"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="cc-strip-num" style="color:@(Model.TotalAlerts > 0 ? "#dc2626" : "#16a34a");">@Model.TotalAlerts</div>
+        <div class="cc-strip-label">Alert entries</div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="cc-filter-bar">
+    <form method="get" asp-action="Report">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">From Date</label>
+                <input type="date" name="fromDate" class="form-control" value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">To Date</label>
+                <input type="date" name="toDate" class="form-control" value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100" style="height:36px;font-size:13px;border-radius:8px;">
+                    <i class="bi bi-funnel me-1"></i>Apply
+                </button>
+                <a asp-action="Report" class="btn btn-outline-secondary btn-sm w-100" style="height:36px;font-size:13px;border-radius:8px;">Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Tab Bar -->
+<div class="cc-tab-bar">
+    <div class="cc-tab active" data-tab="bydate">
+        <i class="bi bi-calendar3"></i> By Date
+    </div>
+    <div class="cc-tab" data-tab="byproduct">
+        <i class="bi bi-box-seam"></i> By Product
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  TAB 1: BY DATE                                   -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="cc-tab-panel active" id="panel-bydate">
+    @if (Model.DailyData.Any())
+    {
+        <!-- Chart data attributes -->
+        <div id="dateChartData"
+             data-labels='@Html.Raw(chartLabels)'
+             data-qty='@Html.Raw(chartQty)'
+             data-safe='@Html.Raw(chartSafe)'
+             data-warn='@Html.Raw(chartWarn)'
+             data-crit='@Html.Raw(chartCrit)'
+             style="display:none;"></div>
+
+        <div class="cc-chart-card">
+            <div class="cc-chart-head">
+                <div>
+                    <div class="cc-chart-title">Daily Quantity Stored</div>
+                    <div class="cc-chart-sub">Litres per day with temperature breakdown</div>
+                </div>
+                <div style="font-size:12px;color:#94a3b8;">@Model.PlantName</div>
+            </div>
+            <div class="cc-chart-body">
+                <div style="height:200px;position:relative;">
+                    <canvas id="dateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-table-card">
+            <div class="card-header">
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:#0f172a;">Day-by-Day Breakdown</div>
+                    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">@Model.TotalDays day@(Model.TotalDays == 1 ? "" : "s") in range</div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table cc-table mb-0" id="dateTable">
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px;">Date</th>
+                            <th class="text-center">Entries</th>
+                            <th class="text-end">Total (L)</th>
+                            <th class="text-center">Safe</th>
+                            <th class="text-center">Warning</th>
+                            <th class="text-center">Critical</th>
+                            <th class="text-center">Temp Mix</th>
+                            <th class="text-center" style="padding-right:20px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.DailyData)
+                        {
+                            var total = row.TotalEntries > 0 ? row.TotalEntries : 1;
+                            var safeW = (int)Math.Round((double)row.SafeCount / total * 60);
+                            var warnW = (int)Math.Round((double)row.WarningCount / total * 60);
+                            var critW = (int)Math.Round((double)row.CriticalCount / total * 60);
+                            var bc = row.DayStatusBadgeClass == "success" ? "cc-badge-safe"
+                            : row.DayStatusBadgeClass == "warning" ? "cc-badge-warning"
+                            : row.DayStatusBadgeClass == "danger" ? "cc-badge-danger"
+                            : "cc-badge-secondary";
+                            <tr>
+                                <td style="padding-left:20px;">
+                                    <div style="font-weight:700;color:#0f172a;">@row.StoredDate.ToString("dd MMM yyyy")</div>
+                                    <div style="font-size:11px;color:#94a3b8;">@row.StoredDate.DayOfWeek</div>
+                                </td>
+                                <td class="text-center" style="font-weight:600;">@row.TotalEntries</td>
+                                <td class="text-end" style="font-weight:700;font-variant-numeric:tabular-nums;">@row.TotalQuantity.ToString("N2")</td>
+                                <td class="text-center" style="color:#16a34a;font-weight:600;">@row.SafeCount</td>
+                                <td class="text-center" style="color:#ca8a04;font-weight:600;">@row.WarningCount</td>
+                                <td class="text-center" style="color:#dc2626;font-weight:600;">@row.CriticalCount</td>
+                                <td class="text-center">
+                                    <div class="cc-mini-bar-wrap">
+                                        @if (safeW > 0)
+                                        {
+                                            <div class="cc-mini-seg" style="width:@(safeW)px;background:#16a34a;"></div>
+                                        }
+                                        @if (warnW > 0)
+                                        {
+                                            <div class="cc-mini-seg" style="width:@(warnW)px;background:#ca8a04;"></div>
+                                        }
+                                        @if (critW > 0)
+                                        {
+                                            <div class="cc-mini-seg" style="width:@(critW)px;background:#dc2626;"></div>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center" style="padding-right:20px;">
+                                    <span class="cc-badge @bc">@row.DayStatus</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="cc-pagination-bar">
+                <div class="cc-pagination-info">Showing <span id="date-range"></span> of <span>@Model.TotalDays</span> days</div>
+                <div class="cc-pages" id="date-pages"></div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="cc-table-card" style="border-radius:0 0 14px 14px;">
+            <div class="cc-empty">
+                <div class="cc-empty-icon"><i class="bi bi-calendar-x"></i></div>
+                <div style="font-size:15px;font-weight:600;color:#0f172a;margin-bottom:4px;">No data for selected range</div>
+                <div style="font-size:13px;color:#94a3b8;">Try adjusting the date filter above.</div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  TAB 2: BY PRODUCT                                -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="cc-tab-panel" id="panel-byproduct">
+    @if (Model.ProductData.Any())
+    {
+        <!-- Product chart data -->
+        <div id="prodChartData"
+             data-labels='@Html.Raw(prodLabels)'
+             data-qty='@Html.Raw(prodQty)'
+             style="display:none;"></div>
+
+        <div class="cc-chart-card">
+            <div class="cc-prod-grid">
+                <!-- Doughnut -->
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px;">Quantity Share by Product</div>
+                    <div style="width:240px;height:240px;position:relative;">
+                        <canvas id="prodChart"></canvas>
+                    </div>
+                </div>
+                <!-- Top Products list -->
+                <div style="display:flex;flex-direction:column;justify-content:center;gap:10px;">
+                    <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:4px;">Top Products by Volume</div>
+                    @{
+                        int pRank = 0;
+                    }
+                    @foreach (var p in Model.ProductData.Take(5))
+                    {
+                        pRank++;
+                        var rankClass = pRank == 1 ? "cc-rank-1" : pRank == 2 ? "cc-rank-2" : pRank == 3 ? "cc-rank-3" : "cc-rank-n";
+                        var pct = Model.TotalQty > 0 ? (double)p.TotalQuantity / (double)Model.TotalQty * 100 : 0;
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div class="cc-rank @rankClass">@pRank</div>
+                            <div style="flex:1;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                    <span style="font-size:13px;font-weight:600;color:#0f172a;">@p.ItemName</span>
+                                    <span style="font-size:12px;color:#94a3b8;">@p.TotalQuantity.ToString("N0") L</span>
+                                </div>
+                                <div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+                                    <div style="height:100%;width:@(pct.ToString("F1"))%;background:#0d6efd;border-radius:3px;transition:width 1s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-table-card">
+            <div class="card-header">
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:#0f172a;">Product-wise Breakdown</div>
+                    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">@Model.ProductData.Count product@(Model.ProductData.Count == 1 ? "" : "s") in range</div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table cc-table mb-0" id="prodTable">
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px;">#</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th class="text-center">Entries</th>
+                            <th class="text-end">Total (L)</th>
+                            <th class="text-end">Avg/Entry (L)</th>
+                            <th class="text-center">Avg Temp</th>
+                            <th class="text-center">Alerts</th>
+                            <th class="text-center" style="padding-right:20px;">Temp Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int rank = 0;
+                        }
+                        @foreach (var p in Model.ProductData)
+                        {
+                            rank++;
+                            var rankClass = rank == 1 ? "cc-rank-1" : rank == 2 ? "cc-rank-2" : rank == 3 ? "cc-rank-3" : "cc-rank-n";
+                            var bc = p.TempBadgeClass == "success" ? "cc-badge-safe"
+                            : p.TempBadgeClass == "warning" ? "cc-badge-warning"
+                            : p.TempBadgeClass == "danger" ? "cc-badge-danger"
+                            : "cc-badge-secondary";
+                            <tr>
+                                <td style="padding-left:20px;">
+                                    <div class="cc-rank @rankClass">@rank</div>
+                                </td>
+                                <td style="font-weight:700;color:#0f172a;">@p.ItemName</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.ProductType))
+                                    {
+                                        <span class="cc-badge cc-badge-secondary">@p.ProductLabel</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:12px;color:#94a3b8;">Raw Milk</span>
+                                    }
+                                </td>
+                                <td class="text-center" style="font-weight:600;">@p.TotalEntries</td>
+                                <td class="text-end" style="font-weight:700;font-variant-numeric:tabular-nums;">@p.TotalQuantity.ToString("N2")</td>
+                                <td class="text-end" style="color:#64748b;font-variant-numeric:tabular-nums;">@p.AvgQuantityPerEntry.ToString("N2")</td>
+                                <td class="text-center" style="font-weight:600;font-variant-numeric:tabular-nums;">
+                                    @(p.AvgTemperature > 0 ? p.AvgTemperature.ToString("N1") + "°C" : "—")
+                                </td>
+                                <td class="text-center">
+                                    @if (p.AlertCount > 0)
+                                    {
+                                        <span class="cc-badge cc-badge-danger">@p.AlertCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cc-badge cc-badge-safe">0</span>
+                                    }
+                                </td>
+                                <td class="text-center" style="padding-right:20px;">
+                                    <span class="cc-badge @bc">@p.TempStatus</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="cc-pagination-bar">
+                <div class="cc-pagination-info">Showing <span id="prod-range"></span> of <span>@Model.ProductData.Count</span> products</div>
+                <div class="cc-pages" id="prod-pages"></div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="cc-table-card" style="border-radius:0 0 14px 14px;">
+            <div class="cc-empty">
+                <div class="cc-empty-icon"><i class="bi bi-box-seam"></i></div>
+                <div style="font-size:15px;font-weight:600;color:#0f172a;margin-bottom:4px;">No product data for selected range</div>
+                <div style="font-size:13px;color:#94a3b8;">Try adjusting the date filter above.</div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // ── Tab switching ──
+        document.querySelectorAll('.cc-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.cc-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.cc-tab-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ── By Date chart ──
+        var dc = document.getElementById('dateChartData');
+        if (dc) {
+            new Chart(document.getElementById('dateChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: JSON.parse(dc.dataset.labels),
+                    datasets: [
+                        { label:'Qty (L)', data:JSON.parse(dc.dataset.qty), backgroundColor:'rgba(13,110,253,.15)', borderColor:'#0d6efd', borderWidth:2, borderRadius:6, yAxisID:'y' },
+                        { label:'Safe',    data:JSON.parse(dc.dataset.safe), type:'line', borderColor:'#16a34a', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y2' },
+                        { label:'Warn',    data:JSON.parse(dc.dataset.warn), type:'line', borderColor:'#ca8a04', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y2' },
+                        { label:'Crit',    data:JSON.parse(dc.dataset.crit), type:'line', borderColor:'#dc2626', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y2' }
+                    ]
+                },
+                options: {
+                    responsive:true, maintainAspectRatio:false,
+                    plugins:{ legend:{ position:'top', labels:{ font:{size:11}, color:'#64748b', boxWidth:12 }}},
+                    scales:{
+                        y:{ position:'left', grid:{color:'#f1f5f9'}, ticks:{font:{size:11},color:'#94a3b8',callback:v=>v.toLocaleString()+' L'}},
+                        y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:11},color:'#94a3b8',stepSize:1}},
+                        x:{ grid:{display:false}, ticks:{font:{size:11},color:'#94a3b8'}}
+                    }
+                }
+            });
+        }
+
+        // ── By Product doughnut ──
+        var pc = document.getElementById('prodChartData');
+        if (pc) {
+            var prodColors = ['#0d6efd','#0891b2','#16a34a','#ca8a04','#dc2626','#8b5cf6','#f59e0b','#10b981'];
+            new Chart(document.getElementById('prodChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: JSON.parse(pc.dataset.labels),
+                    datasets: [{
+                        data: JSON.parse(pc.dataset.qty),
+                        backgroundColor: prodColors,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive:true, maintainAspectRatio:false, cutout:'65%',
+                    plugins:{
+                        legend:{ position:'bottom', labels:{font:{size:11},color:'#64748b',boxWidth:12,padding:8}},
+                        tooltip:{ callbacks:{ label: ctx => ' ' + Number(ctx.parsed).toLocaleString() + ' L' }}
+                    }
+                }
+            });
+        }
+
+        // ── Pagination factory ──
+        function initPagination(tableId, rangeId, pagesId, pageSize) {
+            var rows = Array.from(document.querySelectorAll('#' + tableId + ' tbody tr'));
+            if (rows.length === 0) return;
+            var total = rows.length, totalPages = Math.ceil(total / pageSize), cur = 1;
+
+            function show(page) {
+                cur = page;
+                var s = (page-1)*pageSize, e = s+pageSize;
+                rows.forEach((r,i) => r.style.display = (i>=s&&i<e)?'':'none');
+                var el = document.getElementById(rangeId);
+                if(el) el.textContent = (s+1)+'–'+Math.min(e,total);
+                render();
+            }
+
+            function render() {
+                var c = document.getElementById(pagesId); if(!c) return; c.innerHTML='';
+                var prev = btn('<i class="bi bi-chevron-left"></i>', cur===1);
+                prev.addEventListener('click', ()=>{ if(cur>1) show(cur-1); }); c.appendChild(prev);
+                getRange(cur,totalPages).forEach(p => {
+                    if(p==='…'){ var el=document.createElement('div'); el.className='cc-page-btn disabled'; el.textContent='…'; c.appendChild(el); }
+                    else { var b=btn(p,false,p===cur); b.addEventListener('click',()=>show(p)); c.appendChild(b); }
+                });
+                var next = btn('<i class="bi bi-chevron-right"></i>', cur===totalPages);
+                next.addEventListener('click', ()=>{ if(cur<totalPages) show(cur+1); }); c.appendChild(next);
+            }
+
+            function btn(html,dis,act) {
+                var el=document.createElement('div');
+                el.className='cc-page-btn'+(dis?' disabled':'')+(act?' active':'');
+                el.innerHTML=html; return el;
+            }
+
+            function getRange(c,t) {
+                if(t<=7) return Array.from({length:t},(_,i)=>i+1);
+                if(c<=4) return [1,2,3,4,5,'…',t];
+                if(c>=t-3) return [1,'…',t-4,t-3,t-2,t-1,t];
+                return [1,'…',c-1,c,c+1,'…',t];
+            }
+
+            show(1);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initPagination('dateTable',  'date-range', 'date-pages',  5);
+            initPagination('prodTable',  'prod-range', 'prod-pages',  5);
+        });
+    </script>
+}

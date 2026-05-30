@@ -99,10 +99,8 @@ namespace DairyIndustry.Repositories
                     PlantName = reader["PlantName"].ToString(),
                     ProductId = null,
                     ItemName = reader["ItemName"].ToString(),
-                    ProductType = reader["ProductType"] == DBNull.Value
-                                       ? null : reader["ProductType"].ToString(),
-                    Unit = reader["Unit"] == DBNull.Value
-                                       ? null : reader["Unit"].ToString(),
+                    ProductType = reader["ProductType"] == DBNull.Value ? null : reader["ProductType"].ToString(),
+                    Unit = reader["Unit"] == DBNull.Value ? null : reader["Unit"].ToString(),
                     MilkQuantity = Convert.ToDecimal(reader["MilkQuantity"]),
                     Temperature = temp,
                     StoredDate = Convert.ToDateTime(reader["StoredDate"]),
@@ -336,8 +334,7 @@ namespace DairyIndustry.Repositories
                     TotalStoredAllTime = Convert.ToDecimal(reader["TotalStoredAllTime"]),
                     StoredToday = Convert.ToDecimal(reader["StoredToday"]),
                     TotalEntries = Convert.ToInt32(reader["TotalEntries"]),
-                    AlertCount = reader["AlertCount"] == DBNull.Value
-                                           ? 0 : Convert.ToInt32(reader["AlertCount"])
+                    AlertCount = reader["AlertCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["AlertCount"])
                 });
             }
             return list;
@@ -364,8 +361,7 @@ namespace DairyIndustry.Repositories
                 {
                     PlantId = Convert.ToInt32(reader["PlantId"]),
                     PlantName = reader["PlantName"].ToString(),
-                    Location = reader["Location"] == DBNull.Value
-                                    ? null : reader["Location"].ToString()
+                    Location = reader["Location"] == DBNull.Value ? null : reader["Location"].ToString()
                 });
             }
             return list;
@@ -404,10 +400,283 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
+        //  12. NEW — GET BY PLANT FILTERED — inline query
+        //      Same as GetByPlant SP but supports item name search.
+        //      Kept separate so the existing SP call is never touched.
+        // ═══════════════════════════════════════════════════════════
+        public List<ChillingStorageModel> GetByPlantFiltered(int plantId,
+                                                              DateTime? fromDate,
+                                                              DateTime? toDate,
+                                                              string? search)
+        {
+            var list = new List<ChillingStorageModel>();
+
+            string query = @"
+                SELECT
+                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.MilkQuantity, cs.Temperature, cs.StoredDate,
+                    pp.PlantName,
+                    ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
+                    p.ProductType, p.Unit
+                FROM Chilling.ChillingStorage cs
+                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = cs.PlantId
+                LEFT  JOIN Production.Products         p  ON p.ProductId = cs.ProductId
+                WHERE cs.PlantId = @PlantId
+                  AND (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
+                  AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
+                  AND (@Search   IS NULL OR ISNULL(p.ProductName, 'Raw Milk') LIKE '%' + @Search + '%')
+                ORDER BY cs.StoredDate DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", plantId);
+            cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Search", (object?)search ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(MapStorageModel(reader));
+
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  13. NEW — GET ALL FILTERED — inline query
+        //      Same as GetAll but supports item name search.
+        // ═══════════════════════════════════════════════════════════
+        public List<ChillingStorageModel> GetAllFiltered(DateTime? fromDate,
+                                                          DateTime? toDate,
+                                                          string? search)
+        {
+            var list = new List<ChillingStorageModel>();
+
+            string query = @"
+                SELECT
+                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.MilkQuantity, cs.Temperature, cs.StoredDate,
+                    pp.PlantName,
+                    ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
+                    p.ProductType, p.Unit
+                FROM Chilling.ChillingStorage cs
+                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = cs.PlantId
+                LEFT  JOIN Production.Products         p  ON p.ProductId = cs.ProductId
+                WHERE (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
+                  AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
+                  AND (@Search   IS NULL OR ISNULL(p.ProductName, 'Raw Milk') LIKE '%' + @Search + '%')
+                ORDER BY cs.StoredDate DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Search", (object?)search ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add(MapStorageModel(reader));
+
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  14. NEW — GET DAILY REPORT — inline query
+        //      Groups entries by StoredDate for the Report page.
+        //      Filters by PlantId if provided (plant manager view).
+        // ═══════════════════════════════════════════════════════════
+        public List<ChillingDailyReportModel> GetDailyReport(int? plantId,
+                                                               DateTime? fromDate,
+                                                               DateTime? toDate)
+        {
+            var list = new List<ChillingDailyReportModel>();
+
+            string query = @"
+                SELECT
+                    cs.StoredDate,
+                    COUNT(*)                                                              AS TotalEntries,
+                    ISNULL(SUM(cs.MilkQuantity), 0)                                      AS TotalQuantity,
+                    SUM(CASE WHEN cs.Temperature <= 5              THEN 1 ELSE 0 END)    AS SafeCount,
+                    SUM(CASE WHEN cs.Temperature BETWEEN 5 AND 8   THEN 1 ELSE 0 END)    AS WarningCount,
+                    SUM(CASE WHEN cs.Temperature > 8               THEN 1 ELSE 0 END)    AS CriticalCount,
+                    SUM(CASE WHEN cs.Temperature IS NULL            THEN 1 ELSE 0 END)    AS UnknownCount
+                FROM Chilling.ChillingStorage cs
+                WHERE (@PlantId  IS NULL OR cs.PlantId    = @PlantId)
+                  AND (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
+                  AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
+                GROUP BY cs.StoredDate
+                ORDER BY cs.StoredDate DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new ChillingDailyReportModel
+                {
+                    StoredDate = Convert.ToDateTime(reader["StoredDate"]),
+                    TotalEntries = Convert.ToInt32(reader["TotalEntries"]),
+                    TotalQuantity = Convert.ToDecimal(reader["TotalQuantity"]),
+                    SafeCount = Convert.ToInt32(reader["SafeCount"]),
+                    WarningCount = Convert.ToInt32(reader["WarningCount"]),
+                    CriticalCount = Convert.ToInt32(reader["CriticalCount"]),
+                    UnknownCount = Convert.ToInt32(reader["UnknownCount"])
+                });
+            }
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  NEW — GET PRODUCT REPORT (Feature 2)
+        //  Groups entries by ItemName for the By Product tab.
+        //  Returns one row per distinct product/raw milk.
+        // ═══════════════════════════════════════════════════════════
+        public List<ChillingProductReportModel> GetProductReport(int? plantId,
+                                                                   DateTime? fromDate,
+                                                                   DateTime? toDate)
+        {
+            var list = new List<ChillingProductReportModel>();
+
+            string query = @"
+                SELECT
+                    ISNULL(p.ProductName, 'Raw Milk')                             AS ItemName,
+                    p.ProductType,
+                    p.Unit,
+                    COUNT(*)                                                       AS TotalEntries,
+                    ISNULL(SUM(cs.MilkQuantity), 0)                               AS TotalQuantity,
+                    ISNULL(AVG(CAST(cs.Temperature AS FLOAT)), 0)                  AS AvgTemperature,
+                    SUM(CASE WHEN cs.Temperature > 5 THEN 1 ELSE 0 END)           AS AlertCount,
+                    ISNULL(SUM(cs.MilkQuantity) / NULLIF(COUNT(*), 0), 0)         AS AvgQuantityPerEntry
+                FROM Chilling.ChillingStorage cs
+                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = cs.PlantId
+                LEFT  JOIN Production.Products         p  ON p.ProductId = cs.ProductId
+                WHERE (@PlantId  IS NULL OR cs.PlantId    = @PlantId)
+                  AND (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
+                  AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
+                GROUP BY p.ProductName, p.ProductType, p.Unit
+                ORDER BY TotalQuantity DESC";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new ChillingProductReportModel
+                {
+                    ItemName = reader["ItemName"].ToString(),
+                    ProductType = reader["ProductType"] == DBNull.Value ? null : reader["ProductType"].ToString(),
+                    Unit = reader["Unit"] == DBNull.Value ? null : reader["Unit"].ToString(),
+                    TotalEntries = Convert.ToInt32(reader["TotalEntries"]),
+                    TotalQuantity = Convert.ToDecimal(reader["TotalQuantity"]),
+                    AvgTemperature = Convert.ToDecimal(reader["AvgTemperature"]),
+                    AlertCount = Convert.ToInt32(reader["AlertCount"]),
+                    AvgQuantityPerEntry = Convert.ToDecimal(reader["AvgQuantityPerEntry"])
+                });
+            }
+            return list;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  NEW — GET WEEKLY TREND (Feature 3)
+        //  Returns last 7 days of daily quantity per plant.
+        //  Fills missing days with 0 so sparklines always have 7 points.
+        // ═══════════════════════════════════════════════════════════
+        public List<ChillingWeeklyTrendModel> GetWeeklyTrend(int? plantId)
+        {
+            var result = new List<ChillingWeeklyTrendModel>();
+
+            // Build the 7-day date spine
+            var dates = Enumerable.Range(0, 7)
+                .Select(i => DateTime.Today.AddDays(-6 + i))
+                .ToList();
+
+            string query = @"
+                SELECT
+                    cs.PlantId,
+                    pp.PlantName,
+                    cs.StoredDate,
+                    ISNULL(SUM(cs.MilkQuantity), 0)  AS DayQty,
+                    COUNT(*)                          AS DayEntries
+                FROM Chilling.ChillingStorage cs
+                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId = cs.PlantId
+                WHERE cs.StoredDate >= @FromDate
+                  AND cs.StoredDate <= @ToDate
+                  AND (@PlantId IS NULL OR cs.PlantId = @PlantId)
+                GROUP BY cs.PlantId, pp.PlantName, cs.StoredDate
+                ORDER BY cs.PlantId, cs.StoredDate";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@FromDate", DateTime.Today.AddDays(-6));
+            cmd.Parameters.AddWithValue("@ToDate", DateTime.Today);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+
+            // Read raw rows into a lookup
+            var raw = new Dictionary<int, (string Name, List<(DateTime Date, decimal Qty, int Cnt)> Rows)>();
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                int pid = Convert.ToInt32(reader["PlantId"]);
+                string pn = reader["PlantName"].ToString();
+                var dt = Convert.ToDateTime(reader["StoredDate"]);
+                var qty = Convert.ToDecimal(reader["DayQty"]);
+                var cnt = Convert.ToInt32(reader["DayEntries"]);
+
+                if (!raw.ContainsKey(pid))
+                    raw[pid] = (pn, new List<(DateTime, decimal, int)>());
+                raw[pid].Rows.Add((dt, qty, cnt));
+            }
+
+            // Build WeeklyTrendModel — fill all 7 days including zeros
+            foreach (var kvp in raw)
+            {
+                var trend = new ChillingWeeklyTrendModel
+                {
+                    PlantId = kvp.Key,
+                    PlantName = kvp.Value.Name
+                };
+
+                foreach (var date in dates)
+                {
+                    var match = kvp.Value.Rows.FirstOrDefault(r => r.Date.Date == date.Date);
+                    trend.Days.Add(new ChillingDayPointModel
+                    {
+                        Date = date,
+                        Quantity = match.Date == default ? 0 : match.Qty,
+                        EntryCount = match.Date == default ? 0 : match.Cnt
+                    });
+                }
+
+                trend.TotalWeekQty = trend.Days.Sum(d => d.Quantity);
+                trend.TotalWeekEntries = trend.Days.Sum(d => d.EntryCount);
+                result.Add(trend);
+            }
+
+            return result;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ═══════════════════════════════════════════════════════════
 
-        // Maps a reader row to ChillingStorageModel
         private ChillingStorageModel MapStorageModel(SqlDataReader reader)
         {
             var temp = reader["Temperature"] == DBNull.Value
@@ -417,13 +686,10 @@ namespace DairyIndustry.Repositories
                 StorageId = Convert.ToInt32(reader["StorageId"]),
                 PlantId = Convert.ToInt32(reader["PlantId"]),
                 PlantName = reader["PlantName"].ToString(),
-                ProductId = reader["ProductId"] == DBNull.Value
-                                   ? null : Convert.ToInt32(reader["ProductId"]),
+                ProductId = reader["ProductId"] == DBNull.Value ? null : Convert.ToInt32(reader["ProductId"]),
                 ItemName = reader["ItemName"].ToString(),
-                ProductType = reader["ProductType"] == DBNull.Value
-                                   ? null : reader["ProductType"].ToString(),
-                Unit = reader["Unit"] == DBNull.Value
-                                   ? null : reader["Unit"].ToString(),
+                ProductType = reader["ProductType"] == DBNull.Value ? null : reader["ProductType"].ToString(),
+                Unit = reader["Unit"] == DBNull.Value ? null : reader["Unit"].ToString(),
                 MilkQuantity = Convert.ToDecimal(reader["MilkQuantity"]),
                 Temperature = temp,
                 StoredDate = Convert.ToDateTime(reader["StoredDate"]),
@@ -431,7 +697,6 @@ namespace DairyIndustry.Repositories
             };
         }
 
-        // Calculates temperature status label from value
         private string GetTempStatus(decimal? temp)
         {
             if (temp == null) return "Unknown";

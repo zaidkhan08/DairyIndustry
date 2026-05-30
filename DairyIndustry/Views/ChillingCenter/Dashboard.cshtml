@@ -23,12 +23,6 @@
             margin-bottom: 24px;
         }
 
-        @@media (max-width:768px) {
-            .cc-stat-row {
-                grid-template-columns: repeat(2,1fr);
-            }
-        }
-
         .cc-stat-card {
             background: #fff;
             border-radius: 14px;
@@ -118,12 +112,6 @@
             margin-bottom: 20px;
         }
 
-        @@media (max-width:900px) {
-            .cc-panel-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .cc-panel {
             background: #fff;
             border-radius: 14px;
@@ -177,17 +165,6 @@
             height: 6px;
             border-radius: 50%;
             background: #16a34a;
-            animation: pulse 2s infinite;
-        }
-
-        @@keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: .4;
-            }
         }
 
         /* ── Feed List ── */
@@ -241,12 +218,6 @@
             display: grid;
             grid-template-columns: 1fr 360px;
             gap: 20px;
-        }
-
-        @@media (max-width:900px) {
-            .cc-bottom-grid {
-                grid-template-columns: 1fr;
-            }
         }
 
         /* ── Capacity Mini Table ── */
@@ -427,38 +398,60 @@
         </div>
     </div>
 
-    <!-- Live Feed -->
+    <!-- 7-Day Sparkline Widget -->
     <div class="cc-panel">
         <div class="cc-panel-head">
-            <div class="cc-panel-title">Recent Activity</div>
-            <a asp-action="Index" class="cc-view-all">All <i class="bi bi-arrow-right"></i></a>
+            <div>
+                <div class="cc-panel-title">7-Day Trend</div>
+                <div class="cc-panel-sub">Daily quantity per plant — last 7 days</div>
+            </div>
+            <a asp-action="Report" class="cc-view-all">Full Report <i class="bi bi-arrow-right"></i></a>
         </div>
-        <div class="cc-panel-body-flush" style="max-height:290px;overflow-y:auto;">
-            @if (Model.RecentEntries.Any())
+        <div class="cc-panel-body" style="padding:12px 18px;">
+            @if (Model.WeeklyTrend.Any())
             {
-                @foreach (var entry in Model.RecentEntries)
+                @foreach (var trend in Model.WeeklyTrend)
                 {
-                    var dotBg = entry.TempBadgeClass == "success" ? "#16a34a"
-                    : entry.TempBadgeClass == "warning" ? "#ca8a04" : "#dc2626";
-                    var tempBadge = entry.TempBadgeClass == "success" ? "cc-badge-safe"
-                    : entry.TempBadgeClass == "warning" ? "cc-badge-warning" : "cc-badge-danger";
-                    <div class="cc-feed-item">
-                        <div class="cc-feed-dot" style="background:@dotBg;"></div>
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="cc-feed-name text-truncate">@entry.PlantName</div>
-                            <div class="cc-feed-meta">@entry.ItemName &mdash; @entry.MilkQuantity.ToString("N0") L</div>
-                            <div class="cc-feed-meta">@entry.StoredDate.ToString("dd MMM yyyy")</div>
+                    var sparkId = "spark-" + trend.PlantId;
+                    var sparkData = "[" + string.Join(",", trend.Days.Select(d => d.Quantity.ToString("F2"))) + "]";
+                    var sparkDates = "[" + string.Join(",", trend.Days.Select(d => $"'{d.Date:dd MMM}'")) + "]";
+
+                    <div class="cc-spark-card" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f8fafc;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                            <div>
+                                <div style="font-size:13px;font-weight:700;color:#0f172a;">@trend.PlantName</div>
+                                <div style="font-size:11px;color:#94a3b8;margin-top:2px;">
+                                    @trend.TotalWeekEntries entr@(trend.TotalWeekEntries == 1 ? "y" : "ies") &bull;
+                                    @trend.TotalWeekQty.ToString("N0") L total
+                                </div>
+                            </div>
+                            <div style="font-size:16px;font-weight:800;color:#0d6efd;font-variant-numeric:tabular-nums;">
+                                @trend.TotalWeekQty.ToString("N0")
+                                <span style="font-size:11px;color:#94a3b8;font-weight:500;">L</span>
+                            </div>
                         </div>
-                        @if (entry.Temperature.HasValue)
-                        {
-                            <span class="cc-badge @tempBadge">@entry.Temperature.Value.ToString("N1")°C</span>
-                        }
+                        <!-- Sparkline canvas -->
+                        <div style="height:52px;position:relative;">
+                            <canvas id="@sparkId"
+                                    data-values='@Html.Raw(sparkData)'
+                                    data-dates='@Html.Raw(sparkDates)'
+                                    class="cc-spark"></canvas>
+                        </div>
+                        <!-- Day labels -->
+                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                            @foreach (var day in trend.Days)
+                            {
+                                <span style="font-size:9px;color:#cbd5e1;font-weight:600;">@day.Date.ToString("ddd")</span>
+                            }
+                        </div>
                     </div>
                 }
             }
             else
             {
-                <div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px;">No recent entries.</div>
+                <div style="text-align:center;padding:30px 0;color:#94a3b8;font-size:13px;">
+                    No data for the last 7 days.
+                </div>
             }
         </div>
     </div>
@@ -549,16 +542,37 @@
     </div>
 </div>
 
+<!-- Main chart data via data attributes — avoids TS1109 -->
+<div id="mainChartData"
+     data-labels='@Html.Raw(chartLabels)'
+     data-values='@Html.Raw(chartValues)'
+     style="display:none;"></div>
+
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script>
+        // Inject responsive + animation rules
+        (function() {
+            var s = document.createElement('style');
+            var at = String.fromCharCode(64);
+            s.textContent = [
+                at+'media (max-width:768px){.cc-stat-row{grid-template-columns:repeat(2,1fr);}}',
+                at+'media (max-width:900px){.cc-panel-grid{grid-template-columns:1fr;}.cc-bottom-grid{grid-template-columns:1fr;}}',
+                at+'keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}',
+                '.cc-live-dot{animation:pulse 2s infinite;}'
+            ].join('');
+            document.head.appendChild(s);
+        })();
+        var _mc = document.getElementById('mainChartData');
+        var chartLabels = _mc ? JSON.parse(_mc.dataset.labels) : [];
+        var chartValues = _mc ? JSON.parse(_mc.dataset.values) : [];
         new Chart(document.getElementById('storageChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: @Html.Raw(chartLabels),
+                labels: chartLabels,
                 datasets: [{
                     label: 'Quantity (L)',
-                    data: @Html.Raw(chartValues),
+                    data: chartValues,
                     borderColor: '#0d6efd',
                     backgroundColor: function(ctx) {
                         var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 220);
@@ -586,6 +600,56 @@
                     }
                 }
             }
+        });
+
+        // ── Sparkline charts — one per plant ──
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.cc-spark').forEach(function (canvas) {
+                var values = JSON.parse(canvas.dataset.values);
+                var dates  = JSON.parse(canvas.dataset.dates);
+                var max    = Math.max.apply(null, values);
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            data: values,
+                            borderColor: '#0d6efd',
+                            backgroundColor: function (ctx) {
+                                var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 52);
+                                g.addColorStop(0, 'rgba(13,110,253,.18)');
+                                g.addColorStop(1, 'rgba(13,110,253,0)');
+                                return g;
+                            },
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: function (ctx) {
+                                // Only show point on the highest day
+                                return ctx.dataIndex === values.indexOf(max) ? 4 : 0;
+                            },
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#0d6efd',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800 },
+                        plugins: { legend: { display: false }, tooltip: {
+                            callbacks: {
+                                label: function (ctx) { return ' ' + Number(ctx.parsed.y).toLocaleString() + ' L'; }
+                            }
+                        }},
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, beginAtZero: true }
+                        }
+                    }
+                });
+            });
         });
     </script>
 }

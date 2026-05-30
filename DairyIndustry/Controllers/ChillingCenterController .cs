@@ -55,12 +55,11 @@ namespace DairyIndustry.Controllers
             {
                 Summary = _repo.GetDashboardSummary(),
                 PlantCapacity = _repo.GetPlantCapacitySummary(),
-                // Show only this plant's recent entries if plant manager
-                // Show all if no plant assigned (admin)
                 RecentEntries = plant != null
                     ? _repo.GetByPlant(plant.PlantId, null, null).Take(5).ToList()
                     : _repo.GetAll(null, null).Take(5).ToList(),
-                ActiveAlerts = _repo.GetTemperatureAlerts(DateTime.Today, DateTime.Today)
+                ActiveAlerts = _repo.GetTemperatureAlerts(DateTime.Today, DateTime.Today),
+                WeeklyTrend = _repo.GetWeeklyTrend(plant?.PlantId)
             };
 
             ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
@@ -70,37 +69,39 @@ namespace DairyIndustry.Controllers
 
         // ═══════════════════════════════════════════════════════════
         //  INDEX — /ChillingCenter/Index
-        //  Plant Manager sees ONLY their plant's entries
-        //  No plant filter shown — filtered automatically by session
+        //  Plant Manager sees ONLY their plant's entries.
+        //  When search is provided, uses filtered inline query.
+        //  When no search, uses original SP (existing behaviour).
         // ═══════════════════════════════════════════════════════════
-        public IActionResult Index(DateTime? fromDate, DateTime? toDate)
+        public IActionResult Index(DateTime? fromDate, DateTime? toDate, string? search)
         {
             var plant = GetSessionPlant();
-
             List<ChillingStorageModel> entries;
 
             if (plant != null)
             {
-                // Plant Manager
-                entries = _repo.GetByPlant(plant.PlantId, fromDate, toDate);
+                // Plant Manager — use filtered inline query if search given,
+                // original SP if no search (preserves existing behaviour)
+                entries = string.IsNullOrWhiteSpace(search)
+                    ? _repo.GetByPlant(plant.PlantId, fromDate, toDate)
+                    : _repo.GetByPlantFiltered(plant.PlantId, fromDate, toDate, search);
+
                 ViewBag.PlantName = plant.DisplayText;
             }
             else
             {
                 // Admin
-                entries = _repo.GetAll(fromDate, toDate);
-                ViewBag.PlantName = "All Plants";
+                entries = string.IsNullOrWhiteSpace(search)
+                    ? _repo.GetAll(fromDate, toDate)
+                    : _repo.GetAllFiltered(fromDate, toDate, search);
 
-                // ✅ FIX: populate dropdown
-                ViewBag.Plants = new SelectList(
-                    _repo.GetPlants(),
-                    "PlantId",
-                    "DisplayText"
-                );
+                ViewBag.PlantName = "All Plants";
+                ViewBag.Plants = new SelectList(_repo.GetPlants(), "PlantId", "DisplayText");
             }
 
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.Search = search;
 
             return View(entries);
         }
@@ -165,6 +166,39 @@ namespace DairyIndustry.Controllers
                 TempData["Error"] = "Something went wrong. Please try again.";
 
             return RedirectToAction("Index");
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  NEW — DUPLICATE — /ChillingCenter/Duplicate/5
+        //  Pre-fills the Create form with data from an existing
+        //  entry. StorageId is set to 0 so it saves as a new record.
+        //  StoredDate resets to today. Everything else copied.
+        // ═══════════════════════════════════════════════════════════
+        public IActionResult Duplicate(int id)
+        {
+            var source = _repo.GetById(id);
+
+            if (source == null)
+            {
+                TempData["Error"] = "Entry not found. Cannot duplicate.";
+                return RedirectToAction("Index");
+            }
+
+            LoadFormData(source.PlantId, source.ProductId);
+
+            var model = new ChillingStoreItemModel
+            {
+                StorageId = 0,                   // 0 = new record
+                PlantId = source.PlantId,
+                ProductId = source.ProductId,
+                MilkQuantity = source.MilkQuantity,
+                Temperature = source.Temperature,
+                StoredDate = DateTime.Today       // always today
+            };
+
+            TempData["Info"] = $"Duplicated from Entry #{source.StorageId} — review and save.";
+            return View("Create", model);
         }
 
 
@@ -257,7 +291,6 @@ namespace DairyIndustry.Controllers
             var allAlerts = _repo.GetTemperatureAlerts(fromDate, toDate);
             var plant = GetSessionPlant();
 
-            // Filter to plant manager's plant if assigned
             var alerts = plant != null
                 ? allAlerts.Where(a => a.PlantId == plant.PlantId).ToList()
                 : allAlerts;
@@ -278,12 +311,35 @@ namespace DairyIndustry.Controllers
             var data = _repo.GetPlantCapacitySummary();
             var plant = GetSessionPlant();
 
-            // Plant Manager sees only their plant's capacity row
             if (plant != null)
                 data = data.Where(d => d.PlantId == plant.PlantId).ToList();
 
             ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
             return View(data);
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  DAILY REPORT — /ChillingCenter/Report
+        //  Now serves both By Date and By Product tabs via
+        //  ChillingReportViewModel.
+        // ═══════════════════════════════════════════════════════════
+        public IActionResult Report(DateTime? fromDate, DateTime? toDate)
+        {
+            var plant = GetSessionPlant();
+            var from = fromDate ?? DateTime.Today.AddDays(-29);
+            var to = toDate ?? DateTime.Today;
+
+            var viewModel = new ChillingReportViewModel
+            {
+                DailyData = _repo.GetDailyReport(plant?.PlantId, from, to),
+                ProductData = _repo.GetProductReport(plant?.PlantId, from, to),
+                FromDate = from,
+                ToDate = to,
+                PlantName = plant?.DisplayText ?? "All Plants"
+            };
+
+            return View(viewModel);
         }
     }
 }
