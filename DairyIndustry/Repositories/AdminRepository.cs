@@ -161,7 +161,7 @@ namespace DairyIndustry.Repositories
                                 RoleId = Convert.ToInt32(reader["RoleId"]),
                                 RoleName = reader["RoleName"].ToString(),
                                 CreatedDate = DateTime.MinValue,
-
+                                     
                                 // Staff
                                 StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
                                 FirstName = reader["FirstName"] == DBNull.Value ? null : reader["FirstName"].ToString(),

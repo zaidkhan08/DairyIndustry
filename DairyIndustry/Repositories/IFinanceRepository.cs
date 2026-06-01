@@ -69,5 +69,36 @@ namespace DairyIndustry.Repositories
         /// Admin passes null to see all staff across all plants.
         /// </summary>
         PlantStaffViewModel GetPlantStaff(int? plantId = null);
+
+        // ════════════════════════════════════════════════════════
+        // ADD THESE METHODS TO IFinanceRepository.cs
+        // inside the public interface IFinanceRepository block
+        // ════════════════════════════════════════════════════════
+
+        // ── STAFF PAYMENTS ───────────────────────────────────────────
+
+        /// <summary>
+        /// Returns staff eligible for payment, scoped by plantId (Plant Manager)
+        /// or centerId (Collection Agent). Pass both null for Admin.
+        /// </summary>
+        List<StaffForPaymentModel> GetStaffForPayment(int? plantId = null, int? centerId = null);
+
+        /// <summary>
+        /// Staff list + summary, scoped by plantId or centerId.
+        /// Plant Manager  → plantId from session, centerId = null
+        /// Collection Agent → centerId from session, plantId = null
+        /// Admin          → both null
+        /// </summary>
+        StaffPaymentViewModel GetAllStaffPayments(int? plantId = null, int? centerId = null);
+
+        StaffPaymentModel GetStaffPaymentById(int paymentId);
+
+        int CreateStaffPayment(int staffId, int plantId, DateTime fromDate, DateTime toDate,
+                               decimal totalAmount, DateTime paymentDate, int paidByUserId);
+
+        void CancelStaffPayment(int paymentId);
+
+        bool StaffHasBankAccount(int staffId);
+
     }
 }

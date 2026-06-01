@@ -1232,5 +1232,319 @@ namespace DairyIndustry.Repositories
 
             return vm;
         }
+
+        //we are going to Add staff payment
+
+
+        // ════════════════════════════════════════════════════════
+        // ADD THESE METHODS TO FinanceRepository.cs
+        // inside the public class FinanceRepository block
+        // ════════════════════════════════════════════════════════
+
+        // ── STAFF HAS BANK ACCOUNT ───────────────────────────────────
+        public bool StaffHasBankAccount(int staffId)
+        {
+            const string query = @"
+        SELECT COUNT(*)
+        FROM HR.Staffs s
+        INNER JOIN Finance.BankAccounts ba ON ba.BankAccountId = s.BankAccountId
+        WHERE s.StaffId = @StaffId
+          AND s.BankAccountId IS NOT NULL";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@StaffId", staffId);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
+
+        // ── GET STAFF ELIGIBLE FOR PAYMENT ──────────────────────────
+        // Plant Manager  → pass plantId
+        // Collection Agent → pass centerId
+        // Admin          → pass both null
+        public List<StaffForPaymentModel> GetStaffForPayment(int? plantId = null, int? centerId = null)
+        {
+            var list = new List<StaffForPaymentModel>();
+
+            const string query = @"
+        SELECT
+            s.StaffId,
+            s.FirstName + ' ' + s.LastName  AS FullName,
+            ISNULL(ar.RoleName, '')          AS RoleName,
+            ISNULL(cc.CenterName, '-')       AS CenterName,
+            ISNULL(pp.PlantName,  '-')       AS PlantName,
+            s.PlantId,
+            s.CenterId,
+            s.Salary,
+            ba.BankName,
+            ba.AccountNumber,
+            ba.IFSCCode,
+            CASE WHEN s.BankAccountId IS NOT NULL THEN 1 ELSE 0 END AS HasBankAccount
+        FROM HR.Staffs s
+        LEFT JOIN Collection.CollectionCenters  cc ON cc.CenterId = s.CenterId
+        LEFT JOIN Production.ProcessingPlants   pp ON pp.PlantId  = s.PlantId
+        LEFT JOIN Admin.Roles                   ar ON ar.RoleId   = s.RoleId
+        LEFT JOIN Finance.BankAccounts          ba ON ba.BankAccountId = s.BankAccountId
+        WHERE s.IsActive = 1
+          AND (@PlantId  IS NULL OR s.PlantId  = @PlantId)
+          AND (@CenterId IS NULL OR s.CenterId = @CenterId)
+        ORDER BY pp.PlantName, cc.CenterName, FullName";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                    {
+                        list.Add(new StaffForPaymentModel
+                        {
+                            StaffId = Convert.ToInt32(r["StaffId"]),
+                            FullName = r["FullName"].ToString(),
+                            RoleName = r["RoleName"].ToString(),
+                            CenterName = r["CenterName"].ToString(),
+                            PlantName = r["PlantName"].ToString(),
+                            PlantId = r["PlantId"] == DBNull.Value ? 0 : Convert.ToInt32(r["PlantId"]),
+                            CenterId = r["CenterId"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["CenterId"]),
+                            Salary = r["Salary"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["Salary"]),
+                            BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
+                            AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
+                            IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
+                            HasBankAccount = Convert.ToBoolean(r["HasBankAccount"])
+                        });
+                    }
+                }
+            }
+            return list;
+        }
+
+        // ── CREATE STAFF PAYMENT ──────────────────────────────────────
+        public int CreateStaffPayment(int staffId, int plantId, DateTime fromDate, DateTime toDate,
+                                       decimal totalAmount, DateTime paymentDate, int paidByUserId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Finance.usp_Finance_ProcessStaffPayment", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PlantId", plantId);
+                cmd.Parameters.AddWithValue("@StaffId", staffId);
+                cmd.Parameters.AddWithValue("@FromDate", fromDate.Date);
+                cmd.Parameters.AddWithValue("@ToDate", toDate.Date);
+                cmd.Parameters.AddWithValue("@TotalAmount", totalAmount);
+                cmd.Parameters.AddWithValue("@PaymentDate", paymentDate.Date);
+
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                        return Convert.ToInt32(r["NewPaymentId"]);
+                }
+            }
+            return 0;
+        }
+
+        // ── CANCEL STAFF PAYMENT ─────────────────────────────────────
+        public void CancelStaffPayment(int paymentId)
+        {
+            const string query = @"
+        UPDATE Finance.StaffPayments
+        SET    PaymentStatus = 'Cancelled'
+        WHERE  PaymentId = @PaymentId
+          AND  PaymentStatus IN ('Pending', 'Failed')";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@PaymentId", paymentId);
+                con.Open();
+                int rows = cmd.ExecuteNonQuery();
+                if (rows == 0)
+                    throw new InvalidOperationException("Only Pending or Failed payments can be cancelled.");
+            }
+        }
+
+        // ── GET ALL STAFF PAYMENTS (list view) ───────────────────────
+        public StaffPaymentViewModel GetAllStaffPayments(int? plantId = null, int? centerId = null)
+        {
+            var vm = new StaffPaymentViewModel();
+
+            // ── Summary ──────────────────────────────────────────────
+            const string summaryQuery = @"
+        SELECT
+            COUNT(*)                                                AS TotalPayments,
+            SUM(CASE WHEN sp.PaymentStatus = 'Processed' THEN 1 ELSE 0 END) AS ProcessedCount,
+            SUM(CASE WHEN sp.PaymentStatus = 'Pending'   THEN 1 ELSE 0 END) AS PendingCount,
+            SUM(CASE WHEN sp.PaymentStatus = 'Failed'    THEN 1 ELSE 0 END) AS FailedCount,
+            ISNULL(SUM(CASE WHEN sp.PaymentStatus = 'Processed' THEN sp.TotalAmount END), 0) AS TotalAmountPaid,
+            ISNULL(SUM(CASE WHEN sp.PaymentStatus = 'Pending'   THEN sp.TotalAmount END), 0) AS TotalAmountPending
+        FROM Finance.StaffPayments sp
+        INNER JOIN HR.Staffs s ON s.StaffId = sp.StaffId
+        WHERE sp.PaymentStatus != 'Cancelled'
+          AND (@PlantId  IS NULL OR sp.PlantId   = @PlantId)
+          AND (@CenterId IS NULL OR s.CenterId   = @CenterId)";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(summaryQuery, con))
+            {
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                    {
+                        vm.Summary = new StaffPaymentSummary
+                        {
+                            TotalPayments = Convert.ToInt32(r["TotalPayments"]),
+                            ProcessedCount = Convert.ToInt32(r["ProcessedCount"]),
+                            PendingCount = Convert.ToInt32(r["PendingCount"]),
+                            FailedCount = Convert.ToInt32(r["FailedCount"]),
+                            TotalAmountPaid = Convert.ToDecimal(r["TotalAmountPaid"]),
+                            TotalAmountPending = Convert.ToDecimal(r["TotalAmountPending"]),
+                            ScopeLabel = "Staff Payments"
+                        };
+                    }
+                }
+            }
+
+            // ── List ─────────────────────────────────────────────────
+            const string listQuery = @"
+        SELECT
+            sp.PaymentId,
+            sp.PlantId,
+            sp.StaffId,
+            sp.FromDate,
+            sp.ToDate,
+            sp.TotalAmount,
+            sp.PaymentDate,
+            sp.PaymentStatus,
+            s.FirstName + ' ' + s.LastName  AS StaffName,
+            ISNULL(ar.RoleName, '')          AS RoleName,
+            ISNULL(cc.CenterName, '-')       AS CenterName,
+            ISNULL(pp.PlantName,  '-')       AS PlantName,
+            s.Salary                         AS MonthlySalary,
+            ba.BankName,
+            ba.AccountNumber,
+            ba.IFSCCode,
+            pt.BankStatus,
+            pt.TransactionReference
+        FROM Finance.StaffPayments sp
+        INNER JOIN HR.Staffs s
+            ON s.StaffId = sp.StaffId
+        LEFT JOIN Collection.CollectionCenters cc
+            ON cc.CenterId = s.CenterId
+        LEFT JOIN Production.ProcessingPlants pp
+            ON pp.PlantId = sp.PlantId
+        LEFT JOIN Admin.Roles ar
+            ON ar.RoleId = s.RoleId
+        LEFT JOIN Finance.BankAccounts ba
+            ON ba.BankAccountId = s.BankAccountId
+        LEFT JOIN Finance.PaymentTransactions pt
+            ON pt.PaymentId   = sp.PaymentId
+           AND pt.PaymentType = 'Staff'
+        WHERE (@PlantId  IS NULL OR sp.PlantId   = @PlantId)
+          AND (@CenterId IS NULL OR s.CenterId   = @CenterId)
+        ORDER BY sp.PaymentDate DESC";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(listQuery, con))
+            {
+                cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                        vm.Payments.Add(MapStaffPayment(r));
+                }
+            }
+
+            return vm;
+        }
+
+        // ── GET SINGLE STAFF PAYMENT ─────────────────────────────────
+        public StaffPaymentModel GetStaffPaymentById(int paymentId)
+        {
+            const string query = @"
+        SELECT
+            sp.PaymentId,
+            sp.PlantId,
+            sp.StaffId,
+            sp.FromDate,
+            sp.ToDate,
+            sp.TotalAmount,
+            sp.PaymentDate,
+            sp.PaymentStatus,
+            s.FirstName + ' ' + s.LastName  AS StaffName,
+            ISNULL(ar.RoleName, '')          AS RoleName,
+            ISNULL(cc.CenterName, '-')       AS CenterName,
+            ISNULL(pp.PlantName,  '-')       AS PlantName,
+            s.Salary                         AS MonthlySalary,
+            ba.BankName,
+            ba.AccountNumber,
+            ba.IFSCCode,
+            pt.BankStatus,
+            pt.TransactionReference
+        FROM Finance.StaffPayments sp
+        INNER JOIN HR.Staffs s
+            ON s.StaffId = sp.StaffId
+        LEFT JOIN Collection.CollectionCenters cc
+            ON cc.CenterId = s.CenterId
+        LEFT JOIN Production.ProcessingPlants pp
+            ON pp.PlantId = sp.PlantId
+        LEFT JOIN Admin.Roles ar
+            ON ar.RoleId = s.RoleId
+        LEFT JOIN Finance.BankAccounts ba
+            ON ba.BankAccountId = s.BankAccountId
+        LEFT JOIN Finance.PaymentTransactions pt
+            ON pt.PaymentId   = sp.PaymentId
+           AND pt.PaymentType = 'Staff'
+        WHERE sp.PaymentId = @PaymentId";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@PaymentId", paymentId);
+                con.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    if (r.Read()) return MapStaffPayment(r);
+                }
+            }
+            return null;
+        }
+
+        // ── PRIVATE MAPPER ───────────────────────────────────────────
+        private StaffPaymentModel MapStaffPayment(SqlDataReader r)
+        {
+            return new StaffPaymentModel
+            {
+                PaymentId = Convert.ToInt32(r["PaymentId"]),
+                PlantId = Convert.ToInt32(r["PlantId"]),
+                StaffId = Convert.ToInt32(r["StaffId"]),
+                FromDate = Convert.ToDateTime(r["FromDate"]),
+                ToDate = Convert.ToDateTime(r["ToDate"]),
+                TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                PaymentDate = Convert.ToDateTime(r["PaymentDate"]),
+                PaymentStatus = r["PaymentStatus"].ToString(),
+                StaffName = r["StaffName"].ToString(),
+                RoleName = r["RoleName"].ToString(),
+                CenterName = r["CenterName"].ToString(),
+                PlantName = r["PlantName"].ToString(),
+                MonthlySalary = r["MonthlySalary"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["MonthlySalary"]),
+                BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
+                AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
+                IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
+                BankStatus = r["BankStatus"] == DBNull.Value ? null : r["BankStatus"].ToString(),
+                TransactionReference = r["TransactionReference"] == DBNull.Value ? null : r["TransactionReference"].ToString()
+            };
+        }
+
+
     }
 }
