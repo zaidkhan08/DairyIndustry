@@ -6,6 +6,60 @@
     ViewData["Title"] = "Capacity Monitor";
     var maxQty = Model.Any() ? Model.Max(x => x.TotalStoredAllTime) : 1;
     int totalAlerts = Model.Sum(x => x.AlertCount);
+
+    // Stock status thresholds (litres stored today)
+    const decimal LOW_THRESHOLD = 2000;
+    const decimal NORMAL_THRESHOLD = 8000;
+
+    string StockStatus(decimal storedToday)
+    {
+        if (storedToday == 0) return "Empty";
+        if (storedToday < LOW_THRESHOLD) return "Low";
+        if (storedToday <= NORMAL_THRESHOLD) return "Normal";
+        return "Overfull";
+    }
+
+    string StockColor(string status) => status switch
+    {
+        "Empty" => "#64748b",
+        "Low" => "#ca8a04",
+        "Normal" => "#16a34a",
+        "Overfull" => "#dc2626",
+        _ => "#64748b"
+    };
+
+    string StockBg(string status) => status switch
+    {
+        "Empty" => "#f1f5f9",
+        "Low" => "#fefce8",
+        "Normal" => "#f0fdf4",
+        "Overfull" => "#fef2f2",
+        _ => "#f1f5f9"
+    };
+
+    string StockBorder(string status) => status switch
+    {
+        "Empty" => "#e2e8f0",
+        "Low" => "#fde68a",
+        "Normal" => "#bbf7d0",
+        "Overfull" => "#fecaca",
+        _ => "#e2e8f0"
+    };
+
+    string StockIcon(string status) => status switch
+    {
+        "Empty" => "bi-inbox",
+        "Low" => "bi-battery-half",
+        "Normal" => "bi-check-circle",
+        "Overfull" => "bi-exclamation-octagon",
+        _ => "bi-dash"
+    };
+
+    // Summary counts for the new stat card
+    int countEmpty = Model.Count(p => StockStatus(p.StoredToday) == "Empty");
+    int countLow = Model.Count(p => StockStatus(p.StoredToday) == "Low");
+    int countNormal = Model.Count(p => StockStatus(p.StoredToday) == "Normal");
+    int countOverfull = Model.Count(p => StockStatus(p.StoredToday) == "Overfull");
 }
 
 @section Styles {
@@ -53,9 +107,42 @@
             margin-top: 2px;
         }
 
+        /* Stock legend card */
+        .cc-stock-legend {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .cc-stock-legend-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-right: 4px;
+        }
+
+        .cc-stock-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid;
+        }
+
         .plant-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+            grid-template-columns: repeat(auto-fill,minmax(230px,1fr));
             gap: 20px;
         }
 
@@ -65,6 +152,7 @@
             box-shadow: 0 1px 4px rgba(0,0,0,.06);
             overflow: hidden;
             transition: box-shadow .2s, transform .2s;
+            border: 1.5px solid transparent;
         }
 
             .plant-card:hover {
@@ -72,12 +160,12 @@
                 transform: translateY(-2px);
             }
 
-            .plant-card.has-alerts {
-                border: 1.5px solid #fecaca;
-            }
-
         .plant-card-header {
             padding: 16px 18px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
         }
 
         .plant-card-name {
@@ -90,6 +178,33 @@
             font-size: 11px;
             color: #94a3b8;
             margin-top: 2px;
+        }
+
+        /* Stock status banner on card */
+        .stock-banner {
+            margin: 12px 18px 0;
+            border-radius: 10px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid;
+        }
+
+        .stock-banner-icon {
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .stock-banner-label {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .stock-banner-sub {
+            font-size: 11px;
+            opacity: .75;
+            margin-top: 1px;
         }
 
         .tank-wrap {
@@ -211,9 +326,11 @@
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-4">
+    <div class="col-sm-3">
         <div class="cc-stat" style="border-top-color:#0d6efd;">
-            <div class="cc-stat-icon" style="background:#eff6ff;"><i class="bi bi-buildings" style="color:#0d6efd;"></i></div>
+            <div class="cc-stat-icon" style="background:#eff6ff;">
+                <i class="bi bi-buildings" style="color:#0d6efd;"></i>
+            </div>
             <div>
                 <div class="cc-stat-label">Plants</div>
                 <div class="cc-stat-val">@Model.Count</div>
@@ -221,31 +338,93 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-3">
         <div class="cc-stat" style="border-top-color:#0891b2;">
-            <div class="cc-stat-icon" style="background:#ecfeff;"><i class="bi bi-droplet-half" style="color:#0891b2;"></i></div>
+            <div class="cc-stat-icon" style="background:#ecfeff;">
+                <i class="bi bi-droplet-half" style="color:#0891b2;"></i>
+            </div>
             <div>
                 <div class="cc-stat-label">All Time</div>
-                <div class="cc-stat-val">@Model.Sum(x => x.TotalStoredAllTime).ToString("N0") <span style="font-size:13px;color:#94a3b8;font-weight:500;">L</span></div>
+                <div class="cc-stat-val">
+                    @Model.Sum(x => x.TotalStoredAllTime).ToString("N0")
+                    <span style="font-size:13px;color:#94a3b8;font-weight:500;">L</span>
+                </div>
                 <div class="cc-stat-sub">total litres stored</div>
             </div>
         </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-3">
         <div class="cc-stat" style="border-top-color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");">
             <div class="cc-stat-icon" style="background:@(totalAlerts > 0 ? "#fef2f2" : "#f0fdf4");">
-                <i class="bi bi-@(totalAlerts > 0 ? "exclamation-triangle" : "shield-check")" style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");"></i>
+                <i class="bi bi-@(totalAlerts > 0 ? "exclamation-triangle" : "shield-check")"
+                   style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");"></i>
             </div>
             <div>
                 <div class="cc-stat-label">Alerts</div>
-                <div class="cc-stat-val" style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");">@totalAlerts</div>
+                <div class="cc-stat-val" style="color:@(totalAlerts > 0 ? "#dc2626" : "#16a34a");">
+                    @totalAlerts
+                </div>
                 <div class="cc-stat-sub">@(totalAlerts > 0 ? "needs attention" : "all safe")</div>
+            </div>
+        </div>
+    </div>
+    <!-- NEW: Stock Status Summary Card -->
+    <div class="col-sm-3">
+        <div class="cc-stat" style="border-top-color:#8b5cf6;">
+            <div class="cc-stat-icon" style="background:#f5f3ff;">
+                <i class="bi bi-speedometer2" style="color:#8b5cf6;"></i>
+            </div>
+            <div>
+                <div class="cc-stat-label">Stock Status</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                    @if (countOverfull > 0)
+                    {
+                        <span style="font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;">
+                            @countOverfull Overfull
+                        </span>
+                    }
+                    @if (countLow > 0)
+                    {
+                        <span style="font-size:11px;font-weight:700;color:#ca8a04;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:2px 8px;">
+                            @countLow Low
+                        </span>
+                    }
+                    @if (countNormal > 0)
+                    {
+                        <span style="font-size:11px;font-weight:700;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:2px 8px;">
+                            @countNormal Normal
+                        </span>
+                    }
+                    @if (countEmpty > 0)
+                    {
+                        <span style="font-size:11px;font-weight:700;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:2px 8px;">
+                            @countEmpty Empty
+                        </span>
+                    }
+                </div>
+                <div class="cc-stat-sub" style="margin-top:4px;">today's storage levels</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Section Header -->
+<!-- Stock Status Legend + Section Header -->
+<div class="cc-stock-legend">
+    <span class="cc-stock-legend-title">Stock levels:</span>
+    <span class="cc-stock-pill" style="background:#f1f5f9;color:#64748b;border-color:#e2e8f0;">
+        <i class="bi bi-inbox"></i> Empty — 0 L today
+    </span>
+    <span class="cc-stock-pill" style="background:#fefce8;color:#ca8a04;border-color:#fde68a;">
+        <i class="bi bi-battery-half"></i> Low — under 2,000 L
+    </span>
+    <span class="cc-stock-pill" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;">
+        <i class="bi bi-check-circle"></i> Normal — 2,000 – 8,000 L
+    </span>
+    <span class="cc-stock-pill" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;">
+        <i class="bi bi-exclamation-octagon"></i> Overfull — above 8,000 L
+    </span>
+</div>
+
 <div class="d-flex align-items-center justify-content-between mb-3">
     <div style="font-size:15px;font-weight:700;color:#0f172a;">Plant Storage Tanks</div>
     <div style="font-size:12px;color:#94a3b8;">Fill level relative to highest-capacity plant</div>
@@ -260,18 +439,60 @@
             var fillPct = maxQty > 0 ? (int)Math.Min(Math.Round((double)plant.TotalStoredAllTime / (double)maxQty * 100), 100) : 0;
             var hasAlerts = plant.AlertCount > 0;
             var fillColor = hasAlerts ? "linear-gradient(to top,#dc2626,#f87171)" : "linear-gradient(to top,#0d6efd,#60a5fa)";
-            var statusColor = hasAlerts ? "#dc2626" : "#16a34a";
-            var dotBg = hasAlerts ? "#dc2626" : "#16a34a";
+            var alertColor = hasAlerts ? "#dc2626" : "#16a34a";
+            var alertDot = hasAlerts ? "#dc2626" : "#16a34a";
 
-            <div class="plant-card @(hasAlerts ? "has-alerts" : "")">
+            // Stock status for this plant
+            var stockStatus = StockStatus(plant.StoredToday);
+            var stockColor = StockColor(stockStatus);
+            var stockBg = StockBg(stockStatus);
+            var stockBorder = StockBorder(stockStatus);
+            var stockIcon = StockIcon(stockStatus);
+
+            string stockSubtext = stockStatus switch
+            {
+                "Empty" => "No storage recorded today",
+                "Low" => "Below recommended daily level",
+                "Normal" => "Within expected daily range",
+                "Overfull" => "Exceeds daily capacity limit",
+                _ => ""
+            };
+
+            // Card border colour driven by stock status
+            string cardBorderStyle = stockStatus switch
+            {
+                "Overfull" => "border-color:#fecaca!important;",
+                "Low" => "border-color:#fde68a!important;",
+                _ => ""
+            };
+
+            <div class="plant-card" style="@cardBorderStyle">
+
+                <!-- Card Header -->
                 <div class="plant-card-header">
-                    <div class="plant-card-name">@plant.PlantName</div>
-                    @if (!string.IsNullOrEmpty(plant.Location))
-                    {
-                        <div class="plant-card-loc"><i class="bi bi-geo-alt me-1"></i>@plant.Location</div>
-                    }
+                    <div>
+                        <div class="plant-card-name">@plant.PlantName</div>
+                        @if (!string.IsNullOrEmpty(plant.Location))
+                        {
+                            <div class="plant-card-loc"><i class="bi bi-geo-alt me-1"></i>@plant.Location</div>
+                        }
+                    </div>
+                    <!-- Stock status badge top-right -->
+                    <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:@stockBg;color:@stockColor;border:1px solid @stockBorder;flex-shrink:0;">
+                        <i class="bi @stockIcon"></i> @stockStatus
+                    </div>
                 </div>
 
+                <!-- Stock Status Banner -->
+                <div class="stock-banner" style="background:@stockBg;border-color:@stockBorder;">
+                    <i class="bi @stockIcon stock-banner-icon" style="color:@stockColor;"></i>
+                    <div>
+                        <div class="stock-banner-label" style="color:@stockColor;">@stockStatus — @plant.StoredToday.ToString("N0") L today</div>
+                        <div class="stock-banner-sub" style="color:@stockColor;">@stockSubtext</div>
+                    </div>
+                </div>
+
+                <!-- Tank Visual -->
                 <div class="tank-wrap">
                     <div class="tank-outer">
                         <div class="tank-fill" data-fill="@fillPct" style="background:@fillColor;"></div>
@@ -281,19 +502,26 @@
                     <div class="tank-stats">
                         <div class="tank-stat-row">
                             <div class="tank-stat-label">All Time</div>
-                            <div><span class="tank-stat-num">@plant.TotalStoredAllTime.ToString("N0")</span><span class="tank-stat-unit">L</span></div>
+                            <div>
+                                <span class="tank-stat-num">@plant.TotalStoredAllTime.ToString("N0")</span>
+                                <span class="tank-stat-unit">L</span>
+                            </div>
                         </div>
                         <div class="tank-stat-row">
                             <div class="tank-stat-label">Today</div>
-                            <div><span class="tank-stat-num">@plant.StoredToday.ToString("N0")</span><span class="tank-stat-unit">L</span></div>
+                            <div>
+                                <span class="tank-stat-num" style="color:@stockColor;">@plant.StoredToday.ToString("N0")</span>
+                                <span class="tank-stat-unit">L</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Footer -->
                 <div class="plant-card-footer">
                     <div>
-                        <span class="status-dot" style="background:@dotBg;"></span>
-                        <span class="status-label" style="color:@statusColor;">
+                        <span class="status-dot" style="background:@alertDot;"></span>
+                        <span class="status-label" style="color:@alertColor;">
                             @(hasAlerts? plant.AlertCount + " alert" + (plant.AlertCount > 1 ? "s" : "") : "Safe")
                         </span>
                     </div>
@@ -301,6 +529,7 @@
                         Entries <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
+
             </div>
         }
     </div>

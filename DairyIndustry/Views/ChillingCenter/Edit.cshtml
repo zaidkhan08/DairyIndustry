@@ -211,6 +211,52 @@
                 color: #0f172a;
                 border-color: #cbd5e1;
             }
+
+        /* Shift selector */
+        .cc-shift-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cc-shift-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .18s;
+        }
+
+            .cc-shift-btn:hover {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+            .cc-shift-btn.active[data-value="Morning"] {
+                background: #fefce8;
+                border-color: #fde68a;
+                color: #854d0e;
+            }
+
+            .cc-shift-btn.active[data-value="Afternoon"] {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+                color: #1d4ed8;
+            }
+
+            .cc-shift-btn.active[data-value="Night"] {
+                background: #f5f3ff;
+                border-color: #ddd6fe;
+                color: #5b21b6;
+            }
     </style>
 }
 
@@ -287,6 +333,28 @@
                     <input asp-for="StoredDate" class="cc-input" type="date" readonly />
                     <div class="cc-hint">Storage date is locked and cannot be modified.</div>
                 </div>
+
+                <!-- Shift Selector -->
+                <div style="margin-top:4px;">
+                    <label class="cc-label">Shift</label>
+                    <input type="hidden" asp-for="Shift" id="shiftInput" />
+                    <div class="cc-shift-group">
+                        <button type="button" class="cc-shift-btn" data-value="Morning"
+                                onclick="selectShift(this)">
+                            <i class="bi bi-sunrise"></i> Morning
+                        </button>
+                        <button type="button" class="cc-shift-btn" data-value="Afternoon"
+                                onclick="selectShift(this)">
+                            <i class="bi bi-sun"></i> Afternoon
+                        </button>
+                        <button type="button" class="cc-shift-btn" data-value="Night"
+                                onclick="selectShift(this)">
+                            <i class="bi bi-moon-stars"></i> Night
+                        </button>
+                    </div>
+                    <span asp-validation-for="Shift" class="cc-error"></span>
+                    <div class="cc-hint">Optional — update the shift if needed.</div>
+                </div>
             </div>
 
             <!-- Footer -->
@@ -305,6 +373,24 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        function selectShift(btn) {
+            document.querySelectorAll('.cc-shift-btn').forEach(b => b.classList.remove('active'));
+            var current = document.getElementById('shiftInput').value;
+            if (current === btn.dataset.value) {
+                document.getElementById('shiftInput').value = '';
+            } else {
+                btn.classList.add('active');
+                document.getElementById('shiftInput').value = btn.dataset.value;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var val = document.getElementById('shiftInput').value;
+            if (val) {
+                var btn = document.querySelector('.cc-shift-btn[data-value="' + val + '"]');
+                if (btn) btn.classList.add('active');
+            }
+        });
         document.getElementById('tempInput')?.addEventListener('input', function () {
             var hint = document.getElementById('tempHint');
             var val = parseFloat(this.value);

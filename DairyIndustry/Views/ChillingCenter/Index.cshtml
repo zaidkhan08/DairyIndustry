@@ -179,6 +179,34 @@
                 color: #dc2626;
             }
 
+        /* Temperature trend badge */
+        .cc-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 5px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .cc-trend-up {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-trend-down {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-trend-same {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+
         .cc-empty {
             text-align: center;
             padding: 60px 20px;
@@ -210,7 +238,7 @@
             margin-bottom: 16px;
         }
 
-        /* ── Pagination ── */
+        /* Pagination */
         .cc-pagination-bar {
             padding: 12px 20px;
             border-top: 1px solid #f1f5f9;
@@ -274,25 +302,6 @@
     </style>
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
-         style="background:#f0fdf4;color:#15803d;font-size:13px;" role="alert">
-        <i class="bi bi-check-circle-fill"></i>
-        <span>@TempData["Success"]</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
-         style="background:#fef2f2;color:#dc2626;font-size:13px;" role="alert">
-        <i class="bi bi-exclamation-circle-fill"></i>
-        <span>@TempData["Error"]</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
-    </div>
-}
-
 <!-- Filter Bar -->
 <div class="cc-filter-bar">
     <form method="get" asp-action="Index">
@@ -349,16 +358,41 @@
                         <th>Item</th>
                         <th class="text-end">Qty (L)</th>
                         <th class="text-center">Temp</th>
+                        <th class="text-center">Shift</th>
                         <th class="text-center">Status</th>
                         <th class="text-center" style="padding-right:20px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @{
+                        int idx = 0;
+                    }
                     @foreach (var entry in Model)
                     {
                         var badgeClass = entry.TempBadgeClass == "success" ? "cc-badge-safe"
                         : entry.TempBadgeClass == "warning" ? "cc-badge-warning"
                         : "cc-badge-danger";
+
+                        // ── Temperature trend vs previous entry from same plant ──
+                        string trendHtml = "";
+                        if (entry.Temperature.HasValue)
+                        {
+                            var prev = Model.Skip(idx + 1)
+                            .FirstOrDefault(e => e.PlantId == entry.PlantId
+                            && e.Temperature.HasValue);
+                            if (prev != null)
+                            {
+                                var diff = entry.Temperature.Value - prev.Temperature.Value;
+                                if (diff > 0)
+                                    trendHtml = $"<span class='cc-trend cc-trend-up'><i class='bi bi-arrow-up'></i>{diff.ToString("N1")}</span>";
+                                else if (diff < 0)
+                                    trendHtml = $"<span class='cc-trend cc-trend-down'><i class='bi bi-arrow-down'></i>{Math.Abs(diff).ToString("N1")}</span>";
+                                else
+                                    trendHtml = "<span class='cc-trend cc-trend-same'><i class='bi bi-arrow-right'></i></span>";
+                            }
+                        }
+                        idx++;
+
                         <tr>
                             <td style="padding-left:20px;"><span class="cell-id">#@entry.StorageId</span></td>
                             <td>@entry.StoredDate.ToString("dd MMM yyyy")</td>
@@ -375,6 +409,19 @@
                                 @if (entry.Temperature.HasValue)
                                 {
                                     <span class="cell-num">@entry.Temperature.Value.ToString("N1")°C</span>
+                                    @Html.Raw(trendHtml)
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1;">—</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (!string.IsNullOrEmpty(entry.Shift))
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;@entry.ShiftBadgeStyle">
+                                        <i class="bi @entry.ShiftIcon"></i> @entry.Shift
+                                    </span>
                                 }
                                 else
                                 {
@@ -438,11 +485,8 @@
                 const start = (page - 1) * PAGE_SIZE;
                 const end   = start + PAGE_SIZE;
                 rows.forEach((row, i) => { row.style.display = (i >= start && i < end) ? '' : 'none'; });
-
-                // Range text
                 const rangeEl = document.getElementById('idx-range');
                 if (rangeEl) rangeEl.textContent = (start + 1) + '–' + Math.min(end, totalRows);
-
                 renderPages();
             }
 
@@ -450,13 +494,9 @@
                 const container = document.getElementById('idx-pages');
                 if (!container) return;
                 container.innerHTML = '';
-
-                // Prev
                 const prev = btn('<i class="bi bi-chevron-left"></i>', currentPage === 1);
                 prev.addEventListener('click', () => { if (currentPage > 1) showPage(currentPage - 1); });
                 container.appendChild(prev);
-
-                // Page numbers with ellipsis
                 const pages = getPageRange(currentPage, totalPages);
                 pages.forEach(p => {
                     if (p === '…') {
@@ -470,8 +510,6 @@
                         container.appendChild(b);
                     }
                 });
-
-                // Next
                 const next = btn('<i class="bi bi-chevron-right"></i>', currentPage === totalPages);
                 next.addEventListener('click', () => { if (currentPage < totalPages) showPage(currentPage + 1); });
                 container.appendChild(next);

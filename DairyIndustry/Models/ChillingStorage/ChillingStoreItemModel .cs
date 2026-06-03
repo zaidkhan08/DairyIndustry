@@ -29,5 +29,11 @@ namespace DairyIndustry.Models.ChillingStorage
         [Display(Name = "Storage Date")]
         [DataType(DataType.Date)]
         public DateTime StoredDate { get; set; } = DateTime.Today;
+
+        // NEW: Shift — optional, one of Morning / Afternoon / Night
+        [Display(Name = "Shift")]
+        [RegularExpression("^(Morning|Afternoon|Night)$",
+            ErrorMessage = "Shift must be Morning, Afternoon, or Night.")]
+        public string? Shift { get; set; }
     }
 }

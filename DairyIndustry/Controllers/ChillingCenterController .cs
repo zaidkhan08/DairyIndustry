@@ -80,11 +80,10 @@ namespace DairyIndustry.Controllers
 
             if (plant != null)
             {
-                // Plant Manager — use filtered inline query if search given,
-                // original SP if no search (preserves existing behaviour)
-                entries = string.IsNullOrWhiteSpace(search)
-                    ? _repo.GetByPlant(plant.PlantId, fromDate, toDate)
-                    : _repo.GetByPlantFiltered(plant.PlantId, fromDate, toDate, search);
+                // Always use inline filtered query — includes Shift column.
+                // SP (GetByPlant) does not return Shift so is no longer used for Index.
+                entries = _repo.GetByPlantFiltered(plant.PlantId, fromDate, toDate,
+                              string.IsNullOrWhiteSpace(search) ? null : search);
 
                 ViewBag.PlantName = plant.DisplayText;
             }
@@ -158,7 +157,10 @@ namespace DairyIndustry.Controllers
                 return View(model);
             }
 
-            int newId = _repo.StoreItem(model);
+            // Use inline InsertWithShift if shift selected — SP untouched
+            int newId = !string.IsNullOrEmpty(model.Shift)
+                ? _repo.InsertWithShift(model)
+                : _repo.StoreItem(model);
 
             if (newId > 0)
                 TempData["Success"] = "Storage entry added successfully.";
@@ -189,12 +191,13 @@ namespace DairyIndustry.Controllers
 
             var model = new ChillingStoreItemModel
             {
-                StorageId = 0,                   // 0 = new record
+                StorageId = 0,
                 PlantId = source.PlantId,
                 ProductId = source.ProductId,
                 MilkQuantity = source.MilkQuantity,
                 Temperature = source.Temperature,
-                StoredDate = DateTime.Today       // always today
+                StoredDate = DateTime.Today,
+                Shift = source.Shift
             };
 
             TempData["Info"] = $"Duplicated from Entry #{source.StorageId} — review and save.";
@@ -224,7 +227,8 @@ namespace DairyIndustry.Controllers
                 ProductId = entry.ProductId,
                 MilkQuantity = entry.MilkQuantity,
                 Temperature = entry.Temperature,
-                StoredDate = entry.StoredDate
+                StoredDate = entry.StoredDate,
+                Shift = entry.Shift
             };
 
             return View(model);

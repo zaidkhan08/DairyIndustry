@@ -15,6 +15,10 @@ namespace DairyIndustry.Repositories
         bool UpdateEntry(ChillingStoreItemModel model);
         bool DeleteEntry(int storageId);
 
+        // NEW: inline INSERT that includes Shift column
+        // Called instead of StoreItem SP when Shift is provided
+        int InsertWithShift(ChillingStoreItemModel model);
+
         // ── ALERTS & MONITORING ────────────────────────────────
         List<ChillingStorageModel> GetTemperatureAlerts(DateTime? fromDate, DateTime? toDate);
 

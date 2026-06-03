@@ -122,7 +122,7 @@ namespace DairyIndustry.Repositories
 
             string query = @"
                 SELECT
-                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
                     pp.PlantName,
                     ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
@@ -156,7 +156,7 @@ namespace DairyIndustry.Repositories
         {
             string query = @"
                 SELECT
-                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
                     pp.PlantName,
                     ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
@@ -189,7 +189,8 @@ namespace DairyIndustry.Repositories
                 UPDATE Chilling.ChillingStorage
                 SET ProductId    = @ProductId,
                     MilkQuantity = @MilkQuantity,
-                    Temperature  = @Temperature
+                    Temperature  = @Temperature,
+                    Shift        = @Shift
                 WHERE StorageId  = @StorageId";
 
             using var con = _db.GetConnection();
@@ -199,6 +200,7 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@ProductId", (object?)model.ProductId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@MilkQuantity", model.MilkQuantity);
             cmd.Parameters.AddWithValue("@Temperature", (object?)model.Temperature ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Shift", (object?)model.Shift ?? DBNull.Value);
 
             return cmd.ExecuteNonQuery() > 0;
         }
@@ -231,7 +233,7 @@ namespace DairyIndustry.Repositories
 
             string query = @"
                 SELECT
-                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
                     pp.PlantName,
                     ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
@@ -413,7 +415,7 @@ namespace DairyIndustry.Repositories
 
             string query = @"
                 SELECT
-                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
                     pp.PlantName,
                     ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
@@ -455,7 +457,7 @@ namespace DairyIndustry.Repositories
 
             string query = @"
                 SELECT
-                    cs.StorageId, cs.PlantId, cs.ProductId,
+                    cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
                     pp.PlantName,
                     ISNULL(p.ProductName, 'Raw Milk') AS ItemName,
@@ -676,6 +678,41 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ═══════════════════════════════════════════════════════════
+        //  NEW — INSERT WITH SHIFT — inline query
+        //  Called instead of StoreItem SP when Shift is selected.
+        //  Identical to SP behaviour + writes Shift column.
+        //  SP is left completely untouched.
+        // ═══════════════════════════════════════════════════════════
+        public int InsertWithShift(ChillingStoreItemModel model)
+        {
+            string query = @"
+                INSERT INTO Chilling.ChillingStorage
+                    (PlantId, ProductId, MilkQuantity, Temperature, StoredDate, Shift)
+                VALUES
+                    (@PlantId, @ProductId, @MilkQuantity, @Temperature,
+                     ISNULL(@StoredDate, CAST(GETDATE() AS DATE)), @Shift);
+                SELECT SCOPE_IDENTITY() AS NewStorageId;";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
+            cmd.Parameters.AddWithValue("@ProductId", (object?)model.ProductId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@MilkQuantity", model.MilkQuantity);
+            cmd.Parameters.AddWithValue("@Temperature", (object?)model.Temperature ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@StoredDate", model.StoredDate);
+            cmd.Parameters.AddWithValue("@Shift", (object?)model.Shift ?? DBNull.Value);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+                return Convert.ToInt32(reader["NewStorageId"]);
+            return 0;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPERS
+        // ═══════════════════════════════════════════════════════════
 
         private ChillingStorageModel MapStorageModel(SqlDataReader reader)
         {
@@ -693,6 +730,8 @@ namespace DairyIndustry.Repositories
                 MilkQuantity = Convert.ToDecimal(reader["MilkQuantity"]),
                 Temperature = temp,
                 StoredDate = Convert.ToDateTime(reader["StoredDate"]),
+                Shift = HasColumn(reader, "Shift") && reader["Shift"] != DBNull.Value
+                                   ? reader["Shift"].ToString() : null,
                 TempStatus = GetTempStatus(temp)
             };
         }
@@ -703,6 +742,16 @@ namespace DairyIndustry.Repositories
             if (temp <= 5) return "Safe";
             if (temp <= 8) return "Warning";
             return "Critical";
+        }
+
+        // Safe column existence check — prevents InvalidOperationException
+        // when SP results don't include all columns (e.g. Shift not in GetByPlant SP)
+        private bool HasColumn(SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
         }
     }
 }
