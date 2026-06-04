@@ -678,6 +678,30 @@ namespace DairyIndustry.Repositories
         // ═══════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ═══════════════════════════════════════════════════════════
+        //  NEW — QUICK UPDATE ENTRY
+        //  Updates only MilkQuantity and Temperature.
+        //  Used by the inline Quick Edit popover on the Index page.
+        // ═══════════════════════════════════════════════════════════
+        public bool QuickUpdateEntry(int storageId, decimal milkQuantity, decimal? temperature)
+        {
+            string query = @"
+                UPDATE Chilling.ChillingStorage
+                SET MilkQuantity = @MilkQuantity,
+                    Temperature  = @Temperature
+                WHERE StorageId  = @StorageId";
+
+            using var con = _db.GetConnection();
+            con.Open();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@StorageId", storageId);
+            cmd.Parameters.AddWithValue("@MilkQuantity", milkQuantity);
+            cmd.Parameters.AddWithValue("@Temperature", (object?)temperature ?? DBNull.Value);
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
         //  NEW — INSERT WITH SHIFT — inline query
         //  Called instead of StoreItem SP when Shift is selected.
         //  Identical to SP behaviour + writes Shift column.

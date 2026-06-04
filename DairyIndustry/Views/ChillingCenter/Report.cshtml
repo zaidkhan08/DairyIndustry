@@ -428,14 +428,30 @@
     </form>
 </div>
 
-<!-- Tab Bar -->
-<div class="cc-tab-bar">
-    <div class="cc-tab active" data-tab="bydate">
-        <i class="bi bi-calendar3"></i> By Date
+<!-- Tab Bar + Print Button -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
+    <div class="cc-tab-bar" style="flex:1;margin-bottom:0;">
+        <div class="cc-tab active" data-tab="bydate">
+            <i class="bi bi-calendar3"></i> By Date
+        </div>
+        <div class="cc-tab" data-tab="byproduct">
+            <i class="bi bi-box-seam"></i> By Product
+        </div>
     </div>
-    <div class="cc-tab" data-tab="byproduct">
-        <i class="bi bi-box-seam"></i> By Product
-    </div>
+    <button type="button" onclick="window.print()"
+            class="no-print"
+            style="display:inline-flex;align-items:center;gap:8px;
+                   padding:9px 18px;border-radius:10px;
+                   border:1.5px solid #e2e8f0;background:#fff;
+                   color:#475569;font-size:13px;font-weight:600;
+                   cursor:pointer;transition:all .15s;white-space:nowrap;
+                   margin-left:12px;"
+            onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1';"
+            onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0';"
+            title="Print this report">
+        <i class="bi bi-printer" style="font-size:15px;"></i>
+        Print Report
+    </button>
 </div>
 
 <!-- ══════════════════════════════════════════════════ -->

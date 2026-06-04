@@ -233,7 +233,7 @@ namespace DairyIndustry.Controllers
 
             return View(model);
         }
-
+        
         // EDIT POST
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -320,6 +320,31 @@ namespace DairyIndustry.Controllers
 
             ViewBag.PlantName = plant?.DisplayText ?? "All Plants";
             return View(data);
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  QUICK EDIT — /ChillingCenter/QuickEdit
+        //  Called via fetch() from Index page — no page reload.
+        //  Only updates MilkQuantity and Temperature.
+        //  Returns JSON { success, message }.
+        // ═══════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult QuickEdit(int storageId, decimal milkQuantity, decimal? temperature)
+        {
+            if (milkQuantity <= 0)
+                return Json(new { success = false, message = "Quantity must be greater than 0." });
+
+            bool ok = _repo.QuickUpdateEntry(storageId, milkQuantity, temperature);
+
+            return Json(new
+            {
+                success = ok,
+                message = ok ? "Entry updated successfully." : "Update failed. Please try again.",
+                milkQuantity = milkQuantity.ToString("N2"),
+                temperature = temperature.HasValue ? temperature.Value.ToString("N1") + "°C" : "—"
+            });
         }
 
 

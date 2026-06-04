@@ -34,6 +34,10 @@ namespace DairyIndustry.Repositories
         List<ChillingStorageModel> GetByPlantFiltered(int plantId, DateTime? fromDate, DateTime? toDate, string? search);
         List<ChillingStorageModel> GetAllFiltered(DateTime? fromDate, DateTime? toDate, string? search);
 
+        // ── QUICK EDIT (Feature: Quick Edit inline) ────────────
+        // Updates only MilkQuantity and Temperature — used by inline popover on Index
+        bool QuickUpdateEntry(int storageId, decimal milkQuantity, decimal? temperature);
+
         // ── DAILY REPORT (Feature: Daily Report) ──────────────
         List<ChillingDailyReportModel> GetDailyReport(int? plantId, DateTime? fromDate, DateTime? toDate);
 

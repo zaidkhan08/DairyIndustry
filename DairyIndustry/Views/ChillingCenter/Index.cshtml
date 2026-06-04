@@ -299,6 +299,122 @@
                 opacity: .35;
                 cursor: not-allowed;
             }
+
+        /* Quick Edit popover */
+        .cc-qe-popover {
+            display: none;
+            position: fixed;
+            z-index: 9000;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 12px 32px rgba(0,0,0,.15);
+            border: 1px solid #e2e8f0;
+            padding: 18px 20px;
+            width: 260px;
+        }
+
+            .cc-qe-popover.visible {
+                display: block;
+            }
+
+        .cc-qe-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cc-qe-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .cc-qe-input {
+            font-size: 13px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+            width: 100%;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+            .cc-qe-input:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+            }
+
+        .cc-qe-input-group {
+            display: flex;
+        }
+
+            .cc-qe-input-group .cc-qe-input {
+                border-radius: 8px 0 0 8px;
+                flex: 1;
+            }
+
+        .cc-qe-addon {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .cc-qe-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .cc-qe-save {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+            .cc-qe-save:hover {
+                background: #0b5ed7;
+            }
+
+        .cc-qe-cancel {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .cc-qe-msg {
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+            min-height: 16px;
+        }
     </style>
 }
 
@@ -393,7 +509,9 @@
                         }
                         idx++;
 
-                        <tr>
+                        <tr data-id="@entry.StorageId"
+                            data-qty="@entry.MilkQuantity.ToString("F2")"
+                            data-temp="@(entry.Temperature.HasValue? entry.Temperature.Value.ToString("F1") : "")">
                             <td style="padding-left:20px;"><span class="cell-id">#@entry.StorageId</span></td>
                             <td>@entry.StoredDate.ToString("dd MMM yyyy")</td>
                             <td><span class="cell-primary">@entry.PlantName</span></td>
@@ -436,7 +554,13 @@
                                     <a asp-action="Details" asp-route-id="@entry.StorageId" class="cc-btn-icon view" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a asp-action="Edit" asp-route-id="@entry.StorageId" class="cc-btn-icon edit" title="Edit">
+                                    <button type="button" class="cc-btn-icon cc-qe-trigger" title="Quick Edit"
+                                            data-id="@entry.StorageId"
+                                            data-qty="@entry.MilkQuantity.ToString("F2")"
+                                            data-temp="@(entry.Temperature.HasValue? entry.Temperature.Value.ToString("F1") : "")">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <a asp-action="Edit" asp-route-id="@entry.StorageId" class="cc-btn-icon edit" title="Full Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <a asp-action="Delete" asp-route-id="@entry.StorageId" class="cc-btn-icon del" title="Delete">
@@ -469,8 +593,36 @@
     }
 </div>
 
+<!-- Quick Edit Popover -->
+<div id="qePopover" class="cc-qe-popover">
+    <div class="cc-qe-title">
+        <span><i class="bi bi-pencil-square me-2"></i>Quick Edit</span>
+        <span id="qeEntryLabel" style="font-size:11px;color:#94a3b8;font-weight:500;"></span>
+    </div>
+    <div style="margin-bottom:10px;">
+        <label class="cc-qe-label">Quantity</label>
+        <div class="cc-qe-input-group">
+            <input type="number" id="qeQty" class="cc-qe-input" step="0.01" min="0.01" />
+            <div class="cc-qe-addon">L</div>
+        </div>
+    </div>
+    <div>
+        <label class="cc-qe-label">Temperature</label>
+        <div class="cc-qe-input-group">
+            <input type="number" id="qeTemp" class="cc-qe-input" step="0.1" placeholder="optional" />
+            <div class="cc-qe-addon">°C</div>
+        </div>
+    </div>
+    <div class="cc-qe-actions">
+        <button class="cc-qe-save" id="qeSave"><i class="bi bi-check-lg me-1"></i>Save</button>
+        <button class="cc-qe-cancel" id="qeCancel">Cancel</button>
+    </div>
+    <div class="cc-qe-msg" id="qeMsg"></div>
+</div>
+
 @section Scripts {
     <script>
+        // ── Pagination ──
         (function () {
             const PAGE_SIZE = 5;
             const rows = Array.from(document.querySelectorAll('.cc-table tbody tr'));
@@ -497,17 +649,13 @@
                 const prev = btn('<i class="bi bi-chevron-left"></i>', currentPage === 1);
                 prev.addEventListener('click', () => { if (currentPage > 1) showPage(currentPage - 1); });
                 container.appendChild(prev);
-                const pages = getPageRange(currentPage, totalPages);
-                pages.forEach(p => {
+                getPageRange(currentPage, totalPages).forEach(p => {
                     if (p === '…') {
                         const el = document.createElement('div');
-                        el.className = 'cc-page-btn disabled';
-                        el.textContent = '…';
-                        container.appendChild(el);
+                        el.className = 'cc-page-btn disabled'; el.textContent = '…'; container.appendChild(el);
                     } else {
                         const b = btn(p, false, p === currentPage);
-                        b.addEventListener('click', () => showPage(p));
-                        container.appendChild(b);
+                        b.addEventListener('click', () => showPage(p)); container.appendChild(b);
                     }
                 });
                 const next = btn('<i class="bi bi-chevron-right"></i>', currentPage === totalPages);
@@ -518,8 +666,7 @@
             function btn(html, disabled, active) {
                 const el = document.createElement('div');
                 el.className = 'cc-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-                el.innerHTML = html;
-                return el;
+                el.innerHTML = html; return el;
             }
 
             function getPageRange(cur, total) {
@@ -530,6 +677,118 @@
             }
 
             showPage(1);
+        })();
+
+        // ── Quick Edit ──
+        (function () {
+            var popover    = document.getElementById('qePopover');
+            var qeQty      = document.getElementById('qeQty');
+            var qeTemp     = document.getElementById('qeTemp');
+            var qeMsg      = document.getElementById('qeMsg');
+            var qeLabel    = document.getElementById('qeEntryLabel');
+            var currentId  = null;
+            var currentRow = null;
+            var token      = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            // Open popover
+            document.querySelectorAll('.cc-qe-trigger').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    currentId  = btn.dataset.id;
+                    currentRow = btn.closest('tr');
+
+                    qeQty.value  = btn.dataset.qty;
+                    qeTemp.value = btn.dataset.temp;
+                    qeMsg.textContent = '';
+                    qeLabel.textContent = '#' + currentId;
+
+                    // Position popover near the button
+                    var rect = btn.getBoundingClientRect();
+                    var top  = rect.bottom + window.scrollY + 6;
+                    var left = rect.left + window.scrollX - 200;
+                    if (left < 8) left = 8;
+                    popover.style.top  = top + 'px';
+                    popover.style.left = left + 'px';
+                    popover.classList.add('visible');
+                    qeQty.focus();
+                });
+            });
+
+            // Close on outside click
+            document.addEventListener('click', function (e) {
+                if (!popover.contains(e.target)) popover.classList.remove('visible');
+            });
+
+            // Cancel
+            document.getElementById('qeCancel').addEventListener('click', function () {
+                popover.classList.remove('visible');
+            });
+
+            // Save via fetch
+            document.getElementById('qeSave').addEventListener('click', function () {
+                var qty  = parseFloat(qeQty.value);
+                var temp = qeTemp.value.trim() === '' ? null : parseFloat(qeTemp.value);
+
+                if (isNaN(qty) || qty <= 0) {
+                    qeMsg.style.color = '#dc2626';
+                    qeMsg.textContent = 'Quantity must be greater than 0.';
+                    return;
+                }
+
+                qeMsg.style.color = '#94a3b8';
+                qeMsg.textContent = 'Saving…';
+
+                var body = new URLSearchParams({
+                    storageId:    currentId,
+                    milkQuantity: qty,
+                    __RequestVerificationToken: token
+                });
+                if (temp !== null && !isNaN(temp)) body.append('temperature', temp);
+
+                fetch('@Url.Action("QuickEdit", "ChillingCenter")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        qeMsg.style.color = '#16a34a';
+                        qeMsg.textContent = '✓ Saved';
+
+                        // Update the row cells live — no reload needed
+                        if (currentRow) {
+                            // Qty cell (index 4)
+                            var qtyCell = currentRow.querySelectorAll('td')[4];
+                            if (qtyCell) qtyCell.querySelector('.cell-num').textContent = data.milkQuantity;
+
+                            // Update button data attrs so re-open shows new values
+                            var trigger = currentRow.querySelector('.cc-qe-trigger');
+                            if (trigger) {
+                                trigger.dataset.qty  = qty.toFixed(2);
+                                trigger.dataset.temp = temp !== null && !isNaN(temp) ? temp.toFixed(1) : '';
+                            }
+                        }
+
+                        setTimeout(function () { popover.classList.remove('visible'); }, 900);
+                    } else {
+                        qeMsg.style.color = '#dc2626';
+                        qeMsg.textContent = data.message;
+                    }
+                })
+                .catch(function () {
+                    qeMsg.style.color = '#dc2626';
+                    qeMsg.textContent = 'Network error. Please try again.';
+                });
+            });
+
+            // Enter key to save
+            [qeQty, qeTemp].forEach(function (inp) {
+                inp.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') document.getElementById('qeSave').click();
+                    if (e.key === 'Escape') popover.classList.remove('visible');
+                });
+            });
         })();
     </script>
 }
