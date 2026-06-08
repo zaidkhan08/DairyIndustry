@@ -1,119 +1,205 @@
 ﻿@{
-    ViewData["Title"] = "Register Vehicle";
-    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    ViewBag.Title = "Register Vehicle";
+    string driverStatus = ViewBag.DriverStatus as string ?? "Pending";
+    bool canRegister = driverStatus == "Active";
 }
 
-<div class="container-fluid p-4">
-
-    <div class="row justify-content-center">
-        <div class="col-xl-6 col-lg-8 col-md-10">
-
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                        <div>@ViewBag.Error</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                        <div>@TempData["Success"]</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
-
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="bg-primary" style="height:4px;"></div>
-
-                <div class="card-header bg-white border-0 py-4 px-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                             style="width:48px;height:48px;">
-                            <i class="bi bi-truck text-primary fs-4"></i>
-                        </div>
-                        <div>
-                            <h5 class="mb-0 fw-bold text-dark">Register a Vehicle</h5>
-                            <p class="text-muted small mb-0">Add a transport vehicle to your fleet. Admin will verify before use.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body px-4 pb-4 pt-2">
-
-                    <form method="post" asp-action="RegisterVehicle" asp-controller="Logistics"
-                          id="registerVehicleForm" novalidate>
-
-                        <!-- Vehicle Number -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Vehicle Number <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 text-muted">
-                                    <i class="bi bi-truck-flatbed"></i>
-                                </span>
-                                <input type="text" name="vehicleNumber" id="vehicleNumber"
-                                       class="form-control border-start-0 ps-1 text-uppercase"
-                                       placeholder="e.g. GJ05AB1234"
-                                       maxlength="20" required
-                                       oninput="this.value = this.value.toUpperCase()" />
-                                <div class="invalid-feedback">Vehicle number is required.</div>
-                            </div>
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Enter the registered vehicle plate number (e.g. GJ05AB1234).
-                            </div>
-                        </div>
-
-                        <!-- Capacity -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Milk Capacity (Litres) <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 text-muted">
-                                    <i class="bi bi-droplet-fill text-info"></i>
-                                </span>
-                                <input type="number" name="capacity" id="capacity"
-                                       class="form-control border-start-0 ps-1"
-                                       placeholder="e.g. 500"
-                                       min="50" max="50000" step="10" required />
-                                <span class="input-group-text bg-light text-muted">Ltr</span>
-                                <div class="invalid-feedback">Please enter a valid capacity (50–50,000 Ltr).</div>
-                            </div>
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Maximum milk load this vehicle can carry in a single trip.
-                            </div>
-                        </div>
-
-                        <!-- Info alert -->
-                        <div class="alert alert-info border-0 small d-flex align-items-start gap-2 mb-4">
-                            <i class="bi bi-shield-check text-info flex-shrink-0 mt-1"></i>
-                            <div>
-                                Your vehicle will appear as <strong>Pending</strong> until an administrator verifies it.
-                                Only <strong>Approved</strong> vehicles can be used in logistics shifts.
-                            </div>
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
-                                <i class="bi bi-plus-circle me-2"></i> Register Vehicle
-                            </button>
-                            <a asp-action="MyVehicles" class="btn btn-outline-secondary px-4">Cancel</a>
-                        </div>
-
-                    </form>
-                </div>
+<!-- Page Header -->
+<div class="bg-primary text-white py-3 mb-4 shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-truck fs-4"></i>
+            <div>
+                <h4 class="mb-0 fw-bold">Register Vehicle</h4>
+                <small class="opacity-75">Submit vehicle details for admin approval</small>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@TempData["Error"]</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (!canRegister)
+            {
+                <!-- ── BLOCKED STATE ─────────────────────────────────────── -->
+                <div class="card border-0 shadow text-center py-5 px-4">
+
+                    @if (driverStatus == "Pending")
+                    {
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-warning bg-opacity-15 d-inline-flex
+                                                align-items-center justify-content-center mb-3"
+                                 style="width:80px;height:80px;">
+                                <i class="bi bi-hourglass-split text-warning" style="font-size:2.2rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark">Account Pending Approval</h5>
+                            <p class="text-muted mb-4" style="max-width:380px;margin:0 auto;">
+                                Your driver registration is currently under review.
+                                You can register a vehicle only after an admin
+                                <strong>approves your account</strong>.
+                                This usually takes up to 24 hours.
+                            </p>
+                            <div class="alert border-0 py-2 d-inline-flex align-items-center gap-2"
+                                 style="background:#fff8e1;color:#f57f17;font-size:.875rem;">
+                                <i class="bi bi-bell-fill"></i>
+                                You will receive an email once your account is approved.
+                            </div>
+                        </div>
+                    }
+                    else if (driverStatus == "Rejected")
+                    {
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex
+                                                align-items-center justify-content-center mb-3"
+                                 style="width:80px;height:80px;">
+                                <i class="bi bi-x-circle-fill text-danger" style="font-size:2.2rem;"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark">Account Not Approved</h5>
+                            <p class="text-muted mb-4" style="max-width:380px;margin:0 auto;">
+                                Your driver registration was <strong>rejected</strong> by admin.
+                                Vehicle registration is not available.
+                                Please contact the dairy management office for more information.
+                            </p>
+                            <div class="alert border-0 py-2 d-inline-flex align-items-center gap-2"
+                                 style="background:#fce4ec;color:#c62828;font-size:.875rem;">
+                                <i class="bi bi-envelope-fill"></i>
+                                Contact admin to request a re-review of your application.
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Unknown/unexpected status -->
+                        <div class="mb-3">
+                            <i class="bi bi-shield-lock-fill text-secondary" style="font-size:3rem;"></i>
+                            <h5 class="fw-bold text-dark mt-3">Not Available</h5>
+                            <p class="text-muted">Vehicle registration is not available for your account.</p>
+                        </div>
+                    }
+
+                    <a asp-action="Index" asp-controller="Logistics"
+                       class="btn btn-outline-primary mt-2">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            }
+            else
+            {
+                <!-- ── ACTIVE DRIVER — SHOW FORM ─────────────────────────── -->
+                <!-- Info banner -->
+                <div class="alert border-0 d-flex gap-3 align-items-start mb-4"
+                     style="background:#e3f2fd;color:#0d47a1;">
+                    <i class="bi bi-info-circle-fill fs-5 mt-1 flex-shrink-0"></i>
+                    <div class="small">
+                        Your vehicle will only be available for milk transfers after
+                        <strong>admin approval</strong>. Please upload a clear copy of
+                        your <strong>Registration Certificate (RC)</strong>.
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h6 class="mb-0 fw-semibold">
+                            <i class="bi bi-truck me-2"></i>Vehicle Details
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <form asp-action="RegisterVehicle" asp-controller="Logistics"
+                              method="post" enctype="multipart/form-data">
+
+                            <!-- ── Vehicle Info ──────────────────────── -->
+                            <h6 class="text-primary fw-bold mb-3 pb-1 border-bottom border-primary-subtle">
+                                <i class="bi bi-card-checklist me-1"></i> Vehicle Information
+                            </h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">
+                                        Vehicle Number <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-primary text-white border-primary">
+                                            <i class="bi bi-truck-front-fill"></i>
+                                        </span>
+                                        <input type="text" name="vehicleNumber" class="form-control"
+                                               placeholder="e.g. GJ05 AB 1234"
+                                               style="text-transform:uppercase;" required />
+                                    </div>
+                                    <div class="form-text">Enter the number plate exactly as on the RC.</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">
+                                        Capacity (Litres) <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-primary text-white border-primary">
+                                            <i class="bi bi-droplet-fill"></i>
+                                        </span>
+                                        <input type="number" name="capacity" class="form-control"
+                                               step="0.01" min="1" max="99999"
+                                               placeholder="e.g. 2000" required />
+                                        <span class="input-group-text">litres</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ── RC Upload ─────────────────────────── -->
+                            <h6 class="text-primary fw-bold mb-3 pb-1 border-bottom border-primary-subtle">
+                                <i class="bi bi-file-earmark-image-fill me-1"></i> RC Document
+                            </h6>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    Vehicle RC (Registration Certificate)
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="border border-2 border-primary-subtle rounded-3 p-3
+                                                bg-light text-center position-relative"
+                                     id="rcDropZone" style="cursor:pointer;transition:border-color .2s;">
+                                    <i class="bi bi-cloud-upload-fill text-primary fs-2 mb-1 d-block"></i>
+                                    <p class="mb-1 fw-semibold text-dark">Click to upload or drag & drop</p>
+                                    <p class="text-muted small mb-2">JPG, PNG or PDF · Max 5 MB</p>
+                                    <input type="file" name="vehicleRcFile" id="rcFile"
+                                           accept=".jpg,.jpeg,.png,.pdf" required
+                                           class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                           style="cursor:pointer;" />
+                                </div>
+                                <div id="rcFileInfo" class="mt-2 d-none">
+                                    <div class="alert alert-primary py-2 d-flex align-items-center gap-2 mb-0">
+                                        <i class="bi bi-file-earmark-check-fill"></i>
+                                        <span id="rcFileName" class="small fw-semibold"></span>
+                                        <span id="rcFileSize" class="small text-muted ms-1"></span>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-1">
+                                    Upload the front page of the RC book showing vehicle number,
+                                    owner name and registration date.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold fs-6">
+                                <i class="bi bi-send-check-fill me-2"></i>Submit for Approval
+                            </button>
+
+                            <div class="text-center mt-3">
+                                <a asp-action="Index" asp-controller="Logistics"
+                                   class="text-muted small text-decoration-none">
+                                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
 
         </div>
     </div>
@@ -121,13 +207,21 @@
 
 @section Scripts {
     <script>
-        // Bootstrap validation
-        document.getElementById('registerVehicleForm').addEventListener('submit', function (e) {
-            if (!this.checkValidity()) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            this.classList.add('was-validated');
-        });
+        const rcFile = document.getElementById('rcFile');
+        if (rcFile) {
+            rcFile.addEventListener('change', function () {
+                const file = this.files[0];
+                const info = document.getElementById('rcFileInfo');
+                if (file) {
+                    document.getElementById('rcFileName').textContent = file.name;
+                    document.getElementById('rcFileSize').textContent =
+                        '(' + (file.size / 1024).toFixed(1) + ' KB)';
+                    info.classList.remove('d-none');
+                    document.getElementById('rcDropZone').style.borderColor = '#0d6efd';
+                } else {
+                    info.classList.add('d-none');
+                }
+            });
+        }
     </script>
 }

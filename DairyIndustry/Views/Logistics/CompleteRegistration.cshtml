@@ -1,0 +1,232 @@
+﻿@{
+    ViewBag.Title = "Complete Registration";
+}
+
+<!-- Page Header -->
+<div class="bg-primary text-white py-3 mb-4 shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge-fill fs-4"></i>
+            <div>
+                <h4 class="mb-0 fw-bold">Complete Registration</h4>
+                <small class="opacity-75">Step 3 of 3 — Enter your details and upload Driving Licence</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+
+            <!-- Step Indicator -->
+            <div class="d-flex align-items-center mb-4">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center
+                                justify-content-center fw-bold" style="width:36px;height:36px;">
+                        <i class="bi bi-check-lg" style="font-size:1rem;"></i>
+                    </div>
+                    <small class="text-success fw-semibold mt-1" style="font-size:0.7rem;">Email</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-success mx-2 mb-3"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center
+                                justify-content-center fw-bold" style="width:36px;height:36px;">
+                        <i class="bi bi-check-lg" style="font-size:1rem;"></i>
+                    </div>
+                    <small class="text-success fw-semibold mt-1" style="font-size:0.7rem;">Verified</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-primary mx-2 mb-3"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center
+                                justify-content-center fw-bold" style="width:36px;height:36px;">3</div>
+                    <small class="text-primary fw-semibold mt-1" style="font-size:0.7rem;">Details</small>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@TempData["Error"]</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Email verified badge -->
+            <div class="alert border-0 py-2 mb-4 d-flex align-items-center gap-2"
+                 style="background:#e8f5e9;color:#2e7d32;">
+                <i class="bi bi-check-circle-fill fs-5"></i>
+                <span>
+                    Email <strong>@ViewBag.Email</strong> verified successfully.
+                </span>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-clipboard-fill me-2"></i>Driver Details
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="CompleteRegistration" asp-controller="Logistics"
+                          method="post" enctype="multipart/form-data">
+
+                        <!-- ── Personal Info ───────────────────────── -->
+                        <h6 class="text-primary fw-bold mb-3 pb-1 border-bottom border-primary-subtle">
+                            <i class="bi bi-person-fill me-1"></i> Personal Information
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Full Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-primary">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" class="form-control" value="@ViewBag.Name"
+                                           readonly style="background:#f8f9fa;" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    Driving Licence No <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-primary">
+                                        <i class="bi bi-card-text"></i>
+                                    </span>
+                                    <input type="text" name="licenseNo" class="form-control"
+                                           placeholder="e.g. GJ01 20200012345" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-primary">
+                                        <i class="bi bi-telephone"></i>
+                                    </span>
+                                    <input type="tel" name="phone" class="form-control"
+                                           placeholder="+91 98765 43210" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Login Credentials ───────────────────── -->
+                        <h6 class="text-primary fw-bold mb-3 pb-1 border-bottom border-primary-subtle">
+                            <i class="bi bi-lock-fill me-1"></i> Login Credentials
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    Username <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-primary">
+                                        <i class="bi bi-at"></i>
+                                    </span>
+                                    <input type="text" name="username" class="form-control"
+                                           placeholder="Choose a username" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    Password <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-primary">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" name="password" id="passwordInput"
+                                           class="form-control" placeholder="Min. 6 characters"
+                                           minlength="6" required />
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            onclick="togglePassword()">
+                                        <i class="bi bi-eye" id="eyeIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Document Upload ─────────────────────── -->
+                        <h6 class="text-primary fw-bold mb-3 pb-1 border-bottom border-primary-subtle">
+                            <i class="bi bi-file-earmark-image-fill me-1"></i> Document Upload
+                        </h6>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Driving Licence (Physical Copy)
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="border border-2 border-primary-subtle rounded-3 p-3
+                                        bg-light text-center position-relative"
+                                 id="dlDropZone"
+                                 style="cursor:pointer; transition:border-color .2s;">
+                                <i class="bi bi-cloud-upload-fill text-primary fs-2 mb-1 d-block"></i>
+                                <p class="mb-1 fw-semibold text-dark">Click to upload or drag & drop</p>
+                                <p class="text-muted small mb-2">JPG, PNG or PDF · Max 5 MB</p>
+                                <input type="file" name="drivingLicenseFile" id="dlFile"
+                                       accept=".jpg,.jpeg,.png,.pdf" required
+                                       class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                       style="cursor:pointer;" />
+                            </div>
+                            <div id="dlFileInfo" class="mt-2 d-none">
+                                <div class="alert alert-primary py-2 d-flex align-items-center gap-2 mb-0">
+                                    <i class="bi bi-file-earmark-check-fill"></i>
+                                    <span id="dlFileName" class="small fw-semibold"></span>
+                                    <span id="dlFileSize" class="small text-muted ms-1"></span>
+                                </div>
+                            </div>
+                            <div class="form-text mt-1">
+                                Upload a clear scan or photo of the front side of your DL.
+                                Admin will verify this document before approving your account.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold fs-6">
+                            <i class="bi bi-send-check-fill me-2"></i>Submit Registration
+                        </button>
+                        <p class="text-center text-muted small mt-3 mb-0">
+                            <i class="bi bi-clock-history me-1"></i>
+                            Your account will be reviewed by admin before you can log in.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Show selected file name
+    document.getElementById('dlFile').addEventListener('change', function () {
+        const file = this.files[0];
+        const info = document.getElementById('dlFileInfo');
+        if (file) {
+            document.getElementById('dlFileName').textContent = file.name;
+            document.getElementById('dlFileSize').textContent =
+                '(' + (file.size / 1024).toFixed(1) + ' KB)';
+            info.classList.remove('d-none');
+            document.getElementById('dlDropZone').style.borderColor = '#0d6efd';
+        } else {
+            info.classList.add('d-none');
+        }
+    });
+
+    // Password toggle
+    function togglePassword() {
+        const input = document.getElementById('passwordInput');
+        const icon  = document.getElementById('eyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    }
+</script>
+}

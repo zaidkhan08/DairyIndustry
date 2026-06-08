@@ -109,7 +109,9 @@ namespace DairyIndustry.Controllers
             }
 
             // 4. Check trusted device cookie
-            var deviceToken = Request.Cookies["DMS_TrustedDevice"];
+            string cookieName = $"DMS_TD_{user.Username}";
+            string deviceToken = Request.Cookies[cookieName];
+
             if (!string.IsNullOrEmpty(deviceToken))
             {
                 bool isTrusted = _authRepo.CheckTrustedDevice(user.UserId, deviceToken);
@@ -251,8 +253,8 @@ namespace DairyIndustry.Controllers
 
                 _authRepo.RegisterTrustedDevice(userId, newDeviceToken, deviceName);
 
-                // Set HttpOnly cookie for 30 days
-                Response.Cookies.Append("DMS_TrustedDevice", newDeviceToken, new CookieOptions
+                string cookieName = $"DMS_TD_{user.Username}";
+                Response.Cookies.Append(cookieName, newDeviceToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -387,7 +389,9 @@ namespace DairyIndustry.Controllers
             _authRepo.RevokeAllTrustedDevices(userId);
 
             // Clear the trusted device cookie on this device too
-            Response.Cookies.Delete("DMS_TrustedDevice");
+            string username = HttpContext.Session.GetString("Username");
+            if (!string.IsNullOrEmpty(username))
+                Response.Cookies.Delete($"DMS_TD_{username}");
 
             // Clear session — force re-login
             HttpContext.Session.Clear();
@@ -433,38 +437,42 @@ namespace DairyIndustry.Controllers
             return View(devices);
         }
 
-        // ════════════════════════════════════════════════════
-        // POST — Revoke single device
-        // ════════════════════════════════════════════════════
-
         [HttpPost]
         public IActionResult RevokeDevice(int deviceId)
         {
             int? userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return RedirectToAction("Login");
+            if (userId == null) return RedirectToAction("Login");
+
+            // Get the device token before deleting so we can clear the cookie too
+            var devices = _authRepo.GetTrustedDevices(userId.Value);
+            var device = devices.FirstOrDefault(d => d.DeviceId == deviceId);
 
             _authRepo.RevokeDeviceById(userId.Value, deviceId);
+
+            // If the revoked device token matches what's in the cookie — clear it
+            if (device != null)
+            {
+                string cookieName = $"DMS_TD_{HttpContext.Session.GetString("Username")}";
+                string currentToken = Request.Cookies[cookieName];
+                if (currentToken == device.DeviceToken)
+                    Response.Cookies.Delete(cookieName);
+            }
 
             TempData["Success"] = "Device removed successfully.";
             return RedirectToAction("Settings");
         }
 
-        // ════════════════════════════════════════════════════
-        // POST — Revoke ALL devices
-        // ════════════════════════════════════════════════════
-
         [HttpPost]
         public IActionResult RevokeAllDevices()
         {
             int? userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return RedirectToAction("Login");
+            if (userId == null) return RedirectToAction("Login");
 
             _authRepo.RevokeAllTrustedDevices(userId.Value);
 
-            // Also clear cookie on current device
-            Response.Cookies.Delete("DMS_TrustedDevice");
+            string username = HttpContext.Session.GetString("Username");
+            if (!string.IsNullOrEmpty(username))
+                Response.Cookies.Delete($"DMS_TD_{username}");
 
             TempData["Success"] = "All trusted devices removed.";
             return RedirectToAction("Settings");

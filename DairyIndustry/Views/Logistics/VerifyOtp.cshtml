@@ -1,0 +1,151 @@
+﻿@{
+    ViewBag.Title = "Verify OTP";
+    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+}
+
+<!-- Page Header -->
+<div class="bg-primary text-white py-3 mb-4 shadow-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill fs-4"></i>
+            <div>
+                <h4 class="mb-0 fw-bold">Email Verification</h4>
+                <small class="opacity-75">Step 2 of 3 — Enter the OTP sent to your email</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <!-- Step Indicator -->
+            <div class="d-flex align-items-center mb-4">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center
+                                justify-content-center fw-bold" style="width:36px;height:36px;">
+                        <i class="bi bi-check-lg" style="font-size:1rem;"></i>
+                    </div>
+                    <small class="text-success fw-semibold mt-1" style="font-size:0.7rem;">Email</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-success mx-2 mb-3"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center
+                                justify-content-center fw-bold" style="width:36px;height:36px;">
+                        2
+                    </div>
+                    <small class="text-primary fw-semibold mt-1" style="font-size:0.7rem;">Verify OTP</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-white border border-2 border-secondary text-secondary
+                                d-flex align-items-center justify-content-center fw-bold"
+                         style="width:36px;height:36px;">
+                        3
+                    </div>
+                    <small class="text-muted mt-1" style="font-size:0.7rem;">Details</small>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@TempData["Error"]</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info alert-dismissible d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>@TempData["Info"]</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Card -->
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-key-fill me-2"></i>Enter Verification Code
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+
+                    <!-- Email badge -->
+                    <div class="alert alert-light border border-primary-subtle
+                                d-flex align-items-center gap-2 py-2 mb-4">
+                        <i class="bi bi-envelope-check-fill text-primary fs-5"></i>
+                        <div>
+                            <div class="small text-muted">OTP sent to</div>
+                            <div class="fw-semibold text-primary">@ViewBag.Email</div>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-3">
+                        Enter the 6-digit code from your email. It expires in
+                        <strong>10 minutes</strong>.
+                    </p>
+
+                    <form asp-action="VerifyOtp" asp-controller="Logistics" method="post">
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">
+                                6-Digit OTP <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="otpCode"
+                                   class="form-control form-control-lg text-center fw-bold
+                                          border-primary"
+                                   style="letter-spacing:10px;font-size:1.6rem;"
+                                   maxlength="6" inputmode="numeric" pattern="\d{6}"
+                                   placeholder="------" autocomplete="one-time-code" required />
+                            <div class="form-text text-center">Numbers only · 6 digits</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-shield-check me-2"></i>Verify OTP
+                        </button>
+                    </form>
+                </div>
+                <div class="card-footer bg-light py-3">
+                    <div class="text-center">
+                        <small class="text-muted">Didn't receive the code?</small>
+                        <a asp-action="RegisterDriver" asp-controller="Logistics"
+                           class="text-primary fw-semibold text-decoration-none small ms-1">
+                            ← Go back and resend
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Countdown timer -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    Code expires in <span id="countdown" class="fw-semibold text-primary">10:00</span>
+                </small>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 10-minute countdown
+        let seconds = 600;
+        const el = document.getElementById('countdown');
+        const timer = setInterval(() => {
+            seconds--;
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            el.textContent = m + ':' + s;
+            if (seconds <= 60) el.classList.replace('text-primary', 'text-danger');
+            if (seconds <= 0) {
+                clearInterval(timer);
+                el.textContent = 'Expired';
+                el.classList.add('fw-bold');
+            }
+        }, 1000);
+    </script>
+}
