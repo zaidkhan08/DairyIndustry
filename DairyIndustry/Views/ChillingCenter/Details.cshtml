@@ -501,29 +501,40 @@
             <div class="cc-side-card-body">
                 @{
                     double tempVal = (double)(Model.Temperature ?? 0);
-                    // Map 0–10°C range to -90deg to 90deg needle rotation
-                    double clampedVal = Math.Max(0, Math.Min(10, tempVal));
-                    double needleDeg = -90 + (clampedVal / 10.0 * 180);
+                    // Map 0–8°C range to -90deg to +90deg (critical threshold = 8°C = 100%)
+                    double clampedVal = Math.Max(0, Math.Min(8, tempVal));
+                    double needleDeg = -90 + (clampedVal / 8.0 * 180);
+                    bool hasTemp = Model.Temperature.HasValue;
                 }
-                <div class="cc-gauge-wrap">
-                    <div class="cc-gauge-arc">
-                        <div class="cc-gauge-bg"></div>
-                        <div class="cc-gauge-needle-wrap" id="gaugeNeedle"
-                             style="transform:translateX(-50%) rotate(@(needleDeg.ToString("F0"))deg);">
-                            <div class="cc-gauge-needle"></div>
-                            <div class="cc-gauge-dot"></div>
+                @if (hasTemp)
+                {
+                    <div class="cc-gauge-wrap">
+                        <div class="cc-gauge-arc">
+                            <div class="cc-gauge-bg"></div>
+                            <div class="cc-gauge-needle-wrap" id="gaugeNeedle"
+                                 style="transform:translateX(-50%) rotate(@(needleDeg.ToString("F0"))deg);">
+                                <div class="cc-gauge-needle"></div>
+                                <div class="cc-gauge-dot"></div>
+                            </div>
                         </div>
+                        <div class="cc-gauge-val" style="color:@statusColor;">
+                            @Model.Temperature.Value.ToString("N1")°C
+                        </div>
+                        <div class="cc-gauge-label" style="color:@statusColor;">@statusLabel</div>
                     </div>
-                    <div class="cc-gauge-val" style="color:@statusColor;">
-                        @(Model.Temperature.HasValue? Model.Temperature.Value.ToString("N1") + "°C" : "—")
+                    <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;">
+                        <span style="font-size:10px;color:#16a34a;font-weight:700;">0°C</span>
+                        <span style="font-size:10px;color:#ca8a04;font-weight:700;">5°C</span>
+                        <span style="font-size:10px;color:#dc2626;font-weight:700;">8°C+</span>
                     </div>
-                    <div class="cc-gauge-label" style="color:@statusColor;">@statusLabel</div>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;">
-                    <span style="font-size:10px;color:#16a34a;font-weight:700;">0°C</span>
-                    <span style="font-size:10px;color:#ca8a04;font-weight:700;">5°C</span>
-                    <span style="font-size:10px;color:#dc2626;font-weight:700;">10°C</span>
-                </div>
+                }
+                else
+                {
+                    <div style="text-align:center;padding:20px 0;">
+                        <div style="font-size:32px;color:#e2e8f0;"><i class="bi bi-thermometer"></i></div>
+                        <div style="font-size:12px;color:#94a3b8;margin-top:8px;font-weight:600;">No temperature recorded</div>
+                    </div>
+                }
             </div>
         </div>
 

@@ -321,7 +321,7 @@
                                 <div class="cc-input-addon">°C</div>
                             </div>
                             <span asp-validation-for="Temperature" class="cc-error"></span>
-                            <div class="cc-hint" id="tempHint">Safe: 0°C – 5°C &nbsp;|&nbsp; Warning: 5–7°C &nbsp;|&nbsp; Critical: >7°C</div>
+                            <div class="cc-hint" id="tempHint">Safe: 0°C – 5°C &nbsp;|&nbsp; Warning: 5–8°C &nbsp;|&nbsp; Critical: &gt;8°C</div>
                         </div>
                     </div>
                 </div>
@@ -396,7 +396,7 @@
             var val = parseFloat(this.value);
             if (isNaN(val)) { hint.style.color = '#94a3b8'; hint.textContent = 'Safe: 0°C – 5°C | Warning: 5–7°C | Critical: >7°C'; return; }
             if (val <= 5)       { hint.style.color = '#16a34a'; hint.textContent = '✓ Safe temperature'; }
-            else if (val <= 7)  { hint.style.color = '#ca8a04'; hint.textContent = '⚠ Warning — approaching limit'; }
+            else if (val <= 8)  { hint.style.color = '#ca8a04'; hint.textContent = '⚠ Warning — approaching limit'; }
             else                { hint.style.color = '#dc2626'; hint.textContent = '✕ Critical — exceeds safe limit'; }
         });
     </script>

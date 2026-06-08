@@ -487,7 +487,8 @@
                     {
                         var badgeClass = entry.TempBadgeClass == "success" ? "cc-badge-safe"
                         : entry.TempBadgeClass == "warning" ? "cc-badge-warning"
-                        : "cc-badge-danger";
+                        : entry.TempBadgeClass == "danger" ? "cc-badge-danger"
+                        : "cc-badge-secondary";
 
                         // ── Temperature trend vs previous entry from same plant ──
                         string trendHtml = "";
@@ -758,9 +759,24 @@
 
                         // Update the row cells live — no reload needed
                         if (currentRow) {
+                            var cells = currentRow.querySelectorAll('td');
+
                             // Qty cell (index 4)
-                            var qtyCell = currentRow.querySelectorAll('td')[4];
-                            if (qtyCell) qtyCell.querySelector('.cell-num').textContent = data.milkQuantity;
+                            var qtyCell = cells[4];
+                            if (qtyCell) {
+                                var qtySpan = qtyCell.querySelector('.cell-num');
+                                if (qtySpan) qtySpan.textContent = data.milkQuantity;
+                            }
+
+                            // Temperature cell (index 5) — update value, clear trend badge
+                            var tempCell = cells[5];
+                            if (tempCell) {
+                                if (data.temperature && data.temperature !== '—') {
+                                    tempCell.innerHTML = '<span class="cell-num">' + data.temperature + '</span>';
+                                } else {
+                                    tempCell.innerHTML = '<span style="color:#cbd5e1;">—</span>';
+                                }
+                            }
 
                             // Update button data attrs so re-open shows new values
                             var trigger = currentRow.querySelector('.cc-qe-trigger');

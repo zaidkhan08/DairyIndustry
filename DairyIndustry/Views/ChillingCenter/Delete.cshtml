@@ -181,7 +181,12 @@
             <div class="cc-summary-row-val">@Model.MilkQuantity.ToString("N2") L</div>
 
             <div class="cc-summary-row-label">Date</div>
-            <div class="cc-summary-row-val" style="border-bottom:none;">@Model.StoredDate.ToString("dd MMM yyyy")</div>
+            <div class="cc-summary-row-val">@Model.StoredDate.ToString("dd MMM yyyy")</div>
+
+            <div class="cc-summary-row-label">Shift</div>
+            <div class="cc-summary-row-val" style="border-bottom:none;">
+                @(!string.IsNullOrEmpty(Model.Shift) ? Model.Shift : "Not specified")
+            </div>
             <div class="cc-summary-row-label" style="border-bottom:none;"></div>
         </div>
 

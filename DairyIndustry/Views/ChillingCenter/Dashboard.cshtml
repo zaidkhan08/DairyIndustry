@@ -1,4 +1,5 @@
 ﻿@using DairyIndustry.Models.ChillingStorage
+@using System.Text.Json
 @model ChillingDashboardViewModel
 
 @{
@@ -6,11 +7,13 @@
     ViewData["Title"] = "Dashboard";
 
     var chartData = Model.RecentEntries
-        .GroupBy(e => e.StoredDate.ToString("dd MMM"))
-        .Select(g => new { Label = g.Key, Total = g.Sum(e => e.MilkQuantity) })
-        .OrderBy(x => x.Label).ToList();
-    var chartLabels = "[" + string.Join(",", chartData.Select(x => $"'{x.Label}'")) + "]";
-    var chartValues = "[" + string.Join(",", chartData.Select(x => x.Total.ToString("F2"))) + "]";
+        .GroupBy(e => e.StoredDate.ToString("yyyy-MM-dd"))
+        .Select(g => new { Label = DateTime.Parse(g.Key).ToString("dd MMM yy"), Total = g.Sum(e => e.MilkQuantity) })
+        .OrderBy(x => x.Label)
+        .ToList();
+
+    var chartLabels = JsonSerializer.Serialize(chartData.Select(x => x.Label).ToList());
+    var chartValues = JsonSerializer.Serialize(chartData.Select(x => (double)x.Total).ToList());
 }
 
 @section Styles {
@@ -334,23 +337,6 @@
     </style>
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
-         style="background:#f0fdf4;color:#15803d;font-size:13px;" role="alert">
-        <i class="bi bi-check-circle-fill"></i><span>@TempData["Success"]</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-4"
-         style="background:#fef2f2;color:#dc2626;font-size:13px;" role="alert">
-        <i class="bi bi-exclamation-circle-fill"></i><span>@TempData["Error"]</span>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
-    </div>
-}
-
 <!-- Stat Cards -->
 <div class="cc-stat-row">
     <div class="cc-stat-card blue">
@@ -387,7 +373,7 @@
         <div class="cc-panel-head">
             <div>
                 <div class="cc-panel-title">Storage Quantity Trend</div>
-                <div class="cc-panel-sub">Last @Model.RecentEntries.Count entries grouped by date</div>
+                <div class="cc-panel-sub">Last 5 entries grouped by date</div>
             </div>
             <span class="cc-live-badge"><span class="cc-live-dot"></span> Live</span>
         </div>
@@ -413,8 +399,8 @@
                 @foreach (var trend in Model.WeeklyTrend)
                 {
                     var sparkId = "spark-" + trend.PlantId;
-                    var sparkData = "[" + string.Join(",", trend.Days.Select(d => d.Quantity.ToString("F2"))) + "]";
-                    var sparkDates = "[" + string.Join(",", trend.Days.Select(d => $"'{d.Date:dd MMM}'")) + "]";
+                    var sparkData = JsonSerializer.Serialize(trend.Days.Select(d => (double)d.Quantity).ToList());
+                    var sparkDates = JsonSerializer.Serialize(trend.Days.Select(d => d.Date.ToString("dd MMM")).ToList());
 
                     <div class="cc-spark-card" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f8fafc;">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
@@ -433,8 +419,8 @@
                         <!-- Sparkline canvas -->
                         <div style="height:52px;position:relative;">
                             <canvas id="@sparkId"
-                                    data-values='@Html.Raw(sparkData)'
-                                    data-dates='@Html.Raw(sparkDates)'
+                                    data-values="@Html.Raw(sparkData)"
+                                    data-dates="@Html.Raw(sparkDates)"
                                     class="cc-spark"></canvas>
                         </div>
                         <!-- Day labels -->
@@ -544,8 +530,8 @@
 
 <!-- Main chart data via data attributes — avoids TS1109 -->
 <div id="mainChartData"
-     data-labels='@Html.Raw(chartLabels)'
-     data-values='@Html.Raw(chartValues)'
+     data-labels="@Html.Raw(chartLabels)"
+     data-values="@Html.Raw(chartValues)"
      style="display:none;"></div>
 
 @section Scripts {
@@ -566,40 +552,45 @@
         var _mc = document.getElementById('mainChartData');
         var chartLabels = _mc ? JSON.parse(_mc.dataset.labels) : [];
         var chartValues = _mc ? JSON.parse(_mc.dataset.values) : [];
-        new Chart(document.getElementById('storageChart').getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Quantity (L)',
-                    data: chartValues,
-                    borderColor: '#0d6efd',
-                    backgroundColor: function(ctx) {
-                        var g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 220);
-                        g.addColorStop(0, 'rgba(13,110,253,.15)');
-                        g.addColorStop(1, 'rgba(13,110,253,0)');
-                        return g;
-                    },
-                    fill: true, tension: 0.4, borderWidth: 2.5,
-                    pointRadius: 4, pointBackgroundColor: '#fff',
-                    pointBorderColor: '#0d6efd', pointBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: { color: '#f1f5f9' },
-                        ticks: { font: { size: 11 }, color: '#94a3b8', callback: v => v.toLocaleString() + ' L' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11 }, color: '#94a3b8' }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var ctx = document.getElementById('storageChart');
+            if (!ctx) return;
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Quantity (L)',
+                        data: chartValues,
+                        borderColor: '#0d6efd',
+                        backgroundColor: function(context) {
+                            var g = context.chart.ctx.createLinearGradient(0, 0, 0, 220);
+                            g.addColorStop(0, 'rgba(13,110,253,.15)');
+                            g.addColorStop(1, 'rgba(13,110,253,0)');
+                            return g;
+                        },
+                        fill: true, tension: 0.4, borderWidth: 2.5,
+                        pointRadius: 4, pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0d6efd', pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 11 }, color: '#94a3b8', callback: function(v) { return v.toLocaleString() + ' L'; } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 }, color: '#94a3b8' }
+                        }
                     }
                 }
-            }
+            });
         });
 
         // ── Sparkline charts — one per plant ──

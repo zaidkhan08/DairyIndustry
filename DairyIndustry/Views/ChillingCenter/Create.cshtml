@@ -423,7 +423,8 @@
 
                     <div>
                         <label asp-for="StoredDate" class="cc-label"></label>
-                        <input asp-for="StoredDate" class="cc-input" type="date" />
+                        <input asp-for="StoredDate" class="cc-input" type="date"
+                               max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         <span asp-validation-for="StoredDate" class="cc-error"></span>
                     </div>
 

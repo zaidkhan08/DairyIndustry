@@ -4,7 +4,7 @@
 @{
     Layout = "_ChillingLayout";
     ViewData["Title"] = "Capacity Monitor";
-    var maxQty = Model.Any() ? Model.Max(x => x.TotalStoredAllTime) : 1;
+    var maxQty = 1; // kept for compatibility — tank now uses StoredToday vs threshold
     int totalAlerts = Model.Sum(x => x.AlertCount);
 
     // Stock status thresholds (litres stored today)
@@ -436,7 +436,7 @@
     <div class="plant-grid">
         @foreach (var plant in Model)
         {
-            var fillPct = maxQty > 0 ? (int)Math.Min(Math.Round((double)plant.TotalStoredAllTime / (double)maxQty * 100), 100) : 0;
+            var fillPct = (int)Math.Min(Math.Round((double)plant.StoredToday / (double)NORMAL_THRESHOLD * 100), 100);
             var hasAlerts = plant.AlertCount > 0;
             var fillColor = hasAlerts ? "linear-gradient(to top,#dc2626,#f87171)" : "linear-gradient(to top,#0d6efd,#60a5fa)";
             var alertColor = hasAlerts ? "#dc2626" : "#16a34a";
@@ -525,7 +525,7 @@
                             @(hasAlerts? plant.AlertCount + " alert" + (plant.AlertCount > 1 ? "s" : "") : "Safe")
                         </span>
                     </div>
-                    <a asp-action="Index" asp-route-plantId="@plant.PlantId" class="btn-view-entries">
+                    <a asp-action="Index" class="btn-view-entries">
                         Entries <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
