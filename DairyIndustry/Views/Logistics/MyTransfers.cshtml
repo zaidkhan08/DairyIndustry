@@ -1,6 +1,6 @@
 ﻿@model List<DairyIndustry.Models.Admin.MilkTransferModel>
 @{
-    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "My Transfers";
 
     var totalDispatched = Model.Sum(t => t.DispatchQty);

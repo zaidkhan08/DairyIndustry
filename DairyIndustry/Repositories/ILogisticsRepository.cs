@@ -8,9 +8,9 @@ namespace DairyIndustry.Repositories
         void SaveEmailOtp(string email, string otpCode);
         bool VerifyEmailOtp(string email, string otpCode);
 
-        int RegisterDriver(string driverName, string licenseNo, string phone,
-                            string email, string username, string passwordHash,
-                            string drivingLicensePath);
+        Task<int> RegisterDriverAsync(string driverName, string licenseNo,
+                    string phone, string email, string username, string passwordHash,
+                    string drivingLicensePath);
         DriversModel GetDriverByUserId(int userId);
         List<DriversModel> GetAllDrivers();
         void UpdateDriverStatus(int driverId, string status);

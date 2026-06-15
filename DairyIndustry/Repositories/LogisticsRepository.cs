@@ -44,9 +44,9 @@ namespace DairyIndustry.Repositories
             var result = cmd.ExecuteScalar();
             return Convert.ToInt32(result) == 1;
         }
-        public int RegisterDriver(string driverName, string licenseNo, string phone,
-                                  string email, string username, string passwordHash,
-                                  string drivingLicensePath)
+        public async Task<int> RegisterDriverAsync(string driverName, string licenseNo,
+            string phone, string email, string username, string passwordHash,
+            string drivingLicensePath)
         {
             using SqlConnection con = _db.GetConnection();
             using SqlCommand cmd = new("Logistics.usp_Logistics_RegisterDriver", con)
@@ -60,8 +60,9 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@Username", username);
             cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
             cmd.Parameters.AddWithValue("@DrivingLicensePath", drivingLicensePath);
-            con.Open();
-            return Convert.ToInt32(cmd.ExecuteScalar());
+
+            await con.OpenAsync();
+            return Convert.ToInt32(await cmd.ExecuteScalarAsync());
         }
 
         public DriversModel GetDriverByUserId(int userId)

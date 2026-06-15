@@ -12,23 +12,22 @@ namespace DairyIndustry.Controllers
         private readonly EmailService _emailService;
         private readonly FileUploadService _fileUpload;
 
-        public LogisticsController(ILogisticsRepository logisticsRepository, EmailService emailService, FileUploadService fileUploadService)
+        public LogisticsController(ILogisticsRepository logisticsRepository,
+            EmailService emailService, FileUploadService fileUploadService)
         {
             _logisticRepo = logisticsRepository;
             _emailService = emailService;
             _fileUpload = fileUploadService;
         }
+
         [SessionAuthorize("Driver")]
         public IActionResult Index()
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
-
             var driver = _logisticRepo.GetDriverByUserId(userId);
             var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
-
             ViewBag.Vehicles = vehicles;
-
             return View(driver);
         }
 
@@ -37,12 +36,9 @@ namespace DairyIndustry.Controllers
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
-
             var driver = _logisticRepo.GetDriverByUserId(userId);
             var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
-
             ViewBag.Vehicles = vehicles;
-
             return View(driver);
         }
 
@@ -61,18 +57,21 @@ namespace DairyIndustry.Controllers
             ViewBag.Name = HttpContext.Session.GetString("PendingDriverName");
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> CompleteRegistration(
-    string licenseNo,
-    string phone,
-    string username,
-    string password,
-    IFormFile drivingLicenseFile)
+            string licenseNo,
+            string phone,
+            string username,
+            string password,
+            IFormFile drivingLicenseFile)
         {
+            
             string email = HttpContext.Session.GetString("PendingDriverEmail");
             string driverName = HttpContext.Session.GetString("PendingDriverName");
+            string otpVerified = HttpContext.Session.GetString("OtpVerified");
 
-            if (HttpContext.Session.GetString("OtpVerified") != "true" || string.IsNullOrEmpty(email))
+            if (otpVerified != "true" || string.IsNullOrEmpty(email))
             {
                 TempData["Error"] = "Session expired. Please restart registration.";
                 return RedirectToAction("RegisterDriver");
@@ -86,22 +85,62 @@ namespace DairyIndustry.Controllers
                 return View();
             }
 
+            string extension = Path.GetExtension(drivingLicenseFile.FileName).ToLower();
+            HashSet<string> allowed = new(StringComparer.OrdinalIgnoreCase)
+                { ".jpg", ".jpeg", ".png", ".pdf" };
+
+            if (!allowed.Contains(extension))
+            {
+                TempData["Error"] = "Invalid file type. Only JPG, PNG and PDF are allowed.";
+                ViewBag.Email = email;
+                ViewBag.Name = driverName;
+                return View();
+            }
+
+            if (drivingLicenseFile.Length > 5 * 1024 * 1024)
+            {
+                TempData["Error"] = "File size cannot exceed 5 MB.";
+                ViewBag.Email = email;
+                ViewBag.Name = driverName;
+                return View();
+            }
+
+            byte[] fileBytes;
+            using (var ms = new MemoryStream())
+            {
+                await drivingLicenseFile.CopyToAsync(ms);
+                fileBytes = ms.ToArray();
+            }
+
+            string webRoot = _fileUpload.GetWebRootPath();
+
             try
             {
-                // If SaveFile is synchronous
-                string dlPath = _fileUpload.SaveFile(drivingLicenseFile, "drivinglicences");
 
-                string passHash = BCrypt.Net.BCrypt.HashPassword(password);
+                string dlPath = await Task.Run(() =>
+                {
+                    string folder = Path.Combine(
+                        webRoot, "uploads", "documents", "drivinglicences");
 
-                // Synchronous repository call
-                _logisticRepo.RegisterDriver(
-                    driverName,
-                    licenseNo,
-                    phone,
-                    email,
-                    username,
-                    passHash,
-                    dlPath);
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
+
+                    string fileName = Guid.NewGuid() + extension;
+                    string fullPath = Path.Combine(folder, fileName);
+
+                    System.IO.File.WriteAllBytes(fullPath, fileBytes);
+
+                    return "/uploads/documents/drivinglicences/" + fileName;
+                });
+
+                string passHash = await Task.Run(() =>
+                    BCrypt.Net.BCrypt.HashPassword(password));
+
+                // Async DB call
+                await _logisticRepo.RegisterDriverAsync(
+                    driverName, licenseNo, phone,
+                    email, username, passHash, dlPath);
+
 
                 HttpContext.Session.Remove("PendingDriverEmail");
                 HttpContext.Session.Remove("PendingDriverName");
@@ -118,6 +157,7 @@ namespace DairyIndustry.Controllers
                 return View();
             }
         }
+
         [HttpPost]
         public IActionResult SendOtp(string email, string driverName)
         {
@@ -128,19 +168,12 @@ namespace DairyIndustry.Controllers
             }
 
             string otp = new Random().Next(100000, 999999).ToString();
-
             _logisticRepo.SaveEmailOtp(email, otp);
 
             _ = Task.Run(async () =>
             {
-                try
-                {
-                    await _emailService.SendOtpEmailAsync(email, otp);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[OTP Email] Failed: {ex.Message}");
-                }
+                try { await _emailService.SendOtpEmailAsync(email, otp); }
+                catch (Exception ex) { Console.WriteLine($"[OTP Email] Failed: {ex.Message}"); }
             });
 
             HttpContext.Session.SetString("PendingDriverEmail", email);
@@ -180,14 +213,12 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("CompleteRegistration");
         }
 
-
         [SessionAuthorize("Driver")]
         [HttpGet]
         public IActionResult RegisterVehicle()
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             var driver = _logisticRepo.GetDriverByUserId(userId);
-
             ViewBag.DriverStatus = driver?.Status ?? "Pending";
             return View();
         }
@@ -195,10 +226,11 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Driver")]
         [HttpPost]
         public async Task<IActionResult> RegisterVehicle(
-    string vehicleNumber,
-    decimal capacity,
-    IFormFile vehicleRcFile)
+            string vehicleNumber,
+            decimal capacity,
+            IFormFile vehicleRcFile)
         {
+            // Read session BEFORE any await
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
 
             if (driverId == 0)
@@ -225,72 +257,52 @@ namespace DairyIndustry.Controllers
                 return View();
             }
 
+            string extension = Path.GetExtension(vehicleRcFile.FileName).ToLower();
+            HashSet<string> allowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+                { ".jpg", ".jpeg", ".png", ".pdf" };
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                TempData["Error"] = "Only JPG, PNG and PDF files are allowed.";
+                return View();
+            }
+
+            if (vehicleRcFile.Length > 5 * 1024 * 1024)
+            {
+                TempData["Error"] = "File size cannot exceed 5 MB.";
+                return View();
+            }
+
+            byte[] fileBytes;
+            using (var ms = new MemoryStream())
+            {
+                await vehicleRcFile.CopyToAsync(ms);
+                fileBytes = ms.ToArray();
+            }
+
+            string webRoot = _fileUpload.GetWebRootPath();
+
             try
             {
-                HashSet<string> allowedExtensions =
-                    new(StringComparer.OrdinalIgnoreCase)
-                    {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".pdf"
-                    };
-
-                string extension =
-                    Path.GetExtension(vehicleRcFile.FileName);
-
-                if (!allowedExtensions.Contains(extension))
+                string dbPath = await Task.Run(() =>
                 {
-                    TempData["Error"] =
-                        "Only JPG, PNG and PDF files are allowed.";
+                    string folderPath = Path.Combine(
+                        webRoot, "uploads", "documents", "vehiclercs");
 
-                    return View();
-                }
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
 
-                if (vehicleRcFile.Length > 5 * 1024 * 1024)
-                {
-                    TempData["Error"] =
-                        "File size cannot exceed 5 MB.";
+                    string fileName = Guid.NewGuid().ToString() + extension;
+                    string fullPath = Path.Combine(folderPath, fileName);
 
-                    return View();
-                }
+                    System.IO.File.WriteAllBytes(fullPath, fileBytes);
 
-                string folderPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    "uploads",
-                    "documents",
-                    "vehiclercs");
+                    return "/uploads/documents/vehiclercs/" + fileName;
+                });
 
-                if (!Directory.Exists(folderPath))
-                    Directory.CreateDirectory(folderPath);
+                _logisticRepo.AddVehicle(driverId, vehicleNumber, capacity, dbPath);
 
-                string fileName =
-                    Guid.NewGuid().ToString() + extension;
-
-                string fullPath =
-                    Path.Combine(folderPath, fileName);
-
-                using (var stream = new FileStream(
-                    fullPath,
-                    FileMode.Create))
-                {
-                    await vehicleRcFile.CopyToAsync(stream);
-                }
-
-                // Save path in DB
-                string dbPath =
-                    "/uploads/documents/vehiclercs/" + fileName;
-
-                _logisticRepo.AddVehicle(
-                    driverId,
-                    vehicleNumber,
-                    capacity,
-                    dbPath);
-
-                TempData["Success"] =
-                    "Vehicle registered successfully.";
-
+                TempData["Success"] = "Vehicle registered successfully.";
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -299,29 +311,24 @@ namespace DairyIndustry.Controllers
                 return View();
             }
         }
+
         [SessionAuthorize("Admin")]
         public IActionResult AllDrivers()
-           => View(_logisticRepo.GetAllDrivers());
+            => View(_logisticRepo.GetAllDrivers());
 
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult UpdateDriverStatus(int driverId, string status)
         {
             _logisticRepo.UpdateDriverStatus(driverId, status);
-
             try
             {
                 var contact = _logisticRepo.GetDriverContactInfo(driverId);
                 if (contact != null && !string.IsNullOrEmpty(contact.Email))
-                {
                     _logisticRepo.SendDriverStatusEmail(
-                        contact.Email,
-                        contact.DriverName,
-                        contact.Username,
-                        status);
-                }
+                        contact.Email, contact.DriverName, contact.Username, status);
             }
-            catch { /* never let email failure break the action */ }
+            catch { }
 
             TempData["Success"] = status == "Active"
                 ? "Driver approved and notified by email."
@@ -332,25 +339,19 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         public IActionResult AllVehicles()
-         => View(_logisticRepo.GetAllVehicles());
+            => View(_logisticRepo.GetAllVehicles());
 
         [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult UpdateVehicleStatus(int vehicleId, string status)
         {
             _logisticRepo.UpdateVehicleStatus(vehicleId, status);
-
             try
             {
                 var contact = _logisticRepo.GetDriverContactInfoByVehicleId(vehicleId);
                 if (contact != null && !string.IsNullOrEmpty(contact.Email))
-                {
                     _logisticRepo.SendVehicleStatusEmail(
-                        contact.Email,
-                        contact.DriverName,
-                        contact.VehicleNumber,
-                        status);
-                }
+                        contact.Email, contact.DriverName, contact.VehicleNumber, status);
             }
             catch { }
 

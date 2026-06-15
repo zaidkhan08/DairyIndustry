@@ -165,7 +165,6 @@ namespace DairyIndustry.Repositories
                                 StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
                                 FirstName = reader["FirstName"] == DBNull.Value ? null : reader["FirstName"].ToString(),
                                 LastName = reader["LastName"] == DBNull.Value ? null : reader["LastName"].ToString(),
-                                FullName = reader["FullName"] == DBNull.Value ? null : reader["FullName"].ToString(),
                                 Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
                                 Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
 
@@ -174,6 +173,14 @@ namespace DairyIndustry.Repositories
                                 CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
                                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
                                 PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
+
+                                DriverId = reader["DriverId"] == DBNull.Value ? null : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString(),
+
+                                FullName = reader["FullName"] == DBNull.Value
+        ? (reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString())
+        : reader["FullName"].ToString(),
                             };
                         }
                     }
@@ -272,7 +279,34 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<User> GetUsersByRole(string roleName)
+        {
+            var users = new List<User>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_GetUsersByRole", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@RoleName", roleName);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            users.Add(new User
+                            {
+                                UserId = (int)reader["UserId"],
+                                Username = reader["Username"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return users;
+        }
 
+        public List<User> GetPlantManagers() => GetUsersByRole("Plant Manager");
+        public List<User> GetCollectionAgents() => GetUsersByRole("Collection Agent");
         // ════════════════════════════════════════════════════════
         // AUDIT LOG
         // ════════════════════════════════════════════════════════
@@ -864,6 +898,7 @@ namespace DairyIndustry.Repositories
               AND s.StaffId NOT IN (
                   SELECT StaffId FROM Admin.Users WHERE StaffId IS NOT NULL
               )
+              AND r.RoleName NOT IN ('Collection Staff', 'Plant Staff')
             ORDER BY s.LastName, s.FirstName", con))
                 {
                     con.Open();

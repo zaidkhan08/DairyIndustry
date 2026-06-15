@@ -1,7 +1,7 @@
 ﻿@model DairyIndustry.Models.Logistics.DriversModel
 @{
     ViewData["Title"] = "Driver Dashboard";
-    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
     var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
     var transfers = ViewBag.Transfers as List<DairyIndustry.Models.Admin.MilkTransferModel>;

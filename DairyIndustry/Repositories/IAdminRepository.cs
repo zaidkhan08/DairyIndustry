@@ -94,6 +94,9 @@ namespace DairyIndustry.Repositories
         void AssignUserToPlant(int userId, int plantId);
 
         void AssignUserToCenter(int userId, int centerId);
+        List<User> GetUsersByRole(string roleName);
+        List<User> GetPlantManagers();
+        List<User> GetCollectionAgents();
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════

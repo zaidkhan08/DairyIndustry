@@ -19,5 +19,9 @@
         public string CenterName { get; set; }
         public string PlantName { get; set; }
         public DateTime CreatedDate { get; set; }
+
+        public int? DriverId { get; set; }
+        public string DriverName { get; set; }
+        public string DriverStatus { get; set; }
     }
 }

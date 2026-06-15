@@ -7,7 +7,7 @@ namespace DairyIndustry.Services
     public class FileUploadService
     {
         private readonly IWebHostEnvironment _env;
-
+        public string GetWebRootPath() => _env.WebRootPath;
         public FileUploadService(IWebHostEnvironment env)
         {
             _env = env;

@@ -1,4 +1,5 @@
 ﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewBag.Title = "Register Vehicle";
     string driverStatus = ViewBag.DriverStatus as string ?? "Pending";
     bool canRegister = driverStatus == "Active";
