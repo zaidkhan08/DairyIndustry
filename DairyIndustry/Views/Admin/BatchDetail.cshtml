@@ -1,0 +1,698 @@
+﻿@model DairyIndustry.Models.Admin.BatchModel
+@using DairyIndustry.Models.Admin
+
+@{
+    ViewData["Title"] = $"Batch #{Model.BatchId} Detail";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var entries = (List<BatchCollectionEntryModel>)ViewBag.Entries;
+
+    bool canClose = Model.Status == "Open";
+}
+
+<!-- ── BREADCRUMB ──────────────────────────────────────── -->
+<nav aria-label="breadcrumb" class="mb-3">
+
+    <ol class="breadcrumb mb-0 small">
+
+        <li class="breadcrumb-item">
+            <a href="@Url.Action("Index", "Admin")"
+               class="text-decoration-none">
+                Dashboard
+            </a>
+        </li>
+
+        <li class="breadcrumb-item">
+            <a href="@Url.Action("Batches", "Admin")"
+               class="text-decoration-none">
+                Batches
+            </a>
+        </li>
+
+        <li class="breadcrumb-item active">
+            Batch #@Model.BatchId
+        </li>
+
+    </ol>
+
+</nav>
+
+<!-- ── ALERTS ─────────────────────────────────────────── -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 py-2"
+         role="alert">
+
+        <i class="bi bi-check-circle-fill"></i>
+
+        <span>@TempData["Success"]</span>
+
+        <button type="button"
+                class="btn-close ms-auto"
+                data-bs-dismiss="alert"></button>
+
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 py-2"
+         role="alert">
+
+        <i class="bi bi-exclamation-triangle-fill"></i>
+
+        <span>@TempData["Error"]</span>
+
+        <button type="button"
+                class="btn-close ms-auto"
+                data-bs-dismiss="alert"></button>
+
+    </div>
+}
+
+<!-- ── PAGE HEADER ─────────────────────────────────────── -->
+<div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+
+    <div class="d-flex align-items-center gap-3">
+
+        @{
+            string statusBg = "#fce4ec";
+            string statusIcon = "bi-x-circle-fill text-danger";
+
+            if (Model.Status == "Open")
+            {
+                statusBg = "#e8f5e9";
+                statusIcon = "bi-circle-fill text-success";
+            }
+            else if (Model.Status == "Closed")
+            {
+                statusBg = "#fff8e1";
+                statusIcon = "bi-lock-fill text-warning";
+            }
+            else if (Model.Status == "Dispatched")
+            {
+                statusBg = "#e3f2fd";
+                statusIcon = "bi-truck text-primary";
+            }
+        }
+
+        <div class="rounded-3 p-3 shadow-sm"
+             style="background:@statusBg;">
+
+            <i class="bi @statusIcon fs-4"></i>
+
+        </div>
+
+        <div>
+
+            <h4 class="mb-0 fw-semibold text-dark">
+                Batch #@Model.BatchId
+            </h4>
+
+            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+
+                @{
+                    string shiftClass = "bg-dark";
+                    string shiftIcon = "bi-moon-stars";
+
+                    if (Model.Shift == "Morning")
+                    {
+                        shiftClass = "bg-warning text-dark";
+                        shiftIcon = "bi-sunrise";
+                    }
+                    else if (Model.Shift == "Evening")
+                    {
+                        shiftClass = "bg-info text-dark";
+                        shiftIcon = "bi-sunset";
+                    }
+                }
+
+                <span class="badge @shiftClass rounded-pill">
+                    <i class="bi @shiftIcon me-1"></i>
+                    @Model.Shift
+                </span>
+
+                <span class="text-muted small">
+                    <i class="bi bi-building me-1"></i>
+                    @Model.CenterName
+                </span>
+
+                <span class="text-muted small">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    @Model.BatchDate.ToString("dd MMM yyyy")
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <a href="@Url.Action("Batches", "Admin")"
+           class="btn btn-outline-secondary btn-sm">
+
+            <i class="bi bi-arrow-left me-1"></i>
+            Back
+
+        </a>
+
+        @if (canClose)
+        {
+            <button class="btn btn-warning btn-sm fw-medium px-3"
+                    data-bs-toggle="modal"
+                    data-bs-target="#closeBatchModal">
+
+                <i class="bi bi-lock me-1"></i>
+                Close Batch
+
+            </button>
+        }
+
+    </div>
+
+</div>
+
+<!-- ── INFO CARDS ──────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <!-- Status -->
+    <div class="col-6 col-md-3">
+
+        <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-body py-3 px-3">
+
+                <div class="text-muted small mb-1">
+                    Status
+                </div>
+
+                @{
+                    string bg = "secondary";
+                    string icon = "bi-question-circle";
+
+                    switch (Model.Status)
+                    {
+                        case "Open":
+                            bg = "success";
+                            icon = "bi-circle-fill";
+                            break;
+
+                        case "Closed":
+                            bg = "warning";
+                            icon = "bi-lock-fill";
+                            break;
+
+                        case "Dispatched":
+                            bg = "primary";
+                            icon = "bi-truck";
+                            break;
+
+                        case "Cancelled":
+                            bg = "danger";
+                            icon = "bi-x-circle-fill";
+                            break;
+                    }
+                }
+
+                <span class="badge bg-@bg-subtle text-@bg border border-@bg-subtle px-2 py-1 fs-6">
+
+                    <i class="bi @icon me-1"
+                       style="font-size:0.6rem;"></i>
+
+                    @Model.Status
+
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Total Entries -->
+    <div class="col-6 col-md-3">
+
+        <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-body py-3 px-3">
+
+                <div class="text-muted small mb-1">
+                    Collection Entries
+                </div>
+
+                <div class="fw-bold fs-5">
+                    @ViewBag.TotalEntries
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Total Quantity -->
+    <div class="col-6 col-md-3">
+
+        <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-body py-3 px-3">
+
+                <div class="text-muted small mb-1">
+
+                    @if (Model.TotalQuantity.HasValue)
+                    {
+                        @:Total Qty (Calculated)
+                    }
+                    else
+                    {
+                        @:Total Qty (Live)
+                    }
+
+                </div>
+
+                <div class="fw-bold fs-5">
+
+                    @((Model.TotalQuantity ?? (decimal)ViewBag.TotalQty).ToString("N2"))
+
+                    <small class="text-muted fw-normal">L</small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Total Amount -->
+    <div class="col-6 col-md-3">
+
+        <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-body py-3 px-3">
+
+                <div class="text-muted small mb-1">
+                    Total Amount
+                </div>
+
+                <div class="fw-bold fs-5">
+                    ₹@(((decimal)ViewBag.TotalAmount).ToString("N2"))
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ── QUALITY AVERAGES ───────────────────────────────── -->
+@if (Model.AvgFat.HasValue || Model.AvgCLR.HasValue)
+{
+    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
+
+        <div class="card-body py-3 px-4">
+
+            <div class="row g-3">
+
+                <div class="col-auto">
+
+                    <div class="text-muted small">
+                        Avg Fat
+                    </div>
+
+                    <div class="fw-bold fs-5 text-success">
+                        @Model.AvgFat?.ToString("F2")
+                    </div>
+
+                </div>
+
+                <div class="col-auto">
+
+                    <div class="text-muted small">
+                        Avg CLR
+                    </div>
+
+                    <div class="fw-bold fs-5 text-success">
+                        @Model.AvgCLR?.ToString("F2")
+                    </div>
+
+                </div>
+
+                <div class="col d-flex align-items-center">
+
+                    <span class="small text-muted">
+
+                        <i class="bi bi-info-circle me-1"></i>
+
+                        Quality averages calculated at batch close time.
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+<!-- ── OPEN BATCH BANNER ───────────────────────────────── -->
+@if (canClose && !entries.Any())
+{
+    <div class="alert alert-info d-flex gap-2 align-items-start">
+
+        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+
+        <div>
+
+            <strong>Batch is Open</strong>
+
+            — No milk entries recorded yet.
+            Milk entries are added by Collection Agents at the center.
+            You can close this batch once collection is complete.
+
+        </div>
+
+    </div>
+}
+
+<!-- ── COLLECTION ENTRIES TABLE ───────────────────────── -->
+<div class="card border-0 shadow-sm">
+
+    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+
+        <span class="fw-semibold text-dark">
+
+            <i class="bi bi-list-ul me-2 text-muted"></i>
+
+            Milk Collection Entries
+
+            <span class="badge bg-light text-dark border ms-1">
+                @entries.Count
+            </span>
+
+        </span>
+
+        @if (entries.Any())
+        {
+            <small class="text-muted d-none d-md-inline">
+                All entries for this batch shift
+            </small>
+        }
+
+    </div>
+
+    @if (!entries.Any())
+    {
+        <div class="card-body text-center py-5">
+
+            <i class="bi bi-inbox fs-1 text-muted opacity-50"></i>
+
+            <p class="mt-3 text-muted mb-0">
+                No milk collection entries for this batch yet.
+            </p>
+
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+                        <th class="ps-3">Collection ID</th>
+                        <th>Farmer</th>
+                        <th>Milk Type</th>
+                        <th class="text-end">Qty (L)</th>
+                        <th class="text-center">Fat</th>
+                        <th class="text-center">CLR</th>
+                        <th class="text-end">Rate/L</th>
+                        <th class="text-end pe-3">Amount (₹)</th>
+                        <th class="text-center">Receipt</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @foreach (var entry in entries)
+                    {
+                        <tr>
+
+                            <td class="ps-3 text-muted small">
+                                #@entry.CollectionId
+                            </td>
+
+                            <td class="fw-medium">
+                                @entry.FarmerName
+                            </td>
+
+                            <td>
+
+                                @{
+                                    string milkClass = "bg-secondary-subtle text-secondary";
+
+                                    if (entry.MilkTypeName == "Cow")
+                                    {
+                                        milkClass = "bg-success-subtle text-success";
+                                    }
+                                    else if (entry.MilkTypeName == "Buffalo")
+                                    {
+                                        milkClass = "bg-primary-subtle text-primary";
+                                    }
+                                }
+
+                            <span class="badge @milkClass rounded-pill">
+                                @entry.MilkTypeName
+                            </span>
+
+                        </td>
+
+                        <td class="text-end">
+                            @entry.Quantity.ToString("N2")
+                        </td>
+
+                        <td class="text-center small">
+                            @(entry.AppliedFat?.ToString("F2") ?? "—")
+                        </td>
+
+                        <td class="text-center small">
+                            @(entry.AppliedCLR?.ToString("F2") ?? "—")
+                        </td>
+
+                        <td class="text-end small">
+                            @(entry.RatePerLiter.HasValue
+                                                    ? "₹" + entry.RatePerLiter.Value.ToString("N2")
+                                                    : "—")
+                                                      </td>
+
+                        <td class="text-end fw-medium pe-3">
+                            @(entry.Amount.HasValue
+                                                    ? "₹" + entry.Amount.Value.ToString("N2")
+                                                    : "—")
+                    </td>
+
+                            <td class="text-center">
+
+                        @if (!string.IsNullOrEmpty(entry.ReceiptNumber))
+                                {
+                                    <span class="badge bg-light text-dark border small font-monospace">
+                                        @entry.ReceiptNumber
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+                <tfoot class="table-light">
+
+                    <tr class="fw-semibold">
+
+                        <td class="ps-3" colspan="3">
+                            Totals
+                        </td>
+
+                        <td class="text-end">
+                            @entries.Sum(e => e.Quantity).ToString("N2")
+                        </td>
+
+                        <td class="text-center text-muted small">
+
+                            @{
+                                var fatEntries = entries.Where(e => e.AppliedFat.HasValue);
+
+                                if (fatEntries.Any())
+                                {
+                                    @fatEntries.Average(e => e.AppliedFat.Value).ToString("F2")
+                                }
+                                else
+                                {
+                                    @:—
+                                }
+                            }
+
+                        </td>
+
+                        <td class="text-center text-muted small">
+
+                            @{
+                                var clrEntries = entries.Where(e => e.AppliedCLR.HasValue);
+
+                                if (clrEntries.Any())
+                                {
+                                    @clrEntries.Average(e => e.AppliedCLR.Value).ToString("F2")
+                                }
+                                else
+                                {
+                                    @:—
+                                }
+                            }
+
+                        </td>
+
+                        <td></td>
+
+                        <td class="text-end pe-3">
+                            ₹@entries.Sum(e => e.Amount ?? 0).ToString("N2")
+                        </td>
+
+                        <td></td>
+
+                    </tr>
+
+                </tfoot>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CLOSE BATCH MODAL
+════════════════════════════════════════════════════════ -->
+@if (canClose)
+{
+    <div class="modal fade"
+         id="closeBatchModal"
+         tabindex="-1"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered"
+             style="max-width:430px;">
+
+            <div class="modal-content border-0 shadow-lg">
+
+                <form method="post"
+                      action="@Url.Action("CloseBatch", "Admin")">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="batchId"
+                           value="@Model.BatchId" />
+
+                    <div class="modal-body text-center pt-4 pb-2 px-4">
+
+                        <div class="mb-3">
+
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10"
+                                 style="width:60px;height:60px;">
+
+                                <i class="bi bi-lock-fill text-warning fs-2"></i>
+
+                            </div>
+
+                        </div>
+
+                        <h5 class="fw-semibold mb-1">
+                            Close Batch #@Model.BatchId?
+                        </h5>
+
+                        <p class="text-muted small">
+
+                            @Model.CenterName
+                            &nbsp;·&nbsp;
+                            @Model.Shift
+                            &nbsp;·&nbsp;
+                            @Model.BatchDate.ToString("dd MMM yyyy")
+
+                        </p>
+
+                        <div class="p-2 rounded-2 bg-warning bg-opacity-10 small text-warning-emphasis text-start d-flex gap-2 mt-2">
+
+                            <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+
+                            <span>
+
+                                Closing will lock the batch and automatically calculate
+                                total quantity, average fat and CLR.
+
+                                <strong>
+                                    No new entries can be added after closing.
+                                </strong>
+
+                            </span>
+
+                        </div>
+
+                        @if (!entries.Any())
+                        {
+                            <div class="p-2 rounded-2 bg-danger bg-opacity-10 small text-danger text-start d-flex gap-2 mt-2">
+
+                                <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+
+                                <span>
+                                    This batch has no milk entries.
+                                    Are you sure you want to close it?
+                                </span>
+
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="modal-footer border-0 justify-content-center pb-4 gap-2">
+
+                        <button type="button"
+                                class="btn btn-light px-4"
+                                data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-warning px-4 fw-medium">
+
+                            <i class="bi bi-lock me-1"></i>
+
+                            Yes, Close Batch
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+}

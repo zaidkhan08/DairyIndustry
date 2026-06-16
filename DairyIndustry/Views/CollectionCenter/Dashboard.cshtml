@@ -1,0 +1,302 @@
+@model DairyIndustry.Models.Collection.CollectionAgentDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_CollectionCenterLayout";
+}
+
+<div class="container-fluid p-3" style="background:#f6f8fb; min-height:100vh;">
+
+    <!-- =========================================================
+        1. STAFF HEADER
+    ========================================================= -->
+    <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:14px;">
+
+        <div class="d-flex align-items-center gap-3">
+
+            <img src="@Model.StaffCenter.StaffPhoto"
+                 style="width:70px;height:70px;object-fit:cover;border-radius:50%;border:3px solid #e9ecef;" />
+
+            <div>
+                <h5 class="mb-0 fw-bold">@Model.StaffCenter.StaffName</h5>
+                <div class="text-muted small">
+                    @Model.StaffCenter.RoleName • @Model.StaffCenter.CenterName
+                </div>
+                <div class="text-muted small">
+                    @Model.StaffCenter.VillageName, @Model.StaffCenter.CityName
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+        2. ALERTS (MOST IMPORTANT SECTION)
+    ========================================================= -->
+    <div class="row g-3 mb-3">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
+                <div class="text-muted small">Pending Approvals</div>
+                <h4 class="fw-bold text-warning">
+                    @Model.FarmerStats.PendingApprovals
+                </h4>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
+                <div class="text-muted small">Pending Payments</div>
+                <h4 class="fw-bold text-danger">
+                    @Model.FarmerStats.TotalPendingPaymentAmount
+                </h4>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
+                <div class="text-muted small">Rejected Farmers</div>
+                <h4 class="fw-bold text-dark">
+                    @Model.FarmerStats.RejectedFarmers
+                </h4>
+            </div>
+        </div>
+
+    </div>
+    <!-- =========================================================
+        FARMER OVERVIEW (MATCHES YOUR UI IMAGE)
+    ========================================================= -->
+    <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius:14px;">
+
+        <h6 class="fw-bold mb-3">Farmer Overview</h6>
+
+        <div class="row g-3">
+
+            <!-- LEFT BIG CARD -->
+            <div class="col-md-6">
+
+                <div class="p-3 border rounded h-100 bg-light">
+
+                    <div class="text-muted small">TOTAL FARMERS REGISTERED</div>
+                    <h2 class="fw-bold mb-1">@Model.FarmerStats.TotalFarmers</h2>
+                    <div class="text-muted small">At this center</div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between">
+                        <span>Active</span>
+                        <b class="text-success">@Model.FarmerStats.ActiveFarmers</b>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Inactive</span>
+                        <b class="text-secondary">@Model.FarmerStats.InactiveFarmers</b>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Pending approval</span>
+                        <b class="text-warning">@Model.FarmerStats.PendingApprovals</b>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Rejected</span>
+                        <b class="text-danger">@Model.FarmerStats.RejectedFarmers</b>
+                    </div>
+
+                    <hr />
+
+                    @{
+                        var activePercent = Model.FarmerStats.TotalFarmers == 0
+                        ? 0
+                        : (Model.FarmerStats.ActiveFarmers * 100 / Model.FarmerStats.TotalFarmers);
+                    }
+
+                    <div class="small text-muted mb-1">
+                        Active Farmers
+                    </div>
+
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar bg-success"
+                             style="width:@activePercent%"></div>
+                    </div>
+
+                    <div class="text-end small text-muted mt-1">
+                        @activePercent%
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RIGHT SIDE CARDS -->
+            <div class="col-md-6">
+
+                <div class="row g-3">
+
+                    <!-- DELIVERED TODAY -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
+                            <div class="text-muted small">DELIVERED TODAY</div>
+                            <h3 class="fw-bold text-success mb-0">
+                                @Model.FarmerStats.FarmersDeliveredToday
+                            </h3>
+                            <div class="text-muted small">
+                                Out of @Model.FarmerStats.ActiveFarmers active farmers
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PENDING APPROVAL -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
+                            <div class="text-muted small">PENDING APPROVAL</div>
+                            <h3 class="fw-bold text-warning mb-0">
+                                @Model.FarmerStats.PendingApprovals
+                            </h3>
+                            <div class="text-muted small">
+                                Waiting for your review
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PAYMENT -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
+                            <div class="text-muted small">FARMERS OWED PAYMENT</div>
+                            <h3 class="fw-bold text-primary mb-0">
+                                @Model.FarmerStats.FarmersPendingPayment
+                            </h3>
+                            <div class="text-muted small">
+                                Payment not yet processed
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =========================================================
+        3. TODAY SUMMARY (CLEAN KPI)
+    ========================================================= -->
+    <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:14px;">
+
+        <h6 class="fw-bold mb-3">Today Summary</h6>
+
+        <div class="row g-3">
+
+            <div class="col-md-3">
+                <div class="p-3 rounded bg-light">
+                    <div class="text-muted small">Milk Collected</div>
+                    <h5 class="fw-bold">@Model.TodaySummary.TotalMilkToday L</h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 rounded bg-light">
+                    <div class="text-muted small">Amount</div>
+                    <h5 class="fw-bold">@Model.TodaySummary.TotalAmountToday</h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 rounded bg-light">
+                    <div class="text-muted small">Farmers Delivered</div>
+                    <h5 class="fw-bold">
+                        @Model.FarmerStats.FarmersDeliveredToday / @Model.FarmerStats.TotalFarmers
+                    </h5>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 rounded bg-light">
+                    <div class="text-muted small">Rejections</div>
+                    <h5 class="fw-bold">@Model.TodaySummary.RejectionsToday</h5>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+        4. SHIFT STATUS (SIMPLIFIED)
+    ========================================================= -->
+    <div class="row g-3 mb-3">
+
+        @foreach (var shift in Model.Shifts)
+        {
+            <div class="col-md-6">
+
+                <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
+
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold mb-0">@shift.Shift</h6>
+
+                        @if (shift.IsCurrentShift)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </div>
+
+                    <div class="text-muted small">@shift.ShiftWindow</div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between">
+                        <span>Status</span>
+                        <b>@shift.BatchStatus</b>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Entries</span>
+                        <b>@shift.EntryCount</b>
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+
+    <!-- =========================================================
+        5. INVENTORY (ONLY ALERT - NOT TABLE)
+    ========================================================= -->
+    <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
+
+        <h6 class="fw-bold mb-2">Inventory Status</h6>
+
+        @{
+            var highUsage = Model.Inventory
+            .Where(x => x.CapacityUsedPct >= 85)
+            .ToList();
+        }
+
+        @if (highUsage.Any())
+        {
+            foreach (var item in highUsage)
+            {
+                <div class="alert alert-warning mb-2">
+                    @item.MilkTypeName is at @item.CapacityUsedPct% capacity
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-muted small">
+                All inventory levels are normal
+            </div>
+        }
+
+    </div>
+
+</div>

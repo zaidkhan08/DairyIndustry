@@ -5,7 +5,11 @@
 
     var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
 
-    // Badge Helper
+    int totalVehicles = vehicles?.Count ?? 0;
+    int activeVehicles = vehicles?.Count(v => v.Status == "Active" || v.Status == "Approved") ?? 0;
+    int pendingVehicles = vehicles?.Count(v => v.Status == "Pending") ?? 0;
+    int rejectedVehicles = vehicles?.Count(v => v.Status == "Rejected" || v.Status == "Suspended") ?? 0;
+
     string GetStatusClass(string s) => s switch
     {
         "Active" or "Approved" => "bg-success",
@@ -13,97 +17,159 @@
         "Rejected" or "Suspended" => "bg-danger",
         _ => "bg-secondary"
     };
+
+    string GetStatusBadgeClass(string s) => s switch
+    {
+        "Active" or "Approved" => "bg-success bg-opacity-10 text-success border border-success border-opacity-25",
+        "Pending" => "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25",
+        "Rejected" or "Suspended" => "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25",
+        _ => "bg-secondary bg-opacity-10 text-secondary"
+    };
 }
 
 <div class="container-fluid p-4">
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <div>@TempData["Success"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ── DRIVER HEADER ──────────────────────────────── -->
     <div class="card border-0 shadow-sm mb-4 overflow-hidden">
-        <div class="bg-primary" style="height: 5px;"></div>
+        <div class="bg-primary" style="height:4px;"></div>
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-auto">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
-                         style="width: 65px; height: 65px; font-size: 1.5rem;">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow"
+                         style="width:60px;height:60px;font-size:1.5rem;">
                         @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
                     </div>
                 </div>
                 <div class="col">
                     <h5 class="mb-1 fw-bold text-dark">@Model?.DriverName</h5>
                     <p class="text-muted small mb-0">
-                        <i class="bi bi-person-badge me-1"></i> @Model?.LicenseNo &bull;
-                        <i class="bi bi-calendar3 me-1 ms-2"></i> Joined @Model?.RegisteredOn.ToString("MMM yyyy")
+                        <i class="bi bi-card-text me-1"></i>@Model?.LicenseNo &bull;
+                        <i class="bi bi-calendar3 ms-2 me-1"></i>Joined @Model?.RegisteredOn.ToString("MMM yyyy")
                     </p>
                 </div>
-                <div class="col-md-auto mt-3 mt-md-0">
-                    <div class="d-flex gap-2">
-                        <span class="badge @GetStatusClass(Model?.Status) px-3 py-2 rounded-pill">
-                            Account: @Model?.Status
-                        </span>
-                        <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3 shadow-sm">
-                            <i class="bi bi-plus-lg me-1"></i> Add Vehicle
-                        </a>
-                    </div>
+                <div class="col-md-auto mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    <span class="badge @GetStatusClass(Model?.Status ?? "Pending") px-3 py-2 rounded-pill">
+                        Account: @Model?.Status
+                    </span>
+                    <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3 shadow-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Vehicle
+                    </a>
                 </div>
             </div>
 
+            <!-- Quick stats row -->
             <div class="row mt-4 pt-3 border-top g-3">
                 <div class="col-6 col-md-3">
-                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Username</small>
+                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Total Fleet</small>
+                    <span class="fw-bold text-primary fs-5">@totalVehicles</span>
+                    <span class="text-muted small"> vehicle(s)</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Active</small>
+                    <span class="fw-bold text-success fs-5">@activeVehicles</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Pending Approval</small>
+                    <span class="fw-bold text-warning fs-5">@pendingVehicles</span>
+                </div>
+                <div class="col-6 col-md-3">
+                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Username</small>
                     <span class="fw-semibold">@@@Model?.Username</span>
-                </div>
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Contact</small>
-                    <span class="fw-semibold">@(Model?.Phone ?? "—")</span>
-                </div>
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block small text-uppercase fw-bold" style="font-size: 10px;">Total Fleet</small>
-                    <span class="fw-semibold text-primary">@(vehicles?.Count ?? 0) Vehicle(s)</span>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ── FILTER BAR ──────────────────────────────────── -->
+    @if (vehicles != null && vehicles.Any())
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-3 px-4">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="searchInput" class="form-control border-start-0 ps-1"
+                                   placeholder="Search vehicle number..." />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="statusFilter" class="form-select form-select-sm">
+                            <option value="">All Statuses</option>
+                            <option value="Approved">Active / Approved</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Rejected">Rejected / Suspended</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── VEHICLE TABLE ──────────────────────────────── -->
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+        <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center justify-content-between">
             <h6 class="mb-0 fw-bold text-dark">
                 <i class="bi bi-truck me-2 text-primary"></i>Vehicle List
             </h6>
+            @if (totalVehicles > 0)
+            {
+                <small class="text-muted">@totalVehicles registered</small>
+            }
         </div>
 
         <div class="card-body p-0">
+
             @if (vehicles == null || !vehicles.Any())
             {
-                <div class="text-center py-5">
+                <div class="text-center py-5 px-4">
                     <div class="bg-light d-inline-flex p-4 rounded-circle mb-3">
                         <i class="bi bi-truck-flatbed display-4 text-muted"></i>
                     </div>
                     <h5 class="fw-bold">No Vehicles Registered</h5>
                     <p class="text-muted small mb-4">You currently have no transport vehicles linked to your profile.</p>
-                    <a asp-action="RegisterVehicle" class="btn btn-outline-primary btn-sm px-4">
-                        Register Your First Vehicle
+                    <a asp-action="RegisterVehicle" class="btn btn-primary px-4 shadow-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Register Your First Vehicle
                     </a>
                 </div>
             }
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="vehicleTable">
                         <thead class="bg-light text-muted small text-uppercase">
                             <tr>
                                 <th class="border-0 px-4">Vehicle Identity</th>
                                 <th class="border-0">Payload Capacity</th>
                                 <th class="border-0">Status</th>
-                                <th class="border-0">Reg. Date</th>
-                                @* <th class="border-0 text-end px-4">Action</th> *@
+                                <th class="border-0">Registered On</th>
+                                <th class="border-0">Verification</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="vehicleBody">
                             @foreach (var v in vehicles)
                             {
-                                <tr>
+                                string rowStatus = (v.Status == "Active" || v.Status == "Approved") ? "Approved"
+                                : v.Status == "Pending" ? "Pending" : "Rejected";
+                                <tr data-status="@rowStatus"
+                                    data-search="@v.VehicleNumber.ToLower()">
                                     <td class="px-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="rounded-3 bg-primary bg-opacity-10 p-2 me-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                 style="width:42px;height:42px;">
                                                 <i class="bi bi-truck text-primary fs-5"></i>
                                             </div>
                                             <div>
@@ -113,30 +179,52 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border px-2 py-1 fw-medium">
+                                        <span class="badge bg-light text-dark border px-3 py-2 fw-medium">
                                             <i class="bi bi-droplet-fill text-info me-1"></i>
                                             @v.Capacity.ToString("N0") Ltr
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge @GetStatusClass(v.Status) px-3 py-2 rounded-pill shadow-xs">
+                                        <span class="badge @GetStatusBadgeClass(v.Status) rounded-pill px-3 py-2">
                                             @v.Status
                                         </span>
                                     </td>
                                     <td>
                                         <small class="text-muted">@v.RegisteredOn.ToString("dd MMM yyyy")</small>
                                     </td>
-                                    @* <td class="text-end px-4">
-                                        <button class="btn btn-light btn-sm border" title="View Logs">
-                                            <i class="bi bi-journal-text text-primary"></i>
-                                        </button>
-                                    </td> *@
+                                    <td>
+                                        @if (v.Status == "Approved" || v.Status == "Active")
+                                        {
+                                            <div class="d-flex align-items-center gap-1 text-success small fw-semibold">
+                                                <i class="bi bi-shield-check"></i> Verified
+                                            </div>
+                                        }
+                                        else if (v.Status == "Pending")
+                                        {
+                                            <div class="d-flex align-items-center gap-1 text-warning small fw-semibold">
+                                                <i class="bi bi-hourglass-split"></i> Awaiting Review
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex align-items-center gap-1 text-danger small fw-semibold">
+                                                <i class="bi bi-x-circle"></i> @v.Status
+                                            </div>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
+
+                <!-- no-results -->
+                <div id="noResults" class="text-center py-5" style="display:none;">
+                    <i class="bi bi-search display-4 text-muted"></i>
+                    <p class="text-muted mt-3">No vehicles match your search.</p>
+                </div>
             }
+
         </div>
 
         @if (vehicles?.Any() == true)
@@ -144,9 +232,41 @@
             <div class="card-footer bg-light border-0 py-3 px-4">
                 <small class="text-muted">
                     <i class="bi bi-info-circle me-1"></i>
-                    All vehicles require administrative verification before appearing in active logistics shifts.
+                    All vehicles require administrative verification before use in active logistics shifts.
                 </small>
             </div>
         }
     </div>
+
 </div>
+
+@section Scripts {
+    <script>
+        const searchInput  = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+
+        if (searchInput && statusFilter) {
+            const rows      = document.querySelectorAll('#vehicleBody tr[data-status]');
+            const noResults = document.getElementById('noResults');
+
+            function filterTable() {
+                const query  = searchInput.value.toLowerCase().trim();
+                const status = statusFilter.value;
+                let visible  = 0;
+
+                rows.forEach(row => {
+                    const matchSearch = !query  || row.dataset.search.includes(query);
+                    const matchStatus = !status || row.dataset.status === status;
+                    const show = matchSearch && matchStatus;
+                    row.style.display = show ? '' : 'none';
+                    if (show) visible++;
+                });
+
+                noResults.style.display = visible === 0 ? 'block' : 'none';
+            }
+
+            searchInput.addEventListener('input',   filterTable);
+            statusFilter.addEventListener('change', filterTable);
+        }
+    </script>
+}

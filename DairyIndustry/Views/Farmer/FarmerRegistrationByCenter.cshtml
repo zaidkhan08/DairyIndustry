@@ -1,0 +1,796 @@
+﻿@model DairyIndustry.Models.FarmerModel.RegByCenterModel
+
+@{
+    ViewData["Title"] = "Farmer Registration";
+    Layout = "_CollectionCenterLayout";
+}
+
+<style>
+
+    .form-control,
+    .form-select {
+        min-height: 46px;
+        border-radius: 12px;
+    }
+
+    .card {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .section-title {
+        color: #0d6efd;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .required {
+        color: red;
+    }
+
+    .upload-box {
+        background: #f8f9fa;
+        border: 1px dashed #ced4da;
+        border-radius: 14px;
+        padding: 14px;
+    }
+</style>
+
+<div class="container py-4">
+
+    <div class="card border-0 shadow-lg">
+
+        <!-- HEADER -->
+        <div class="card-header bg-primary text-white py-3 px-4">
+
+            <h3 class="fw-bold mb-1">
+                Farmer Registration
+            </h3>
+
+            <small class="opacity-75">
+                Register farmer from collection center
+            </small>
+
+        </div>
+
+        <div class="card-body p-4">
+
+            <!-- SUCCESS -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0">
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                    <h5 class="fw-bold mb-3">
+                        Registration Successful
+                    </h5>
+
+                    <p class="mb-2">
+                        @TempData["Success"]
+                    </p>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-2">
+                            <strong>Farmer Code:</strong>
+                            @TempData["FarmerCode"]
+                        </div>
+
+                        <div class="col-md-6 mb-2">
+                            <strong>Default Password:</strong>
+                            @TempData["Password"]
+                        </div>
+
+                    </div>
+
+                    <small class="text-muted">
+                        Default password = last 4 digits of farmer mobile number.
+                    </small>
+
+                </div>
+            }
+
+            <!-- VALIDATION -->
+            <div asp-validation-summary="All"
+                 class="alert alert-danger rounded-4">
+            </div>
+
+            <!-- FORM -->
+            <form asp-action="FarmerRegistrationByCenter"
+                  method="post"
+                  enctype="multipart/form-data">
+
+                @Html.AntiForgeryToken()
+
+                <!-- PERSONAL -->
+                <section class="mb-5">
+
+                    <h5 class="section-title">
+                        Personal Information
+                    </h5>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-4">
+
+                            <label class="form-label">
+                                Farmer Name
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="FarmerName"
+                                   class="form-control shadow-sm"
+                                   placeholder="Enter full name" />
+
+                            <span asp-validation-for="FarmerName"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+
+                            <label class="form-label">
+                                Email Address
+                            </label>
+
+                            <div class="input-group">
+
+                                <input asp-for="Email"
+                                       id="Email"
+                                       class="form-control shadow-sm"
+                                       placeholder="farmer@example.com" />
+
+                                <button type="button"
+                                        class="btn btn-outline-primary"
+                                        id="sendOtpBtn">
+                                    Send OTP
+                                </button>
+
+                                <span class="input-group-text bg-white d-none"
+                                      id="emailVerifiedBadge">
+
+                                    <span class="text-success fw-bold">
+                                        ✓ Verified
+                                    </span>
+
+                                </span>
+
+                            </div>
+
+                            <span asp-validation-for="Email"
+                                  class="text-danger small">
+                            </span>
+
+                            <input type="hidden"
+                                   asp-for="IsEmailVerified"
+                                   id="IsEmailVerified"
+                                   value="false" />
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Gender
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="Gender"
+                                    class="form-select shadow-sm">
+
+                                <option value="">
+                                    Select Gender
+                                </option>
+
+                                <option value="Male">
+                                    Male
+                                </option>
+
+                                <option value="Female">
+                                    Female
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="Gender"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Date of Birth
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="DateOfBirth"
+                                   type="date"
+                                   class="form-control shadow-sm" />
+
+                            <span asp-validation-for="DateOfBirth"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Phone Number
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="Phone"
+                                   class="form-control shadow-sm"
+                                   maxlength="10"
+                                   placeholder="10 digit mobile" />
+
+                            <span asp-validation-for="Phone"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- LOCATION -->
+                <section class="mb-5">
+
+                    <h5 class="section-title">
+                        Location Details
+                    </h5>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                State
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="StateId"
+                                    class="form-select shadow-sm"
+                                    id="StateId">
+
+                                <option value="">
+                                    Select State
+                                </option>
+
+                                @foreach (var s in Model.States)
+                                {
+                                    <option value="@s.StateId">
+                                        @s.StateName
+                                    </option>
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="StateId"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                City
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="CityId"
+                                    class="form-select shadow-sm"
+                                    id="CityId">
+
+                                <option value="">
+                                    Select City
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="CityId"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Village
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="VillageId"
+                                    class="form-select shadow-sm"
+                                    id="VillageId">
+
+                                <option value="">
+                                    Select Village
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="VillageId"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- BANK -->
+                <section class="mb-5">
+
+                    <h5 class="section-title">
+                        Bank & Identity Details
+                    </h5>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Bank Name
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="BankName"
+                                   class="form-control shadow-sm" />
+
+                            <span asp-validation-for="BankName"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                Account Number
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="AccountNumber"
+                                   class="form-control shadow-sm" />
+
+                            <span asp-validation-for="AccountNumber"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <label class="form-label">
+                                IFSC Code
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="IFSCCode"
+                                   class="form-control shadow-sm text-uppercase" />
+
+                            <span asp-validation-for="IFSCCode"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Aadhaar Number
+                            <span class="required">*</span>
+                        </label>
+
+                        <input asp-for="AadhaarNumber"
+                               class="form-control shadow-sm"
+                               maxlength="12"
+                               placeholder="12 digit Aadhaar number" />
+
+                        <span asp-validation-for="AadhaarNumber"
+                              class="text-danger small">
+                        </span>
+
+                    </div>
+
+                </section>
+
+                <!-- DOCUMENTS -->
+                <section class="mb-5">
+
+                    <h5 class="section-title">
+                        Upload Documents
+                    </h5>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-4">
+
+                            <div class="upload-box">
+
+                                <label class="form-label">
+                                    Profile Photo
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input asp-for="PhotoFile"
+                                       type="file"
+                                       class="form-control shadow-sm"
+                                       accept=".jpg,.jpeg,.png" />
+
+                                <span asp-validation-for="PhotoFile"
+                                      class="text-danger small">
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <div class="upload-box">
+
+                                <label class="form-label">
+                                    Aadhaar Card Copy
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input asp-for="AadhaarFile"
+                                       type="file"
+                                       class="form-control shadow-sm"
+                                       accept=".jpg,.jpeg,.png,.pdf" />
+
+                                <span asp-validation-for="AadhaarFile"
+                                      class="text-danger small">
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+
+                            <div class="upload-box">
+
+                                <label class="form-label">
+                                    Bank Passbook
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input asp-for="PassbookFile"
+                                       type="file"
+                                       class="form-control shadow-sm"
+                                       accept=".jpg,.jpeg,.png,.pdf" />
+
+                                <span asp-validation-for="PassbookFile"
+                                      class="text-danger small">
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- SUBMIT -->
+                <div class="d-grid">
+
+                    <button type="submit"
+                            class="btn btn-success btn-lg rounded-4 py-3 fw-semibold shadow-sm">
+
+                        Complete Registration
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- OTP MODAL -->
+<div class="modal fade"
+     id="otpModal"
+     tabindex="-1"
+     aria-hidden="true"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content border-0 rounded-4 shadow">
+
+            <div class="modal-header bg-primary text-white border-0">
+
+                <h5 class="modal-title fw-bold">
+                    Verify Email OTP
+                </h5>
+
+            </div>
+
+            <div class="modal-body p-4">
+
+                <p class="text-muted small mb-1">
+                    OTP sent to
+                </p>
+
+                <div class="fw-bold mb-3"
+                     id="otpTargetEmail">
+                </div>
+
+                <label class="form-label fw-semibold">
+                    Enter OTP
+                </label>
+
+                <input type="text"
+                       id="otpInput"
+                       class="form-control form-control-lg text-center fw-bold"
+                       maxlength="6"
+                       placeholder="------"
+                       autocomplete="off"
+                       style="letter-spacing:6px;" />
+
+                <div id="otpError"
+                     class="text-danger small mt-2 d-none">
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-0">
+
+                <button type="button"
+                        class="btn btn-outline-secondary rounded-3"
+                        data-bs-dismiss="modal">
+
+                    Cancel
+
+                </button>
+
+                <button type="button"
+                        class="btn btn-success rounded-3"
+                        id="verifyOtpBtn">
+
+                    Verify OTP
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+
+        $(document).ready(function () {
+
+            const otpModal =
+                new bootstrap.Modal(document.getElementById('otpModal'));
+
+            // SEND OTP
+
+            $('#sendOtpBtn').click(function () {
+
+                let email = $('#Email').val().trim();
+
+                if (email === '') {
+                    alert('Please enter email first');
+                    return;
+                }
+
+                let btn = $(this);
+
+                btn.prop('disabled', true)
+                   .text('Sending...');
+
+                $.ajax({
+
+                    url: '/Farmer/SendEmailOTP',
+                    type: 'POST',
+                    data: { email: email },
+
+                    success: function (res) {
+
+                        btn.prop('disabled', false)
+                           .text('Resend OTP');
+
+                        if (res.success) {
+
+                            $('#otpTargetEmail').text(email);
+
+                            $('#otpInput').val('');
+
+                            $('#otpError').addClass('d-none');
+
+                            otpModal.show();
+
+                        } else {
+
+                            alert(res.message);
+                        }
+                    },
+
+                    error: function () {
+
+                        btn.prop('disabled', false)
+                           .text('Send OTP');
+
+                        alert('Something went wrong');
+                    }
+
+                });
+
+            });
+
+            // VERIFY OTP
+
+            $('#verifyOtpBtn').click(function () {
+
+                let email = $('#Email').val().trim();
+
+                let otp = $('#otpInput').val().trim();
+
+                if (otp === '') {
+
+                    $('#otpError')
+                        .removeClass('d-none')
+                        .text('Please enter OTP');
+
+                    return;
+                }
+
+                let btn = $(this);
+
+                btn.prop('disabled', true)
+                   .text('Verifying...');
+
+                $.ajax({
+
+                    url: '/Farmer/VerifyEmailOTP',
+                    type: 'POST',
+
+                    data: {
+                        email: email,
+                        otp: otp
+                    },
+
+                    success: function (res) {
+
+                        btn.prop('disabled', false)
+                           .text('Verify OTP');
+
+                        if (res.success) {
+
+                            $('#IsEmailVerified').val('true');
+
+                            $('#emailVerifiedBadge')
+                                .removeClass('d-none');
+
+                            $('#Email').prop('readonly', true);
+
+                            $('#sendOtpBtn').hide();
+
+                            otpModal.hide();
+
+                        } else {
+
+                            $('#otpError')
+                                .removeClass('d-none')
+                                .text('Invalid OTP');
+
+                            $('#otpInput').val('');
+                        }
+                    },
+
+                    error: function () {
+
+                        btn.prop('disabled', false)
+                           .text('Verify OTP');
+
+                        $('#otpError')
+                            .removeClass('d-none')
+                            .text('Server error');
+                    }
+
+                });
+
+            });
+
+            // STATE -> CITY
+
+            $('#StateId').change(function () {
+
+                let stateId = $(this).val();
+
+                $('#CityId').html('<option value="">Select City</option>');
+
+                $('#VillageId').html('<option value="">Select Village</option>');
+
+                if (stateId === '')
+                    return;
+
+                $.get('/Farmer/GetCities',
+                    { stateId: stateId },
+
+                    function (data) {
+
+                        $.each(data, function (i, city) {
+
+                            $('#CityId').append(
+                                `<option value="${city.cityId}">
+                                    ${city.cityName}
+                                </option>`
+                            );
+                        });
+                    });
+
+            });
+
+            // CITY -> VILLAGE
+
+            $('#CityId').change(function () {
+
+                let cityId = $(this).val();
+
+                $('#VillageId').html('<option value="">Select Village</option>');
+
+                if (cityId === '')
+                    return;
+
+                $.get('/Farmer/GetVillages',
+                    { cityId: cityId },
+
+                    function (data) {
+
+                        $.each(data, function (i, village) {
+
+                            $('#VillageId').append(
+                                `<option value="${village.villageId}">
+                                    ${village.villageName}
+                                </option>`
+                            );
+                        });
+                    });
+
+            });
+
+        });
+
+    </script>
+}

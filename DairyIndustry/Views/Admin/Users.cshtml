@@ -39,9 +39,26 @@
             <h6 class="mb-0 fw-bold"><i class="bi bi-people me-2"></i>Users List</h6>
             <span class="badge bg-primary rounded-pill">Total Records: @ViewBag.TotalRecords</span>
         </div>
-
+        <br/>
         <div class="card-body p-0">
             <div class="table-responsive">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text"
+                               id="searchInput"
+                               class="form-control"
+                               placeholder="Search username or role...">
+                    </div>
+
+                    <div class="col-md-3">
+                        <select id="statusFilter" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <br />
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -54,7 +71,7 @@
                             <th class="text-end pe-3">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="userTable">
                         @if (Model == null || !Model.Any())
                         {
                             <tr>
@@ -209,3 +226,45 @@
         font-style: italic;
     }
 </style>
+<script>
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+
+    function filterTable() {
+
+        const searchText = searchInput.value.toLowerCase();
+        const statusText = statusFilter.value.toLowerCase();
+
+        const rows = document.querySelectorAll("#userTable tr");
+
+        rows.forEach(row => {
+
+            const username =
+                row.cells[1]?.innerText.toLowerCase() || "";
+
+            const role =
+                row.cells[2]?.innerText.toLowerCase() || "";
+
+            const status =
+                row.cells[5]?.innerText.toLowerCase().trim() || "";
+
+            const matchesSearch =
+                username.includes(searchText) ||
+                role.includes(searchText);
+
+            const matchesStatus =
+                statusText === "" ||
+                status === statusText;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+
+        });
+    }
+
+    searchInput.addEventListener("keyup", filterTable);
+    statusFilter.addEventListener("change", filterTable);
+</script>

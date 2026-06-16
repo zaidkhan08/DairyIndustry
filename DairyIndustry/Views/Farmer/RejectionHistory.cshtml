@@ -1,0 +1,242 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.FarmerRejectionViewModel>
+
+@{
+    ViewData["Title"] = "Rejection History";
+    Layout = "_FarmerLayout";
+
+    int srNo = 1;
+}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER & SUMMARY -->
+    <div class="row align-items-center g-3 mb-4">
+        <div class="col-12 col-sm-6">
+            <h4 class="mb-1 text-dark fw-bold tracking-tight">Milk Rejections</h4>
+            <p class="text-muted small mb-0">Historical log of unaccepted milk deliveries and quality anomalies.</p>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i>
+            <div>@TempData["Info"]</div>
+        </div>
+    }
+    <!-- FILTER BAR -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+
+                <!-- SEARCH -->
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Search</label>
+                    <input type="text" id="searchBox" class="form-control form-control-sm"
+                           placeholder="Milk type / Reason / Center / Staff..." />
+                </div>
+
+                <!-- SHIFT -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Shift</label>
+                    <select id="shiftFilter" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="Morning">Morning</option>
+                        <option value="Evening">Evening</option>
+                    </select>
+                </div>
+
+                <!-- DATE FROM -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">From</label>
+                    <input type="date" id="fromDate" class="form-control form-control-sm" />
+                </div>
+
+                <!-- DATE TO -->
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">To</label>
+                    <input type="date" id="toDate" class="form-control form-control-sm" />
+                </div>
+
+                <!-- RESET -->
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-dark btn-sm w-100" onclick="resetFilters()">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- RECORDS TABLE -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase tracking-wider" style="font-size: 0.75rem;">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted fw-semibold">#</th>
+                                <th class="ps-4 py-3 text-muted fw-semibold">Date</th>
+                                <th class="py-3 text-muted fw-semibold">Shift</th>
+                                <th class="py-3 text-muted fw-semibold">Type</th>
+                                <th class="py-3 text-muted fw-semibold text-end">Qty (L)</th>
+                                <th class="py-3 text-muted fw-semibold text-end">Fat %</th>
+                                <th class="py-3 text-muted fw-semibold text-end">CLR</th>
+                                <th class="py-3 text-muted fw-semibold" style="min-width: 120px;">Reason</th>
+                                <th class="py-3 text-muted fw-semibold" style="min-width: 180px;">Remarks</th>
+                                <th class="py-3 text-muted fw-semibold">Center</th>
+                                <th class="pe-4 py-3 text-muted fw-semibold">Staff</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0" style="font-size: 0.85rem;">
+                            @foreach (var r in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 text-muted small">@srNo</td>
+                                    <!-- DATE -->
+                                    <td class="ps-4 fw-semibold text-dark">
+                                        @r.RejectionDate.ToString("dd-MM-yyyy")
+                                    </td>
+
+                                    <!-- SHIFT -->
+                                    <td>
+                                        @if (r.Shift == "Morning")
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Morning</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2 py-1">Evening</span>
+                                        }
+                                    </td>
+
+                                    <!-- MILK TYPE -->
+                                    <td class="text-secondary fw-medium">
+                                        @r.MilkTypeName
+                                    </td>
+
+                                    <!-- QTY -->
+                                    <td class="text-end fw-bold text-danger">
+                                        @r.Quantity.ToString("0.00")
+                                    </td>
+
+                                    <!-- FAT -->
+                                    <td class="text-end text-muted font-monospace">
+                                        @(r.AppliedFat?.ToString("0.0") ?? "—")
+                                    </td>
+
+                                    <!-- CLR -->
+                                    <td class="text-end text-muted font-monospace">
+                                        @(r.AppliedCLR?.ToString("0.0") ?? "—")
+                                    </td>
+
+                                    <!-- REASON -->
+                                    <td>
+                                        <span class="d-inline-block text-danger fw-semibold bg-danger-subtle px-2 py-1 rounded-1 small border border-danger-subtle" style="white-space: nowrap;">
+                                            @r.RejectionReason
+                                        </span>
+                                    </td>
+
+                                    <!-- REMARKS -->
+                                    <td class="text-muted text-truncate" style="max-width: 200px;" title="@r.Remarks">
+                                        @(string.IsNullOrEmpty(r.Remarks) ? "—" : r.Remarks)
+                                    </td>
+
+                                    <!-- CENTER -->
+                                    <td class="text-dark fw-medium">
+                                        @r.CenterName
+                                    </td>
+
+                                    <!-- STAFF -->
+                                    <td class="pe-4 text-muted small">
+                                        @r.RecordedByStaff
+                                    </td>
+                                </tr>
+                                srNo++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 my-4">
+                    <div class="bg-light text-muted rounded-circle d-inline-flex p-3 mb-3">
+                        <i class="bi bi-folder-x fs-3"></i>
+                    </div>
+                    <h5 class="text-dark fw-semibold mb-1">No Rejections Recorded</h5>
+                    <p class="text-muted small mb-0">All milk deliveries look great! No rejection items found.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<script>
+    const searchBox = document.getElementById("searchBox");
+    const shiftFilter = document.getElementById("shiftFilter");
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+
+    const rows = document.querySelectorAll("tbody tr");
+
+    function filterTable() {
+
+        const search = searchBox.value.toLowerCase();
+        const shift = shiftFilter.value;
+        const from = fromDate.value ? new Date(fromDate.value) : null;
+        const to = toDate.value ? new Date(toDate.value) : null;
+
+        rows.forEach(row => {
+
+            const dateText = row.children[0].innerText.trim();
+            const shiftText = row.children[1].innerText.trim();
+            const milkType = row.children[2].innerText.toLowerCase();
+            const qty = row.children[3].innerText.toLowerCase();
+            const reason = row.children[6].innerText.toLowerCase();
+            const remarks = row.children[7].innerText.toLowerCase();
+            const center = row.children[8].innerText.toLowerCase();
+            const staff = row.children[9].innerText.toLowerCase();
+
+            const rowDate = new Date(dateText.split("-").reverse().join("-"));
+
+            let match = true;
+
+            // SEARCH FILTER
+            if (search &&
+                !milkType.includes(search) &&
+                !reason.includes(search) &&
+                !remarks.includes(search) &&
+                !center.includes(search) &&
+                !staff.includes(search)) {
+                match = false;
+            }
+
+            // SHIFT FILTER
+            if (shift && !shiftText.includes(shift)) {
+                match = false;
+            }
+
+            // DATE FILTER
+            if (from && rowDate < from) match = false;
+            if (to && rowDate > to) match = false;
+
+            row.style.display = match ? "" : "none";
+        });
+    }
+
+    function resetFilters() {
+        searchBox.value = "";
+        shiftFilter.value = "";
+        fromDate.value = "";
+        toDate.value = "";
+        filterTable();
+    }
+
+    searchBox.addEventListener("keyup", filterTable);
+    shiftFilter.addEventListener("change", filterTable);
+    fromDate.addEventListener("change", filterTable);
+    toDate.addEventListener("change", filterTable);
+</script>
