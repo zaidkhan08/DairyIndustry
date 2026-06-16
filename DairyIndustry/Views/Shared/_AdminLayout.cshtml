@@ -342,45 +342,81 @@
                     <span>Receive Milk</span>
                 </a>
 
-                <a asp-controller="Production" asp-action="QualityTests"
-                   class="nav-item-link @(IsActive("Production", "QualityTests") ? "active" : "")">
-                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                    <span>Quality Tests</span>
-                </a>
+                @* DropDown Added By Zaid *@
 
-                <a asp-controller="Production" asp-action="TransferLossLog"
-                   class="nav-item-link @(IsActive("Production", "TransferLossLog") ? "active" : "")">
-                    <i class="bi bi-activity" aria-hidden="true"></i>
-                    <span>Transfer Losses</span>
+                <div class="nav-label">Milk Transfers</div>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#milkTransferMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "true" : "false")" aria-controls="milkTransferMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-truck" aria-hidden="true"></i>
+                        <span>Milk Transfers</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
+                <div class="collapse @(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "show" : "")" id="milkTransferMenu">
+                    <a asp-controller="Production" asp-action="Index"
+                       class="nav-item-link ps-4 @(IsActive("Production", "Index") ? "active" : "")">
+                        <i class="bi bi-droplet-fill" aria-hidden="true"></i>
+                        <span>Receive Milk</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="QualityTests"
+                       class="nav-item-link ps-4 @(IsActive("Production", "QualityTests") ? "active" : "")">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <span>Quality Tests</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="TransferLossLog"
+                       class="nav-item-link ps-4 @(IsActive("Production", "TransferLossLog") ? "active" : "")">
+                        <i class="bi bi-activity" aria-hidden="true"></i>
+                        <span>Transfer Losses</span>
+                    </a>
+                </div>
 
                 <div class="nav-label">Production</div>
-
-                <a asp-controller="Production" asp-action="Batches"
-                   class="nav-item-link @(IsActive("Production", "Batches") ? "active" : "")">
-                    <i class="bi bi-layers-fill" aria-hidden="true"></i>
-                    <span>Product Batches</span>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#productionMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "true" : "false")" aria-controls="productionMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Production</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-
-                <a asp-controller="Production" asp-action="RawMilkInventory"
-                   class="nav-item-link @(IsActive("Production", "RawMilkInventory") ? "active" : "")">
-                    <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
-                    <span>Plant Inventory</span>
-                </a>
+                <div class="collapse @(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "show" : "")" id="productionMenu">
+                    <a asp-controller="Production" asp-action="Batches"
+                       class="nav-item-link ps-4 @(IsActive("Production", "Batches") ? "active" : "")">
+                        <i class="bi bi-layers-fill" aria-hidden="true"></i>
+                        <span>Product Batches</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="RawMilkInventory"
+                       class="nav-item-link ps-4 @(IsActive("Production", "RawMilkInventory") ? "active" : "")">
+                        <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
+                        <span>Plant Inventory</span>
+                    </a>
+                </div>
 
                 <div class="nav-label">Wastage</div>
-
-                <a asp-controller="Production" asp-action="ProductWastage"
-                   class="nav-item-link @(IsActive("Production", "ProductWastage") ? "active" : "")">
-                    <i class="bi bi-trash3-fill" aria-hidden="true"></i>
-                    <span>Wastage Bin</span>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#wastageMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "true" : "false")" aria-controls="wastageMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+                        <span>Wastage</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-
-                <a asp-controller="Production" asp-action="MilkProcessWastage"
-                   class="nav-item-link @(IsActive("Production", "MilkProcessWastage") ? "active" : "")">
-                    <i class="bi bi-droplet-half" aria-hidden="true"></i>
-                    <span>Milk Process Wastage</span>
-                </a>
+                <div class="collapse @(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "show" : "")" id="wastageMenu">
+                    <a asp-controller="Production" asp-action="ProductWastage"
+                       class="nav-item-link ps-4 @(IsActive("Production", "ProductWastage") ? "active" : "")">
+                        <i class="bi bi-trash3-f ill" aria-hidden="true"></i>
+                        <span>Wastage Bin</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="MilkProcessWastage"
+                       class="nav-item-link ps-4 @(IsActive("Production", "MilkProcessWastage") ? "active" : "")">
+                        <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                        <span>Milk Process Wastage</span>
+                    </a>
+                </div>
 
                 <div class="nav-label">Manage Staff</div>
 
@@ -391,24 +427,40 @@
                 </a>
 
                 <div class="nav-label">Finance</div>
-
-                <a asp-controller="Finance" asp-action="CenterPayments"
-                   class="nav-item-link @(IsActive("Finance", "CenterPayments") ? "active" : "")">
-                    <i class="bi bi-currency-rupee" aria-hidden="true"></i>
-                    <span>Pay to Center</span>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#financeMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "true" : "false")" aria-controls="financeMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                        <span>Finance</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-
-                <a asp-controller="Finance" asp-action="CenterWallet"
-                   class="nav-item-link @(IsActive("Finance", "CenterWallet") ? "active" : "")">
-                    <i class="bi bi-wallet2" aria-hidden="true"></i>
-                    <span>Center Wallet</span>
-                </a>
-
-                <a asp-controller="Finance" asp-action="Index"
-                   class="nav-item-link @(ctrl == "Finance" && act == "Index" ? "active" : "")">
-                    <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-                    <span>Farmer Payments</span>
-                </a>
+                <div class="collapse @(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "show" : "")" id="financeMenu">
+                    <a asp-controller="Finance" asp-action="CenterPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "CenterPayments") ? "active" : "")">
+                        <i class="bi bi-currency-rupee" aria-hidden="true"></i>
+                        <span>Pay to Center</span>
+                    </a>
+                    <a asp-controller="Finance" asp-action="StaffPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "StaffPayments") ? "active" : "")">
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                        <span>Staff Payments</span>
+                    </a>
+                    @if (currentRole == "Collection Agent")
+                    {
+                        <a asp-controller="Finance" asp-action="CenterWallet"
+                           class="nav-item-link ps-4 @(IsActive("Finance", "CenterWallet") ? "active" : "")">
+                            <i class="bi bi-wallet2" aria-hidden="true"></i>
+                            <span>Center Wallet</span>
+                        </a>
+                        <a asp-controller="Finance" asp-action="Index"
+                           class="nav-item-link ps-4 @(ctrl == "Finance" && act == "Index" ? "active" : "")">
+                            <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                            <span>Farmer Payments</span>
+                        </a>
+                    }
+                </div>
             }
 
 

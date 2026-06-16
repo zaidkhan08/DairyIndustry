@@ -1,0 +1,855 @@
+﻿@model DairyIndustry.Models.Finance.StaffPaymentViewModel
+@{
+    ViewData["Title"] = "Staff Payments";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    string role = ViewBag.Role as string ?? "";
+    bool isPlantMgr = role == "Plant Manager";
+    bool isAgent = role == "Collection Agent";
+    bool isAdmin = role == "Admin";
+
+    var allPayments = Model.Payments;
+    var pendingPayments = allPayments.Where(p => p.PaymentStatus == "Pending").ToList();
+    var processedPayments = allPayments.Where(p => p.PaymentStatus == "Processed").ToList();
+    var failedPayments = allPayments.Where(p => p.PaymentStatus == "Failed").ToList();
+}
+
+<style>
+    :root {
+        --surface: #ffffff;
+        --bg: #f5f6f8;
+        --border: #e5e7eb;
+        --text-primary: #111827;
+        --text-muted: #6b7280;
+        --text-xs: #9ca3af;
+        --accent: #f5c518;
+        --accent-hover: #e0b000;
+        --green: #16a34a;
+        --green-bg: #dcfce7;
+        --yellow-bg: #fef9c3;
+        --yellow-text: #854d0e;
+        --blue: #2563eb;
+        --blue-bg: #eff6ff;
+        --red: #dc2626;
+        --red-bg: #fef2f2;
+        --slate: #64748b;
+        --slate-bg: #f8fafc;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --shadow-card: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    body, .sp-root {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text-primary);
+    }
+
+    /* ── Info card ──────────────────────────────────────── */
+    .info-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 24px 28px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-card);
+    }
+
+    .info-card-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin: 0 0 6px;
+    }
+
+    .info-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-muted);
+        font-size: .82rem;
+        flex-wrap: wrap;
+    }
+
+    .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .badge-role-pm {
+        background: var(--blue-bg);
+        color: var(--blue);
+    }
+
+    .badge-role-ca {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    .badge-role-admin {
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .badge-processed {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .badge-pending {
+        background: var(--yellow-bg);
+        color: var(--yellow-text);
+    }
+
+    .badge-failed {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+
+    .dot-status {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .dot-green {
+        background: var(--green);
+    }
+
+    .dot-amber {
+        background: #f59e0b;
+    }
+
+    .dot-red {
+        background: var(--red);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 24px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .info-grid-item label {
+        display: block;
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--text-xs);
+        margin-bottom: 4px;
+    }
+
+    .info-grid-item span {
+        font-size: .92rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* ── Tab bar ────────────────────────────────────────── */
+    .tab-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 6px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-card);
+        flex-wrap: wrap;
+    }
+
+    .tab-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 18px;
+        border-radius: var(--radius-md);
+        font-size: .85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all .18s;
+        color: var(--text-muted);
+        border: none;
+        background: transparent;
+        white-space: nowrap;
+    }
+
+        .tab-item .tab-count {
+            background: #f3f4f6;
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 1px 8px;
+            font-size: .73rem;
+            font-weight: 600;
+            transition: all .18s;
+        }
+
+        .tab-item.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+        }
+
+            .tab-item.active .tab-count {
+                background: rgba(0,0,0,.12);
+                color: #000;
+            }
+
+        .tab-item:hover:not(.active) {
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+    /* ── Toolbar ────────────────────────────────────────── */
+    .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: .85rem;
+        font-weight: 500;
+    }
+
+    .btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 20px;
+        background: var(--accent);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: .85rem;
+        font-weight: 700;
+        color: #000;
+        cursor: pointer;
+        transition: background .15s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+        .btn-create:hover {
+            background: var(--accent-hover);
+            color: #000;
+        }
+
+    /* ── Search ─────────────────────────────────────────── */
+    .search-wrap {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 7px 12px;
+        min-width: 210px;
+    }
+
+        .search-wrap i {
+            color: var(--text-xs);
+            font-size: .85rem;
+        }
+
+        .search-wrap input {
+            border: none;
+            outline: none;
+            font-size: .83rem;
+            font-family: 'DM Sans', sans-serif;
+            width: 100%;
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+            .search-wrap input::placeholder {
+                color: var(--text-xs);
+            }
+
+    /* ── Table card ─────────────────────────────────────── */
+    .table-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+    }
+
+    .sp-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .sp-table thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sp-table thead th {
+            padding: 11px 18px;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-xs);
+            background: #fafafa;
+            white-space: nowrap;
+        }
+
+        .sp-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+        }
+
+            .sp-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .sp-table tbody tr:hover {
+                background: #fafbff;
+            }
+
+        .sp-table td {
+            padding: 14px 18px;
+            vertical-align: middle;
+            font-size: .84rem;
+        }
+
+    /* ── Cell styles ────────────────────────────────────── */
+    .cell-staff strong {
+        display: block;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
+    .cell-staff .sub {
+        font-size: .77rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .staff-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #111827;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        font-family: 'DM Mono', monospace;
+    }
+
+    .sp-id {
+        font-family: 'DM Mono', monospace;
+        font-size: .78rem;
+        color: var(--blue);
+        font-weight: 600;
+    }
+
+    .center-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--blue-bg);
+        color: var(--blue);
+        border-radius: 5px;
+        padding: 3px 9px;
+        font-size: .73rem;
+        font-weight: 600;
+    }
+
+    .plant-tag {
+        font-size: .78rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .amount-val {
+        font-family: 'DM Mono', monospace;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        font-size: .86rem;
+    }
+
+    .date-val {
+        font-size: .78rem;
+        color: var(--text-muted);
+    }
+
+    .period-val {
+        font-size: .78rem;
+        color: var(--text-muted);
+    }
+
+    /* ── Status pills ───────────────────────────────────── */
+    .status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-size: .73rem;
+        font-weight: 600;
+    }
+
+    .status-processed {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .status-pending {
+        background: var(--yellow-bg);
+        color: var(--yellow-text);
+    }
+
+    .status-failed {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+
+    .status-cancelled {
+        background: var(--slate-bg);
+        color: var(--slate);
+    }
+
+    /* ── Action buttons ─────────────────────────────────── */
+    .action-cell {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .btn-view {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--blue-bg);
+        color: var(--blue);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 6px 12px;
+        font-size: .78rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background .12s, color .12s;
+    }
+
+        .btn-view:hover {
+            background: var(--blue);
+            color: #fff;
+        }
+
+    .btn-cancel {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--red-bg);
+        color: var(--red);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 6px 12px;
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .12s, color .12s;
+        white-space: nowrap;
+    }
+
+        .btn-cancel:hover {
+            background: var(--red);
+            color: #fff;
+        }
+
+    /* ── Group header row ───────────────────────────────── */
+    .group-header-row td {
+        background: #fafafa;
+        padding: 8px 18px;
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-xs);
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Alerts ─────────────────────────────────────────── */
+    .alert-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        border-radius: var(--radius-md);
+        font-size: .84rem;
+        font-weight: 500;
+        margin-bottom: 16px;
+    }
+
+    .alert-success {
+        background: var(--green-bg);
+        color: #15803d;
+        border: 1px solid #86efac;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: var(--red);
+        border: 1px solid #fca5a5;
+    }
+
+    /* ── Empty state ────────────────────────────────────── */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            font-size: .9rem;
+            margin: 0;
+        }
+
+    /* ── Tab panels ─────────────────────────────────────── */
+    .tab-panel {
+        display: none;
+    }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+    @@media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .sp-table th:nth-child(n+5):not(:last-child),
+        .sp-table td:nth-child(n+5):not(:last-child) {
+            display: none;
+        }
+    }
+</style>
+
+<div class="sp-root">
+
+    @* ── Alerts ──────────────────────────────────────────── *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert-banner alert-success">
+            <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-banner alert-error">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        </div>
+    }
+
+    @* ── Info card ───────────────────────────────────────── *@
+    <div class="info-card">
+        <h1 class="info-card-title">Staff Payments</h1>
+        <div class="info-card-meta">
+            @if (isPlantMgr)
+            {
+                <span class="badge-status badge-role-pm">
+                    <i class="bi bi-building" style="font-size:.8rem"></i> Plant Manager
+                </span>
+                <span style="color:var(--border)">•</span>
+                <span>@(Model.Summary?.ScopeLabel ?? "Your plant")</span>
+            }
+            else if (isAgent)
+            {
+                <span class="badge-status badge-role-ca">
+                    <i class="bi bi-person-badge" style="font-size:.8rem"></i> Collection Agent
+                </span>
+                <span style="color:var(--border)">•</span>
+                <span>Your center</span>
+            }
+            else
+            {
+                <span class="badge-status badge-role-admin">
+                    <i class="bi bi-shield-check" style="font-size:.8rem"></i> Admin
+                </span>
+                <span style="color:var(--border)">•</span>
+                <span>All plants &amp; centers</span>
+            }
+            <span style="color:var(--border)">•</span>
+            <span>@allPayments.Count total records</span>
+            <span class="badge-status badge-processed">
+                <span class="dot-status dot-green"></span> @processedPayments.Count Processed
+            </span>
+            <span class="badge-status badge-pending">
+                <span class="dot-status dot-amber"></span> @pendingPayments.Count Pending
+            </span>
+            <span class="badge-status badge-failed">
+                <span class="dot-status dot-red"></span> @failedPayments.Count Failed
+            </span>
+        </div>
+        <div class="info-grid">
+            <div class="info-grid-item">
+                <label>Total Payments</label>
+                <span>@allPayments.Count</span>
+            </div>
+            <div class="info-grid-item">
+                <label>Total Paid (₹)</label>
+                <span>₹@(Model.Summary?.TotalAmountPaid.ToString("N0") ?? "0")</span>
+            </div>
+            <div class="info-grid-item">
+                <label>Pending (₹)</label>
+                <span>₹@(Model.Summary?.TotalAmountPending.ToString("N0") ?? "0")</span>
+            </div>
+            <div class="info-grid-item">
+                <label>Processed</label>
+                <span>@(Model.Summary?.ProcessedCount ?? 0) payments</span>
+            </div>
+            <div class="info-grid-item">
+                <label>Failed / Need Attention</label>
+                <span class="@(failedPayments.Count > 0 ? "text-danger" : "")">@failedPayments.Count payments</span>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tab bar ─────────────────────────────────────────── *@
+    <div class="tab-bar" id="spTabBar">
+        <button class="tab-item active" data-tab="sp-all" onclick="switchTab('sp-all','spTabBar',this)">
+            <i class="bi bi-list-ul"></i> All <span class="tab-count">@allPayments.Count</span>
+        </button>
+        <button class="tab-item" data-tab="sp-pending" onclick="switchTab('sp-pending','spTabBar',this)">
+            <i class="bi bi-clock-history"></i> Pending <span class="tab-count">@pendingPayments.Count</span>
+        </button>
+        <button class="tab-item" data-tab="sp-processed" onclick="switchTab('sp-processed','spTabBar',this)">
+            <i class="bi bi-check2-all"></i> Processed <span class="tab-count">@processedPayments.Count</span>
+        </button>
+        <button class="tab-item" data-tab="sp-failed" onclick="switchTab('sp-failed','spTabBar',this)">
+            <i class="bi bi-exclamation-circle"></i> Failed <span class="tab-count">@failedPayments.Count</span>
+        </button>
+    </div>
+
+    @* ── Toolbar ─────────────────────────────────────────── *@
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <i class="bi bi-funnel"></i> Staff payment records
+            <div class="search-wrap">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Search name, center, plant…" oninput="applySearch()" />
+            </div>
+        </div>
+        <a asp-action="CreateStaffPayment" asp-controller="Finance" class="btn-create">
+            <i class="bi bi-plus-lg"></i> Process Payment
+        </a>
+    </div>
+
+    @* ── Tab panels ──────────────────────────────────────── *@
+    @foreach (var (tabId, rows, emptyMsg) in new[] {
+        ("sp-all",       (IEnumerable<DairyIndustry.Models.Finance.StaffPaymentModel>)allPayments,       "No staff payment records found."),
+        ("sp-pending",   pendingPayments,   "No pending payments."),
+        ("sp-processed", processedPayments, "No processed payments yet."),
+        ("sp-failed",    failedPayments,    "No failed payments.")
+        })
+    {
+        <div class="tab-panel @(tabId == "sp-all" ? "active" : "")" id="tab-@tabId">
+            <div class="table-card">
+                @if (!rows.Any())
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>@emptyMsg</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="sp-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Staff Member</th>
+                                    <th>Center</th>
+                                    @if (!isAgent)
+                                    {
+                                        <th>Plant</th>
+                                    }
+                                    <th>Period</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Payment Date</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    string lastPlant = "";
+                                }
+                                @foreach (var p in rows)
+                                {
+                                    @if (isAdmin && p.PlantName != lastPlant)
+                                    {
+                                        lastPlant = p.PlantName;
+                                        <tr class="group-header-row">
+                                            <td colspan="9">
+                                                <i class="bi bi-building-gear"></i> @p.PlantName
+                                            </td>
+                                        </tr>
+                                    }
+
+                                    string initials = string.Concat(
+                                    p.StaffName.Split(' ')
+                                    .Where(w => w.Length > 0)
+                                    .Take(2)
+                                    .Select(w => w[0])
+                                    );
+
+                                    string statusClass = p.PaymentStatus switch
+                                    {
+                                        "Processed" => "status-processed",
+                                        "Pending" => "status-pending",
+                                        "Failed" => "status-failed",
+                                        _ => "status-cancelled"
+                                    };
+
+                                    string dotClass = p.PaymentStatus switch
+                                    {
+                                        "Processed" => "dot-green",
+                                        "Pending" => "dot-amber",
+                                        "Failed" => "dot-red",
+                                        _ => ""
+                                    };
+
+                                    <tr class="sp-pay-row"
+                                        data-search="@p.StaffName.ToLower() @p.RoleName?.ToLower() @p.CenterName.ToLower() @p.PlantName.ToLower()">
+
+                                        <td><span class="sp-id">SP-@p.PaymentId.ToString("D4")</span></td>
+
+                                        <td class="cell-staff">
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <div class="staff-avatar">@initials</div>
+                                                <div>
+                                                    <strong>@p.StaffName</strong>
+                                                    <div class="sub">@(string.IsNullOrEmpty(p.RoleName) ? "—" : p.RoleName)</div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span class="center-tag">
+                                                <i class="bi bi-geo-alt-fill" style="font-size:.7rem"></i>
+                                                @p.CenterName
+                                            </span>
+                                        </td>
+
+                                        @if (!isAgent)
+                                        {
+                                            <td><span class="plant-tag">@p.PlantName</span></td>
+                                        }
+
+                                        <td>
+                                            <span class="period-val">@p.FromDate.ToString("dd MMM") – @p.ToDate.ToString("dd MMM yyyy")</span>
+                                        </td>
+
+                                        <td class="text-end">
+                                            <span class="amount-val">₹@p.TotalAmount.ToString("N2")</span>
+                                        </td>
+
+                                        <td>
+                                            <span class="date-val">@p.PaymentDate.ToString("dd MMM yyyy")</span>
+                                        </td>
+
+                                        <td>
+                                            <span class="status-tag @statusClass">
+                                                <span class="dot-status @dotClass"></span>
+                                                @p.PaymentStatus
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <div class="action-cell">
+                                                <a asp-action="StaffPaymentDetail" asp-controller="Finance"
+                                                   asp-route-id="@p.PaymentId" class="btn-view">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                                @if (p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed")
+                                                {
+                                                    <form method="post"
+                                                          asp-action="CancelStaffPayment"
+                                                          asp-controller="Finance"
+                                                          onsubmit="return confirm('Cancel payment SP-@p.PaymentId.ToString("D4")?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="paymentId" value="@p.PaymentId" />
+                                                        <button type="submit" class="btn-cancel">
+                                                            <i class="bi bi-x-circle"></i> Cancel
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        function switchTab(tabId, barId, btn) {
+            document.getElementById(barId)
+                    .querySelectorAll('.tab-item')
+                    .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            document.querySelectorAll('.tab-panel').forEach(p => {
+                if (p.id.startsWith('tab-sp-')) p.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            applySearch();
+        }
+
+        function applySearch() {
+            const query = (document.getElementById('searchInput')?.value ?? '').toLowerCase().trim();
+            document.querySelectorAll('.tab-panel.active .sp-pay-row').forEach(row => {
+                const text = row.dataset.search ?? '';
+                row.style.display = (!query || text.includes(query)) ? '' : 'none';
+            });
+        }
+    </script>
+}
