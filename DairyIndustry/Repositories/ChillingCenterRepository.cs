@@ -16,8 +16,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  GET PLANT BY USER ID — uses SP usp_GetPlantByUserId
-        //  Queries Admin.UserPlants to find which plant the
-        //  logged-in user belongs to. Returns null if not assigned.
         // ═══════════════════════════════════════════════════════════
         public PlantDropdownModel? GetPlantByUserId(int userId)
         {
@@ -44,8 +42,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  1. STORE ITEM — uses SP usp_Chilling_StoreItem
-        //     Inserts a new chilling storage entry
-        //     Returns new StorageId
         // ═══════════════════════════════════════════════════════════
         public int StoreItem(ChillingStoreItemModel model)
         {
@@ -70,8 +66,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  2. GET BY PLANT — uses SP usp_Chilling_GetStorageByPlant
-        //     Returns all entries for a specific plant
-        //     with optional date filter
         // ═══════════════════════════════════════════════════════════
         public List<ChillingStorageModel> GetByPlant(int plantId,
                                                       DateTime? fromDate,
@@ -113,14 +107,13 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  3. GET ALL — inline query
-        //     Returns all entries across all plants
-        //     with optional date filter
         // ═══════════════════════════════════════════════════════════
         public List<ChillingStorageModel> GetAll(DateTime? fromDate, DateTime? toDate)
         {
-            var list = new List<ChillingStorageModel>();
+            return SafeList(() => {
+                var list = new List<ChillingStorageModel>();
 
-            string query = @"
+                string query = @"
                 SELECT
                     cs.StorageId, cs.PlantId, cs.ProductId, cs.Shift,
                     cs.MilkQuantity, cs.Temperature, cs.StoredDate,
@@ -134,23 +127,23 @@ namespace DairyIndustry.Repositories
                   AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
                 ORDER BY cs.StoredDate DESC";
 
-            using var con = _db.GetConnection();
-            con.Open();
-            using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+                using var con = _db.GetConnection();
+                con.Open();
+                using var cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
 
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                list.Add(MapStorageModel(reader));
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    list.Add(MapStorageModel(reader));
 
-            return list;
+                return list;
+            }); // SafeList
         }
 
 
         // ═══════════════════════════════════════════════════════════
         //  4. GET BY ID — inline query
-        //     Returns single entry for Details / Edit pages
         // ═══════════════════════════════════════════════════════════
         public ChillingStorageModel? GetById(int storageId)
         {
@@ -181,7 +174,6 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  5. UPDATE ENTRY — inline query
-        //     Updates quantity and temperature of an existing entry
         // ═══════════════════════════════════════════════════════════
         public bool UpdateEntry(ChillingStoreItemModel model)
         {
@@ -224,9 +216,11 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  7. GET TEMPERATURE ALERTS — inline query
-        //     Returns all entries where Temperature > 5°C
+        //  Fix #2 — plantId filter pushed to SQL instead of C# LINQ
+        //  so we never fetch other plants' data unnecessarily
         // ═══════════════════════════════════════════════════════════
-        public List<ChillingStorageModel> GetTemperatureAlerts(DateTime? fromDate,
+        public List<ChillingStorageModel> GetTemperatureAlerts(int? plantId,
+                                                                DateTime? fromDate,
                                                                 DateTime? toDate)
         {
             var list = new List<ChillingStorageModel>();
@@ -242,6 +236,7 @@ namespace DairyIndustry.Repositories
                 INNER JOIN Production.ProcessingPlants pp ON pp.PlantId  = cs.PlantId
                 LEFT  JOIN Production.Products         p  ON p.ProductId = cs.ProductId
                 WHERE cs.Temperature > 5
+                  AND (@PlantId  IS NULL OR cs.PlantId    = @PlantId)
                   AND (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
                   AND (@ToDate   IS NULL OR cs.StoredDate <= @ToDate)
                 ORDER BY cs.Temperature DESC";
@@ -249,6 +244,7 @@ namespace DairyIndustry.Repositories
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
 
@@ -262,23 +258,30 @@ namespace DairyIndustry.Repositories
 
         // ═══════════════════════════════════════════════════════════
         //  8. DASHBOARD SUMMARY — inline query
+        //  Fix #3 — threshold corrected: Safe = Temperature < 5
+        //  (previously BETWEEN 0 AND 5 included 5.0 which is Warning)
+        //  Fix — accepts plantId so plant manager sees own plant only
         // ═══════════════════════════════════════════════════════════
-        public ChillingDashboardSummaryModel GetDashboardSummary()
+        public ChillingDashboardSummaryModel GetDashboardSummary(int? plantId)
         {
             string query = @"
                 SELECT
-                    COUNT(*)                                                        AS TotalEntries,
-                    ISNULL(SUM(MilkQuantity), 0)                                   AS TotalQuantity,
-                    SUM(CASE WHEN Temperature > 8  THEN 1 ELSE 0 END)              AS CriticalAlerts,
-                    SUM(CASE WHEN Temperature BETWEEN 5 AND 8 THEN 1 ELSE 0 END)   AS Warnings,
-                    SUM(CASE WHEN Temperature BETWEEN 0 AND 5 THEN 1 ELSE 0 END)   AS SafeCount,
-                    SUM(CASE WHEN Temperature IS NULL THEN 1 ELSE 0 END)            AS UnknownCount
+                    COUNT(*)                                                          AS TotalEntries,
+                    ISNULL(SUM(MilkQuantity), 0)                                     AS TotalQuantity,
+                    SUM(CASE WHEN Temperature > 8   THEN 1 ELSE 0 END)               AS CriticalAlerts,
+                    SUM(CASE WHEN Temperature > 5
+                              AND Temperature <= 8  THEN 1 ELSE 0 END)               AS Warnings,
+                    SUM(CASE WHEN Temperature IS NOT NULL
+                              AND Temperature < 5   THEN 1 ELSE 0 END)               AS SafeCount,
+                    SUM(CASE WHEN Temperature IS NULL THEN 1 ELSE 0 END)              AS UnknownCount
                 FROM Chilling.ChillingStorage
-                WHERE StoredDate = CAST(GETDATE() AS DATE)";
+                WHERE StoredDate = CAST(GETDATE() AS DATE)
+                  AND (@PlantId IS NULL OR PlantId = @PlantId)";
 
             using var con = _db.GetConnection();
             con.Open();
             using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
             using var reader = cmd.ExecuteReader();
 
             if (reader.Read())
@@ -349,7 +352,6 @@ namespace DairyIndustry.Repositories
         public List<PlantDropdownModel> GetPlants()
         {
             var list = new List<PlantDropdownModel>();
-
             string query = "SELECT PlantId, PlantName, Location FROM Production.ProcessingPlants ORDER BY PlantName";
 
             using var con = _db.GetConnection();
@@ -402,9 +404,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  12. NEW — GET BY PLANT FILTERED — inline query
-        //      Same as GetByPlant SP but supports item name search.
-        //      Kept separate so the existing SP call is never touched.
+        //  12. GET BY PLANT FILTERED — inline query
         // ═══════════════════════════════════════════════════════════
         public List<ChillingStorageModel> GetByPlantFiltered(int plantId,
                                                               DateTime? fromDate,
@@ -446,8 +446,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  13. NEW — GET ALL FILTERED — inline query
-        //      Same as GetAll but supports item name search.
+        //  13. GET ALL FILTERED — inline query
         // ═══════════════════════════════════════════════════════════
         public List<ChillingStorageModel> GetAllFiltered(DateTime? fromDate,
                                                           DateTime? toDate,
@@ -486,9 +485,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  14. NEW — GET DAILY REPORT — inline query
-        //      Groups entries by StoredDate for the Report page.
-        //      Filters by PlantId if provided (plant manager view).
+        //  14. GET DAILY REPORT — inline query
         // ═══════════════════════════════════════════════════════════
         public List<ChillingDailyReportModel> GetDailyReport(int? plantId,
                                                                DateTime? fromDate,
@@ -501,10 +498,12 @@ namespace DairyIndustry.Repositories
                     cs.StoredDate,
                     COUNT(*)                                                              AS TotalEntries,
                     ISNULL(SUM(cs.MilkQuantity), 0)                                      AS TotalQuantity,
-                    SUM(CASE WHEN cs.Temperature <= 5              THEN 1 ELSE 0 END)    AS SafeCount,
-                    SUM(CASE WHEN cs.Temperature BETWEEN 5 AND 8   THEN 1 ELSE 0 END)    AS WarningCount,
-                    SUM(CASE WHEN cs.Temperature > 8               THEN 1 ELSE 0 END)    AS CriticalCount,
-                    SUM(CASE WHEN cs.Temperature IS NULL            THEN 1 ELSE 0 END)    AS UnknownCount
+                    SUM(CASE WHEN cs.Temperature IS NOT NULL
+                              AND cs.Temperature < 5              THEN 1 ELSE 0 END)     AS SafeCount,
+                    SUM(CASE WHEN cs.Temperature > 5
+                              AND cs.Temperature <= 8             THEN 1 ELSE 0 END)     AS WarningCount,
+                    SUM(CASE WHEN cs.Temperature > 8              THEN 1 ELSE 0 END)     AS CriticalCount,
+                    SUM(CASE WHEN cs.Temperature IS NULL          THEN 1 ELSE 0 END)     AS UnknownCount
                 FROM Chilling.ChillingStorage cs
                 WHERE (@PlantId  IS NULL OR cs.PlantId    = @PlantId)
                   AND (@FromDate IS NULL OR cs.StoredDate >= @FromDate)
@@ -538,9 +537,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  NEW — GET PRODUCT REPORT (Feature 2)
-        //  Groups entries by ItemName for the By Product tab.
-        //  Returns one row per distinct product/raw milk.
+        //  15. GET PRODUCT REPORT — inline query
         // ═══════════════════════════════════════════════════════════
         public List<ChillingProductReportModel> GetProductReport(int? plantId,
                                                                    DateTime? fromDate,
@@ -555,7 +552,7 @@ namespace DairyIndustry.Repositories
                     p.Unit,
                     COUNT(*)                                                       AS TotalEntries,
                     ISNULL(SUM(cs.MilkQuantity), 0)                               AS TotalQuantity,
-                    ISNULL(AVG(CAST(cs.Temperature AS FLOAT)), 0)                  AS AvgTemperature,
+                    ISNULL(AVG(CAST(cs.Temperature AS FLOAT)), 0)                 AS AvgTemperature,
                     SUM(CASE WHEN cs.Temperature > 5 THEN 1 ELSE 0 END)           AS AlertCount,
                     ISNULL(SUM(cs.MilkQuantity) / NULLIF(COUNT(*), 0), 0)         AS AvgQuantityPerEntry
                 FROM Chilling.ChillingStorage cs
@@ -594,33 +591,35 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  NEW — GET WEEKLY TREND (Feature 3)
-        //  Returns last 7 days of daily quantity per plant.
-        //  Fills missing days with 0 so sparklines always have 7 points.
+        //  16. GET WEEKLY TREND — inline query
+        //  Fix #8 — plants with no entries in last 7 days now appear
+        //  with all-zero sparkline via LEFT JOIN from ProcessingPlants
         // ═══════════════════════════════════════════════════════════
         public List<ChillingWeeklyTrendModel> GetWeeklyTrend(int? plantId)
         {
             var result = new List<ChillingWeeklyTrendModel>();
 
-            // Build the 7-day date spine
             var dates = Enumerable.Range(0, 7)
                 .Select(i => DateTime.Today.AddDays(-6 + i))
                 .ToList();
 
+            // Fix #8: LEFT JOIN from ProcessingPlants ensures plant appears
+            // even if it has zero entries in the last 7 days
             string query = @"
                 SELECT
-                    cs.PlantId,
+                    pp.PlantId,
                     pp.PlantName,
                     cs.StoredDate,
-                    ISNULL(SUM(cs.MilkQuantity), 0)  AS DayQty,
-                    COUNT(*)                          AS DayEntries
-                FROM Chilling.ChillingStorage cs
-                INNER JOIN Production.ProcessingPlants pp ON pp.PlantId = cs.PlantId
-                WHERE cs.StoredDate >= @FromDate
-                  AND cs.StoredDate <= @ToDate
-                  AND (@PlantId IS NULL OR cs.PlantId = @PlantId)
-                GROUP BY cs.PlantId, pp.PlantName, cs.StoredDate
-                ORDER BY cs.PlantId, cs.StoredDate";
+                    ISNULL(SUM(cs.MilkQuantity), 0) AS DayQty,
+                    COUNT(cs.StorageId)              AS DayEntries
+                FROM Production.ProcessingPlants pp
+                LEFT JOIN Chilling.ChillingStorage cs
+                    ON cs.PlantId = pp.PlantId
+                   AND cs.StoredDate >= @FromDate
+                   AND cs.StoredDate <= @ToDate
+                WHERE (@PlantId IS NULL OR pp.PlantId = @PlantId)
+                GROUP BY pp.PlantId, pp.PlantName, cs.StoredDate
+                ORDER BY pp.PlantId, cs.StoredDate";
 
             using var con = _db.GetConnection();
             con.Open();
@@ -629,7 +628,6 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@ToDate", DateTime.Today);
             cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
 
-            // Read raw rows into a lookup
             var raw = new Dictionary<int, (string Name, List<(DateTime Date, decimal Qty, int Cnt)> Rows)>();
 
             using var reader = cmd.ExecuteReader();
@@ -637,16 +635,20 @@ namespace DairyIndustry.Repositories
             {
                 int pid = Convert.ToInt32(reader["PlantId"]);
                 string pn = reader["PlantName"].ToString();
-                var dt = Convert.ToDateTime(reader["StoredDate"]);
-                var qty = Convert.ToDecimal(reader["DayQty"]);
-                var cnt = Convert.ToInt32(reader["DayEntries"]);
 
                 if (!raw.ContainsKey(pid))
                     raw[pid] = (pn, new List<(DateTime, decimal, int)>());
-                raw[pid].Rows.Add((dt, qty, cnt));
+
+                // StoredDate can be NULL for plants with no entries (LEFT JOIN)
+                if (reader["StoredDate"] != DBNull.Value)
+                {
+                    var dt = Convert.ToDateTime(reader["StoredDate"]);
+                    var qty = Convert.ToDecimal(reader["DayQty"]);
+                    var cnt = Convert.ToInt32(reader["DayEntries"]);
+                    raw[pid].Rows.Add((dt, qty, cnt));
+                }
             }
 
-            // Build WeeklyTrendModel — fill all 7 days including zeros
             foreach (var kvp in raw)
             {
                 var trend = new ChillingWeeklyTrendModel
@@ -676,11 +678,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  PRIVATE HELPERS
-        // ═══════════════════════════════════════════════════════════
-        //  NEW — QUICK UPDATE ENTRY
-        //  Updates only MilkQuantity and Temperature.
-        //  Used by the inline Quick Edit popover on the Index page.
+        //  17. QUICK UPDATE ENTRY — inline query
         // ═══════════════════════════════════════════════════════════
         public bool QuickUpdateEntry(int storageId, decimal milkQuantity, decimal? temperature)
         {
@@ -702,10 +700,7 @@ namespace DairyIndustry.Repositories
 
 
         // ═══════════════════════════════════════════════════════════
-        //  NEW — INSERT WITH SHIFT — inline query
-        //  Called instead of StoreItem SP when Shift is selected.
-        //  Identical to SP behaviour + writes Shift column.
-        //  SP is left completely untouched.
+        //  18. INSERT WITH SHIFT — inline query
         // ═══════════════════════════════════════════════════════════
         public int InsertWithShift(ChillingStoreItemModel model)
         {
@@ -763,19 +758,71 @@ namespace DairyIndustry.Repositories
         private string GetTempStatus(decimal? temp)
         {
             if (temp == null) return "Unknown";
-            if (temp <= 5) return "Safe";
+            if (temp < 5) return "Safe";
             if (temp <= 8) return "Warning";
             return "Critical";
         }
 
-        // Safe column existence check — prevents InvalidOperationException
-        // when SP results don't include all columns (e.g. Shift not in GetByPlant SP)
         private bool HasColumn(SqlDataReader reader, string columnName)
         {
             for (int i = 0; i < reader.FieldCount; i++)
                 if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
                     return true;
             return false;
+        }
+
+        // ── Fix #11: Safe DB execution wrappers ──────────────────
+        // Catches SqlException and logs to Debug output.
+        // Returns safe defaults so the app never crashes with 500.
+
+        private List<ChillingStorageModel> SafeList(Func<List<ChillingStorageModel>> fn)
+        {
+            try { return fn(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ChillingRepo] DB error: {ex.Message}");
+                return new List<ChillingStorageModel>();
+            }
+        }
+
+        private List<T> SafeList<T>(Func<List<T>> fn)
+        {
+            try { return fn(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ChillingRepo] DB error: {ex.Message}");
+                return new List<T>();
+            }
+        }
+
+        private T? SafeSingle<T>(Func<T?> fn) where T : class
+        {
+            try { return fn(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ChillingRepo] DB error: {ex.Message}");
+                return null;
+            }
+        }
+
+        private bool SafeExecute(Func<bool> fn)
+        {
+            try { return fn(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ChillingRepo] DB error: {ex.Message}");
+                return false;
+            }
+        }
+
+        private int SafeInsert(Func<int> fn)
+        {
+            try { return fn(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ChillingRepo] DB error: {ex.Message}");
+                return 0;
+            }
         }
     }
 }

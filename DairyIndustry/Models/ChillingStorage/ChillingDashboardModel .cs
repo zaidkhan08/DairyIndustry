@@ -108,7 +108,7 @@
             get
             {
                 if (AvgTemperature == 0) return "Unknown";
-                if (AvgTemperature <= 5) return "Safe";
+                if (AvgTemperature > 0 && AvgTemperature < 5) return "Safe";
                 if (AvgTemperature <= 8) return "Warning";
                 return "Critical";
             }

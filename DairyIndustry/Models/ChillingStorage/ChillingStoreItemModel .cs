@@ -9,7 +9,9 @@ namespace DairyIndustry.Models.ChillingStorage
     {
         public int StorageId { get; set; }  // 0 for new, filled for edit
 
-        [Required(ErrorMessage = "Please select a plant.")]
+        // Fix #10 — [Required] on int never catches 0 (model binding default)
+        // [Range] correctly rejects 0 and negative values
+        [Range(1, int.MaxValue, ErrorMessage = "Plant assignment is missing. Contact Admin.")]
         [Display(Name = "Processing Plant")]
         public int PlantId { get; set; }
 
@@ -30,7 +32,7 @@ namespace DairyIndustry.Models.ChillingStorage
         [DataType(DataType.Date)]
         public DateTime StoredDate { get; set; } = DateTime.Today;
 
-        // NEW: Shift — optional, one of Morning / Afternoon / Night
+        // Shift — optional, one of Morning / Afternoon / Night
         [Display(Name = "Shift")]
         [RegularExpression("^(Morning|Afternoon|Night)$",
             ErrorMessage = "Shift must be Morning, Afternoon, or Night.")]

@@ -18,6 +18,9 @@ namespace DairyIndustry.Controllers
         private readonly IHRRepository _repo;
         private readonly IWebHostEnvironment _env;
 
+        // ── Pagination — 5 entries per page ────────────────────────
+        private const int PageSize = 5;
+
         public HRController(IHRRepository repo, IWebHostEnvironment env)
         {
             _repo = repo;
@@ -139,11 +142,11 @@ namespace DairyIndustry.Controllers
         //                 Role/status filter still works within their plant
         //                 PlantId filter is forced from session — cannot be
         //                 overridden via URL params
-        public IActionResult Index(int? roleId, bool? isActive)
+        public IActionResult Index(int? roleId, bool? isActive, int page = 1)
         {
             try
             {
-                List<StaffModel> staff;
+                List<StaffModel> allStaff;
 
                 if (IsPlantManager)
                 {
@@ -156,22 +159,41 @@ namespace DairyIndustry.Controllers
                     }
 
                     // Get only this plant's staff — PlantId is forced from session
-                    staff = _repo.GetStaffByPlant(plantId.Value, roleId, isActive);
+                    allStaff = _repo.GetStaffByPlant(plantId.Value, roleId, isActive);
                     ViewBag.IsPlantManager = true;
                     ViewBag.PlantName = HttpContext.Session.GetString("PlantName") ?? "Your Plant";
                 }
                 else
                 {
                     // HR Manager — full access
-                    staff = _repo.GetAllStaff(roleId, isActive);
+                    allStaff = _repo.GetAllStaff(roleId, isActive);
                     ViewBag.IsPlantManager = false;
                 }
+
+                // ── Pagination ────────────────────────────────────────
+                int totalRecords = allStaff.Count;
+                int totalPages = (int)Math.Ceiling(totalRecords / (double)PageSize);
+                if (page < 1) page = 1;
+                if (page > totalPages && totalPages > 0) page = totalPages;
+
+                var pagedStaff = allStaff
+                    .Skip((page - 1) * PageSize)
+                    .Take(PageSize)
+                    .ToList();
+
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.TotalRecords = totalRecords;
+                ViewBag.PageSize = PageSize;
+                ViewBag.RoleId = roleId;
+                ViewBag.IsActive = isActive;
+                // ── End Pagination ────────────────────────────────────
 
                 LoadRolesDropdown(roleId);
                 ViewBag.SelectedRoleId = roleId;
                 ViewBag.SelectedActive = isActive;
 
-                return View(staff);
+                return View(pagedStaff);
             }
             catch (Exception ex)
             {

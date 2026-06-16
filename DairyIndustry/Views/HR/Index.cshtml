@@ -2,6 +2,15 @@
 @{
     Layout = "~/Views/Shared/_HRLayout.cshtml";
     ViewData["Title"] = "Staff List";
+
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalRecords = ViewBag.TotalRecords ?? Model.Count;
+    int pageSize = ViewBag.PageSize ?? 10;
+    int? roleId = ViewBag.RoleId as int?;
+    bool? isActive = ViewBag.IsActive as bool?;
+    int startRecord = totalRecords == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    int endRecord = Math.Min(currentPage * pageSize, totalRecords);
 }
 
 <!-- Page Header -->
@@ -11,7 +20,16 @@
             <span class="page-icon"><i class="bi bi-people-fill"></i></span>
             Staff List
         </h1>
-        <p class="page-subtitle" id="record-count">@Model.Count record(s) found</p>
+        <p class="page-subtitle" id="record-count">
+            @if (totalRecords == 0)
+            {
+                <text>No records found</text>
+            }
+            else
+            {
+                <text>Showing @startRecord–@endRecord of @totalRecords record(s)</text>
+            }
+        </p>
     </div>
     <div class="d-flex gap-2">
         <a asp-action="Dashboard" class="btn-hr-secondary">
@@ -49,6 +67,7 @@
 
         <!-- Server Filters -->
         <form method="get" asp-action="Index">
+            <input type="hidden" name="page" value="1" />
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label-hr">Role</label>
@@ -186,8 +205,125 @@
             </button>
         </div>
 
-        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;font-size:.75rem;color:#94a3b8;">
-            Showing <span id="footer-visible" style="font-weight:600;color:#475569;">@Model.Count</span> of @Model.Count staff member(s)
+        <div style="padding:14px 20px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+
+            <!-- Record info -->
+            <div style="font-size:.75rem;color:#94a3b8;">
+                Showing
+                <span style="font-weight:600;color:#475569;">@startRecord–@endRecord</span>
+                of
+                <span style="font-weight:600;color:#475569;">@totalRecords</span>
+                staff member(s)
+            </div>
+
+            <!-- Pagination controls -->
+            @if (totalPages > 1)
+            {
+                <div style="display:flex;align-items:center;gap:4px;" id="pagination-bar">
+                    @{
+                        string PageUrl(int p) =>
+                        Url.Action("Index", new { roleId, isActive, page = p })!;
+                        bool hasPrev = currentPage > 1;
+                        bool hasNext = currentPage < totalPages;
+                        int windowStart = Math.Max(1, currentPage - 2);
+                        int windowEnd = Math.Min(totalPages, currentPage + 2);
+                        if (windowEnd - windowStart < 4)
+                        {
+                            if (windowStart == 1) windowEnd = Math.Min(totalPages, 5);
+                            else windowStart = Math.Max(1, windowEnd - 4);
+                        }
+                    }
+
+                    @* Prev *@
+                    @if (hasPrev)
+                    {
+                        <a href="@PageUrl(currentPage - 1)"
+                           style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                              border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    }
+                    else
+                    {
+                        <span style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                                 border:1px solid #f1f5f9;border-radius:8px;background:#f8fafc;
+                                                 color:#cbd5e1;font-size:.78rem;font-weight:600;cursor:not-allowed;">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </span>
+                    }
+
+                    @* First page + ellipsis *@
+                    @if (windowStart > 1)
+                    {
+                        <a href="@PageUrl(1)"
+                           style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                              min-width:36px;text-align:center;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">1</a>
+                        @if (windowStart > 2)
+                        {
+                            <span style="padding:7px 8px;color:#94a3b8;font-size:.78rem;">…</span>
+                        }
+                    }
+
+                    @* Page numbers *@
+                    @for (int p = windowStart; p <= windowEnd; p++)
+                    {
+                        if (p == currentPage)
+                        {
+                            <span style="padding:7px 12px;border:1px solid #2563eb;border-radius:8px;
+                                                         background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;
+                                                         font-size:.78rem;font-weight:700;min-width:36px;text-align:center;
+                                                         box-shadow:0 2px 8px rgba(37,99,235,.3);">@p</span>
+                        }
+                        else
+                        {
+                            <a href="@PageUrl(p)"
+                               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                                      color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                                      min-width:36px;text-align:center;transition:all .15s;"
+                               onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">@p</a>
+                        }
+                    }
+
+                    @* Last page + ellipsis *@
+                    @if (windowEnd < totalPages)
+                    {
+                        @if (windowEnd < totalPages - 1)
+                        {
+                            <span style="padding:7px 8px;color:#94a3b8;font-size:.78rem;">…</span>
+                        }
+                        <a href="@PageUrl(totalPages)"
+                           style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                              min-width:36px;text-align:center;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">@totalPages</a>
+                    }
+
+                    @* Next *@
+                    @if (hasNext)
+                    {
+                        <a href="@PageUrl(currentPage + 1)"
+                           style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                              border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                                 border:1px solid #f1f5f9;border-radius:8px;background:#f8fafc;
+                                                 color:#cbd5e1;font-size:.78rem;font-weight:600;cursor:not-allowed;">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </span>
+                    }
+
+                </div>
+            }
         </div>
     }
     else
@@ -217,6 +353,7 @@
             var fv = document.getElementById('footer-visible');
             var nr = document.getElementById('no-search-results');
             var td = document.getElementById('search-term-display');
+            var pb = document.getElementById('pagination-bar');
             var rows = document.querySelectorAll('.staff-row');
 
             function doSearch(term) {
@@ -236,6 +373,8 @@
                 if (cb) cb.style.display = term ? '' : 'none';
                 if (td) td.textContent = '"' + term + '"';
                 if (nr) nr.style.display = (term && v === 0) ? '' : 'none';
+                // Hide pagination while searching
+                if (pb) pb.style.display = term ? 'none' : 'flex';
             }
 
             function clearSearch() { si.value = ''; doSearch(''); si.focus(); }

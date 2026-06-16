@@ -16,49 +16,92 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPER — session auth check
+        //  Fix #12 — every action calls this first.
+        //  Returns true if logged in, false + redirects if not.
+        // ═══════════════════════════════════════════════════════════
+        private bool IsAuthenticated()
+        {
+            return HttpContext.Session.GetInt32("UserId") != null;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
         //  PRIVATE HELPER — gets PlantId + PlantName for the
-        //  logged-in user from Admin.UserPlants via session UserId.
-        //  Returns null if user has no plant assigned.
+        //  logged-in user. Result is cached in HttpContext.Items
+        //  Fix #1 — was calling DB on every GetSessionPlant() call.
+        //  Now hits DB once per request, cached for all subsequent calls.
         // ═══════════════════════════════════════════════════════════
         private PlantDropdownModel? GetSessionPlant()
         {
+            const string key = "SessionPlant";
+
+            if (HttpContext.Items.TryGetValue(key, out var cached))
+                return cached as PlantDropdownModel;
+
             int? userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null) return null;
-            return _repo.GetPlantByUserId(userId.Value);
+            if (userId == null)
+            {
+                HttpContext.Items[key] = null;
+                return null;
+            }
+
+            var plant = _repo.GetPlantByUserId(userId.Value);
+            HttpContext.Items[key] = plant;
+            return plant;
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  PRIVATE HELPER — loads form data for Create / Edit
-        //  Sets ViewBag.PlantName and ViewBag.Products
-        //  No plant dropdown — plant is fixed from session
-        // ═══════════════════════════════════════════════════════════
-        private void LoadFormData(int plantId, int? selectedProductId = null)
-        {
-            var plants = _repo.GetPlants();
-            var plant = plants.FirstOrDefault(p => p.PlantId == plantId);
-            ViewBag.PlantName = plant?.DisplayText ?? "Unknown Plant";
 
+        // ═══════════════════════════════════════════════════════════
+        //  PRIVATE HELPER — loads form dropdowns for Create / Edit
+        //  Fix #5 — no longer calls GetPlants() just to get a name.
+        //  Uses the plant already retrieved from session instead.
+        // ═══════════════════════════════════════════════════════════
+        private void LoadFormData(PlantDropdownModel? plant, int? selectedProductId = null)
+        {
+            ViewBag.PlantName = plant?.DisplayText ?? "Unknown Plant";
             ViewBag.Products = new SelectList(
                 _repo.GetProducts(), "ProductId", "DisplayText", selectedProductId);
         }
 
 
         // ═══════════════════════════════════════════════════════════
-        //  DASHBOARD — /ChillingCenter/Dashboard
-        //  Shows summary for ALL plants (admin-level view)
+        //  PRIVATE HELPER — ownership check
+        //  Fix #6 #7 — verifies that a storage entry belongs to
+        //  the session plant before allowing Edit/Delete/Details/etc.
+        //  Admin (no plant assigned) can access any entry.
+        // ═══════════════════════════════════════════════════════════
+        private bool OwnsEntry(ChillingStorageModel entry, PlantDropdownModel? plant)
+        {
+            // Admin has no plant assigned — can access everything
+            if (plant == null) return true;
+            return entry.PlantId == plant.PlantId;
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        //  DASHBOARD
         // ═══════════════════════════════════════════════════════════
         public IActionResult Dashboard()
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var plant = GetSessionPlant();
 
             var viewModel = new ChillingDashboardViewModel
             {
-                Summary = _repo.GetDashboardSummary(),
+                // Fix #3 — Summary now scoped to session plant
+                Summary = _repo.GetDashboardSummary(plant?.PlantId),
                 PlantCapacity = _repo.GetPlantCapacitySummary(),
+                // Fix #9  — use GetByPlantFiltered (inline query) instead of SP
+                //           so Shift column is included in RecentEntries
+                // Fix #13 — take 10 instead of 5 so chart has more data points
                 RecentEntries = plant != null
-                    ? _repo.GetByPlant(plant.PlantId, null, null).Take(5).ToList()
-                    : _repo.GetAll(null, null).Take(5).ToList(),
-                ActiveAlerts = _repo.GetTemperatureAlerts(DateTime.Today, DateTime.Today),
+                    ? _repo.GetByPlantFiltered(plant.PlantId, null, null, null).Take(10).ToList()
+                    : _repo.GetAll(null, null).Take(10).ToList(),
+                // Fix #2 — plantId passed directly to repo, no C# filtering
+                ActiveAlerts = _repo.GetTemperatureAlerts(plant?.PlantId, DateTime.Today, DateTime.Today),
                 WeeklyTrend = _repo.GetWeeklyTrend(plant?.PlantId)
             };
 
@@ -68,32 +111,27 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  INDEX — /ChillingCenter/Index
-        //  Plant Manager sees ONLY their plant's entries.
-        //  When search is provided, uses filtered inline query.
-        //  When no search, uses original SP (existing behaviour).
+        //  INDEX
         // ═══════════════════════════════════════════════════════════
         public IActionResult Index(DateTime? fromDate, DateTime? toDate, string? search)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var plant = GetSessionPlant();
             List<ChillingStorageModel> entries;
 
             if (plant != null)
             {
-                // Always use inline filtered query — includes Shift column.
-                // SP (GetByPlant) does not return Shift so is no longer used for Index.
                 entries = _repo.GetByPlantFiltered(plant.PlantId, fromDate, toDate,
                               string.IsNullOrWhiteSpace(search) ? null : search);
-
                 ViewBag.PlantName = plant.DisplayText;
             }
             else
             {
-                // Admin
                 entries = string.IsNullOrWhiteSpace(search)
                     ? _repo.GetAll(fromDate, toDate)
                     : _repo.GetAllFiltered(fromDate, toDate, search);
-
                 ViewBag.PlantName = "All Plants";
                 ViewBag.Plants = new SelectList(_repo.GetPlants(), "PlantId", "DisplayText");
             }
@@ -107,26 +145,41 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  DETAILS — /ChillingCenter/Details/5
+        //  DETAILS
+        //  Fix #7 — ownership check added
         // ═══════════════════════════════════════════════════════════
         public IActionResult Details(int id)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var entry = _repo.GetById(id);
             if (entry == null)
             {
                 TempData["Error"] = "Storage entry not found.";
                 return RedirectToAction("Index");
             }
+
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(entry, plant))
+            {
+                TempData["Error"] = "You do not have permission to view this entry.";
+                return RedirectToAction("Index");
+            }
+
             return View(entry);
         }
 
 
         // ═══════════════════════════════════════════════════════════
-        //  CREATE GET — /ChillingCenter/Create
-        //  PlantId comes from session — shown as label
+        //  CREATE GET
+        //  Fix #5 — LoadFormData now receives plant directly
         // ═══════════════════════════════════════════════════════════
         public IActionResult Create()
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var plant = GetSessionPlant();
 
             if (plant == null)
@@ -135,7 +188,7 @@ namespace DairyIndustry.Controllers
                 return RedirectToAction("Index");
             }
 
-            LoadFormData(plant.PlantId);
+            LoadFormData(plant);
 
             var model = new ChillingStoreItemModel
             {
@@ -151,13 +204,16 @@ namespace DairyIndustry.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(ChillingStoreItemModel model)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             if (!ModelState.IsValid)
             {
-                LoadFormData(model.PlantId, model.ProductId);
+                var plant = GetSessionPlant();
+                LoadFormData(plant, model.ProductId);
                 return View(model);
             }
 
-            // Use inline InsertWithShift if shift selected — SP untouched
             int newId = !string.IsNullOrEmpty(model.Shift)
                 ? _repo.InsertWithShift(model)
                 : _repo.StoreItem(model);
@@ -172,22 +228,29 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  NEW — DUPLICATE — /ChillingCenter/Duplicate/5
-        //  Pre-fills the Create form with data from an existing
-        //  entry. StorageId is set to 0 so it saves as a new record.
-        //  StoredDate resets to today. Everything else copied.
+        //  DUPLICATE
+        //  Fix #7 — ownership check added
         // ═══════════════════════════════════════════════════════════
         public IActionResult Duplicate(int id)
         {
-            var source = _repo.GetById(id);
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
 
+            var source = _repo.GetById(id);
             if (source == null)
             {
                 TempData["Error"] = "Entry not found. Cannot duplicate.";
                 return RedirectToAction("Index");
             }
 
-            LoadFormData(source.PlantId, source.ProductId);
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(source, plant))
+            {
+                TempData["Error"] = "You do not have permission to duplicate this entry.";
+                return RedirectToAction("Index");
+            }
+
+            LoadFormData(plant, source.ProductId);
 
             var model = new ChillingStoreItemModel
             {
@@ -206,11 +269,15 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  EDIT GET — /ChillingCenter/Edit/5
-        //  PlantId comes from the existing record
+        //  EDIT GET
+        //  Fix #5 — LoadFormData receives plant directly
+        //  Fix #7 — ownership check added
         // ═══════════════════════════════════════════════════════════
         public IActionResult Edit(int id)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var entry = _repo.GetById(id);
             if (entry == null)
             {
@@ -218,7 +285,20 @@ namespace DairyIndustry.Controllers
                 return RedirectToAction("Index");
             }
 
-            LoadFormData(entry.PlantId, entry.ProductId);
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(entry, plant))
+            {
+                TempData["Error"] = "You do not have permission to edit this entry.";
+                return RedirectToAction("Index");
+            }
+
+            // For Edit, use the entry's plant (may differ from session plant for admin)
+            var entryPlant = new PlantDropdownModel
+            {
+                PlantId = entry.PlantId,
+                PlantName = entry.PlantName
+            };
+            LoadFormData(entryPlant, entry.ProductId);
 
             var model = new ChillingStoreItemModel
             {
@@ -233,16 +313,35 @@ namespace DairyIndustry.Controllers
 
             return View(model);
         }
-        
+
         // EDIT POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(ChillingStoreItemModel model)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             if (!ModelState.IsValid)
             {
-                LoadFormData(model.PlantId, model.ProductId);
+                var plant = GetSessionPlant();
+                LoadFormData(plant, model.ProductId);
                 return View(model);
+            }
+
+            // Ownership re-check on POST — prevent forged requests
+            var existing = _repo.GetById(model.StorageId);
+            if (existing == null)
+            {
+                TempData["Error"] = "Entry not found.";
+                return RedirectToAction("Index");
+            }
+
+            var sessionPlant = GetSessionPlant();
+            if (!OwnsEntry(existing, sessionPlant))
+            {
+                TempData["Error"] = "You do not have permission to edit this entry.";
+                return RedirectToAction("Index");
             }
 
             bool success = _repo.UpdateEntry(model);
@@ -257,16 +356,28 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  DELETE GET — /ChillingCenter/Delete/5
+        //  DELETE GET
+        //  Fix #7 — ownership check added
         // ═══════════════════════════════════════════════════════════
         public IActionResult Delete(int id)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var entry = _repo.GetById(id);
             if (entry == null)
             {
                 TempData["Error"] = "Storage entry not found.";
                 return RedirectToAction("Index");
             }
+
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(entry, plant))
+            {
+                TempData["Error"] = "You do not have permission to delete this entry.";
+                return RedirectToAction("Index");
+            }
+
             return View(entry);
         }
 
@@ -275,6 +386,24 @@ namespace DairyIndustry.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
+            // Ownership re-check on POST
+            var existing = _repo.GetById(id);
+            if (existing == null)
+            {
+                TempData["Error"] = "Entry not found.";
+                return RedirectToAction("Index");
+            }
+
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(existing, plant))
+            {
+                TempData["Error"] = "You do not have permission to delete this entry.";
+                return RedirectToAction("Index");
+            }
+
             bool success = _repo.DeleteEntry(id);
 
             if (success)
@@ -287,17 +416,17 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  TEMPERATURE ALERTS — /ChillingCenter/Alerts
-        //  Plant Manager sees only their plant's alerts
+        //  TEMPERATURE ALERTS
+        //  Fix #2 — plantId passed to repo, no C# LINQ filtering
         // ═══════════════════════════════════════════════════════════
         public IActionResult Alerts(DateTime? fromDate, DateTime? toDate)
         {
-            var allAlerts = _repo.GetTemperatureAlerts(fromDate, toDate);
-            var plant = GetSessionPlant();
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
 
-            var alerts = plant != null
-                ? allAlerts.Where(a => a.PlantId == plant.PlantId).ToList()
-                : allAlerts;
+            var plant = GetSessionPlant();
+            // Fix #2 — pass plantId to DB query instead of fetching all then filtering
+            var alerts = _repo.GetTemperatureAlerts(plant?.PlantId, fromDate, toDate);
 
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
@@ -308,10 +437,13 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  CAPACITY — /ChillingCenter/Capacity
+        //  CAPACITY
         // ═══════════════════════════════════════════════════════════
         public IActionResult Capacity()
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var data = _repo.GetPlantCapacitySummary();
             var plant = GetSessionPlant();
 
@@ -324,17 +456,27 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  QUICK EDIT — /ChillingCenter/QuickEdit
-        //  Called via fetch() from Index page — no page reload.
-        //  Only updates MilkQuantity and Temperature.
-        //  Returns JSON { success, message }.
+        //  QUICK EDIT
+        //  Fix #6 — ownership check added before updating
         // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult QuickEdit(int storageId, decimal milkQuantity, decimal? temperature)
         {
+            if (!IsAuthenticated())
+                return Json(new { success = false, message = "Session expired. Please log in again." });
+
             if (milkQuantity <= 0)
                 return Json(new { success = false, message = "Quantity must be greater than 0." });
+
+            // Fix #6 — verify entry belongs to session plant before updating
+            var existing = _repo.GetById(storageId);
+            if (existing == null)
+                return Json(new { success = false, message = "Entry not found." });
+
+            var plant = GetSessionPlant();
+            if (!OwnsEntry(existing, plant))
+                return Json(new { success = false, message = "You do not have permission to edit this entry." });
 
             bool ok = _repo.QuickUpdateEntry(storageId, milkQuantity, temperature);
 
@@ -349,12 +491,13 @@ namespace DairyIndustry.Controllers
 
 
         // ═══════════════════════════════════════════════════════════
-        //  DAILY REPORT — /ChillingCenter/Report
-        //  Now serves both By Date and By Product tabs via
-        //  ChillingReportViewModel.
+        //  DAILY REPORT
         // ═══════════════════════════════════════════════════════════
         public IActionResult Report(DateTime? fromDate, DateTime? toDate)
         {
+            if (!IsAuthenticated())
+                return RedirectToAction("Login", "Admin");
+
             var plant = GetSessionPlant();
             var from = fromDate ?? DateTime.Today.AddDays(-29);
             var to = toDate ?? DateTime.Today;
