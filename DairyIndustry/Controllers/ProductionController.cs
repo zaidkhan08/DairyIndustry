@@ -29,19 +29,27 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult Index()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                int? plantId = null;
-                if (roleName == "Plant Manager")
-                    plantId = HttpContext.Session.GetInt32("PlantId");
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-                var transfers = _productionRepo.GetAllTransfers(plantId);
-                return View(transfers);
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
+                {
+                    int? plantId = null;
+                    if (roleName == "Plant Manager")
+                        plantId = HttpContext.Session.GetInt32("PlantId");
+
+                    var transfers = _productionRepo.GetAllTransfers(plantId);
+                    return View(transfers);
+                }
+
+                return RedirectToAction("AccessDenied", "Home");
             }
-
-            return RedirectToAction("AccessDenied", "Home");
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -50,47 +58,54 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                ViewBag.Batches = _productionRepo.GetClosedBatches();
-                ViewBag.Plants = _adminRepo.GetAllPlants();
-                ViewBag.Vehicles = _productionRepo.GetAllVehicles();
-                ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();   // ← NEW: needed for milk type dropdown
-                return View();
-            }
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            return RedirectToAction("AccessDenied", "Home");
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
+                {
+                    ViewBag.Batches = _productionRepo.GetClosedBatches();
+                    ViewBag.Plants = _adminRepo.GetAllPlants();
+                    ViewBag.Vehicles = _productionRepo.GetAllVehicles();
+                    ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+                    return View();
+                }
+
+                return RedirectToAction("AccessDenied", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
         // CREATE — submit dispatch form
-        // milkTypeId now included so inventory is updated correctly
         // ════════════════════════════════════════════════════════
         [HttpPost]
         public IActionResult Create(int batchId, int milkTypeId, int vehicleId, int plantId,
                                     decimal dispatchQty, DateTime dispatchDate)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                try
+                var roleName = HttpContext.Session.GetString("RoleName");
+
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
                 {
                     _productionRepo.DispatchMilkTransfer(batchId, milkTypeId, vehicleId, plantId,
                                                           dispatchQty, dispatchDate);
                     TempData["Success"] = "Milk batch dispatched successfully.";
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
+                    return RedirectToAction("Index");
                 }
 
+                return RedirectToAction("AccessDenied", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
                 return RedirectToAction("Index");
             }
-
-            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -100,28 +115,36 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Plant Manager")]
         public IActionResult Receive(int id)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                var transfer = _productionRepo.GetTransferById(id);
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-                if (transfer == null)
-                    return NotFound();
-
-                if (transfer.ReceivedDate.HasValue)
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
                 {
-                    TempData["Error"] = "This transfer has already been received.";
-                    return RedirectToAction("Index");
+                    var transfer = _productionRepo.GetTransferById(id);
+
+                    if (transfer == null)
+                        return NotFound();
+
+                    if (transfer.ReceivedDate.HasValue)
+                    {
+                        TempData["Error"] = "This transfer has already been received.";
+                        return RedirectToAction("Index");
+                    }
+
+                    var qualityTest = _productionRepo.GetQualityTestByTransfer(id);
+                    ViewBag.QualityTest = qualityTest;
+
+                    return View(transfer);
                 }
 
-                var qualityTest = _productionRepo.GetQualityTestByTransfer(id);
-                ViewBag.QualityTest = qualityTest;
-
-                return View(transfer);
+                return RedirectToAction("AccessDenied", "Home");
             }
-
-            return RedirectToAction("AccessDenied", "Home");
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -131,16 +154,24 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Plant Manager")]
         public IActionResult Receive(int transferId, decimal receivedQty, DateTime receivedDate)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                _productionRepo.ReceiveMilkTransfer(transferId, receivedQty, receivedDate);
-                TempData["Success"] = "Transfer marked as received. Raw milk inventory updated.";
+                var roleName = HttpContext.Session.GetString("RoleName");
+
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
+                {
+                    _productionRepo.ReceiveMilkTransfer(transferId, receivedQty, receivedDate);
+                    TempData["Success"] = "Transfer marked as received. Raw milk inventory updated.";
+                    return RedirectToAction("Index");
+                }
+
+                return RedirectToAction("AccessDenied", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
                 return RedirectToAction("Index");
             }
-
-            return RedirectToAction("AccessDenied", "Home");
         }
 
         // ════════════════════════════════════════════════════════
@@ -150,19 +181,27 @@ namespace DairyIndustry.Controllers
         [SessionAuthorize("Plant Manager")]
         public IActionResult Detail(int id)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName == "Plant Manager" || roleName == "Collection Agent")
+            try
             {
-                var transfer = _productionRepo.GetTransferById(id);
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-                if (transfer == null)
-                    return NotFound();
+                if (roleName == "Plant Manager" || roleName == "Collection Agent")
+                {
+                    var transfer = _productionRepo.GetTransferById(id);
 
-                return View(transfer);
+                    if (transfer == null)
+                        return NotFound();
+
+                    return View(transfer);
+                }
+
+                return RedirectToAction("AccessDenied", "Home");
             }
-
-            return RedirectToAction("AccessDenied", "Home");
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -170,13 +209,21 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult RawMilkInventory()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-            int? plantId = null;
-            if (roleName == "Plant Manager")
-                plantId = HttpContext.Session.GetInt32("PlantId");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
 
-            var inventory = _productionRepo.GetRawMilkInventory(plantId);
-            return View(inventory);
+                var inventory = _productionRepo.GetRawMilkInventory(plantId);
+                return View(inventory);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -184,8 +231,16 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult Products()
         {
-            var products = _productionRepo.GetAllProducts();
-            return View(products);
+            try
+            {
+                var products = _productionRepo.GetAllProducts();
+                return View(products);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -195,8 +250,16 @@ namespace DairyIndustry.Controllers
         public IActionResult AddProduct(string productName, string productType,
                                         decimal mrp, string unit, int? shelfLifeDays)
         {
-            _productionRepo.AddProduct(productName, productType, mrp, unit, shelfLifeDays);
-            TempData["Success"] = "Product added successfully.";
+            try
+            {
+                _productionRepo.AddProduct(productName, productType, mrp, unit, shelfLifeDays);
+                TempData["Success"] = "Product added successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction("Products");
         }
 
@@ -206,9 +269,17 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult EditProduct(int id)
         {
-            var product = _productionRepo.GetProductById(id);
-            if (product == null) return NotFound();
-            return View(product);
+            try
+            {
+                var product = _productionRepo.GetProductById(id);
+                if (product == null) return NotFound();
+                return View(product);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Products");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -217,8 +288,16 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public IActionResult EditProduct(ProductModel product)
         {
-            _productionRepo.UpdateProduct(product);
-            TempData["Success"] = "Product updated successfully.";
+            try
+            {
+                _productionRepo.UpdateProduct(product);
+                TempData["Success"] = "Product updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction("Products");
         }
 
@@ -228,8 +307,16 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public IActionResult DeleteProduct(int id)
         {
-            _productionRepo.DeleteProduct(id);
-            TempData["Success"] = "Product deleted.";
+            try
+            {
+                _productionRepo.DeleteProduct(id);
+                TempData["Success"] = "Product deleted.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction("Products");
         }
 
@@ -238,18 +325,26 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult Batches()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-            int? plantId = null;
-            if (roleName == "Plant Manager")
-                plantId = HttpContext.Session.GetInt32("PlantId");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
 
-            var batches = _productionRepo.GetAllProductionBatches(plantId);
+                var batches = _productionRepo.GetAllProductionBatches(plantId);
 
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Products = _productionRepo.GetAllProducts();
-            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Products = _productionRepo.GetAllProducts();
+                ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
 
-            return View(batches);
+                return View(batches);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -258,10 +353,18 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult StartBatch()
         {
-            ViewBag.Plants = _adminRepo.GetAllPlants();
-            ViewBag.Products = _productionRepo.GetAllProducts();
-            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
-            return View();
+            try
+            {
+                ViewBag.Plants = _adminRepo.GetAllPlants();
+                ViewBag.Products = _productionRepo.GetAllProducts();
+                ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Batches");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -271,20 +374,20 @@ namespace DairyIndustry.Controllers
         public IActionResult StartBatch(int plantId, int productId,
                                         decimal milkUsedQuantity, DateTime productionDate, int milkTypeId)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-            if (roleName == "Plant Manager")
-            {
-                var sessionPlantId = HttpContext.Session.GetInt32("PlantId");
-                if (sessionPlantId.HasValue)
-                    plantId = sessionPlantId.Value;
-            }
-
             try
             {
+                var roleName = HttpContext.Session.GetString("RoleName");
+                if (roleName == "Plant Manager")
+                {
+                    var sessionPlantId = HttpContext.Session.GetInt32("PlantId");
+                    if (sessionPlantId.HasValue)
+                        plantId = sessionPlantId.Value;
+                }
+
                 _productionRepo.StartProductionBatch(plantId, productId, milkUsedQuantity, productionDate, milkTypeId);
                 TempData["Success"] = "Production batch started successfully.";
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
             }
@@ -298,12 +401,20 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult BatchDetail(int id)
         {
-            var batch = _productionRepo.GetProductionBatchById(id);
-            if (batch == null) return NotFound();
+            try
+            {
+                var batch = _productionRepo.GetProductionBatchById(id);
+                if (batch == null) return NotFound();
 
-            ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
+                ViewBag.MilkTypes = _adminRepo.GetAllMilkTypes();
 
-            return View(batch);
+                return View(batch);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Batches");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -312,13 +423,21 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         public IActionResult UpdateBatchStatus(int productionBatchId, string batchStatus)
         {
-            _productionRepo.UpdateBatchStatus(productionBatchId, batchStatus);
+            try
+            {
+                _productionRepo.UpdateBatchStatus(productionBatchId, batchStatus);
 
-            string message = batchStatus == "QCFailed"
-                ? "Batch marked as QC Failed. Milk wastage has been automatically recorded."
-                : $"Batch status updated to {batchStatus}.";
+                string message = batchStatus == "QCFailed"
+                    ? "Batch marked as QC Failed. Milk wastage has been automatically recorded."
+                    : $"Batch status updated to {batchStatus}.";
 
-            TempData["Success"] = message;
+                TempData["Success"] = message;
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction("BatchDetail", new { id = productionBatchId });
         }
 
@@ -327,17 +446,25 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult ProductWastage()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-            int? plantId = null;
-            if (roleName == "Plant Manager")
-                plantId = HttpContext.Session.GetInt32("PlantId");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
 
-            var wastage = _productionRepo.GetAllProductWastage(plantId);
+                var wastage = _productionRepo.GetAllProductWastage(plantId);
 
-            ViewBag.Batches = _productionRepo.GetBatchesForWastage();
-            ViewBag.Products = _productionRepo.GetAllProducts();
+                ViewBag.Batches = _productionRepo.GetBatchesForWastage();
+                ViewBag.Products = _productionRepo.GetAllProducts();
 
-            return View(wastage);
+                return View(wastage);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -346,9 +473,17 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult AddWastage()
         {
-            ViewBag.Batches = _productionRepo.GetBatchesForWastage();
-            ViewBag.Products = _productionRepo.GetAllProducts();
-            return View();
+            try
+            {
+                ViewBag.Batches = _productionRepo.GetBatchesForWastage();
+                ViewBag.Products = _productionRepo.GetAllProducts();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("ProductWastage");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -377,9 +512,17 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult WastageByBatch(int id)
         {
-            var wastage = _productionRepo.GetWastageByBatch(id);
-            ViewBag.BatchId = id;
-            return View(wastage);
+            try
+            {
+                var wastage = _productionRepo.GetWastageByBatch(id);
+                ViewBag.BatchId = id;
+                return View(wastage);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("ProductWastage");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -387,15 +530,23 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult MilkProcessWastage()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
 
-            int? plantId = HttpContext.Session.GetInt32("PlantId");
-            var wastage = _productionRepo.GetAllMilkProcessWastage(plantId);
+                int? plantId = HttpContext.Session.GetInt32("PlantId");
+                var wastage = _productionRepo.GetAllMilkProcessWastage(plantId);
 
-            return View(wastage);
+                return View(wastage);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -405,21 +556,21 @@ namespace DairyIndustry.Controllers
         public IActionResult AddMilkProcessWastage(int productionBatchId, int milkTypeId,
                                                     decimal wastageQuantity, string reason)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
-
-            int plantId = HttpContext.Session.GetInt32("PlantId") ?? 0;
-
-            if (plantId == 0)
-            {
-                TempData["Error"] = "Session expired. Please login again.";
-                return RedirectToAction("Login", "Admin");
-            }
-
             try
             {
+                var roleName = HttpContext.Session.GetString("RoleName");
+
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
+
+                int plantId = HttpContext.Session.GetInt32("PlantId") ?? 0;
+
+                if (plantId == 0)
+                {
+                    TempData["Error"] = "Session expired. Please login again.";
+                    return RedirectToAction("Login", "Admin");
+                }
+
                 _productionRepo.AddMilkProcessWastage(productionBatchId, plantId, milkTypeId,
                                                        wastageQuantity, reason);
                 TempData["Success"] = $"Process wastage of {wastageQuantity} L recorded successfully.";
@@ -437,14 +588,22 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult QualityTests()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
 
-            int? plantId = HttpContext.Session.GetInt32("PlantId");
-            var tests = _productionRepo.GetAllQualityTests(plantId);
-            return View(tests);
+                int? plantId = HttpContext.Session.GetInt32("PlantId");
+                var tests = _productionRepo.GetAllQualityTests(plantId);
+                return View(tests);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -453,29 +612,37 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult AddQualityTest(int id)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
-
-            var transfer = _productionRepo.GetTransferById(id);
-            if (transfer == null)
-                return NotFound();
-
-            if (!transfer.ReceivedDate.HasValue)
+            try
             {
-                TempData["Error"] = "Quality test can only be recorded after the transfer is received.";
-                return RedirectToAction("Index");
-            }
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            var existing = _productionRepo.GetQualityTestByTransfer(id);
-            if (existing != null)
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
+
+                var transfer = _productionRepo.GetTransferById(id);
+                if (transfer == null)
+                    return NotFound();
+
+                if (!transfer.ReceivedDate.HasValue)
+                {
+                    TempData["Error"] = "Quality test can only be recorded after the transfer is received.";
+                    return RedirectToAction("Index");
+                }
+
+                var existing = _productionRepo.GetQualityTestByTransfer(id);
+                if (existing != null)
+                {
+                    TempData["Error"] = $"A quality test for Transfer #{id} already exists.";
+                    return RedirectToAction("QualityTestDetail", new { id });
+                }
+
+                return View(transfer);
+            }
+            catch (Exception ex)
             {
-                TempData["Error"] = $"A quality test for Transfer #{id} already exists.";
-                return RedirectToAction("QualityTestDetail", new { id });
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("QualityTests");
             }
-
-            return View(transfer);
         }
 
         // ════════════════════════════════════════════════════════
@@ -485,17 +652,17 @@ namespace DairyIndustry.Controllers
         public IActionResult AddQualityTest(int transferId, decimal testedFat,
                                              decimal testedCLR, DateTime testDate)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
-
             try
             {
+                var roleName = HttpContext.Session.GetString("RoleName");
+
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
+
                 _productionRepo.AddQualityTest(transferId, testedFat, testedCLR, testDate);
                 TempData["Success"] = $"Quality test for Transfer #{transferId} recorded successfully.";
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
             }
@@ -509,16 +676,24 @@ namespace DairyIndustry.Controllers
         [HttpGet]
         public IActionResult QualityTestDetail(int id)
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            if (roleName != "Plant Manager")
-                return RedirectToAction("AccessDenied", "Home");
+                if (roleName != "Plant Manager")
+                    return RedirectToAction("AccessDenied", "Home");
 
-            var test = _productionRepo.GetQualityTestByTransfer(id);
-            if (test == null)
-                return NotFound();
+                var test = _productionRepo.GetQualityTestByTransfer(id);
+                if (test == null)
+                    return NotFound();
 
-            return View(test);
+                return View(test);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("QualityTests");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -526,20 +701,28 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult TransferLossLog()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
+            try
+            {
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-            if (roleName != "Plant Manager" && roleName != "Collection Agent")
-                return RedirectToAction("AccessDenied", "Home");
+                if (roleName != "Plant Manager" && roleName != "Collection Agent")
+                    return RedirectToAction("AccessDenied", "Home");
 
-            int? plantId = null;
-            if (roleName == "Plant Manager")
-                plantId = HttpContext.Session.GetInt32("PlantId");
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
 
-            var logs = _productionRepo.GetTransferLossLog(plantId);
-            var summary = _productionRepo.GetLossSummary(plantId);
+                var logs = _productionRepo.GetTransferLossLog(plantId);
+                var summary = _productionRepo.GetLossSummary(plantId);
 
-            ViewBag.Summary = summary;
-            return View(logs);
+                ViewBag.Summary = summary;
+                return View(logs);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
 
         // ════════════════════════════════════════════════════════
@@ -547,60 +730,68 @@ namespace DairyIndustry.Controllers
         // ════════════════════════════════════════════════════════
         public IActionResult Dashboard()
         {
-            var roleName = HttpContext.Session.GetString("RoleName");
-
-            if (roleName != "Plant Manager" && roleName != "Collection Agent")
-                return RedirectToAction("AccessDenied", "Home");
-
-            int? plantId = null;
-            if (roleName == "Plant Manager")
-                plantId = HttpContext.Session.GetInt32("PlantId");
-
-            var transfers = _productionRepo.GetAllTransfers(plantId);
-            var batches = _productionRepo.GetAllProductionBatches(plantId);
-            var inventory = _productionRepo.GetRawMilkInventory(plantId);
-            var qualityTests = _productionRepo.GetAllQualityTests(plantId);
-            var lossLog = _productionRepo.GetTransferLossLog(plantId);
-            var productWaste = _productionRepo.GetAllProductWastage(plantId);
-            var milkWaste = _productionRepo.GetAllMilkProcessWastage(plantId);
-            var centerPayments = _financeRepo.GetAllCenterPayments(plantId);
-
-            var vm = new ProductionDashboardViewModel
+            try
             {
-                TotalTransfers = transfers.Count,
-                PendingTransfers = transfers.Count(t => t.Status == "Dispatched"),
-                ReceivedTransfers = transfers.Count(t => t.Status == "Received"),
+                var roleName = HttpContext.Session.GetString("RoleName");
 
-                TotalBatches = batches.Count,
-                InProgressBatches = batches.Count(b => b.BatchStatus == "InProgress"),
-                CompletedBatches = batches.Count(b => b.BatchStatus == "Completed"),
-                QCFailedBatches = batches.Count(b => b.BatchStatus == "QCFailed"),
+                if (roleName != "Plant Manager" && roleName != "Collection Agent")
+                    return RedirectToAction("AccessDenied", "Home");
 
-                TotalRawMilkStock = inventory.Sum(i => i.Quantity),
-                LowStockCount = inventory.Count(i => i.Quantity <= 500),
+                int? plantId = null;
+                if (roleName == "Plant Manager")
+                    plantId = HttpContext.Session.GetInt32("PlantId");
 
-                TotalQualityTests = qualityTests.Count,
-                DeviatedTests = qualityTests.Count(q => q.QualityResult == "Deviated"),
+                var transfers = _productionRepo.GetAllTransfers(plantId);
+                var batches = _productionRepo.GetAllProductionBatches(plantId);
+                var inventory = _productionRepo.GetRawMilkInventory(plantId);
+                var qualityTests = _productionRepo.GetAllQualityTests(plantId);
+                var lossLog = _productionRepo.GetTransferLossLog(plantId);
+                var productWaste = _productionRepo.GetAllProductWastage(plantId);
+                var milkWaste = _productionRepo.GetAllMilkProcessWastage(plantId);
+                var centerPayments = _financeRepo.GetAllCenterPayments(plantId);
 
-                TotalLossLitres = lossLog.Sum(l => l.LossQty),
-                AvgLossPct = lossLog.Any() ? lossLog.Average(l => l.LossPct) : 0,
+                var vm = new ProductionDashboardViewModel
+                {
+                    TotalTransfers = transfers.Count,
+                    PendingTransfers = transfers.Count(t => t.Status == "Dispatched"),
+                    ReceivedTransfers = transfers.Count(t => t.Status == "Received"),
 
-                PendingCenterPayments = centerPayments.Count(cp => cp.PaymentStatus == "Pending"),
-                TotalPaidToCenters = centerPayments
-                                            .Where(cp => cp.PaymentStatus == "Processed")
-                                            .Sum(cp => cp.TotalAmount),
+                    TotalBatches = batches.Count,
+                    InProgressBatches = batches.Count(b => b.BatchStatus == "InProgress"),
+                    CompletedBatches = batches.Count(b => b.BatchStatus == "Completed"),
+                    QCFailedBatches = batches.Count(b => b.BatchStatus == "QCFailed"),
 
-                TotalProductWastage = productWaste.Count,
-                TotalMilkProcessWastage = milkWaste.Sum(w => w.WastageQuantity),
+                    TotalRawMilkStock = inventory.Sum(i => i.Quantity),
+                    LowStockCount = inventory.Count(i => i.Quantity <= 500),
 
-                RecentTransfers = transfers.OrderByDescending(t => t.DispatchDate).Take(6).ToList(),
-                RecentBatches = batches.OrderByDescending(b => b.ProductionDate).Take(6).ToList(),
-                Inventory = inventory,
-                RecentLosses = lossLog.OrderByDescending(l => l.RecordedAt).Take(6).ToList(),
-                RecentCenterPayments = centerPayments.OrderByDescending(c => c.PaymentDate).Take(6).ToList(),
-            };
+                    TotalQualityTests = qualityTests.Count,
+                    DeviatedTests = qualityTests.Count(q => q.QualityResult == "Deviated"),
 
-            return View(vm);
+                    TotalLossLitres = lossLog.Sum(l => l.LossQty),
+                    AvgLossPct = lossLog.Any() ? lossLog.Average(l => l.LossPct) : 0,
+
+                    PendingCenterPayments = centerPayments.Count(cp => cp.PaymentStatus == "Pending"),
+                    TotalPaidToCenters = centerPayments
+                                                .Where(cp => cp.PaymentStatus == "Processed")
+                                                .Sum(cp => cp.TotalAmount),
+
+                    TotalProductWastage = productWaste.Count,
+                    TotalMilkProcessWastage = milkWaste.Sum(w => w.WastageQuantity),
+
+                    RecentTransfers = transfers.OrderByDescending(t => t.DispatchDate).Take(6).ToList(),
+                    RecentBatches = batches.OrderByDescending(b => b.ProductionDate).Take(6).ToList(),
+                    Inventory = inventory,
+                    RecentLosses = lossLog.OrderByDescending(l => l.RecordedAt).Take(6).ToList(),
+                    RecentCenterPayments = centerPayments.OrderByDescending(c => c.PaymentDate).Take(6).ToList(),
+                };
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index");
+            }
         }
     }
 }
