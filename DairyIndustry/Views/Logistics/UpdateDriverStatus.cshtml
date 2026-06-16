@@ -2,43 +2,136 @@
 @{
     ViewData["Title"] = "Driver Management";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-
-    // Helper to get status colors
-    string GetStatusClass(string status) => status switch
-    {
-        "Active" => "bg-success",
-        "Pending" => "bg-warning text-dark",
-        "Suspended" => "bg-danger",
-        "Inactive" => "bg-secondary",
-        _ => "bg-dark"
-    };
 }
 
-<div class="container-fluid p-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <div class="row g-3 mb-4">
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 16px;
+    }
+
+    .stat-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stat-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stat-warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    .stat-red {
+        border-top: 4px solid #ef4444;
+    }
+
+    .card-title-text {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Soft Visual Status Badges */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-Active {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .pill-Pending {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .pill-Suspended {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    .pill-Inactive {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Logistics Fleet Directory</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Logistics</span> &gt; <span class="text-muted">Driver Profiles Management</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Panels matching row hierarchy in image_3f9839.png -->
+    <div class="row mb-4 g-3">
         @{
             var stats = new[] {
-                new { Label = "Total Drivers", Count = Model.Count, Icon = "bi-people", Color = "primary" },
-                new { Label = "Active", Count = Model.Count(d => d.Status == "Active"), Icon = "bi-check-circle", Color = "success" },
-                new { Label = "Pending", Count = Model.Count(d => d.Status == "Pending"), Icon = "bi-hourglass-split", Color = "warning" },
-                new { Label = "Suspended", Count = Model.Count(d => d.Status == "Suspended"), Icon = "bi-slash-circle", Color = "danger" }
+                new { Label = "Total Drivers", Count = Model.Count, ColorClass = "stat-blue" },
+                new { Label = "Active Fleet", Count = Model.Count(d => d.Status == "Active"), ColorClass = "stat-green" },
+                new { Label = "Pending Review", Count = Model.Count(d => d.Status == "Pending"), ColorClass = "stat-warning" },
+                new { Label = "Suspended Nodes", Count = Model.Count(d => d.Status == "Suspended"), ColorClass = "stat-red" }
                 };
         }
         @foreach (var s in stats)
         {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body p-3 d-flex align-items-center">
-                        <div class="bg-@s.Color bg-opacity-10 text-@s.Color rounded-3 d-flex align-items-center justify-content-center me-3"
-                             style="width:48px; height:48px;">
-                            <i class="bi @s.Icon fs-4"></i>
-                        </div>
-                        <div>
-                            <h4 class="mb-0 fw-bold">@s.Count</h4>
-                            <small class="text-muted text-uppercase fw-bold" style="font-size: 10px; letter-spacing: 0.5px;">@s.Label</small>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-3">
+                <div class="premium-stat-card @s.ColorClass">
+                    <p class="card-title-text mb-1">@s.Label</p>
+                    <h3 class="fw-bold mb-0 text-dark font-monospace">@s.Count</h3>
                 </div>
             </div>
         }
@@ -46,107 +139,111 @@
 
     @if (TempData["Success"] != null || TempData["Error"] != null)
     {
-        <div class="alert @(TempData["Success"] != null ? "alert-success" : "alert-danger") border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
+        <div class="alert @(TempData["Success"] != null ? "alert-success" : "alert-danger") border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
             <i class="bi @(TempData["Success"] != null ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") me-2"></i>
             @(TempData["Success"] ?? TempData["Error"])
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-        <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center justify-content-between">
-            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-person-vcard me-2 text-primary"></i>Driver Records</h6>
-            <div class="btn-group shadow-sm">
-                <button class="btn btn-light btn-sm border" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print</button>
-            </div>
+    <!-- Core Grid Data Matrix Container -->
+    <div class="card premium-stat-card stat-blue p-0 border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="fw-bold text-dark" style="font-size: 0.95rem;">
+                <i class="bi bi-person-vcard text-primary me-2"></i>Verified Transport Operators
+            </span>
+            <button class="btn btn-light btn-sm border px-3 py-1.5" style="border-radius: 6px; font-weight: 500;" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print Directory
+            </button>
         </div>
 
         <div class="card-body p-0">
             @if (!Model.Any())
             {
-                <div class="text-center py-5">
-                    <i class="bi bi-person-x display-3 text-light"></i>
-                    <p class="text-muted mt-2">No registered drivers found in the system.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-person-x display-6 d-block mb-2 text-secondary opacity-50"></i>
+                    <p class="mb-0 small">No verified transport operators currently registered within the central system.</p>
                 </div>
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-muted small text-uppercase">
+                <div class="table-responsive" style="overflow-x: hidden;">
+                    <table class="table table-clean align-middle mb-0">
+                        <thead>
                             <tr>
-                                <th class="border-0 px-4">Driver Profile</th>
-                                <th class="border-0">License & Contact</th>
-                                <th class="border-0">Assigned Vehicle</th>
-                                <th class="border-0">Joined Date</th>
-                                <th class="border-0">Status</th>
-                                <th class="border-0 text-center px-4">Actions</th>
+                                <th class="ps-4">Driver Profile Node</th>
+                                <th>Licence Identification & Contact</th>
+                                <th>Assigned Vehicle Link</th>
+                                <th>Timeline Registered</th>
+                                <th>System Status</th>
+                                <th class="text-end pe-4">Operational Operations Matrix</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var d in Model)
                             {
                                 <tr>
-                                    <td class="px-4">
+                                    <td class="ps-4">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3"
-                                                 style="width:38px; height:38px; font-size: 0.9rem;">
+                                            <div class="bg-light text-primary border rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width:36px; height:36px; font-size: 0.85rem; flex-shrink:0;">
                                                 @d.DriverName[0].ToString().ToUpper()
                                             </div>
                                             <div>
-                                                <span class="fw-bold d-block text-dark">@d.DriverName</span>
-                                                <small class="text-muted">@@@d.Username</small>
+                                                <div class="fw-bold text-dark mb-0.5" style="font-size: 0.92rem;">@d.DriverName</div>
+                                                <div class="text-muted tiny font-monospace" style="font-size: 11px;"><i class="bi bi-at me-0.5"></i>@d.Username</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="small fw-medium"><i class="bi bi-card-text me-2 text-muted"></i>@d.LicenseNo</div>
-                                        <div class="small text-muted"><i class="bi bi-telephone me-2"></i>@(d.Phone ?? "N/A")</div>
+                                        <div class="fw-bold text-dark mb-0.5" style="font-size: 0.88rem;"><i class="bi bi-card-text text-muted me-1.5 small"></i>@d.LicenseNo</div>
+                                        <div class="text-secondary small font-monospace"><i class="bi bi-telephone text-muted me-1.5 small"></i>@(d.Phone ?? "—")</div>
                                     </td>
                                     <td>
                                         @if (!string.IsNullOrEmpty(d.VehicleNumber))
                                         {
-                                            <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill border border-info border-opacity-25">
-                                                <i class="bi bi-truck me-1"></i> @d.VehicleNumber
+                                            <span class="badge bg-light text-dark border px-2.5 py-1.5 font-monospace" style="font-size: 0.8rem; border-radius: 4px; font-weight: 600;">
+                                                <i class="bi bi-truck text-primary me-1.5 small"></i>@d.VehicleNumber
                                             </span>
                                         }
                                         else
                                         {
-                                            <span class="text-muted small italic">Not Assigned</span>
+                                            <span class="text-muted small">Not Assigned</span>
                                         }
                                     </td>
-                                    <td>
-                                        <small class="text-muted">@d.RegisteredOn.ToString("dd MMM yyyy")</small>
+                                    <td class="text-secondary small font-monospace">
+                                        <i class="bi bi-calendar3 text-muted me-1.5 small"></i>@d.RegisteredOn.ToString("dd MMM yyyy")
                                     </td>
                                     <td>
-                                        <span class="badge @GetStatusClass(d.Status) px-3 py-2 rounded-pill shadow-xs">
+                                        <span class="pill-counter-badge pill-@d.Status">
                                             @d.Status
                                         </span>
                                     </td>
-                                    <td class="px-4">
-                                        <div class="d-flex justify-content-center gap-1">
+                                    <td class="text-end pe-4">
+                                        <div class="d-flex justify-content-end gap-1.5">
                                             @if (d.Status != "Active")
                                             {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus" class="m-0">
+                                                    @Html.AntiForgeryToken()
                                                     <input type="hidden" name="driverId" value="@d.DriverId" />
                                                     <input type="hidden" name="status" value="Active" />
-                                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill shadow-sm">Approve</button>
+                                                    <button type="submit" class="btn btn-sm btn-success px-3" style="border-radius: 6px; font-weight: 500;">Approve</button>
                                                 </form>
                                             }
                                             @if (d.Status == "Active")
                                             {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus" class="m-0">
+                                                    @Html.AntiForgeryToken()
                                                     <input type="hidden" name="driverId" value="@d.DriverId" />
                                                     <input type="hidden" name="status" value="Inactive" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-secondary px-3 rounded-pill">Deactivate</button>
+                                                    <button type="submit" class="btn btn-sm btn-light border text-secondary px-3" style="border-radius: 6px; font-weight: 500;">Deactivate</button>
                                                 </form>
                                             }
                                             @if (d.Status != "Suspended")
                                             {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
+                                                <form method="post" action="/Logistics/UpdateDriverStatus" class="m-0" onsubmit="return confirm('Suspend log privileges for operator @d.DriverName?')">
+                                                    @Html.AntiForgeryToken()
                                                     <input type="hidden" name="driverId" value="@d.DriverId" />
                                                     <input type="hidden" name="status" value="Suspended" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill">Suspend</button>
+                                                    <button type="submit" class="btn btn-sm btn-light border text-danger px-3" style="border-radius: 6px; font-weight: 500;">Suspend</button>
                                                 </form>
                                             }
                                         </div>

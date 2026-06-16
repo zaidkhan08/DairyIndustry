@@ -69,28 +69,33 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        public IActionResult Profile()
+        public IActionResult Profile(int? userId)
         {
-            int? userId = HttpContext.Session.GetInt32("UserId");
+            int id;
 
-            if (userId == null)
-                return RedirectToAction("Login");
-
-            try
+            if (userId.HasValue)
             {
-                var user = _adminRepo.GetUserProfile(Convert.ToInt32(userId));
-                if (user == null)
-                {
-                    TempData["Error"] = "User profile not found.";
-                    return RedirectToAction("Index");
-                }
-                return View(user);
+                id = userId.Value;
             }
-            catch (Exception ex)
+            else
             {
-                TempData["Error"] = "Failed to load profile. Please try again.";
+                var sessionUserId = HttpContext.Session.GetInt32("UserId");
+
+                if (sessionUserId == null)
+                    return RedirectToAction("Login");
+
+                id = sessionUserId.Value;
+            }
+
+            var user = _adminRepo.GetUserProfile(id);
+
+            if (user == null)
+            {
+                TempData["Error"] = "User profile not found.";
                 return RedirectToAction("Index");
             }
+
+            return View(user);
         }
 
         public IActionResult Login()
@@ -878,21 +883,21 @@ namespace DairyIndustry.Controllers
             sb.Append("</div></body></html>");
             return sb.ToString();
         }
-        public IActionResult DownloadUsersPdf()
+        public async Task<IActionResult> DownloadUsersPdf()
         {
             try
             {
-                var users = _adminRepo.GetAllUsers()
+                var userList = _adminRepo.GetAllUsers()
                     .Take(50)
                     .ToList();
 
-                string html = BuildUsersHtml(users);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                string html = BuildUsersHtml(userList);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,
                     "application/pdf",
-                    $"UsersList_{DateTime.Now:yyyyMMdd}.pdf"
+                    $"UserList_{DateTime.Now:yyyyMMdd}.pdf"
                 );
             }
             catch (Exception ex)
@@ -1426,7 +1431,7 @@ namespace DairyIndustry.Controllers
             sb.Append("</div></body></html>");
             return sb.ToString();
         }
-        private byte[] GeneratePdfFromHtml(string html)
+        private Task<byte[]> GeneratePdfFromHtmlAsync(string html)
         {
             var doc = new HtmlToPdfDocument
             {
@@ -1457,10 +1462,12 @@ namespace DairyIndustry.Controllers
                 }
             };
 
-            return _pdfConverter.Convert(doc);
+            // Task.Run offloads the blocking native DinkToPdf call off the
+            // ASP.NET synchronization context, preventing thread-pool deadlocks.
+            return Task.Run(() => _pdfConverter.Convert(doc));
         }
 
-        public IActionResult DownloadStaffPdf()
+        public async Task<IActionResult> DownloadStaffPdf()
         {
             try
             {
@@ -1469,7 +1476,7 @@ namespace DairyIndustry.Controllers
                     .ToList();
 
                 string html = BuildStaffHtml(staffList);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,
@@ -1598,9 +1605,12 @@ namespace DairyIndustry.Controllers
                     string fileName = Guid.NewGuid() + extension;
                     string filePath = Path.Combine(uploadFolder, fileName);
 
-                    using var ms = new MemoryStream();
-                    await profilePhoto.CopyToAsync(ms);
-                    await System.IO.File.WriteAllBytesAsync(filePath, ms.ToArray());
+                    // Direct FileStream copy — avoids MemoryStream double-buffer
+                    // and prevents async deadlocks on the upload path.
+                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+                    {
+                        await profilePhoto.CopyToAsync(fileStream);
+                    }
                     photoPath = "/uploads/staff/" + fileName;
                 }
 
@@ -1715,10 +1725,26 @@ namespace DairyIndustry.Controllers
         [HttpPost]
         [SessionAuthorize("Admin")]
         [RequestSizeLimit(5 * 1024 * 1024)]
-        public async Task<IActionResult> EditStaff(int staffId, string firstName, string lastName,
-            string phone, string email, int roleId, DateTime? doj, string bankName,
-            string accountNumber, string ifscCode, decimal salary, string existingPhoto,
-            IFormFile photoFile, int? centerId, int? plantId)
+        public async Task<IActionResult> EditStaff(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string existingPhoto,
+    IFormFile photoFile,
+    int? centerId,
+    int? plantId,
+
+    // Login
+    string username,
+    string password)
         {
             void ReloadViewBag()
             {
@@ -1727,7 +1753,8 @@ namespace DairyIndustry.Controllers
                 ViewBag.Plants = _adminRepo.GetAllPlants();
             }
 
-            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            if (string.IsNullOrWhiteSpace(firstName) ||
+                string.IsNullOrWhiteSpace(lastName))
             {
                 ViewBag.Error = "First name and last name are required.";
                 ReloadViewBag();
@@ -1736,6 +1763,13 @@ namespace DairyIndustry.Controllers
 
             try
             {
+                var allRoles = _adminRepo.GetAllRoles();
+
+                var selectedRole = allRoles.FirstOrDefault(r => r.RoleId == roleId);
+
+                string roleName = selectedRole?.RoleName ?? "";
+
+                // Cannot assign both
                 if (centerId.HasValue && plantId.HasValue)
                 {
                     ViewBag.Error = "Assign staff to either a Collection Center or a Plant — not both.";
@@ -1743,45 +1777,147 @@ namespace DairyIndustry.Controllers
                     return View(_adminRepo.GetStaffById(staffId));
                 }
 
+                // Plant Manager
+                if (roleName == "Plant Manager" && !plantId.HasValue)
+                {
+                    ViewBag.Error = "Plant Manager must be assigned to a Plant.";
+                    ReloadViewBag();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                // Collection Agent
+                if (roleName == "Collection Agent" && !centerId.HasValue)
+                {
+                    ViewBag.Error = "Collection Agent must be assigned to a Collection Center.";
+                    ReloadViewBag();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                // Login Roles
+                var loginRoles = new[]
+                {
+            "Administrator",
+            "Plant Manager",
+            "Collection Agent",
+            "HR Manager"
+        };
+
+                bool needsLogin = loginRoles.Contains(roleName);
+
+                if (needsLogin && string.IsNullOrWhiteSpace(username))
+                {
+                    ViewBag.Error = $"{roleName} requires a username.";
+                    ReloadViewBag();
+                    return View(_adminRepo.GetStaffById(staffId));
+                }
+
+                // Upload Photo
                 string finalPhoto = existingPhoto;
+
                 if (photoFile != null && photoFile.Length > 0)
                 {
                     var extension = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
-                    if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+
+                    if (extension != ".jpg" &&
+                        extension != ".jpeg" &&
+                        extension != ".png")
                     {
-                        ViewBag.Error = "Only .jpg, .jpeg, .png allowed.";
+                        ViewBag.Error = "Only .jpg, .jpeg and .png files are allowed.";
                         ReloadViewBag();
                         return View(_adminRepo.GetStaffById(staffId));
                     }
+
                     if (photoFile.Length > 2 * 1024 * 1024)
                     {
-                        ViewBag.Error = "Max photo size is 2MB.";
+                        ViewBag.Error = "Maximum photo size is 2 MB.";
                         ReloadViewBag();
                         return View(_adminRepo.GetStaffById(staffId));
                     }
 
                     string uploadFolder = Path.Combine(_env.WebRootPath, "uploads", "staff");
+
                     Directory.CreateDirectory(uploadFolder);
+
                     string fileName = Guid.NewGuid() + extension;
+
                     string filePath = Path.Combine(uploadFolder, fileName);
 
-                    using var ms = new MemoryStream();
-                    await photoFile.CopyToAsync(ms);
-                    await System.IO.File.WriteAllBytesAsync(filePath, ms.ToArray());
+                    using (var stream = new FileStream(
+                        filePath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        4096,
+                        true))
+                    {
+                        await photoFile.CopyToAsync(stream);
+                    }
+
                     finalPhoto = "/uploads/staff/" + fileName;
                 }
 
-                await _adminRepo.UpdateStaffAsync(staffId, firstName, lastName, phone, email,
-                    roleId, doj, bankName, accountNumber, ifscCode, salary,
-                    finalPhoto, centerId, plantId);
+                // Password Hash
+                string passwordHash = null;
 
-                TempData["Success"] = "Staff updated successfully.";
+                if (!string.IsNullOrWhiteSpace(password))
+                {
+                    passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+                }
+
+                // Save
+                if (needsLogin)
+                {
+                    await _adminRepo.UpdateStaffWithUserAsync(
+                        staffId,
+                        firstName,
+                        lastName,
+                        phone,
+                        email,
+                        roleId,
+                        doj,
+                        bankName,
+                        accountNumber,
+                        ifscCode,
+                        salary,
+                        finalPhoto,
+                        centerId,
+                        plantId,
+                        username,
+                        passwordHash);
+
+                    TempData["Success"] = $"{roleName} updated successfully.";
+                }
+                else
+                {
+                    await _adminRepo.UpdateStaffAsync(
+                        staffId,
+                        firstName,
+                        lastName,
+                        phone,
+                        email,
+                        roleId,
+                        doj,
+                        bankName,
+                        accountNumber,
+                        ifscCode,
+                        salary,
+                        finalPhoto,
+                        centerId,
+                        plantId);
+
+                    TempData["Success"] = "Staff updated successfully.";
+                }
+
                 return RedirectToAction("Staff");
             }
             catch (Exception ex)
             {
-                ViewBag.Error = "Error: " + ex.Message;
                 ReloadViewBag();
+
+                ViewBag.Error = ex.Message.Contains("Username already exists")
+                    ? "That username is already taken. Please choose another."
+                    : "Error: " + ex.Message;
+
                 return View(_adminRepo.GetStaffById(staffId));
             }
         }
@@ -1893,7 +2029,7 @@ namespace DairyIndustry.Controllers
             return sb.ToString();
         }
 
-        public IActionResult DownloadPlantsPdf()
+        public async Task<IActionResult> DownloadPlantsPdf()
         {
             try
             {
@@ -1902,7 +2038,7 @@ namespace DairyIndustry.Controllers
                     .ToList();
 
                 string html = BuildPlantsHtml(plants);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,
@@ -2118,7 +2254,7 @@ namespace DairyIndustry.Controllers
             sb.Append("</div></body></html>");
             return sb.ToString();
         }
-        public IActionResult DownloadCollectionsPdf()
+        public async Task<IActionResult> DownloadCollectionsPdf()
         {
             try
             {
@@ -2127,7 +2263,7 @@ namespace DairyIndustry.Controllers
                     .ToList();
 
                 string html = BuildCollectionHtml(collections);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,
@@ -2720,7 +2856,7 @@ namespace DairyIndustry.Controllers
         }
         [HttpGet]
         [SessionAuthorize("Admin")]
-        public IActionResult DownloadFarmerPaymentReceiptPdf(int id)
+        public async Task<IActionResult> DownloadFarmerPaymentReceiptPdf(int id)
         {
             if (id <= 0)
             {
@@ -2738,7 +2874,7 @@ namespace DairyIndustry.Controllers
                 }
 
                 string html = BuildReceiptHtml(payment);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,
@@ -2853,7 +2989,7 @@ namespace DairyIndustry.Controllers
             sb.Append("</div></body></html>");
             return sb.ToString();
         }
-        public IActionResult DownloadDistributorsPdf()
+        public async Task<IActionResult> DownloadDistributorsPdf()
         {
             try
             {
@@ -2862,7 +2998,7 @@ namespace DairyIndustry.Controllers
                     .ToList();
 
                 string html = BuildDistributorHtml(distributors);
-                byte[] pdfBytes = GeneratePdfFromHtml(html);
+                byte[] pdfBytes = await GeneratePdfFromHtmlAsync(html);
 
                 return File(
                     pdfBytes,

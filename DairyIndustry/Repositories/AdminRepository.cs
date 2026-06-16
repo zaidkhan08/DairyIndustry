@@ -983,6 +983,78 @@ namespace DairyIndustry.Repositories
             await con.OpenAsync();
             await cmd.ExecuteNonQueryAsync();
         }
+        public async Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash)
+        {
+            using SqlConnection con = _db.GetConnection();
+
+            using SqlCommand cmd = new SqlCommand(
+                "Admin.usp_Admin_UpdateStaffWithUser",
+                con);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            cmd.Parameters.AddWithValue("@FirstName", firstName);
+            cmd.Parameters.AddWithValue("@LastName", lastName);
+
+            cmd.Parameters.AddWithValue("@Phone",
+                (object?)phone ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Email",
+                (object?)email ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+
+            cmd.Parameters.AddWithValue("@DOJ",
+                (object?)doj ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@BankName",
+                (object?)bankName ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@AccountNumber",
+                (object?)accountNumber ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@IFSCCode",
+                (object?)ifscCode ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Salary", salary);
+
+            cmd.Parameters.AddWithValue("@ProfilePhoto",
+                (object?)profilePhoto ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@CenterId",
+                (object?)centerId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PlantId",
+                (object?)plantId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Username",
+                (object?)username ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PasswordHash",
+                (object?)passwordHash ?? DBNull.Value);
+
+            await con.OpenAsync();
+
+            await cmd.ExecuteNonQueryAsync();
+        }
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════

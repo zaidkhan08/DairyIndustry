@@ -1,85 +1,149 @@
 ﻿@model DairyIndustry.Models.Admin.Distributor
+
 @{
-    ViewData["Title"] = "Add Distributor";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Distributor";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <a asp-action="Distributors" class="btn btn-outline-secondary btn-sm">← Back</a>
-            <h5 class="mb-0">Add Distributor</h5>
-        </div>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
 
-        @if (TempData["success"] != null)
-        {
-            <div class="alert alert-success">@TempData["success"]</div>
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .form-section-header {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #4b5563;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 6px;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
         }
+</style>
 
-        <div class="card shadow-sm">
-            <div class="card-body">
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Register Distributor</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Distributors</span> &gt; <span class="text-muted">Add New Node</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Distributors" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-arrow-left me-1"></i> Back to Directory
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-8">
+
+            <!-- Master Registration Input Panel Form Frame -->
+            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
                 <form asp-action="RegisterDistributor" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 mb-4" style="border-radius: 6px;"></div>
+
+                    <!-- SUBSECTION 1: ENTITY MASTER DETAILS -->
+                    <h6 class="form-section-header mb-3"><i class="bi bi-card-text me-2 text-primary"></i>Company Information</h6>
 
                     <div class="mb-3">
-                        <label asp-for="DistributorName" class="form-label fw-semibold">
-                            Distributor Name <span class="text-danger">*</span>
-                        </label>
-                        <input asp-for="DistributorName" class="form-control"
-                               placeholder="e.g. Surat Dairy Distributors" />
-                        <span asp-validation-for="DistributorName" class="text-danger small"></span>
+                        <label asp-for="DistributorName" class="form-label small fw-semibold text-secondary">Distributor Name <span class="text-danger">*</span></label>
+                        <input asp-for="DistributorName" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="e.g. Surat Dairy Distributors" />
+                        <span asp-validation-for="DistributorName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <label asp-for="ContactNumber" class="form-label">Contact Number</label>
-                            <input asp-for="ContactNumber" class="form-control"
-                                   placeholder="9265431001" maxlength="15" />
+                            <label asp-for="ContactNumber" class="form-label small fw-semibold text-secondary">Contact Number</label>
+                            <input asp-for="ContactNumber" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="e.g. 9265431001" maxlength="15" />
                         </div>
                         <div class="col-sm-6">
-                            <label asp-for="Email" class="form-label">Email</label>
-                            <input asp-for="Email" class="form-control" type="email"
-                                   placeholder="distributor@example.com" />
+                            <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                            <input asp-for="Email" class="form-control" style="border-radius: 6px; padding: 10px;" type="email" placeholder="e.g. distributor@example.com" />
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="Location" class="form-label">Location</label>
-                        <input asp-for="Location" class="form-control"
-                               placeholder="Ring Road, Surat" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Address" class="form-label">Full Address</label>
-                        <textarea asp-for="Address" class="form-control" rows="2"
-                                  placeholder="Shop No., Street, City, PIN"></textarea>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label asp-for="Location" class="form-label small fw-semibold text-secondary">Region Hub Location</label>
+                            <input asp-for="Location" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="e.g. Ring Road, Surat" />
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="GSTIN" class="form-label small fw-semibold text-secondary">GSTIN Identification</label>
+                            <input asp-for="GSTIN" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="e.g. 22AAAAA0000A1Z5" maxlength="20" />
+                            <div class="form-text text-muted small mt-1">Leave unpopulated if not applicable.</div>
+                        </div>
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="GSTIN" class="form-label">GSTIN</label>
-                        <input asp-for="GSTIN" class="form-control"
-                               placeholder="22AAAAA0000A1Z5" maxlength="20" />
-                        <div class="form-text">Leave blank if not applicable.</div>
-                    </div>
-                    <div class="mb-4">
-                        <label asp-for="Username" class="form-label">Username</label>
-                        <input name="username" class="form-control" placeholder="Username" required />
-                    </div>
-                    <div class="mb-4">
-                        <input name="password" type="password" class="form-control" placeholder="Password" required />
+                        <label asp-for="Address" class="form-label small fw-semibold text-secondary">Full Registered Address</label>
+                        <textarea asp-for="Address" class="form-control" style="border-radius: 6px; padding: 10px;" rows="2" placeholder="Shop No., Street, City, PIN"></textarea>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            Add Distributor
+                    <!-- SUBSECTION 2: PORTAL SECURITY CREDENTIALS -->
+                    <h6 class="form-section-header mb-3 mt-4"><i class="bi bi-shield-lock me-2 text-primary"></i>Portal Access Security Credentials</h6>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Account Username <span class="text-danger">*</span></label>
+                            <input name="username" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="Enter secure username ID" required />
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Account Password <span class="text-danger">*</span></label>
+                            <input name="password" type="password" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="Enter secure passphrase token" required />
+                        </div>
+                    </div>
+
+                    <!-- Action Controls Layout Grid -->
+                    <div class="d-flex gap-2 pt-2 border-top">
+                        <button type="submit" class="btn btn-custom-blue px-4 py-2" style="border-radius: 6px;">
+                            <i class="bi bi-plus-lg me-1"></i> Add Distributor Node
                         </button>
-                        <a asp-action="Distributors" class="btn btn-outline-secondary">Cancel</a>
+                        <a asp-action="Distributors" class="btn btn-light border text-secondary px-4 py-2" style="border-radius: 6px; font-weight: 500;">Cancel</a>
                     </div>
                 </form>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 

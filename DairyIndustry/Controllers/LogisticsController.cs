@@ -58,6 +58,8 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
+        // FIX #2: Removed MemoryStream double-buffer. Now streams directly to disk
+        // via FileStream + CopyToAsync — no thread pool blocking, no double memory copy.
         [HttpPost]
         public async Task<IActionResult> CompleteRegistration(
             string licenseNo,
@@ -66,7 +68,6 @@ namespace DairyIndustry.Controllers
             string password,
             IFormFile drivingLicenseFile)
         {
-            
             string email = HttpContext.Session.GetString("PendingDriverEmail");
             string driverName = HttpContext.Session.GetString("PendingDriverName");
             string otpVerified = HttpContext.Session.GetString("OtpVerified");
@@ -105,34 +106,30 @@ namespace DairyIndustry.Controllers
                 return View();
             }
 
-            byte[] fileBytes;
-            using (var ms = new MemoryStream())
-            {
-                await drivingLicenseFile.CopyToAsync(ms);
-                fileBytes = ms.ToArray();
-            }
-
             string webRoot = _fileUpload.GetWebRootPath();
 
             try
             {
+                // FIX #2 APPLIED HERE:
+                // OLD: Read entire file into MemoryStream → Task.Run → WriteAllBytes (blocking)
+                // NEW: Build path first (sync, cheap), then stream directly to disk with
+                //      FileStream(Async flag) + CopyToAsync — truly async, no double-buffer.
+                string folder = Path.Combine(webRoot, "uploads", "documents", "drivinglicences");
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
 
-                string dlPath = await Task.Run(() =>
+                string fileName = Guid.NewGuid() + extension;
+                string fullPath = Path.Combine(folder, fileName);
+                string dlPath = "/uploads/documents/drivinglicences/" + fileName;
+
+                using (var fileStream = new FileStream(
+                    fullPath, FileMode.Create, FileAccess.Write,
+                    FileShare.None, bufferSize: 4096, useAsync: true))
                 {
-                    string folder = Path.Combine(
-                        webRoot, "uploads", "documents", "drivinglicences");
+                    await drivingLicenseFile.CopyToAsync(fileStream);
+                }
 
-                    if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-
-                    string fileName = Guid.NewGuid() + extension;
-                    string fullPath = Path.Combine(folder, fileName);
-
-                    System.IO.File.WriteAllBytes(fullPath, fileBytes);
-
-                    return "/uploads/documents/drivinglicences/" + fileName;
-                });
-
+                // Password hashing is CPU-bound — Task.Run is correct here
                 string passHash = await Task.Run(() =>
                     BCrypt.Net.BCrypt.HashPassword(password));
 
@@ -140,7 +137,6 @@ namespace DairyIndustry.Controllers
                 await _logisticRepo.RegisterDriverAsync(
                     driverName, licenseNo, phone,
                     email, username, passHash, dlPath);
-
 
                 HttpContext.Session.Remove("PendingDriverEmail");
                 HttpContext.Session.Remove("PendingDriverName");
@@ -223,6 +219,7 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
+        // FIX #2: Same fix applied — direct FileStream instead of MemoryStream + WriteAllBytes.
         [SessionAuthorize("Driver")]
         [HttpPost]
         public async Task<IActionResult> RegisterVehicle(
@@ -273,32 +270,28 @@ namespace DairyIndustry.Controllers
                 return View();
             }
 
-            byte[] fileBytes;
-            using (var ms = new MemoryStream())
-            {
-                await vehicleRcFile.CopyToAsync(ms);
-                fileBytes = ms.ToArray();
-            }
-
             string webRoot = _fileUpload.GetWebRootPath();
 
             try
             {
-                string dbPath = await Task.Run(() =>
+                // FIX #2 APPLIED HERE:
+                // OLD: Read entire file into MemoryStream → Task.Run → WriteAllBytes (blocking)
+                // NEW: Build path first (sync, cheap), then stream directly to disk with
+                //      FileStream(Async flag) + CopyToAsync — truly async, no double-buffer.
+                string folderPath = Path.Combine(webRoot, "uploads", "documents", "vehiclercs");
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+
+                string fileName = Guid.NewGuid().ToString() + extension;
+                string fullPath = Path.Combine(folderPath, fileName);
+                string dbPath = "/uploads/documents/vehiclercs/" + fileName;
+
+                using (var fileStream = new FileStream(
+                    fullPath, FileMode.Create, FileAccess.Write,
+                    FileShare.None, bufferSize: 4096, useAsync: true))
                 {
-                    string folderPath = Path.Combine(
-                        webRoot, "uploads", "documents", "vehiclercs");
-
-                    if (!Directory.Exists(folderPath))
-                        Directory.CreateDirectory(folderPath);
-
-                    string fileName = Guid.NewGuid().ToString() + extension;
-                    string fullPath = Path.Combine(folderPath, fileName);
-
-                    System.IO.File.WriteAllBytes(fullPath, fileBytes);
-
-                    return "/uploads/documents/vehiclercs/" + fileName;
-                });
+                    await vehicleRcFile.CopyToAsync(fileStream);
+                }
 
                 _logisticRepo.AddVehicle(driverId, vehicleNumber, capacity, dbPath);
 

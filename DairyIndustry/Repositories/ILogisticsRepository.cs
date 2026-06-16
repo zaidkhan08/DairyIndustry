@@ -25,11 +25,12 @@ namespace DairyIndustry.Repositories
 
         DriverContactInfo GetDriverContactInfo(int driverId);
         DriverContactInfo GetDriverContactInfoByVehicleId(int vehicleId);
-        void SendDriverStatusEmail(string toEmail, string driverName,
-                                     string username, string status);
+        Task SendDriverStatusEmailAsync(string toEmail, string driverName,
+        string username, string status);
 
-        void SendVehicleStatusEmail(string toEmail, string driverName,
-                                      string vehicleNumber, string status);
+        Task SendVehicleStatusEmailAsync(string toEmail, string driverName,
+                                                       string vehicleNumber, string status);
+        async Task SendSmtpEmailAsync(string toEmail, string subject, string htmlBody);
 
     }
 }

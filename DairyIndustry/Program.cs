@@ -19,10 +19,10 @@ namespace DairyIndustry
         {
 
             //  LOAD DLL
-            var context = new CustomAssemblyLoadContext();
-            context.LoadUnmanagedLibrary(
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
-            );
+            //var context = new CustomAssemblyLoadContext();
+            //context.LoadUnmanagedLibrary(
+            //    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
+            //);
 
 
             var builder = WebApplication.CreateBuilder(args);

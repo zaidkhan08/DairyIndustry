@@ -2,121 +2,157 @@
     ViewBag.Title = "Driver Registration";
 }
 
-<!-- Page Header -->
-<div class="bg-primary text-white py-3 mb-4 shadow-sm">
-    <div class="container">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-person-plus-fill fs-4"></i>
-            <div>
-                <h4 class="mb-0 fw-bold">Driver Registration</h4>
-                <small class="opacity-75">Step 1 of 3 — Verify your email address</small>
-            </div>
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Step Sequence Indicators */
+    .pill-step-active {
+        background-color: #eff6ff;
+        color: #2563eb;
+        font-weight: 700;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #3b82f6;
+    }
+
+    .pill-step-disabled {
+        background-color: #ffffff;
+        color: #9ca3af;
+        font-weight: 600;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #cbd5e1;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Driver Registration</h4>
+        <div class="breadcrumb-custom mt-1">
+            <span>Logistics Portal</span> &gt; <span class="text-muted">Onboarding</span> &gt; <span class="text-muted">Step 1 of 3 (Email Verification)</span>
         </div>
     </div>
-</div>
 
-<div class="container mb-5">
     <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
+        <div class="col-12 col-md-8 col-lg-5">
 
-            <!-- Step Indicator -->
-            <div class="d-flex align-items-center mb-4">
+            <div class="d-flex align-items-center mb-4 px-2">
                 <div class="d-flex flex-column align-items-center">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center
-                                justify-content-center fw-bold" style="width:36px;height:36px;">
-                        1
-                    </div>
-                    <small class="text-primary fw-semibold mt-1" style="font-size:0.7rem;">Email</small>
+                    <div class="pill-step-active">1</div>
+                    <small class="text-primary fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Email</small>
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-primary mx-2 mb-3"></div>
+                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
                 <div class="d-flex flex-column align-items-center">
-                    <div class="rounded-circle bg-white border border-2 border-secondary text-secondary
-                                d-flex align-items-center justify-content-center fw-bold"
-                         style="width:36px;height:36px;">
-                        2
-                    </div>
-                    <small class="text-muted mt-1" style="font-size:0.7rem;">Verify OTP</small>
+                    <div class="pill-step-disabled">2</div>
+                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Verify OTP</small>
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3"></div>
+                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
                 <div class="d-flex flex-column align-items-center">
-                    <div class="rounded-circle bg-white border border-2 border-secondary text-secondary
-                                d-flex align-items-center justify-content-center fw-bold"
-                         style="width:36px;height:36px;">
-                        3
-                    </div>
-                    <small class="text-muted mt-1" style="font-size:0.7rem;">Details</small>
+                    <div class="pill-step-disabled">3</div>
+                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Details</small>
                 </div>
             </div>
 
-            <!-- Alerts -->
             @if (TempData["Error"] != null)
             {
-                <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
-                    <i class="bi bi-exclamation-circle-fill"></i>
-                    <span>@TempData["Error"]</span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
                 </div>
             }
             @if (ViewBag.Success != null)
             {
-                <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2" role="alert">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>@ViewBag.Success</span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.Success
                 </div>
             }
 
-            <!-- Card -->
-            <div class="card border-0 shadow">
-                <div class="card-header bg-primary text-white py-3">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="bi bi-envelope-fill me-2"></i>Enter Your Email to Get OTP
-                    </h6>
+            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
+                <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-4">
+                    <div class="d-flex align-items-center justify-content-center" style="width:36px; height:36px; border-radius:6px; background:#eff6ff;">
+                        <i class="bi bi-envelope-open text-primary" style="font-size: 1.05rem;"></i>
+                    </div>
+                    <div>
+                        <div class="panel-header-text">Identity Verification</div>
+                        <div class="text-muted tiny" style="font-size: 11px;">Staging a secure 6-digit verification hash routing setup.</div>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <p class="text-muted small mb-4">
-                        We will send a 6-digit OTP to your email address to verify your identity
-                        before completing the registration.
-                    </p>
-                    <form asp-action="SendOtp" asp-controller="Logistics" method="post">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-dark">
-                                Full Name <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white border-primary">
-                                    <i class="bi bi-person-fill"></i>
-                                </span>
-                                <input type="text" name="driverName" class="form-control border-start-0"
-                                       style="border-color:#dee2e6;"
-                                       placeholder="e.g. Ramesh Patel" required />
-                            </div>
+
+                <form method="post" asp-action="SendOtp" asp-controller="Logistics">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Full Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-person small"></i></span>
+                            <input type="text" name="driverName" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. Ramesh Patel" required />
                         </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold text-dark">
-                                Email Address <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-primary text-white border-primary">
-                                    <i class="bi bi-envelope-fill"></i>
-                                </span>
-                                <input type="email" name="email" class="form-control border-start-0"
-                                       style="border-color:#dee2e6;"
-                                       placeholder="yourname@gmail.com" required />
-                            </div>
-                            <div class="form-text">OTP will be sent to this email. Make sure it is valid.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Email Address <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-envelope small"></i></span>
+                            <input type="email" name="email" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="yourname@gmail.com" required />
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                            <i class="bi bi-send-fill me-2"></i>Send OTP
-                        </button>
-                    </form>
-                </div>
-                <div class="card-footer bg-light text-center py-3">
-                    <small class="text-muted">
-                        Already registered?
-                        <a asp-action="Login" asp-controller="Admin"
-                           class="text-primary fw-semibold text-decoration-none">Login here</a>
-                    </small>
+                        <div class="form-text text-muted tiny mt-1">Make sure it is valid; an OTP security key streams straight to this address.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-blue w-100 py-2.5">
+                        <i class="bi bi-send-fill me-1.5"></i> Send Verification OTP
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top" style="font-size: 0.85rem;">
+                    <span class="text-muted">Already registered within the system network?</span>
+                    <a asp-action="Login" asp-controller="Admin" class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
+                        Login here
+                    </a>
                 </div>
             </div>
 

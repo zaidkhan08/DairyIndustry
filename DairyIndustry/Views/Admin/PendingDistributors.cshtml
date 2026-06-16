@@ -4,90 +4,190 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h4 class="mb-0">Pending Distributor Approvals</h4>
-        <small class="text-muted">@Model.Count distributor(s) waiting for review</small>
-    </div>
-    <a asp-action="Distributors" class="btn btn-outline-secondary btn-sm">
-        ← All Distributors
-    </a>
-</div>
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-@if (TempData["success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        No pending distributors. All caught up!
+    /* Top Border Accent Warning Card style from image_3f9839.png */
+    .premium-pending-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #f59e0b; /* Yellow/Orange Pending Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+        .premium-pending-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+    /* Parameter Row styling */
+    .info-list-item {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.88rem;
+    }
+
+        .info-list-item:last-child {
+            border-bottom: none;
+        }
+
+    .info-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        width: 30%;
+    }
+
+    .info-value {
+        color: #1f2937;
+        width: 70%;
+    }
+
+    /* Muted Soft Status Badges */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Pending Distributor Approvals</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Sales & Logistics</span> &gt; <span class="text-muted">Awaiting Action</span>
+            </div>
+        </div>
+        <div>
+            <a html-action="Distributors" href="@Url.Action("Distributors", "Admin")" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-arrow-left me-1"></i> All Distributors
+            </a>
+        </div>
     </div>
-}
-else
-{
-    <div class="row g-3">
-        @foreach (var d in Model)
-        {
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-warning border-opacity-50">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title mb-0 fw-bold">@d.DistributorName</h6>
-                            <span class="badge bg-warning text-dark">Pending</span>
+
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card premium-pending-card border-top-0 border-start-0 border-end-0 border-bottom-0 p-5 text-center bg-white" style="border: 1px solid #e2e8f0 !important;">
+            <i class="bi bi-shield-check text-success display-5 d-block mb-3"></i>
+            <h5 class="fw-bold text-dark mb-1">Queue Cleared</h5>
+            <p class="text-muted small mb-0">No pending distributor registrations require review at this time.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var d in Model)
+            {
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card premium-pending-card border-start-0 border-end-0 border-bottom-0 h-100 p-4">
+
+                        <!-- Card Branding Title -->
+                        <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">@d.DistributorName</h5>
+                                @* <span class="text-muted font-monospace" style="font-size: 11px;">ID: #@d.DistributorId</span> *@
+                            </div>
+                            <span class="pill-counter-badge pill-badge-warning">Pending Review</span>
                         </div>
 
-                        <ul class="list-unstyled small text-muted mb-3">
+                        <!-- Data Fields List Stack -->
+                        <div class="mb-4">
                             @if (d.Email != null)
                             {
-                                <li><i class="bi bi-envelope me-1"></i>@d.Email</li>
+                                <div class="info-list-item">
+                                    <div class="info-label">Email</div>
+                                    <div class="info-value text-truncate"><i class="bi bi-envelope text-muted me-1 small"></i>@d.Email</div>
+                                </div>
                             }
                             @if (d.ContactNumber != null)
                             {
-                                <li><i class="bi bi-telephone me-1"></i>@d.ContactNumber</li>
+                                <div class="info-list-item">
+                                    <div class="info-label">Contact</div>
+                                    <div class="info-value fw-medium"><i class="bi bi-telephone text-muted me-1 small"></i>@d.ContactNumber</div>
+                                </div>
                             }
                             @if (d.Location != null)
                             {
-                                <li><i class="bi bi-geo-alt me-1"></i>@d.Location</li>
+                                <div class="info-list-item">
+                                    <div class="info-label">Hub</div>
+                                    <div class="info-value"><i class="bi bi-geo-alt text-muted me-1 small"></i>@d.Location</div>
+                                </div>
                             }
                             @if (d.GSTIN != null)
                             {
-                                <li><i class="bi bi-card-text me-1"></i>GSTIN: <code>@d.GSTIN</code></li>
+                                <div class="info-list-item">
+                                    <div class="info-label">GSTIN</div>
+                                    <div class="info-value font-monospace small"><code class="text-dark">@d.GSTIN</code></div>
+                                </div>
                             }
                             @if (d.Address != null)
                             {
-                                <li><i class="bi bi-house me-1"></i>@d.Address</li>
+                                <div class="info-list-item">
+                                    <div class="info-label">Address</div>
+                                    <div class="info-value small text-secondary" style="white-space: normal; line-height: 1.3;">@d.Address</div>
+                                </div>
                             }
-                            <li class="mt-1">
-                                <i class="bi bi-clock me-1"></i>
-                                Registered: @d.RegisteredOn.ToString("dd MMM yyyy, hh:mm tt")
-                            </li>
-                        </ul>
+                            <div class="info-list-item">
+                                <div class="info-label">Registered</div>
+                                <div class="info-value text-muted font-monospace" style="font-size: 0.8rem;">
+                                    <i class="bi bi-clock text-muted me-1 small"></i>@d.RegisteredOn.ToString("dd MMM yyyy, hh:mm tt")
+                                </div>
+                            </div>
+                        </div>
 
-                        <div class="d-flex gap-2">
-                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1">
+                        <!-- Action Controls Row -->
+                        <div class="d-flex gap-2 mt-auto">
+                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1 m-0">
                                 <input type="hidden" name="distributorId" value="@d.DistributorId" />
                                 <input type="hidden" name="status" value="Approved" />
-                                <button type="submit" class="btn btn-success btn-sm w-100">
-                                    ✓ Approve
+                                <button type="submit" class="btn btn-success btn-sm w-100 py-2 fw-medium" style="border-radius: 6px;">
+                                    <i class="bi bi-check-lg me-1"></i> Approve
                                 </button>
                             </form>
-                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1"
-                                  onsubmit="return confirm('Reject @d.DistributorName? This cannot be undone easily.')">
+                            <form asp-action="UpdateDistributorStatus" method="post" class="flex-grow-1 m-0"
+                                  onsubmit="return confirm('Reject registration request for @d.DistributorName?')">
                                 <input type="hidden" name="distributorId" value="@d.DistributorId" />
                                 <input type="hidden" name="status" value="Rejected" />
-                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                                    ✗ Reject
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 py-2 fw-medium" style="border-radius: 6px;">
+                                    <i class="bi bi-x-lg me-1"></i> Reject
                                 </button>
                             </form>
                         </div>
+
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-}
+            }
+        </div>
+    }
+</div>

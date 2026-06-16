@@ -4,391 +4,401 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<!-- Page Header -->
-<div class="bg-primary text-white py-3 mb-4 shadow-sm">
-    <div class="container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-truck fs-4"></i>
-                <div>
-                    <h4 class="mb-0 fw-bold">All Vehicles</h4>
-                    <small class="opacity-75">Review and manage vehicle registrations</small>
-                </div>
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 20px;
+    }
+
+    .stat-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stat-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stat-warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    .stat-danger {
+        border-top: 4px solid #ef4444;
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+
+    .badge-green {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .badge-danger {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    /* Custom Navigation Tabs Layout */
+    .nav-tabs-custom {
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 16px;
+            margin-bottom: -2px;
+        }
+
+            .nav-tabs-custom .nav-link.active {
+                background: transparent;
+                color: #111827;
+                border-bottom: 3px solid #3b82f6;
+            }
+
+    /* Clean Data Tables - Optimized padding to save width space */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 12px 14px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Muted Status Badges */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 3px 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe !important;
+    }
+
+    .pill-badge-green {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .pill-badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .pill-badge-red {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Vehicle Registry</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Logistics</span> &gt; <span class="text-muted">Fleet Matrix</span>
             </div>
-            <span class="badge bg-white text-primary fs-6 fw-bold px-3 py-2">
-                @Model.Count Total
+        </div>
+        <div>
+            <span class="badge bg-light text-dark border px-3 py-2" style="font-weight: 500; border-radius: 6px; font-size: 0.85rem;">
+                Total Registry: @Model.Count
             </span>
         </div>
     </div>
-</div>
 
-<div class="container-fluid mb-5">
-
-    <!-- Alerts -->
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2" role="alert">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>@TempData["Success"]</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <span>@TempData["Error"]</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
         </div>
     }
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
+    <div class="row mb-4 g-3">
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="rounded-3 p-2" style="background:#e8f0fe;">
-                        <i class="bi bi-truck text-primary fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">@Model.Count</div>
-                        <small class="text-muted">Total Vehicles</small>
-                    </div>
+            <div class="premium-stat-card stat-blue d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Fleet</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count</h3>
                 </div>
+                <span class="metric-badge badge-blue">Registered</span>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="rounded-3 p-2" style="background:#d1fae5;">
-                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">@Model.Count(v => v.Status == "Approved")</div>
-                        <small class="text-muted">Approved</small>
-                    </div>
+            <div class="premium-stat-card stat-green d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Approved</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(v => v.Status == "Approved")</h3>
                 </div>
+                <span class="metric-badge badge-green">Operational</span>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="rounded-3 p-2" style="background:#fef9c3;">
-                        <i class="bi bi-hourglass-split text-warning fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">@Model.Count(v => v.Status == "Pending")</div>
-                        <small class="text-muted">Pending</small>
-                    </div>
+            <div class="premium-stat-card stat-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Pending</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(v => v.Status == "Pending")</h3>
                 </div>
+                <span class="metric-badge badge-warning">Awaiting Review</span>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="rounded-3 p-2" style="background:#fee2e2;">
-                        <i class="bi bi-x-circle-fill text-danger fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">@Model.Count(v => v.Status == "Rejected")</div>
-                        <small class="text-muted">Rejected</small>
-                    </div>
+            <div class="premium-stat-card stat-danger d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Rejected</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(v => v.Status == "Rejected")</h3>
                 </div>
+                <span class="metric-badge badge-danger">Suspended</span>
             </div>
         </div>
     </div>
 
-    <!-- Filter Tabs -->
-    <ul class="nav nav-pills mb-3" id="vehicleTabs">
+    <ul class="nav nav-tabs nav-tabs-custom mb-4" id="vehicleTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" onclick="filterTable('All')">
-                All
-                <span class="badge bg-primary ms-1">@Model.Count</span>
+                All <span class="badge bg-light text-dark border ms-1">@Model.Count</span>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" onclick="filterTable('Pending')">
-                <i class="bi bi-hourglass-split me-1"></i>Pending
-                <span class="badge bg-warning text-dark ms-1">
-                    @Model.Count(v => v.Status == "Pending")
-                </span>
+                <i class="bi bi-hourglass-split text-warning me-1"></i> Pending
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 ms-1">@Model.Count(v => v.Status == "Pending")</span>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" onclick="filterTable('Approved')">
-                <i class="bi bi-check-circle me-1"></i>Approved
-                <span class="badge bg-success ms-1">
-                    @Model.Count(v => v.Status == "Approved")
-                </span>
+                <i class="bi bi-check-circle-fill text-success me-1"></i> Approved
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1">@Model.Count(v => v.Status == "Approved")</span>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" onclick="filterTable('Rejected')">
-                <i class="bi bi-x-circle me-1"></i>Rejected
-                <span class="badge bg-danger ms-1">
-                    @Model.Count(v => v.Status == "Rejected")
-                </span>
+                <i class="bi bi-x-circle-fill text-danger me-1"></i> Rejected
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 ms-1">@Model.Count(v => v.Status == "Rejected")</span>
             </button>
         </li>
     </ul>
 
-    <!-- Table -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="vehiclesTable">
-                    <thead style="background:#e8f0fe;">
+    <div class="card premium-data-card border-start-0 border-end-0 border-bottom-0">
+        <div class="table-responsive" style="overflow-x: hidden;">
+            <table class="table table-clean align-middle mb-0" id="vehiclesTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Vehicle Logistics Node</th>
+                        <th>Tank Capacity</th>
+                        <th>Driver Assignment Details</th>
+                        <th>Registration RC</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions Matrix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
                         <tr>
-                            <th class="ps-3 text-primary">#</th>
-                            <th class="text-primary">Vehicle</th>
-                            <th class="text-primary">Capacity</th>
-                            <th class="text-primary">Driver</th>
-                            <th class="text-primary">Driver Status</th>
-                            <th class="text-primary">Vehicle RC</th>
-                            <th class="text-primary">Phone</th>
-                            <th class="text-primary">Registered</th>
-                            <th class="text-primary">Status</th>
-                            <th class="text-primary pe-3">Action</th>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-truck d-block display-6 mb-2 text-secondary"></i>
+                                No active freight or fleet transport assets located in data tables.
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="9" class="text-center py-5 text-muted">
-                                    <i class="bi bi-truck fs-1 d-block mb-2 opacity-50"></i>
-                                    No vehicles registered yet.
-                                </td>
-                            </tr>
-                        }
-
-                        @foreach (var v in Model)
-                        {
-                            <tr data-status="@v.Status">
-                                <td class="ps-3 text-muted small">@v.VehicleId</td>
-
-                                <!-- Vehicle Number + Capacity pill -->
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-3 d-flex align-items-center
-                                                        justify-content-center bg-primary bg-opacity-10"
-                                             style="width:38px;height:38px;flex-shrink:0;">
-                                            <i class="bi bi-truck text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold font-monospace">@v.VehicleNumber</div>
-                                            <small class="text-muted">ID: @v.VehicleId</small>
-                                        </div>
+                    }
+                    @foreach (var v in Model)
+                    {
+                        <tr data-status="@v.Status">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width:36px; height:36px; border-radius:6px; background:#eff6ff; display:flex; align-items:center; justify-content-center; flex-shrink:0;">
+                                        <i class="bi bi-truck text-primary" style="font-size: 0.95rem;"></i>
                                     </div>
-                                </td>
-
-                                <!-- Capacity -->
-                                <td>
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="bi bi-droplet me-1 text-primary"></i>
-                                        @v.Capacity.ToString("N0") L
-                                    </span>
-                                </td>
-
-                                <!-- Driver info -->
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-circle bg-secondary bg-opacity-25
-                                                        text-dark d-flex align-items-center
-                                                        justify-content-center fw-bold"
-                                             style="width:32px;height:32px;font-size:.8rem;flex-shrink:0;">
-                                            @v.DriverName.Substring(0, 1).ToUpper()
-                                        </div>
-                                        <div>
-                                            <div class="fw-medium">@v.DriverName</div>
-                                            @if (!string.IsNullOrEmpty(v.Phone))
-                                            {
-                                                <small class="text-muted">@v.Phone</small>
-                                            }
-                                        </div>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0 font-monospace" style="font-size: 0.9rem; line-height: 1.2;">@v.VehicleNumber</div>
+                                        @* <div class="text-muted tiny" style="font-size: 11px;">System Node ID: #@v.VehicleId</div> *@
                                     </div>
-                                </td>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="pill-counter-badge pill-badge-blue">
+                                    <i class="bi bi-droplet-fill text-primary me-1 small"></i><strong>@v.Capacity.ToString("N0")</strong> L
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <div class="rounded-circle bg-light text-secondary d-flex align-items-center justify-content-center fw-bold text-uppercase border font-monospace" style="width:26px; height:26px; font-size: 0.72rem; flex-shrink: 0;">
+                                        @v.DriverName.Substring(0, 1)
+                                    </div>
+                                    <div class="fw-bold text-dark small" style="line-height: 1.2;">@v.DriverName</div>
 
-                                <!-- Driver Status -->
-                                <td>
-                                    @if (v.DriverStatus == "Active")
-                                    {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2">
-                                            <i class="bi bi-check-circle me-1"></i>Active
-                                        </span>
+                                    @{
+                                        string driverPill = v.DriverStatus == "Active" ? "pill-badge-green" : v.DriverStatus == "Pending" ? "pill-badge-warning" : "pill-badge-red";
+                                        string driverLabel = v.DriverStatus == "Active" ? "Approved" : v.DriverStatus;
                                     }
-                                    else if (v.DriverStatus == "Pending")
+                                    <span class="pill-counter-badge @driverPill ms-1" style="font-size: 0.68rem; padding: 1px 4px; line-height:1;">@driverLabel</span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 11px; padding-left: 28px;"><i class="bi bi-telephone me-1"></i>@(string.IsNullOrEmpty(v.Phone) ? "—" : v.Phone)</div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(v.VehicleRCPath))
+                                {
+                                    <a href="@v.VehicleRCPath" target="_blank" class="btn btn-sm btn-light border text-primary px-2 py-0.5" style="border-radius: 6px; font-weight: 500; font-size: 0.78rem;">
+                                        <i class="bi bi-file-earmark-text me-0.5 text-secondary"></i>View RC
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic" style="font-size: 0.82rem;">Not Uploaded</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="text-dark small" style="font-size: 0.85rem;">@v.RegisteredOn.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted font-monospace" style="font-size:10px;">@v.RegisteredOn.ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                @{
+                                    string statusStyle = v.Status switch
                                     {
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2">
-                                            <i class="bi bi-hourglass-split me-1"></i>Pending
-                                        </span>
+                                        "Approved" => "pill-badge-green",
+                                        "Pending" => "pill-badge-warning",
+                                        _ => "pill-badge-red"
+                                    };
+                                }
+                                <span class="pill-counter-badge @statusStyle px-2 py-0.5">
+                                    @v.Status
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end align-items-center gap-1">
+                                    @if (v.Status == "Pending")
+                                    {
+                                        <form asp-controller="Logistics" asp-action="UpdateVehicleStatus" method="post" class="m-0">
+                                            <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                            <input type="hidden" name="status" value="Approved" />
+                                            <button type="submit" class="btn btn-sm btn-success px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Approve vehicle @v.VehicleNumber for @v.DriverName?')">
+                                                Accept
+                                            </button>
+                                        </form>
+                                        <form asp-controller="Logistics" asp-action="UpdateVehicleStatus" method="post" class="m-0">
+                                            <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                            <input type="hidden" name="status" value="Rejected" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Reject vehicle @v.VehicleNumber?')">
+                                                Reject
+                                            </button>
+                                        </form>
                                     }
-                                    else
+                                    else if (v.Status == "Approved")
                                     {
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2">
-                                            <i class="bi bi-x-circle me-1"></i>@v.DriverStatus
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(v.VehicleRCPath))
-                                    {
-                                        <a href="@v.VehicleRCPath" target="_blank"
-                                           class="btn btn-sm btn-outline-primary px-2 py-1">
-                                            <i class="bi bi-file-earmark-text me-1"></i>View DL
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary bg-opacity-25 text-secondary">
-                                            Not uploaded
-                                        </span>
-                                    }
-                                </td>
-
-                                <!-- Phone -->
-                                <td class="small text-muted">
-                                    @(string.IsNullOrEmpty(v.Phone) ? "—" : v.Phone)
-                                </td>
-
-                                <!-- Registered On -->
-                                <td class="small text-muted">
-                                    @v.RegisteredOn.ToString("dd MMM yyyy")
-                                    <br />
-                                    <span style="font-size:.75rem;">
-                                        @v.RegisteredOn.ToString("hh:mm tt")
-                                    </span>
-                                </td>
-
-                                <!-- Vehicle Status Badge -->
-                                <td>
-                                    @if (v.Status == "Approved")
-                                    {
-                                        <span class="badge bg-success px-2 py-1">
-                                            <i class="bi bi-check-circle me-1"></i>Approved
-                                        </span>
-                                    }
-                                    else if (v.Status == "Pending")
-                                    {
-                                        <span class="badge bg-warning text-dark px-2 py-1">
-                                            <i class="bi bi-hourglass-split me-1"></i>Pending
-                                        </span>
+                                        <form asp-controller="Logistics" asp-action="UpdateVehicleStatus" method="post" class="m-0">
+                                            <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                            <input type="hidden" name="status" value="Rejected" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-danger px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Revoke approval for @v.VehicleNumber? The driver will be notified.')">
+                                                Revoke
+                                            </button>
+                                        </form>
                                     }
                                     else if (v.Status == "Rejected")
                                     {
-                                        <span class="badge bg-danger px-2 py-1">
-                                            <i class="bi bi-x-circle me-1"></i>Rejected
+                                        <form asp-controller="Logistics" asp-action="UpdateVehicleStatus" method="post" class="m-0">
+                                            <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                            <input type="hidden" name="status" value="Pending" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-secondary px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Reset to Pending for re-review?')">
+                                                Re-review
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (v.DriverStatus != "Active" && v.Status == "Approved")
+                                    {
+                                        <span class="text-warning ms-1" title="Vehicle is approved but linked driver is not active" style="cursor: help;">
+                                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                                         </span>
                                     }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary px-2 py-1">@v.Status</span>
-                                    }
-                                </td>
-
-                                <!-- Actions -->
-                                <td class="pe-3">
-                                    <div class="d-flex gap-1 flex-wrap">
-
-                                        @if (v.Status == "Pending")
-                                        {
-                                            <!-- Approve -->
-                                            <form asp-controller="Logistics"
-                                                  asp-action="UpdateVehicleStatus"
-                                                  method="post" class="m-0">
-                                                <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                                                <input type="hidden" name="status" value="Approved" />
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-success px-2 py-1"
-                                                        title="Approve vehicle"
-                                                        onclick="return confirm('Approve vehicle @v.VehicleNumber for @v.DriverName?')">
-                                                    <i class="bi bi-check-lg me-1"></i>Approve
-                                                </button>
-                                            </form>
-
-                                            <!-- Reject -->
-                                            <form asp-controller="Logistics"
-                                                  asp-action="UpdateVehicleStatus"
-                                                  method="post" class="m-0">
-                                                <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                                                <input type="hidden" name="status" value="Rejected" />
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-danger px-2 py-1"
-                                                        title="Reject vehicle"
-                                                        onclick="return confirm('Reject vehicle @v.VehicleNumber?')">
-                                                    <i class="bi bi-x-lg me-1"></i>Reject
-                                                </button>
-                                            </form>
-                                        }
-
-                                        else if (v.Status == "Approved")
-                                        {
-                                            <!-- Revoke -->
-                                            <form asp-controller="Logistics"
-                                                  asp-action="UpdateVehicleStatus"
-                                                  method="post" class="m-0">
-                                                <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                                                <input type="hidden" name="status" value="Rejected" />
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-danger px-2 py-1"
-                                                        title="Revoke vehicle approval"
-                                                        onclick="return confirm('Revoke approval for @v.VehicleNumber? The driver will be notified.')">
-                                                    <i class="bi bi-slash-circle me-1"></i>Revoke
-                                                </button>
-                                            </form>
-                                        }
-
-                                        else if (v.Status == "Rejected")
-                                        {
-                                            <!-- Re-review -->
-                                            <form asp-controller="Logistics"
-                                                  asp-action="UpdateVehicleStatus"
-                                                  method="post" class="m-0">
-                                                <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                                                <input type="hidden" name="status" value="Pending" />
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary px-2 py-1"
-                                                        title="Reset to Pending for re-review">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Re-review
-                                                </button>
-                                            </form>
-                                        }
-
-                                        <!-- Driver inactive warning -->
-                                        @if (v.DriverStatus != "Active" && v.Status == "Approved")
-                                        {
-                                            <span class="badge bg-warning text-dark ms-1"
-                                                  title="Vehicle is approved but driver is not active">
-                                                <i class="bi bi-exclamation-triangle me-1"></i>Driver inactive
-                                            </span>
-                                        }
-
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Approved but Driver Inactive Warning Banner -->
     @{
         int mismatchCount = Model.Count(v => v.Status == "Approved" && v.DriverStatus != "Active");
     }
     @if (mismatchCount > 0)
     {
-        <div class="alert alert-warning d-flex gap-2 align-items-start mt-3 mb-0">
-            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <div class="alert alert-warning border-0 shadow-sm d-flex gap-2 align-items-start mt-4 mb-0" style="border-radius: 8px;">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-0.5 text-warning"></i>
             <div>
-                <strong>@mismatchCount vehicle(s)</strong> are approved but assigned to
-                <strong>inactive or pending drivers</strong>.
-                These vehicles cannot be used for transfers until the driver is also approved.
+                <strong>@mismatchCount freight asset unit nodes</strong> are approved but explicitly mapped to <strong>inactive or pending courier drivers</strong>. Fleet units remain restricted from executing transfers until driver documents receive clear approval.
             </div>
         </div>
     }
-
 </div>
 
 @section Scripts {
@@ -396,10 +406,10 @@
         function filterTable(status) {
             const rows = document.querySelectorAll('#vehiclesTable tbody tr[data-status]');
             rows.forEach(row => {
-                row.style.display =
-                    (status === 'All' || row.dataset.status === status) ? '' : 'none';
+                row.style.display = (status === 'All' || row.dataset.status === status) ? '' : 'none';
             });
 
+            // Sync state highlight tabs
             document.querySelectorAll('#vehicleTabs .nav-link').forEach(btn => {
                 const text = btn.textContent.trim();
                 const matches =

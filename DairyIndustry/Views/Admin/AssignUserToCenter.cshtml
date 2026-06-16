@@ -3,178 +3,224 @@
     ViewData["Title"] = "Assign User to Center";
 
     var users = ViewBag.Users as List<DairyIndustry.Models.Admin.User>
-                  ?? new List<DairyIndustry.Models.Admin.User>();
+                ?? new List<DairyIndustry.Models.Admin.User>();
     var centers = ViewBag.Centers as List<DairyIndustry.Models.Admin.CollectionCenterModel>
-                  ?? new List<DairyIndustry.Models.Admin.CollectionCenterModel>();
+                ?? new List<DairyIndustry.Models.Admin.CollectionCenterModel>();
     var assignments = ViewBag.Assignments
-                      as List<DairyIndustry.Models.Admin.UserAssignmentViewModel>
-                      ?? new List<DairyIndustry.Models.Admin.UserAssignmentViewModel>();
+                    as List<DairyIndustry.Models.Admin.UserAssignmentViewModel>
+                    ?? new List<DairyIndustry.Models.Admin.UserAssignmentViewModel>();
 
     var assigned = assignments.Where(a => a.CenterId != null).ToList();
-    var unassigned = assignments.Where(a => a.CenterId == null).ToList();
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    @* {{-- Header --}} *@
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Assign User to Center</h3>
-                <p class="text-muted mb-0">Map a user account to a collection center</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+        .breadcrumb-custom a {
+            color: #6b7280;
+            text-decoration: none;
+        }
+    /* Top border indicator card from image_3f9839.png */
+    .premium-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .premium-card-success {
+        border-top-color: #10b981; /* Green Accent */
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-badge {
+        background-color: #f0fdf4;
+        color: #166534;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 12px;
+    }
+
+    .table-clean th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 600;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.9rem;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .pill-location-badge {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .btn-custom-dark {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-dark:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    @* -- Header Section -- *@
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Assign User to Center</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Assignments</span> &gt; <span class="text-muted">Center Mappings</span>
             </div>
-            <a asp-action="Users" class="btn btn-outline-secondary">Back</a>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Users" class="btn btn-light bg-white border text-secondary px-3" style="border-radius: 6px; font-size: 0.9rem;">
+                Back
+            </a>
+            <button class="btn btn-custom-dark px-3" style="font-size: 0.9rem;" type="button" data-bs-toggle="collapse" data-bs-target="#centerAssignForm">
+                <i class="bi bi-plus-lg me-1"></i> New Assignment
+            </button>
         </div>
     </div>
 
+    @* -- Feedback Notification -- *@
     @if (ViewBag.Error != null)
     {
-        <div class="alert alert-danger">@ViewBag.Error</div>
+        <div class="alert alert-danger border-0 mb-4 shadow-sm" style="border-radius: 8px;">@ViewBag.Error</div>
     }
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">@TempData["Success"]</div>
+        <div class="alert alert-success border-0 mb-4 shadow-sm" style="border-radius: 8px;">@TempData["Success"]</div>
     }
 
-    <div class="row g-4">
-
-        @* {{-- Form --}} *@
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">New Assignment</div>
-                <div class="card-body p-4">
-                    <form method="post" asp-action="AssignUserToCenter">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">User</label>
-                            <select name="userId" class="form-select" required>
-                                <option value="">-- Select User --</option>
-                                @foreach (var user in users)
-                                {
-                                    <option value="@user.UserId">@user.Username</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Center</label>
-                            <select name="centerId" class="form-select" required>
-                                <option value="">-- Select Center --</option>
-                                @foreach (var center in centers)
-                                {
-                                    <option value="@center.CenterId">@center.CenterName</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4">Assign</button>
-                            <a asp-action="Users" class="btn btn-outline-secondary px-4">Cancel</a>
-                        </div>
-                    </form>
+    @* -- Metrics Block -- *@
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="premium-card p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title-text mb-1">Active Centers</div>
+                    <div class="h3 mb-0 fw-bold text-dark">@assigned.Count</div>
                 </div>
+                <span class="metric-badge">@assigned.Count assigned</span>
             </div>
         </div>
+    </div>
 
-        @* {{-- Tables --}} *@
-        <div class="col-md-8">
-
-            @* {{-- Assigned --}} *@
-            <div class="card shadow-sm border-0 mb-3">
-                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    Assigned Users
-                    <span class="badge bg-success rounded-pill">@assigned.Count</span>
+    @* -- Collapsible Interactive Allocation Drawer -- *@
+    <div class="collapse mb-4" id="centerAssignForm">
+        <div class="card premium-card p-4 border-start-0 border-end-0 border-bottom-0 shadow-sm">
+            <h5 class="fw-bold mb-3 text-dark" style="font-size: 1rem;">Map Account to Collection Center</h5>
+            <form method="post" asp-action="AssignUserToCenter" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-secondary">User Account</label>
+                    <select name="userId" class="form-select" style="border-radius: 6px;" required>
+                        <option value="">-- Select User --</option>
+                        @foreach (var user in users)
+                        {
+                            <option value="@user.UserId">@user.Username</option>
+                        }
+                    </select>
                 </div>
-                <div class="card-body p-0">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-secondary">Collection Center</label>
+                    <select name="centerId" class="form-select" style="border-radius: 6px;" required>
+                        <option value="">-- Select Collection Center --</option>
+                        @foreach (var center in centers)
+                        {
+                            <option value="@center.CenterId">@center.CenterName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-custom-dark w-50" style="border-radius: 6px;">Assign</button>
+                    <button type="button" class="btn btn-outline-secondary w-50" data-bs-toggle="collapse" data-bs-target="#centerAssignForm" style="border-radius: 6px;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* -- Main Display Matrix Panel -- *@
+    <div class="card premium-card premium-card-success border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark" style="font-size: 0.95rem;">Current Direct Mappings</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Assigned Role</th>
+                        <th>Collection Center</th>
+                    </tr>
+                </thead>
+                <tbody>
                     @if (!assigned.Any())
                     {
-                        <p class="text-muted text-center py-3 mb-0">No assignments yet.</p>
+                        <tr>
+                            <td colspan="3" class="text-muted text-center py-5">
+                                No active center mappings established yet.
+                            </td>
+                        </tr>
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        @* <th>#</th> *@
-                                        <th>Username</th>
-                                        <th>Role</th>
-                                        <th>Center</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        int row = 1;
-                                    }
-                                    @foreach (var a in assigned)
-                                    {
-                                        <tr>
-                                            @* <td class="text-muted small">@row</td> *@
-                                            <td class="fw-semibold">@a.Username</td>
-                                            <td>
-                                                <span class="badge rounded-pill bg-light text-secondary border">
-                                                    @a.RoleName
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge rounded-pill"
-                                                      style="background:#e8f5e9;color:#2e7d32;font-weight:500;">
-                                                    @a.CenterName
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                        @foreach (var a in assigned)
+                        {
+                            <tr>
+                                <td class="fw-bold text-dark">@a.Username</td>
+                                <td><span class="text-secondary">@a.RoleName</span></td>
+                                <td>
+                                    <span class="pill-location-badge">
+                                        @a.CenterName
+                                    </span>
+                                </td>
+                            </tr>
+                        }
                     }
-                </div>
-            </div>
-
-            @* {{-- Unassigned --}} *@
-        @*     <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    <span>Unassigned Users</span>
-                    <span class="badge bg-warning text-dark rounded-pill">@unassigned.Count</span>
-                </div>
-                <div class="card-body p-0">
-                    @if (!unassigned.Any())
-                    {
-                        <p class="text-muted text-center py-3 mb-0">All users are assigned.</p>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Username</th>
-                                        <th>Role</th>
-                                        <th>Center</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        int urow = 1;
-                                    }
-                                    @foreach (var a in unassigned)
-                                    {
-                                        <tr>
-                                            <td class="text-muted small">@urow++</td>
-                                            <td class="fw-semibold">@a.Username</td>
-                                            <td>
-                                                <span class="badge rounded-pill bg-light text-secondary border">
-                                                    @a.RoleName
-                                                </span>
-                                            </td>
-                                            <td class="text-muted small">Not assigned</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>*@
-
-        </div> 
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
