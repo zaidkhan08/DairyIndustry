@@ -5,817 +5,1586 @@
     Layout = "_DairyLayout";
 }
 
-<div class="container py-5">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 
-    <div class="row justify-content-center">
+<style>
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0
+    }
 
-        <div class="col-xl-9 col-lg-10">
+    :root {
+        --navy: #1B3A6B;
+        --navy-dark: #122850;
+        --navy-mid: #2E5496;
+        --navy-light: #E8EEF8;
+        --navy-border: #C2D0E8;
+        --navy-hover: #D4E0F3;
+        --accent: #2563EB;
+        --red: #DC2626;
+        --red-light: #FEF2F2;
+        --green-ok: #16A34A;
+        --gray-bg: #F5F7FA;
+        --gray-border: #D1D5DB;
+        --gray-text: #6B7280;
+        --gray-hint: #9CA3AF;
+        --white: #FFFFFF;
+        --radius: 10px;
+        --radius-sm: 6px;
+    }
 
-            <div class="text-center mb-4">
-                <h2 class="fw-bold text-dark">
-                    Farmer Self Registration
-                </h2>
+    body { font-family: 'Segoe UI',system-ui,-apple-system,sans-serif; background: var(--gray-bg); color: #111827 }
+    .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap }
 
-                <p class="text-muted">
-                    Register yourself for dairy collection services
-                </p>
+    /* ── TOAST ── */
+    .toast-container { position:fixed;top:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:8px;z-index:3000;pointer-events:none }
+    .toast { background:var(--white);border:0.5px solid var(--gray-border);border-radius:8px;padding:12px 14px;font-size:13px;color:#111827;display:flex;align-items:flex-start;gap:10px;max-width:320px;pointer-events:auto;animation:toastIn .22s ease;border-left:3px solid var(--navy) }
+    .toast.error { border-left-color:var(--red) }
+    .toast.info  { border-left-color:var(--accent) }
+    .toast.warning { border-left-color:#D97706 }
+    .toast i { font-size:16px;flex-shrink:0;margin-top:1px }
+    .toast .toast-msg { flex:1;line-height:1.5 }
+    .toast .toast-close { width:20px;height:20px;background:none;border:none;cursor:pointer;color:var(--gray-hint);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:4px }
+    .toast .toast-close:hover { background:var(--gray-bg) }
+    @@keyframes toastIn  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+    @@keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(20px)} }
+
+    /* ── OTP OVERLAY ── */
+    .otp-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:1rem }
+    .otp-overlay.open { display:flex }
+    .otp-box { background:var(--white);border-radius:var(--radius);width:100%;max-width:420px;overflow:hidden;border:0.5px solid var(--gray-border);box-shadow:0 20px 60px rgba(0,0,0,0.15) }
+    .otp-head { padding:1.25rem 1.5rem 1rem;border-bottom:0.5px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between;background:var(--navy-light) }
+    .otp-head-left { display:flex;align-items:center;gap:10px }
+    .otp-head-icon { width:36px;height:36px;border-radius:8px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px }
+    .otp-head h3 { font-size:16px;font-weight:600;color:var(--navy-dark) }
+    .otp-head p  { font-size:12px;color:var(--gray-text);margin-top:1px }
+    .otp-close { width:30px;height:30px;border:none;background:rgba(0,0,0,0.06);border-radius:6px;cursor:pointer;color:var(--gray-text);display:flex;align-items:center;justify-content:center;font-size:16px }
+    .otp-close:hover { background:rgba(0,0,0,0.10) }
+    .otp-body { padding:1.5rem }
+    .otp-desc { font-size:13px;color:var(--gray-text);margin-bottom:1.25rem;line-height:1.6;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:6px;padding:10px 12px }
+    .otp-desc strong { color:var(--navy-dark);font-weight:600 }
+    .otp-label { font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px }
+    .otp-digits { display:flex;gap:8px;justify-content:center }
+    .otp-digits input { width:52px;height:58px;text-align:center;font-size:22px;font-weight:600;border:1.5px solid var(--gray-border);border-radius:8px;outline:none;background:var(--white);color:#111827;transition:border .15s,box-shadow .15s,background .15s;font-family:inherit;-moz-appearance:textfield }
+    .otp-digits input::-webkit-outer-spin-button,.otp-digits input::-webkit-inner-spin-button { -webkit-appearance:none }
+    .otp-digits input:focus { border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,58,107,0.12) }
+    .otp-digits input.filled { border-color:var(--navy-border);background:var(--navy-light);color:var(--navy-dark) }
+    .otp-digits input.error-flash { border-color:var(--red);background:var(--red-light);animation:shake .3s ease }
+    @@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    .otp-timer-row { display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid var(--gray-border) }
+    .otp-timer { font-size:12px;color:var(--gray-hint);display:flex;align-items:center;gap:5px }
+    .otp-timer i { font-size:14px }
+    .otp-timer .countdown { color:var(--navy);font-weight:600;font-variant-numeric:tabular-nums }
+    .otp-timer.expired .countdown { color:var(--red) }
+    .resend-btn { font-size:12px;color:var(--navy);background:none;border:none;cursor:pointer;font-weight:600;padding:4px 8px;font-family:inherit;border-radius:4px;transition:background .12s }
+    .resend-btn:hover:not(:disabled) { background:var(--navy-light) }
+    .resend-btn:disabled { color:var(--gray-hint);cursor:default }
+    .otp-foot { padding:0 1.5rem 1.5rem;display:flex;gap:8px;justify-content:flex-end }
+
+    /* ── BUTTONS ── */
+    .btn { height:40px;padding:0 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;border:1.5px solid;font-family:inherit;display:inline-flex;align-items:center;gap:7px;transition:background .15s,border-color .15s,opacity .15s,transform .1s;white-space:nowrap;line-height:1 }
+    .btn:active { transform:scale(0.98) }
+    .btn-primary { background:var(--navy);border-color:var(--navy);color:#fff }
+    .btn-primary:hover:not(:disabled) { background:var(--navy-dark);border-color:var(--navy-dark) }
+    .btn-primary:disabled { opacity:0.55;cursor:not-allowed;transform:none }
+    .btn-outline { background:var(--white);border-color:var(--gray-border);color:#374151 }
+    .btn-outline:hover { background:var(--gray-bg);border-color:#9CA3AF }
+    .btn-sm { height:34px;padding:0 16px;font-size:13px }
+    .btn-otp { height:40px;padding:0 16px;font-size:13px;border-radius:var(--radius-sm);cursor:pointer;border:1.5px solid var(--navy);color:var(--navy);background:transparent;font-weight:600;white-space:nowrap;font-family:inherit;transition:background .15s,color .15s,opacity .15s;display:inline-flex;align-items:center;gap:6px }
+    .btn-otp:hover:not(:disabled) { background:var(--navy);color:#fff }
+    .btn-otp:disabled { opacity:0.5;cursor:not-allowed }
+    .btn-otp.verified-state { border-color:var(--green-ok);background:var(--green-ok);color:#fff;pointer-events:none }
+    .btn-otp.sending { opacity:0.6;pointer-events:none }
+
+    /* ── PAGE ── */
+    .page-wrap { max-width:900px;margin:0 auto;padding:1.75rem 1rem 3rem }
+    .page-header { text-align:center;margin-bottom:2rem }
+    .brand-chip { display:inline-flex;align-items:center;gap:7px;background:var(--navy-light);color:var(--navy);font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:14px;border:1px solid var(--navy-border);letter-spacing:0.3px }
+    .brand-chip i { font-size:15px }
+    .page-header h1 { font-size:24px;font-weight:700;color:var(--navy-dark);margin-bottom:6px;letter-spacing:-0.3px }
+    .page-header p  { font-size:14px;color:var(--gray-text) }
+
+    /* ── STEP BAR ── */
+    .step-bar { display:flex;align-items:flex-start;justify-content:center;margin-bottom:1.75rem;position:relative }
+    .step-bar::before { content:'';position:absolute;top:18px;left:calc(50% - (3 * 120px / 2));width:calc(3 * 120px);height:2px;background:var(--gray-border) }
+    .step-item { display:flex;flex-direction:column;align-items:center;gap:6px;width:120px;position:relative;z-index:1 }
+    .step-dot { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border:2px solid var(--gray-border);background:var(--white);color:var(--gray-hint);transition:all .25s;position:relative;z-index:2 }
+    .step-item.active .step-dot { background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 0 0 4px var(--navy-light) }
+    .step-item.done .step-dot { background:var(--navy-light);border-color:var(--navy-border);color:var(--navy) }
+    .step-label { font-size:11px;color:var(--gray-hint);text-align:center;font-weight:500;letter-spacing:0.3px }
+    .step-item.active .step-label { color:var(--navy);font-weight:600 }
+    .step-item.done   .step-label { color:var(--navy-mid) }
+    .step-connector { flex:1;height:2px;background:var(--gray-border);margin-top:18px;transition:background .3s }
+    .step-connector.done-line { background:var(--navy-border) }
+
+    /* ── PROGRESS ── */
+    .progress-wrap { height:4px;background:var(--gray-border);border-radius:3px;margin-bottom:1.5rem;overflow:hidden }
+    .progress-fill { height:100%;background:linear-gradient(90deg,var(--navy),var(--accent));border-radius:3px;transition:width .4s ease }
+
+    /* ── CARDS ── */
+    .card { background:var(--white);border:1px solid var(--gray-border);border-radius:var(--radius);margin-bottom:1.25rem;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04) }
+    .card-head { padding:1rem 1.5rem;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:12px;background:var(--navy-light) }
+    .card-head-icon { width:36px;height:36px;border-radius:8px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0 }
+    .card-head-text h2 { font-size:15px;font-weight:600;color:var(--navy-dark) }
+    .card-head-text p  { font-size:12px;color:var(--gray-text);margin-top:2px }
+    .card-body { padding:1.5rem }
+
+    /* ── GRID ── */
+    .row  { display:grid;gap:1.1rem }
+    .cols-2 { grid-template-columns:1fr 1fr }
+    .cols-3 { grid-template-columns:1fr 1fr 1fr }
+    @@media(max-width:640px)  { .cols-2,.cols-3{grid-template-columns:1fr} .step-bar::before{display:none} }
+    @@media(min-width:641px) and (max-width:800px) { .cols-3{grid-template-columns:1fr 1fr} }
+
+    /* ── FIELDS ── */
+    .field { display:flex;flex-direction:column;gap:5px }
+    .field label { font-size:12.5px;font-weight:600;color:#374151;display:flex;align-items:center;gap:4px }
+    .field label .req { color:var(--navy);font-size:13px }
+    .field input,.field select { width:100%;height:40px;padding:0 12px;font-size:14px;color:#111827;background:var(--white);border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);outline:none;transition:border .15s,box-shadow .15s,background .12s;font-family:inherit;appearance:none;-webkit-appearance:none }
+    .field select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:36px }
+    .field input:hover,.field select:hover { border-color:#9CA3AF }
+    .field input:focus,.field select:focus { border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,58,107,0.12);background:var(--navy-light) }
+    .field input:focus { background:var(--white) }
+    .field input.err,.field select.err { border-color:var(--red);background:var(--red-light) }
+    .field input.err:focus,.field select.err:focus { box-shadow:0 0 0 3px rgba(220,38,38,0.10);background:var(--white) }
+    .field input.ok { border-color:var(--green-ok) }
+    .field input:disabled,.field select:disabled { background:#F9FAFB;color:var(--gray-hint);cursor:not-allowed;border-color:#E5E7EB }
+    .field-err { font-size:11.5px;color:var(--red);display:none;align-items:center;gap:4px;font-weight:500 }
+    .field-err.show { display:flex }
+    .field-err i { font-size:13px }
+    .field-hint { font-size:11px;color:var(--gray-hint) }
+
+    /* ── INPUT GROUP ── */
+    .input-group { display:flex;gap:8px;align-items:flex-start }
+    .input-group input { flex:1 }
+    .verified-badge { display:none;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--green-ok);background:#F0FDF4;border:1px solid #BBF7D0;padding:3px 10px;border-radius:12px }
+    .verified-badge.show { display:inline-flex }
+    .verified-badge i { font-size:13px }
+
+    /* ── FILE UPLOAD ── */
+    .file-wrap { position:relative;border:2px dashed var(--gray-border);border-radius:var(--radius-sm);padding:16px 14px;cursor:pointer;transition:border-color .15s,background .15s;background:var(--white);text-align:center }
+    .file-wrap:hover,.file-wrap.drag { border-color:var(--navy);background:var(--navy-light) }
+    .file-wrap input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100% }
+    .file-wrap .fi-icon  { font-size:26px;color:var(--navy-mid);margin-bottom:6px }
+    .file-wrap .fi-label { font-size:13px;color:var(--gray-text);font-weight:500 }
+    .file-wrap .fi-sub   { font-size:11px;color:var(--gray-hint);margin-top:3px }
+    .file-wrap .fi-name  { font-size:12px;color:var(--navy);font-weight:600;margin-top:6px;display:none;word-break:break-all }
+    .file-wrap.has-file  { border-color:var(--navy-border);border-style:solid;background:var(--navy-light) }
+    .file-wrap.has-file .fi-icon { color:var(--navy) }
+    .file-wrap.file-err  { border-color:var(--red);background:var(--red-light) }
+
+    /* ── FORM FOOTER ── */
+    .form-footer { display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;padding:1.25rem 0 0;border-top:1px solid var(--gray-border) }
+    @@media(max-width:480px) { .form-footer{flex-direction:column-reverse;gap:10px} .form-footer .btn{width:100%;justify-content:center} }
+
+    /* ── REVIEW ── */
+    .review-grid { display:grid;grid-template-columns:1fr 1fr;gap:4px 1.5rem }
+    @@media(max-width:500px) { .review-grid{grid-template-columns:1fr} }
+    .rv-row { display:flex;flex-direction:column;padding:10px 0;border-bottom:0.5px solid var(--gray-border) }
+    .rv-row:last-child { border-bottom:none }
+    .rv-key { font-size:11px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px }
+    .rv-val { font-size:13.5px;color:#111827;font-weight:500 }
+    .rv-val.empty { color:var(--gray-hint);font-style:italic;font-weight:400 }
+    .review-section-title { font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.6px;margin:1rem 0 0.5rem;display:flex;align-items:center;gap:7px }
+    .review-section-title::after { content:'';flex:1;height:1px;background:var(--navy-border) }
+
+    /* ── SUCCESS ── */
+    .success-screen { display:none;text-align:center;padding:3rem 1.5rem }
+    .success-screen.show { display:block }
+    .success-icon { width:72px;height:72px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:32px;color:var(--navy) }
+    .ref-chip { display:inline-block;background:var(--navy-light);border:1px solid var(--navy-border);color:var(--navy-dark);font-size:13px;font-weight:600;padding:6px 16px;border-radius:6px;margin-top:1.25rem;letter-spacing:0.5px }
+
+    /* ── SERVER ERROR BANNER ── */
+    .server-error-banner { background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#991B1B }
+    .server-error-banner i { font-size:16px;flex-shrink:0;margin-top:1px;color:var(--red) }
+    @@media(max - width:640px) {
+        #section5 [style*="grid-template-columns:1fr 1fr 1fr"]
+
+    {
+        grid-template-columns: 1fr !important;
+    }
+
+    #section5 [style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    }
+</style>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- OTP OVERLAY -->
+<div class="otp-overlay" id="otpOverlay" role="dialog" aria-modal="true" aria-labelledby="otpTitle">
+    <div class="otp-box">
+        <div class="otp-head">
+            <div class="otp-head-left">
+                <div class="otp-head-icon"><i class="ti ti-shield-lock" aria-hidden="true"></i></div>
+                <div>
+                    <h3 id="otpTitle">Email verification</h3>
+                    <p>One-time password</p>
+                </div>
             </div>
-
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show">
-                    @TempData["Error"]
-
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert">
-                    </button>
-                </div>
-            }
-
-            <form asp-action="FarmerSelfRegistration"
-                  asp-controller="Farmer"
-                  method="post"
-                  enctype="multipart/form-data"
-                  id="regForm">
-
-                @Html.AntiForgeryToken()
-
-                <div asp-validation-summary="ModelOnly"
-                     class="alert alert-danger">
-                </div>
-
-                <!-- ================= PERSONAL DETAILS ================= -->
-
-                <div class="card shadow-sm border-0 mb-4">
-
-                    <div class="card-header bg-light text-dark">
-                        <h5 class="mb-0">
-                            Personal Details
-                        </h5>
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="row g-3">
-
-                            <!-- NAME -->
-
-                            <div class="col-md-6">
-
-                                <label asp-for="FarmerName"
-                                       class="form-label fw-semibold">
-                                    Full Name *
-                                </label>
-
-                                <input asp-for="FarmerName"
-                                       class="form-control"
-                                       placeholder="Enter full name" />
-
-                                <span asp-validation-for="FarmerName"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- PHONE -->
-
-                            <div class="col-md-6">
-
-                                <label asp-for="Phone"
-                                       class="form-label fw-semibold">
-                                    Mobile Number *
-                                </label>
-
-                                <input asp-for="Phone"
-                                       class="form-control"
-                                       maxlength="10"
-                                       placeholder="10 digit mobile number" />
-
-                                <span asp-validation-for="Phone"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- EMAIL -->
-
-                            <div class="col-md-6">
-
-                                <label asp-for="Email"
-                                       class="form-label fw-semibold">
-
-                                    Email Address *
-
-                                </label>
-
-                                <div class="input-group">
-
-                                    <input asp-for="Email" class="form-control" id="Email" placeholder="Enter email address" />
-                                    <button type="button" class="btn btn-outline-primary" id="sendOtpBtn">
-                                        Send OTP
-                                    </button>
-
-                                </div>
-
-                                <span asp-validation-for="Email" class="text-danger small"></span>
-
-                                <div class="mt-2">
-                                    <span id="emailVerifiedBadge" class="badge bg-success d-none">✓</span>
-                                </div>
-
-                            </div>
-
-                            <input type="hidden" asp-for="IsEmailVerified" id="IsEmailVerified" />
-
-                            <!-- GENDER -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="Gender"
-                                       class="form-label fw-semibold">
-                                    Gender
-                                </label>
-
-                                <select asp-for="Gender"
-                                        class="form-select">
-
-                                    <option value="">
-                                        Select Gender
-                                    </option>
-
-                                    <option value="Male">
-                                        Male
-                                    </option>
-
-                                    <option value="Female">
-                                        Female
-                                    </option>
-
-                                    <option value="Other">
-                                        Other
-                                    </option>
-
-                                </select>
-
-                                <span asp-validation-for="Gender"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- DOB -->
-
-                            <div class="col-md-4">
-                                <label asp-for="DateOfBirth" class="form-label fw-semibold">Date Of Birth</label>
-                                <input asp-for="DateOfBirth" type="date" class="form-control" onkeydown="return false" onpaste="return false"
-                                       max="@DateTime.Today.ToString("yyyy-MM-dd")"
-                                       min="@DateTime.Today.AddYears(-100).ToString("yyyy-MM-dd")" />
-                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
-                            </div>
-
-                            <!-- AADHAAR -->
-
-                            <div class="col-md-4">
-                                <label asp-for="AadhaarNumber" class="form-label fw-semibold">Aadhaar Number</label>
-                                <input asp-for="AadhaarNumber" class="form-control" maxlength="12" placeholder="12 digit Aadhaar number" />
-                                <span asp-validation-for="AadhaarNumber"class="text-danger small"></span>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- ================= LOCATION DETAILS ================= -->
-
-                <div class="card shadow-sm border-0 mb-4">
-
-                    <div class="card-header bg-light text-dark">
-                        <h5 class="mb-0">
-                            Location Details
-                        </h5>
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="row g-3">
-
-                            <!-- Select State -->
-
-                            <div class="col-md-6">
-
-                                <label class="form-label fw-semibold">State *</label>
-                                <select asp-for="StateId" id="StateId" class="form-select">
-                                    <option value="">Select State</option>
-                                    @foreach (var s in Model.States)
-                                    {
-                                        <option value="@s.StateId">@s.StateName</option>
-                                    }
-                                </select>
-                                <span asp-validation-for="StateId" class="text-danger small"></span>
-
-                            </div>
-
-                            <!-- Select City -->
-
-                            <div class="col-md-6">
-
-                                <label class="form-label fw-semibold">
-                                    City *
-                                </label>
-
-                                <select asp-for="CityId"
-                                        id="CityId"
-                                        class="form-select">
-
-                                    <option value="">
-                                        Select City
-                                    </option>
-
-                                </select>
-
-                                <span asp-validation-for="CityId"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- VILLAGE -->
-
-                            <div class="col-md-6">
-
-                                <label class="form-label fw-semibold">
-                                    Village *
-                                </label>
-
-                                <select asp-for="VillageId"
-                                        id="VillageId"
-                                        class="form-select">
-
-                                    <option value="">
-                                        Select Village
-                                    </option>
-
-                                </select>
-
-                                <span asp-validation-for="VillageId"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- CENTER -->
-
-                            <div class="col-md-6">
-
-                                <label class="form-label fw-semibold">
-                                    Collection Center *
-                                </label>
-
-                                <select asp-for="CenterId"
-                                        id="CenterId"
-                                        class="form-select">
-
-                                    <option value="">
-                                        Select Center
-                                    </option>
-
-                                </select>
-
-                                <span asp-validation-for="CenterId"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- ================= BANK DETAILS ================= -->
-
-                <div class="card shadow-sm border-0 mb-4">
-
-                    <div class="card-header bg-light text-dark">
-                        <h5 class="mb-0">
-                            Bank Details
-                            <small>(Optional)</small>
-                        </h5>
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="row g-3">
-
-                            <!-- BANK NAME -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="BankName"
-                                       class="form-label fw-semibold">
-
-                                    Bank Name
-
-                                </label>
-
-                                <input asp-for="BankName"
-                                       class="form-control"
-                                       placeholder="Enter bank name" />
-
-                                <span asp-validation-for="BankName"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- ACCOUNT NUMBER -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="AccountNumber"
-                                       class="form-label fw-semibold">
-
-                                    Account Number
-
-                                </label>
-
-                                <input asp-for="AccountNumber"
-                                       class="form-control"
-                                       placeholder="Enter account number" />
-
-                                <span asp-validation-for="AccountNumber"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- IFSC -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="IFSCCode"
-                                       class="form-label fw-semibold">
-
-                                    IFSC Code
-
-                                </label>
-
-                                <input asp-for="IFSCCode"
-                                       class="form-control text-uppercase"
-                                       placeholder="SBIN0001234" />
-
-                                <span asp-validation-for="IFSCCode"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- ================= DOCUMENTS ================= -->
-
-                <div class="card shadow-sm border-0 mb-4">
-
-                    <div class="card-header bg-light text-dark">
-                        <h5 class="mb-0">
-                            Upload Documents
-                        </h5>
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="row g-3">
-
-                            <!-- PROFILE PHOTO -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="ProfilePhotoFile"
-                                       class="form-label fw-semibold">
-
-                                    Profile Photo
-
-                                </label>
-
-                                <input asp-for="ProfilePhotoFile"
-                                       type="file"
-                                       class="form-control"
-                                       accept=".jpg,.jpeg" />
-                                <span asp-validation-for="ProfilePhotoFile"
-                                      class="text-danger small">
-                                </span>
-                            </div>
-
-                            <!-- AADHAAR -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="AadhaarFile"
-                                       class="form-label fw-semibold">
-
-                                    Aadhaar Document
-
-                                </label>
-
-                                <input asp-for="AadhaarFile"
-                                       type="file"
-                                       class="form-control"
-                                       accept=".jpg,.jpeg,.pdf" />
-                                <span asp-validation-for="AadhaarFile"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                            <!-- PASSBOOK -->
-
-                            <div class="col-md-4">
-
-                                <label asp-for="PassbookFile"
-                                       class="form-label fw-semibold">
-
-                                    Bank Passbook
-                                    <small>(Optional)</small>
-
-                                </label>
-
-                                <input asp-for="PassbookFile"
-                                       type="file"
-                                       class="form-control"
-                                       accept=".jpg,.jpeg,.pdf" />
-                                <span asp-validation-for="PassbookFile"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- ================= BUTTONS ================= -->
-
-                <div class="d-flex justify-content-between">
-
-                    <a asp-action="FarmerSelfRegistration"
-                       class="btn btn-outline-secondary px-4">
-
-                        Reset
-
-                    </a>
-
-                    <button type="submit"
-                            class="btn btn-success px-5">
-
-                        Submit Registration
-
-                    </button>
-
-                </div>
-
-            </form>
-
+            <button class="otp-close" onclick="closeOtp()" aria-label="Close verification dialog"><i class="ti ti-x"></i></button>
         </div>
-
-    </div>
-    <!-- OTP MODAL -->
-
-    <div class="modal fade"
-         id="otpModal"
-         tabindex="-1"
-         aria-hidden="true">
-
-        <div class="modal-dialog modal-dialog-centered">
-
-            <div class="modal-content border-0 shadow">
-
-                <div class="modal-header bg-success text-white">
-
-                    <h5 class="modal-title">
-                        Email Verification
-                    </h5>
-
-                    <button type="button"
-                            class="btn-close btn-close-white"
-                            data-bs-dismiss="modal">
-                    </button>
-
-                </div>
-
-                <div class="modal-body">
-
-                    <p class="text-muted mb-3">
-                        Enter the OTP sent to your email.
-                    </p>
-
-                    <div class="mb-3">
-
-                        <label class="form-label fw-semibold">
-                            OTP
-                        </label>
-
-                        <input type="text"
-                               id="otpInput"
-                               maxlength="6"
-                               class="form-control"
-                               placeholder="Enter 6 digit OTP" />
-
-                    </div>
-
-                    <div id="otpError"
-                         class="text-danger small d-none">
-
-                        Invalid OTP
-
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-
-                    <button type="button" class="btn btn-success" id="verifyOtpBtn">
-                        Verify OTP
-                    </button>
-                </div>
-
+        <div class="otp-body">
+            <div class="otp-desc">
+                A 6-digit code was sent to <strong id="otpEmailDisplay"></strong>. It is valid for 10 minutes.
             </div>
+            <div class="otp-label">Enter verification code</div>
+            <div class="otp-digits">
+                @* <input type="number" id="d0" aria-label="Digit 1" inputmode="numeric" autocomplete="one-time-code">
+                <input type="number" id="d1" aria-label="Digit 2" inputmode="numeric">
+                <input type="number" id="d2" aria-label="Digit 3" inputmode="numeric">
+                <input type="number" id="d3" aria-label="Digit 4" inputmode="numeric">
+                <input type="number" id="d4" aria-label="Digit 5" inputmode="numeric">
+                <input type="number" id="d5" aria-label="Digit 6" inputmode="numeric"> *@
 
+                <input type="text" id="d0" aria-label="Digit 1" inputmode="numeric" autocomplete="one-time-code" maxlength="1">
+                <input type="text" id="d1" aria-label="Digit 2" inputmode="numeric" maxlength="1">
+                <input type="text" id="d2" aria-label="Digit 3" inputmode="numeric" maxlength="1">
+                <input type="text" id="d3" aria-label="Digit 4" inputmode="numeric" maxlength="1">
+                <input type="text" id="d4" aria-label="Digit 5" inputmode="numeric" maxlength="1">
+                <input type="text" id="d5" aria-label="Digit 6" inputmode="numeric" maxlength="1">
+            </div>
+            <div class="otp-timer-row">
+                <div class="otp-timer" id="otpTimerEl">
+                    <i class="ti ti-clock" aria-hidden="true"></i>
+                    Expires in <span class="countdown" id="otpTimerCount">10:00</span>
+                </div>
+                <button class="resend-btn" id="resendBtn" disabled onclick="handleResend()">Resend OTP</button>
+            </div>
         </div>
-
+        <div class="otp-foot">
+            <button class="btn btn-outline btn-sm" onclick="closeOtp()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="verifyOtp()" id="verifyBtn">
+                <i class="ti ti-shield-check" aria-hidden="true"></i> Verify
+            </button>
+        </div>
     </div>
 </div>
 
+<div class="page-wrap">
+    <h2 class="sr-only">Farmer Self Registration Form</h2>
+
+    <div class="page-header">
+        <div class="brand-chip"><i class="ti ti-droplet-filled" aria-hidden="true"></i>Dairy Collection Services</div>
+        <h1>Farmer registration</h1>
+        <p>Complete all steps to register for dairy milk collection services</p>
+    </div>
+
+    <!-- SERVER ERROR BANNER (TempData) -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="server-error-banner">
+            <i class="ti ti-alert-circle" aria-hidden="true"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <!-- STEP BAR -->
+    <div class="step-bar" id="stepBarEl">
+        <div class="step-item active" id="si1">
+            <div class="step-dot" id="sd1"><span id="sn1">1</span></div>
+            <div class="step-label">Personal</div>
+        </div>
+        <div class="step-connector" id="sc1"></div>
+        <div class="step-item" id="si2">
+            <div class="step-dot" id="sd2"><span id="sn2">2</span></div>
+            <div class="step-label">Location</div>
+        </div>
+        <div class="step-connector" id="sc2"></div>
+        <div class="step-item" id="si3">
+            <div class="step-dot" id="sd3"><span id="sn3">3</span></div>
+            <div class="step-label">Bank</div>
+        </div>
+        <div class="step-connector" id="sc3"></div>
+        <div class="step-item" id="si4">
+            <div class="step-dot" id="sd4"><span id="sn4">4</span></div>
+            <div class="step-label">Documents</div>
+        </div>
+        <div class="step-connector" id="sc4"></div>
+        <div class="step-item" id="si5">
+            <div class="step-dot" id="sd5"><span id="sn5">5</span></div>
+            <div class="step-label">Review</div>
+        </div>
+    </div>
+
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill" style="width:20%"></div></div>
+
+    <form id="regForm" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IsEmailVerified" id="IsEmailVerified" value="false" />
+
+        <!-- ── STEP 1: PERSONAL ── -->
+        <div id="section1">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-icon"><i class="ti ti-user" aria-hidden="true"></i></div>
+                    <div class="card-head-text"><h2>Personal details</h2><p>Your basic identification information</p></div>
+                </div>
+                <div class="card-body">
+                    <div class="row cols-2" style="margin-bottom:1.1rem">
+                        <div class="field">
+                            <label asp-for="FarmerName">Full name <span class="req">*</span></label>
+                            <input asp-for="FarmerName" id="farmerName" placeholder="e.g. Ramesh Kumar Patel" autocomplete="name" />
+                            <div class="field-err" id="err-farmerName"><i class="ti ti-alert-circle"></i><span></span></div>
+                            <div class="field-hint">Alphabets only, at least 2 characters</div>
+                        </div>
+                        <div class="field">
+                            <label asp-for="Phone">Mobile number <span class="req">*</span></label>
+                            <input asp-for="Phone" id="phone" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" />
+                            <div class="field-err" id="err-phone"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                    <div class="row cols-2" style="margin-bottom:1.1rem">
+                        <div class="field">
+                            <label asp-for="Email">Email address <span class="req">*</span></label>
+                            <div class="input-group">
+                                <input asp-for="Email" id="email" placeholder="you@example.com" autocomplete="email" />
+                                <button type="button" class="btn-otp" id="sendOtpBtn" onclick="handleSendOtp()">
+                                    <i class="ti ti-mail-forward" aria-hidden="true"></i> Send OTP
+                                </button>
+                            </div>
+                            <div class="field-err" id="err-email"><i class="ti ti-alert-circle"></i><span></span></div>
+                            <div style="margin-top:5px">
+                                <span class="verified-badge" id="verifiedBadge"><i class="ti ti-circle-check"></i>Email verified</span>
+                            </div>
+                        </div>
+                        <!-- GENDER — now required -->
+                        <div class="field">
+                            <label asp-for="Gender">Gender <span class="req">*</span></label>
+                            <select asp-for="Gender" id="gender">
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="field-err" id="err-gender"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                    <div class="row cols-2">
+                        <div class="field">
+                            <label asp-for="DateOfBirth">Date of birth <span class="req">*</span></label>
+                            <input asp-for="DateOfBirth" type="date" id="dob" onkeydown="return false" onpaste="return false"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   min="@DateTime.Today.AddYears(-100).ToString("yyyy-MM-dd")" />
+                            <div class="field-err" id="err-dob"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <!-- AADHAAR — now required -->
+                        <div class="field">
+                            <label asp-for="AadhaarNumber">Aadhaar number <span class="req">*</span></label>
+                            <input asp-for="AadhaarNumber" id="aadhaar" placeholder="12-digit Aadhaar number" maxlength="12" inputmode="numeric" />
+                            <div class="field-err" id="err-aadhaar"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 2: LOCATION ── -->
+        <div id="section2" style="display:none">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></div>
+                    <div class="card-head-text"><h2>Location details</h2><p>Select your state, city, village and collection center</p></div>
+                </div>
+                <div class="card-body">
+                    <div class="row cols-2" style="margin-bottom:1.1rem">
+                        <div class="field">
+                            <label>State <span class="req">*</span></label>
+                            <select asp-for="StateId" id="StateId">
+                                <option value="">Select state</option>
+                                @foreach (var s in Model.States)
+                                {
+                                    <option value="@s.StateId">@s.StateName</option>
+                                }
+                            </select>
+                            <div class="field-err" id="err-state"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <div class="field">
+                            <label>City <span class="req">*</span></label>
+                            <select asp-for="CityId" id="CityId" disabled>
+                                <option value="">Select city</option>
+                            </select>
+                            <div class="field-err" id="err-city"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                    <div class="row cols-2">
+                        <div class="field">
+                            <label>Village <span class="req">*</span></label>
+                            <select asp-for="VillageId" id="VillageId" disabled>
+                                <option value="">Select village</option>
+                            </select>
+                            <div class="field-err" id="err-village"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <div class="field">
+                            <label>Collection center <span class="req">*</span></label>
+                            <select asp-for="CenterId" id="CenterId" disabled>
+                                <option value="">Select center</option>
+                            </select>
+                            <div class="field-err" id="err-center"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 3: BANK — now fully required ── -->
+        <div id="section3" style="display:none">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-icon"><i class="ti ti-building-bank" aria-hidden="true"></i></div>
+                    <div class="card-head-text">
+                        <h2>Bank details</h2>
+                        <p>All bank fields are required for payment processing</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row cols-3">
+                        <div class="field">
+                            <label asp-for="BankName">Bank name <span class="req">*</span></label>
+                            <input asp-for="BankName" id="bankName" placeholder="e.g. State Bank of India" />
+                            <div class="field-err" id="err-bankName"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <div class="field">
+                            <label asp-for="AccountNumber">Account number <span class="req">*</span></label>
+                            <input asp-for="AccountNumber" id="accountNo" placeholder="Bank account number" inputmode="numeric" />
+                            <div class="field-err" id="err-accountNo"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <div class="field">
+                            <label asp-for="IFSCCode">IFSC code <span class="req">*</span></label>
+                            <input asp-for="IFSCCode" id="ifsc" placeholder="e.g. SBIN0001234" maxlength="11" style="text-transform:uppercase" />
+                            <div class="field-err" id="err-ifsc"><i class="ti ti-alert-circle"></i><span></span></div>
+                            <div class="field-hint">Format: 4 letters + 0 + 6 alphanumeric (e.g. SBIN0001234)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 4: DOCUMENTS — passbook now required ── -->
+        <div id="section4" style="display:none">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-icon"><i class="ti ti-paperclip" aria-hidden="true"></i></div>
+                    <div class="card-head-text"><h2>Upload documents</h2><p>Profile photo (.jpg only) · Aadhaar &amp; passbook (.jpg or .pdf)</p></div>
+                </div>
+                <div class="card-body">
+                    <div class="row cols-3">
+                        <div class="field">
+                            <label asp-for="ProfilePhotoFile">Profile photo <span class="req">*</span></label>
+                            <div class="file-wrap" id="fw-profile">
+                                <input asp-for="ProfilePhotoFile" type="file" id="profilePhoto" accept=".jpg,.jpeg" onchange="onFile(this,'fw-profile','fn-profile')" />
+                                <div class="fi-icon"><i class="ti ti-photo" aria-hidden="true"></i></div>
+                                <div class="fi-label">Click or drag to upload</div>
+                                <div class="fi-sub">JPG / JPEG only</div>
+                                <div class="fi-name" id="fn-profile"></div>
+                            </div>
+                            <div class="field-err" id="err-profile"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <div class="field">
+                            <label asp-for="AadhaarFile">Aadhaar document <span class="req">*</span></label>
+                            <div class="file-wrap" id="fw-aadhaarDoc">
+                                <input asp-for="AadhaarFile" type="file" id="aadhaarDoc" accept=".jpg,.jpeg,.pdf" onchange="onFile(this,'fw-aadhaarDoc','fn-aadhaarDoc')" />
+                                <div class="fi-icon"><i class="ti ti-id" aria-hidden="true"></i></div>
+                                <div class="fi-label">Click or drag to upload</div>
+                                <div class="fi-sub">JPG / JPEG / PDF</div>
+                                <div class="fi-name" id="fn-aadhaarDoc"></div>
+                            </div>
+                            <div class="field-err" id="err-aadhaarDoc"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                        <!-- PASSBOOK — now required -->
+                        <div class="field">
+                            <label asp-for="PassbookFile">Bank passbook <span class="req">*</span></label>
+                            <div class="file-wrap" id="fw-passbook">
+                                <input asp-for="PassbookFile" type="file" id="passbook" accept=".jpg,.jpeg,.pdf" onchange="onFile(this,'fw-passbook','fn-passbook')" />
+                                <div class="fi-icon"><i class="ti ti-notebook" aria-hidden="true"></i></div>
+                                <div class="fi-label">Click or drag to upload</div>
+                                <div class="fi-sub">JPG / JPEG / PDF</div>
+                                <div class="fi-name" id="fn-passbook"></div>
+                            </div>
+                            <div class="field-err" id="err-passbook"><i class="ti ti-alert-circle"></i><span></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 5: REVIEW ── -->
+        <div id="section5" style="display:none">
+            <div style="background:var(--white);border:1px solid var(--gray-border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+
+                <!-- Header -->
+                <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-mid) 100%)">
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">
+                        <i class="ti ti-clipboard-check"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:15px;font-weight:700;color:#fff">Review your details</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px">Please confirm everything is correct before submitting</div>
+                    </div>
+                </div>
+
+                <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem">
+
+                    <!-- PERSONAL SECTION -->
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+                            <div style="width:28px;height:28px;border-radius:7px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:14px;flex-shrink:0">
+                                <i class="ti ti-user"></i>
+                            </div>
+                            <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.8px">Personal</span>
+                            <div style="flex:1;height:1px;background:var(--navy-border)"></div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--gray-border);border-radius:8px;overflow:hidden">
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Full name</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-name">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mobile number</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-phone">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Email address</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-email">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Gender</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-gender">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Date of birth</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-dob">—</div>
+                            </div>
+                            <div style="padding:10px 14px">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Aadhaar number</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-aadhaar">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOCATION SECTION -->
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+                            <div style="width:28px;height:28px;border-radius:7px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:14px;flex-shrink:0">
+                                <i class="ti ti-map-pin"></i>
+                            </div>
+                            <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.8px">Location</span>
+                            <div style="flex:1;height:1px;background:var(--navy-border)"></div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--gray-border);border-radius:8px;overflow:hidden">
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border);border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">State</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-state">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-bottom:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">City</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-city">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Village</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-village">—</div>
+                            </div>
+                            <div style="padding:10px 14px">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Collection center</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-center">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BANK SECTION -->
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+                            <div style="width:28px;height:28px;border-radius:7px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:14px;flex-shrink:0">
+                                <i class="ti ti-building-bank"></i>
+                            </div>
+                            <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.8px">Bank</span>
+                            <div style="flex:1;height:1px;background:var(--navy-border)"></div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--gray-border);border-radius:8px;overflow:hidden">
+                            <div style="padding:10px 14px;border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Bank name</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-bank">—</div>
+                            </div>
+                            <div style="padding:10px 14px;border-right:1px solid var(--gray-border)">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Account number</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-acc">—</div>
+                            </div>
+                            <div style="padding:10px 14px">
+                                <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">IFSC code</div>
+                                <div style="font-size:13.5px;color:#111827;font-weight:500" id="rv-ifsc">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DOCUMENTS SECTION -->
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+                            <div style="width:28px;height:28px;border-radius:7px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:14px;flex-shrink:0">
+                                <i class="ti ti-paperclip"></i>
+                            </div>
+                            <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.8px">Documents</span>
+                            <div style="flex:1;height:1px;background:var(--navy-border)"></div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:8px">
+
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:8px">
+                                <div style="width:32px;height:32px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0">
+                                    <i class="ti ti-photo"></i>
+                                </div>
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px">Profile photo</div>
+                                    <div style="font-size:12.5px;color:var(--navy-dark);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rv-photo">—</div>
+                                </div>
+                                <button type="button" onclick="previewFile('profilePhoto')" style="height:30px;padding:0 12px;border-radius:6px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit">
+                                    <i class="ti ti-eye" style="font-size:13px"></i> View
+                                </button>
+                            </div>
+
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:8px">
+                                <div style="width:32px;height:32px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0">
+                                    <i class="ti ti-id"></i>
+                                </div>
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px">Aadhaar document</div>
+                                    <div style="font-size:12.5px;color:var(--navy-dark);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rv-aadhaarFile">—</div>
+                                </div>
+                                <button type="button" onclick="previewFile('aadhaarDoc')" style="height:30px;padding:0 12px;border-radius:6px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit">
+                                    <i class="ti ti-eye" style="font-size:13px"></i> View
+                                </button>
+                            </div>
+
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:8px">
+                                <div style="width:32px;height:32px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0">
+                                    <i class="ti ti-notebook"></i>
+                                </div>
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-size:10px;font-weight:600;color:var(--gray-hint);text-transform:uppercase;letter-spacing:0.5px">Bank passbook</div>
+                                    <div style="font-size:12.5px;color:var(--navy-dark);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="rv-passbook">—</div>
+                                </div>
+                                <button type="button" onclick="previewFile('passbook')" style="height:30px;padding:0 12px;border-radius:6px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit">
+                                    <i class="ti ti-eye" style="font-size:13px"></i> View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONFIRMATION NOTE -->
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px">
+                        <i class="ti ti-info-circle" style="color:#D97706;font-size:16px;flex-shrink:0;margin-top:1px"></i>
+                        <p style="font-size:12px;color:#92400E;line-height:1.6;margin:0">Please review all details carefully. Once submitted, changes can only be made by contacting support.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="form-footer">
+            <button type="button" class="btn btn-outline" id="backBtn" onclick="goBack()" style="display:none">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i> Back
+            </button>
+            <div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:12px;color:var(--gray-hint)" id="stepCounter">Step 1 of 5</span>
+                <button type="button" class="btn btn-primary" id="nextBtn" onclick="goNext()">
+                    Continue <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitBtn" style="display:none">
+                    <i class="ti ti-check" aria-hidden="true"></i> Submit registration
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- SUCCESS -->
+    <div class="success-screen" id="successScreen">
+        <div class="card" style="padding:0">
+            <div class="card-body" style="padding:3rem 2rem;text-align:center">
+                <div class="success-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+                <h2 style="font-size:22px;font-weight:700;color:var(--navy-dark);margin-bottom:8px">Registration submitted!</h2>
+                <p style="font-size:14px;color:var(--gray-text);line-height:1.7;max-width:420px;margin:0 auto">
+                    Your farmer registration has been received. You will be contacted within 2 working days at your registered email and mobile number.
+                </p>
+                <div class="ref-chip" id="refChip"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/email-regex.js"></script>
+
 @section Scripts {
-
     <partial name="_ValidationScriptsPartial" />
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <script>
+        // =============================================
+        // STATE
+        // =============================================
+        var currentStep    = 1;
+        var totalSteps     = 5;
+        var isEmailVerified = false;
+        var otpTimerInterval = null;
+        var otpExpiry   = null;
+        var resendUnlock = null;
 
-        // ================= RESET DROPDOWN =================
+        // =============================================
+        // POSTBACK RESTORE
+        // =============================================
+        var _restoredCityId    = '@(Model.CityId?.ToString() ?? "")';
+        var _restoredVillageId = '@(Model.VillageId?.ToString() ?? "")';
+        var _restoredCenterId  = '@(Model.CenterId?.ToString() ?? "")';
 
-        function resetDropdown(selector, placeholder) {
-
-            $(selector).html(
-                '<option value="">' + placeholder + '</option>'
-            );
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(msg, type, duration) {
+            type = type || 'success'; duration = duration || 4500;
+            var tc = document.getElementById('toastContainer');
+            var t  = document.createElement('div');
+            t.className = 'toast ' + type;
+            var icons  = { success:'ti-circle-check', error:'ti-alert-circle', info:'ti-info-circle', warning:'ti-alert-triangle' };
+            var colors = { success:'var(--green-ok)',  error:'var(--red)',       info:'var(--accent)',   warning:'#D97706' };
+            t.innerHTML = '<i class="ti ' + icons[type] + '" style="color:' + colors[type] + '" aria-hidden="true"></i>'
+                + '<div class="toast-msg">' + msg + '</div>'
+                + '<button class="toast-close" onclick="this.parentNode.remove()" aria-label="Dismiss"><i class="ti ti-x"></i></button>';
+            tc.appendChild(t);
+            setTimeout(function () {
+                t.style.animation = 'toastOut .22s ease forwards';
+                setTimeout(function () { t.remove(); }, 220);
+            }, duration);
         }
 
-                 // ================= SEND OTP =================
-
-        $('#sendOtpBtn').click(function () {
-
-            let email = $('#Email').val();
-
-            if (!email) {
-
-                alert("Please enter email");
-                return;
+        // =============================================
+        // ERROR HELPERS
+        // =============================================
+        function setErr(id, msg) {
+            var errEl = document.getElementById('err-' + id);
+            var inp   = document.getElementById(id);
+            if (errEl) {
+                if (msg) { errEl.classList.add('show'); errEl.querySelector('span').textContent = msg; }
+                else errEl.classList.remove('show');
             }
+            if (inp) { inp.classList.toggle('err', !!msg); if (!msg) inp.classList.remove('err'); }
+        }
+        function clrErr(id) { setErr(id, ''); }
+        function setFileErr(errId, wrapId, msg) {
+            var e = document.getElementById('err-' + errId);
+            var w = document.getElementById(wrapId);
+            if (e) { if (msg) { e.classList.add('show'); e.querySelector('span').textContent = msg; } else e.classList.remove('show'); }
+            if (w) w.classList.toggle('file-err', !!msg);
+        }
 
-            $(this)
-                .prop('disabled', true)
-                .text('Sending...');
+        // =============================================
+        // LIVE INPUT VALIDATION
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function () {
 
-            $.post('/Farmer/SendEmailOTP',
-            {
-                email: email
-            },
-            function (res) {
-
-                $('#sendOtpBtn')
-                    .prop('disabled', false)
-                    .text('Resend OTP');
-
-                if (res.success) {
-
-                    $('#otpInput').val('');
-
-                    $('#otpError').addClass('d-none');
-
-                    let otpModal = new bootstrap.Modal(
-                        document.getElementById('otpModal')
-                    );
-
-                    otpModal.show();
-
-                }
-                else {
-
-                    alert(res.message);
-
-                }
-
+            // Full name — alphabets + min 2 chars
+            document.getElementById('farmerName').addEventListener('input', function () {
+                // Strip non-alpha characters (allow spaces)
+                this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
+                if (this.value.trim().length >= 2) clrErr('farmerName');
             });
 
-        });
-
-
-        // ================= VERIFY OTP =================
-
-        $('#verifyOtpBtn').click(function () {
-
-            let email = $('#Email').val();
-
-            let otp = $('#otpInput').val();
-
-            if (!otp) {
-
-                $('#otpError')
-                    .removeClass('d-none')
-                    .text('Please enter OTP');
-
-                return;
-            }
-
-            $.post('/Farmer/VerifyEmailOTP',
-            {
-                email: email,
-                otp: otp
-            },
-            function (res) {
-
-                if (res.success) {
-
-                    $('#IsEmailVerified').val(true);
-
-                    $('#emailVerifiedBadge')
-                        .removeClass('d-none');
-
-                    $('#Email').prop('readonly', true);
-
-                    $('#sendOtpBtn')
-                        .removeClass('btn-outline-primary')
-                        .addClass('btn-success')
-                        .html('Verified')
-                        .prop('disabled', true);
-
-                    bootstrap.Modal
-                        .getInstance(document.getElementById('otpModal'))
-                        .hide();
-
-                }
-                else {
-
-                    $('#otpError')
-                        .removeClass('d-none')
-                        .text('Invalid OTP');
-
-                }
-
+            // Phone — digits only
+            document.getElementById('phone').addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 10);
+                if (/^[6-9]\d{9}$/.test(this.value)) clrErr('phone');
             });
 
+            // Email — re-lock verification when changed
+            document.getElementById('email').addEventListener('input', function () {
+                clrErr('email');
+                if (isEmailVerified) {
+                    isEmailVerified = false;
+                    document.getElementById('IsEmailVerified').value = 'false';
+                    document.getElementById('verifiedBadge').classList.remove('show');
+                    document.getElementById('email').classList.remove('ok');
+                    var btn = document.getElementById('sendOtpBtn');
+                    btn.className = 'btn-otp';
+                    btn.disabled  = false;
+                    btn.innerHTML = '<i class="ti ti-mail-forward" aria-hidden="true"></i> Send OTP';
+                    btn.onclick   = handleSendOtp;
+                }
+            });
+
+            // Gender
+            document.getElementById('gender').addEventListener('change', function () {
+                if (this.value) clrErr('gender');
+            });
+
+            // DOB
+            document.getElementById('dob').addEventListener('change', function () {
+                if (this.value) {
+                    var age = (new Date() - new Date(this.value)) / (365.25 * 24 * 3600 * 1000);
+                    if (age >= 18) clrErr('dob');
+                }
+            });
+
+            // Aadhaar — digits only
+            document.getElementById('aadhaar').addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 12);
+                if (this.value.length === 12) clrErr('aadhaar');
+            });
+
+            // Bank fields
+            document.getElementById('bankName').addEventListener('input', function () {
+                this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
+                if (this.value.trim()) clrErr('bankName');
+            });
+            document.getElementById('ifsc').addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+                if (/^[A-Z]{4}0[A-Z0-9]{6}$/.test(this.value)) clrErr('ifsc');
+            });
+            document.getElementById('accountNo').addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '');
+                if (this.value.length >= 9 && this.value.length <= 18) clrErr('accountNo');
+            });
+
+            // State / City / Village / Center
+            var ddMap = { StateId:'state', CityId:'city', VillageId:'village', CenterId:'center' };
+            Object.keys(ddMap).forEach(function (id) {
+                document.getElementById(id).addEventListener('change', function () {
+                    if (this.value) clrErr(ddMap[id]);
+                });
+            });
+
+            // Restore email verified state on postback
+            if ('@Model.IsEmailVerified' === 'True') {
+                isEmailVerified = true;
+                document.getElementById('verifiedBadge').classList.add('show');
+                document.getElementById('email').classList.add('ok');
+                document.getElementById('email').readOnly = true;
+                var b = document.getElementById('sendOtpBtn');
+                b.className = 'btn-otp verified-state';
+                b.innerHTML = '<i class="ti ti-circle-check"></i> Verified';
+            }
+
+            // Restore cascading dropdowns on postback
+            var stateId = document.getElementById('StateId').value;
+            if (stateId && _restoredCityId) {
+                loadCities(stateId, _restoredCityId, function () {
+                    if (_restoredVillageId) {
+                        loadVillages(_restoredCityId, _restoredVillageId, function () {
+                            if (_restoredCenterId) loadCenters(_restoredVillageId, _restoredCenterId);
+                        });
+                    }
+                });
+            }
+
+            updateUI();
         });
 
-        // ================= STATE -> CITY =================
-
-        $('#StateId').on('change', function () {
-
-            var stateId = $(this).val();
-
-            resetDropdown('#CityId', 'Select City');
-            resetDropdown('#VillageId', 'Select Village');
-            resetDropdown('#CenterId', 'Select Center');
-
+        // =============================================
+        // CASCADING DROPDOWNS
+        // =============================================
+        function resetDD(id, label) {
+            var el = document.getElementById(id);
+            el.innerHTML = '<option value="">' + label + '</option>';
+            el.disabled = true;
+        }
+        function loadCities(stateId, selectedValue, callback) {
             if (!stateId) return;
-
-            $.get('/Farmer/GetCities',
-            {
-                stateId: stateId
-            },
-            function (data) {
-
-                var dd = $('#CityId').empty();
-
-                dd.append('<option value="">Select City</option>');
-
-                $.each(data, function (i, c) {
-
-                    dd.append(
-                        '<option value="' + c.cityId + '">' +
-                        c.cityName +
-                        '</option>'
-                    );
-
+            fetch('/Farmer/GetCities?stateId=' + stateId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var dd = document.getElementById('CityId');
+                    dd.innerHTML = '<option value="">Select city</option>';
+                    data.forEach(function (c) {
+                        var o = document.createElement('option');
+                        o.value = c.cityId; o.textContent = c.cityName;
+                        if (String(c.cityId) === String(selectedValue)) o.selected = true;
+                        dd.appendChild(o);
+                    });
+                    dd.disabled = false;
+                    if (typeof callback === 'function') callback();
                 });
-
-            });
-
-        });
-
-        // ================= CITY -> VILLAGE =================
-
-        $('#CityId').on('change', function () {
-
-            var cityId = $(this).val();
-
-            resetDropdown('#VillageId', 'Select Village');
-            resetDropdown('#CenterId', 'Select Center');
-
+        }
+        function loadVillages(cityId, selectedValue, callback) {
             if (!cityId) return;
-
-            $.get('/Farmer/GetVillages',
-            {
-                cityId: cityId
-            },
-            function (data) {
-
-                var dd = $('#VillageId').empty();
-
-                dd.append('<option value="">Select Village</option>');
-
-                $.each(data, function (i, v) {
-
-                    dd.append(
-                        '<option value="' + v.villageId + '">' +
-                        v.villageName +
-                        '</option>'
-                    );
-
+            fetch('/Farmer/GetVillages?cityId=' + cityId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var dd = document.getElementById('VillageId');
+                    dd.innerHTML = '<option value="">Select village</option>';
+                    data.forEach(function (v) {
+                        var o = document.createElement('option');
+                        o.value = v.villageId; o.textContent = v.villageName;
+                        if (String(v.villageId) === String(selectedValue)) o.selected = true;
+                        dd.appendChild(o);
+                    });
+                    dd.disabled = false;
+                    if (typeof callback === 'function') callback();
                 });
-
-            });
-
-        });
-
-        // ================= VILLAGE -> CENTER =================
-
-        $('#VillageId').on('change', function () {
-
-            var villageId = $(this).val();
-
-            resetDropdown('#CenterId', 'Select Center');
-
+        }
+        function loadCenters(villageId, selectedValue, callback) {
             if (!villageId) return;
-
-            $.get('/Farmer/GetCenters',
-            {
-                villageId: villageId
-            },
-            function (data) {
-
-                var dd = $('#CenterId').empty();
-
-                if (data.length === 0) {
-
-                    dd.append(
-                        '<option value="">No centers available</option>'
-                    );
-
-                    return;
-                }
-
-                dd.append(
-                    '<option value="">Select Center</option>'
-                );
-
-                $.each(data, function (i, c) {
-
-                    var label =
-                        c.centerName +
-                        (c.location
-                            ? ' - ' + c.location
-                            : '');
-
-                    dd.append(
-                        '<option value="' + c.centerId + '">' +
-                        label +
-                        '</option>'
-                    );
-
+            fetch('/Farmer/GetCenters?villageId=' + villageId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var dd = document.getElementById('CenterId');
+                    if (data.length === 0) { dd.innerHTML = '<option value="">No centers available</option>'; dd.disabled = true; return; }
+                    dd.innerHTML = '<option value="">Select center</option>';
+                    data.forEach(function (c) {
+                        var o = document.createElement('option');
+                        o.value = c.centerId;
+                        o.textContent = c.centerName + (c.location ? ' – ' + c.location : '');
+                        if (String(c.centerId) === String(selectedValue)) o.selected = true;
+                        dd.appendChild(o);
+                    });
+                    dd.disabled = false;
+                    if (typeof callback === 'function') callback();
                 });
-
-            });
-
+        }
+        document.getElementById('StateId').addEventListener('change', function () {
+            clrErr('state'); resetDD('CityId','Select city'); resetDD('VillageId','Select village'); resetDD('CenterId','Select center');
+            loadCities(this.value, null);
         });
+        document.getElementById('CityId').addEventListener('change', function () {
+            clrErr('city'); resetDD('VillageId','Select village'); resetDD('CenterId','Select center');
+            loadVillages(this.value, null);
+        });
+        document.getElementById('VillageId').addEventListener('change', function () {
+            clrErr('village'); resetDD('CenterId','Select center');
+            loadCenters(this.value, null);
+        });
+        document.getElementById('CenterId').addEventListener('change', function () { clrErr('center'); });
 
-        // ================= FINAL SUBMIT VALIDATION =================
+        // =============================================
+        // FILE UPLOAD
+        // =============================================
+        function onFile(input, wrapId, nameId) {
+            var file   = input.files[0];
+            var wrap   = document.getElementById(wrapId);
+            var nameEl = document.getElementById(nameId);
+            if (file) {
+                nameEl.textContent = file.name;
+                nameEl.style.display = 'block';
+                wrap.classList.add('has-file');
+                wrap.classList.remove('file-err');
+                var errMap = { 'fw-profile':'profile', 'fw-aadhaarDoc':'aadhaarDoc', 'fw-passbook':'passbook' };
+                if (errMap[wrapId]) setFileErr(errMap[wrapId], wrapId, '');
+            }
+        }
 
-        $('#regForm').on('submit', function (e) {
+        // =============================================
+        // OTP SEND
+        // =============================================
+        function handleSendOtp() {
+            var email = document.getElementById('email').value.trim();
+            if (!email) { setErr('email', 'Please enter your email address first'); return; }
+                   if (!emailRegex.test(email)) { setErr('email', 'Enter a valid email address'); return; }
+            clrErr('email');
+            var btn = document.getElementById('sendOtpBtn');
+            btn.disabled  = true;
+            btn.className = 'btn-otp sending';
+            btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Sending...';
 
-            if ($('#IsEmailVerified').val() !== "true") {
+            fetch('/Farmer/SendEmailOTP', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: 'email=' + encodeURIComponent(email)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                btn.disabled  = false;
+                if (res.success) {
+                    btn.className = 'btn-otp';
+                    btn.innerHTML = '<i class="ti ti-mail-forward"></i> Resend OTP';
+                    btn.onclick   = handleSendOtp;
+                    document.getElementById('otpEmailDisplay').textContent = email;
+                    openOtp();
+                    startOtpTimers();
+                    showToast('OTP sent to ' + email + '. Check your inbox.', 'info');
+                } else {
+                    // Restore button, show vague server message
+                    btn.className = 'btn-otp';
+                    btn.innerHTML = '<i class="ti ti-mail-forward"></i> Send OTP';
+                    btn.onclick   = handleSendOtp;
+                    // Show the vague message from server — never tells user if email exists
+                    setErr('email', res.message || 'Unable to send OTP. Please try again.');
+                    showToast(res.message || 'Unable to send OTP. Please try again.', 'error');
+                }
+            })
+            .catch(function () {
+                btn.disabled  = false;
+                btn.className = 'btn-otp';
+                btn.innerHTML = '<i class="ti ti-mail-forward"></i> Send OTP';
+                btn.onclick   = handleSendOtp;
+                showToast('Network error. Please try again.', 'error');
+            });
+        }
 
-                e.preventDefault();
+        // =============================================
+        // OTP MODAL
+        // =============================================
+        function openOtp() {
+            document.getElementById('otpOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            clearOtpDigits();
+            setTimeout(function () { document.getElementById('d0').focus(); }, 100);
+        }
+        function closeOtp() {
+            document.getElementById('otpOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+            clearTimers();
+        }
+        document.getElementById('otpOverlay').addEventListener('click', function (e) { if (e.target === this) closeOtp(); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && document.getElementById('otpOverlay').classList.contains('open')) closeOtp();
+        });
+        // function clearOtpDigits() {
+        //     for (var i = 0; i < 6; i++) {
+        //         var d = document.getElementById('d' + i);
+        //         d.value = ''; d.classList.remove('filled','error-flash');
+        //     }
+        // }
+        function clearOtpDigits() {
+            for (var i = 0; i < 6; i++) {
+                var d = document.getElementById('d' + i);
+                d.value = ''; d.classList.remove('filled', 'error-flash');
+            }
+            // Hide error message when digits are cleared
+            var errorMsg = document.getElementById('otp-error-msg');
+            if (errorMsg) errorMsg.style.display = 'none';
+        }
 
-                return false;
+        // =============================================
+        // OTP TIMERS
+        // =============================================
+        function startOtpTimers() {
+            clearTimers();
+            otpExpiry    = Date.now() + 10 * 60 * 1000;
+            resendUnlock = Date.now() + 30 * 1000;
+            document.getElementById('resendBtn').disabled = true;
+            otpTimerInterval = setInterval(function () {
+                var now     = Date.now();
+                var expLeft = Math.max(0, Math.ceil((otpExpiry   - now) / 1000));
+                var resLeft = Math.max(0, Math.ceil((resendUnlock - now) / 1000));
+                var timerEl = document.getElementById('otpTimerEl');
+                var countEl = document.getElementById('otpTimerCount');
+                if (expLeft > 0) {
+                    var m = Math.floor(expLeft / 60), s = expLeft % 60;
+                    countEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                    timerEl.classList.remove('expired');
+                } else {
+                    countEl.textContent = 'Expired'; timerEl.classList.add('expired');
+                }
+                var rb = document.getElementById('resendBtn');
+                if (resLeft > 0) { rb.disabled = true; rb.textContent = 'Resend in ' + resLeft + 's'; }
+                else             { rb.disabled = false; rb.textContent = 'Resend OTP'; }
+                if (expLeft === 0) clearTimers();
+            }, 500);
+        }
+        function clearTimers() {
+            if (otpTimerInterval) clearInterval(otpTimerInterval);
+            otpTimerInterval = null;
+        }
+        function handleResend() {
+            var email = document.getElementById('email').value.trim();
+            clearOtpDigits();
+            fetch('/Farmer/SendEmailOTP', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/x-www-form-urlencoded', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                body: 'email=' + encodeURIComponent(email)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.success) { startOtpTimers(); showToast('New OTP sent to ' + email, 'info'); }
+                else showToast(res.message || 'Could not resend OTP.', 'error');
+            })
+            .catch(function () { showToast('Network error. Try again.', 'error'); });
+        }
+
+        // =============================================
+        // OTP DIGIT INPUTS
+        // =============================================
+        for (var _i = 0; _i < 6; _i++) {
+            (function (idx) {
+                var d = document.getElementById('d' + idx);
+                // d.addEventListener('input', function () {
+                //     this.value = this.value.replace(/\D/g, '').slice(-1);
+                //     this.classList.toggle('filled', this.value.length === 1);
+                //     if (this.value && idx < 5) document.getElementById('d' + (idx + 1)).focus();
+                //     if (idx === 5 && this.value) {
+                //         var code = '';
+                //         for (var j = 0; j < 6; j++) code += document.getElementById('d' + j).value;
+                //         if (code.length === 6) verifyOtp();
+                //     }
+                // });
+
+                d.addEventListener('input', function () {
+                    // Keep only the last digit typed
+                    this.value = this.value.replace(/\D/g, '').slice(-1);
+                    this.classList.toggle('filled', this.value.length === 1);
+
+                    // Move focus to next box if a digit was entered
+                    if (this.value.length === 1 && idx < 5) {
+                        document.getElementById('d' + (idx + 1)).focus();
+                    }
+                });
+                d.addEventListener('keydown', function (e) {
+                    if (e.key === 'Backspace'  && !this.value && idx > 0) document.getElementById('d' + (idx - 1)).focus();
+                    if (e.key === 'ArrowLeft'  && idx > 0)                 document.getElementById('d' + (idx - 1)).focus();
+                    if (e.key === 'ArrowRight' && idx < 5)                 document.getElementById('d' + (idx + 1)).focus();
+                });
+                // d.addEventListener('paste', function (e) {
+                //     e.preventDefault();
+                //     var text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                //     for (var j = 0; j < 6; j++) { var el = document.getElementById('d' + j); el.value = text[j] || ''; el.classList.toggle('filled', !!text[j]); }
+                //     if (text.length === 6) verifyOtp();
+                //     else document.getElementById('d' + Math.min(text.length, 5)).focus();
+                // });
+            })(_i);
+        }
+
+        function verifyOtp() {
+            var code = '';
+            for (var j = 0; j < 6; j++) code += document.getElementById('d' + j).value;
+            if (code.length < 6) { showToast('Please enter all 6 digits', 'warning'); return; }
+            var email = document.getElementById('email').value.trim();
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/Farmer/VerifyEmailOTP', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                body: 'email=' + encodeURIComponent(email) + '&otp=' + encodeURIComponent(code)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.success) {
+                    // hide the error message if it was showing
+                    var errorMsg = document.getElementById('otp-error-msg');
+                    if (errorMsg) errorMsg.style.display = 'none';
+                    isEmailVerified = true;
+                    document.getElementById('IsEmailVerified').value = 'true';
+                    document.getElementById('verifiedBadge').classList.add('show');
+                    document.getElementById('email').classList.add('ok');
+                    document.getElementById('email').readOnly = true;
+                    var btn = document.getElementById('sendOtpBtn');
+                    btn.className = 'btn-otp verified-state';
+                    btn.innerHTML = '<i class="ti ti-circle-check"></i> Verified';
+                    clrErr('email');
+                    closeOtp();
+                    showToast('Email address verified successfully!', 'success');
+                } else {
+                    // Flash the boxes red
+                    for (var j = 0; j < 6; j++) {
+                        (function (el) {
+                            el.classList.add('error-flash');
+                            setTimeout(function () { el.classList.remove('error-flash'); }, 650);
+                        })(document.getElementById('d' + j));
+                    }
+
+                    // Clear the digits so user can retype
+                    setTimeout(function () {
+                        for (var j = 0; j < 6; j++) {
+                            var el = document.getElementById('d' + j);
+                            el.value = '';
+                            el.classList.remove('filled');
+                        }
+                        document.getElementById('d0').focus();
+                    }, 650);
+
+                    // Show persistent error message below the digit boxes
+                    var errorMsg = document.getElementById('otp-error-msg');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.id = 'otp-error-msg';
+                        errorMsg.style.cssText = 'margin-top:10px;font-size:12.5px;color:var(--red);font-weight:600;display:flex;align-items:center;gap:5px;justify-content:center';
+                        errorMsg.innerHTML = '<i class="ti ti-alert-circle" style="font-size:14px"></i><span>Incorrect OTP. Please try again.</span>';
+                        document.querySelector('.otp-digits').insertAdjacentElement('afterend', errorMsg);
+                    } else {
+                        errorMsg.style.display = 'flex';
+                    }
+
+                    showToast('Incorrect OTP. Please try again.', 'error');
+                }
+                // } else {
+                //     for (var j = 0; j < 6; j++) {
+                //         (function (el) {
+                //             el.classList.add('error-flash');
+                //             setTimeout(function () { el.classList.remove('error-flash'); }, 650);
+                //         })(document.getElementById('d' + j));
+                //     }
+                //     showToast('Incorrect OTP. Please try again.', 'error');
+                // }
+            })
+            .catch(function () { showToast('Verification failed. Please try again.', 'error'); });
+        }
+
+        // =============================================
+        // STEP VALIDATIONS
+        // =============================================
+        // =============================================
+// STEP 1 — DUPLICATE CHECK HELPERS
+// =============================================
+var _token = function () {
+    return document.querySelector('input[name="__RequestVerificationToken"]').value;
+};
+
+function checkDuplicate(url, body) {
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'RequestVerificationToken': _token()
+        },
+        body: body
+    }).then(function (r) { return r.json(); });
+}
+
+        // =============================================
+        // STEP VALIDATIONS  (Step 1 now async)
+        // =============================================
+        function validateStep1Fields() {
+            // Pure synchronous field-format validation — no network calls
+            var ok = true;
+
+            var name = document.getElementById('farmerName').value.trim();
+            if (!name) {
+                setErr('farmerName', 'Full name is required'); ok = false;
+            } else if (!/^[a-zA-Z\s]{2,}$/.test(name)) {
+                setErr('farmerName', 'Name must contain only alphabets and be at least 2 characters'); ok = false;
+            } else {
+                clrErr('farmerName');
             }
 
+            var phone = document.getElementById('phone').value.trim();
+            if (!phone) {
+                setErr('phone', 'Mobile number is required'); ok = false;
+            } else if (!/^[6-9]\d{9}$/.test(phone)) {
+                setErr('phone', 'Enter a valid 10-digit Indian mobile number (starts with 6–9)'); ok = false;
+            } else {
+                clrErr('phone');
+            }
+
+            var email = document.getElementById('email').value.trim();
+            if (!email) {
+                setErr('email', 'Email address is required'); ok = false;
+            } else if (!emailRegex.test(email))  {
+                setErr('email', 'Enter a valid email address'); ok = false;
+            } else if (!isEmailVerified) {
+                setErr('email', 'Please verify your email via OTP before proceeding'); ok = false;
+            } else {
+                clrErr('email');
+            }
+
+            var gender = document.getElementById('gender').value;
+            if (!gender) {
+                setErr('gender', 'Please select your gender'); ok = false;
+            } else {
+                clrErr('gender');
+            }
+
+            var dob = document.getElementById('dob').value;
+            if (!dob) {
+                setErr('dob', 'Date of birth is required'); ok = false;
+            } else {
+                var age = (new Date() - new Date(dob)) / (365.25 * 24 * 3600 * 1000);
+                if (age < 18) { setErr('dob', 'You must be at least 18 years old'); ok = false; }
+                else clrErr('dob');
+            }
+
+            var aadh = document.getElementById('aadhaar').value.trim();
+            if (!aadh) {
+                setErr('aadhaar', 'Aadhaar number is required'); ok = false;
+            } else if (!/^\d{12}$/.test(aadh)) {
+                setErr('aadhaar', 'Aadhaar must be exactly 12 digits'); ok = false;
+            } else {
+                clrErr('aadhaar');
+            }
+
+            return ok;
+        }
+
+        // Async version — runs format checks first, then duplicate checks in parallel
+        function validateStep1Async() {
+            if (!validateStep1Fields()) {
+                showToast('Please fix the errors highlighted below.', 'warning');
+                return Promise.resolve(false);
+            }
+
+            var phone  = document.getElementById('phone').value.trim();
+            var email  = document.getElementById('email').value.trim();
+            var aadhaar = document.getElementById('aadhaar').value.trim();
+
+            // Show a subtle checking state on the Continue button
+            var nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = true;
+            nextBtn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Checking...';
+
+            return Promise.all([
+                checkDuplicate('/Farmer/CheckPhoneDuplicate',   'phone='   + encodeURIComponent(phone)),
+                checkDuplicate('/Farmer/CheckAadhaarDuplicate', 'aadhaar=' + encodeURIComponent(aadhaar))
+            ])
+            .then(function (results) {
+                var phoneDup   = results[0];
+                var aadhaarDup = results[1];
+                var ok = true;
+
+                if (phoneDup.duplicate) {
+                    setErr('phone', 'This mobile number is already registered or pending approval');
+                    ok = false;
+                }
+                if (aadhaarDup.duplicate) {
+                    setErr('aadhaar', 'This Aadhaar number is already registered or pending approval');
+                    ok = false;
+                }
+
+                if (!ok) showToast('Please fix the errors highlighted below.', 'warning');
+                return ok;
+            })
+            .catch(function () {
+                // On network error, allow the user to proceed — server will catch it on submit
+                showToast('Could not verify details. Proceeding anyway.', 'warning');
+                return true;
+            })
+            .finally(function () {
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = 'Continue <i class="ti ti-arrow-right" aria-hidden="true"></i>';
+            });
+        }
+
+        
+        function advanceStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                if (currentStep === 5) buildReview();
+                updateUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+        function validateStep2() {
+            var ok = true;
+            var fields = [
+                { id:'StateId',   errId:'state',   label:'State' },
+                { id:'CityId',    errId:'city',    label:'City' },
+                { id:'VillageId', errId:'village', label:'Village' },
+                { id:'CenterId',  errId:'center',  label:'Collection center' }
+            ];
+            fields.forEach(function (f) {
+                if (!document.getElementById(f.id).value) { setErr(f.errId, f.label + ' is required'); ok = false; }
+                else clrErr(f.errId);
+            });
+            return ok;
+        }
+
+        function validateStep3() {
+            // Bank details are now fully required — no more optional logic
+            var ok   = true;
+            var bank = document.getElementById('bankName').value.trim();
+            var acc  = document.getElementById('accountNo').value.trim();
+            var ifsc = document.getElementById('ifsc').value.trim();
+
+            if (!bank) {
+                setErr('bankName', 'Bank name is required'); ok = false;
+            } else if (!/^[a-zA-Z\s]+$/.test(bank)) {
+                setErr('bankName', 'Bank name must contain only alphabets'); ok = false;
+            } else {
+                clrErr('bankName');
+            }
+
+            if (!acc) {
+                setErr('accountNo', 'Account number is required'); ok = false;
+            } else if (!/^\d{9,18}$/.test(acc)) {
+                setErr('accountNo', 'Account number must be 9–18 digits'); ok = false;
+            } else {
+                clrErr('accountNo');
+            }
+
+            if (!ifsc) {
+                setErr('ifsc', 'IFSC code is required'); ok = false;
+            } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+                setErr('ifsc', 'Invalid IFSC format (e.g. SBIN0001234)'); ok = false;
+            } else {
+                clrErr('ifsc');
+            }
+
+            return ok;
+        }
+
+        function validateStep4() {
+            var ok = true;
+
+            // Profile photo
+            var profile = document.getElementById('profilePhoto').files;
+            if (!profile || profile.length === 0) {
+                setFileErr('profile','fw-profile','Profile photo is required'); ok = false;
+            } else {
+                var ext = profile[0].name.split('.').pop().toLowerCase();
+                if (ext !== 'jpg' && ext !== 'jpeg') { setFileErr('profile','fw-profile','Only JPG/JPEG files are allowed'); ok = false; }
+                else setFileErr('profile','fw-profile','');
+            }
+
+            // Aadhaar document
+            var aadhDoc = document.getElementById('aadhaarDoc').files;
+            if (!aadhDoc || aadhDoc.length === 0) {
+                setFileErr('aadhaarDoc','fw-aadhaarDoc','Aadhaar document is required'); ok = false;
+            } else {
+                var ext2 = aadhDoc[0].name.split('.').pop().toLowerCase();
+                if (ext2 !== 'jpg' && ext2 !== 'jpeg' && ext2 !== 'pdf') { setFileErr('aadhaarDoc','fw-aadhaarDoc','Only JPG/JPEG/PDF files are allowed'); ok = false; }
+                else setFileErr('aadhaarDoc','fw-aadhaarDoc','');
+            }
+
+            // Passbook — now required
+            var passbook = document.getElementById('passbook').files;
+            if (!passbook || passbook.length === 0) {
+                setFileErr('passbook','fw-passbook','Bank passbook document is required'); ok = false;
+            } else {
+                var ext3 = passbook[0].name.split('.').pop().toLowerCase();
+                if (ext3 !== 'jpg' && ext3 !== 'jpeg' && ext3 !== 'pdf') { setFileErr('passbook','fw-passbook','Only JPG/JPEG/PDF files are allowed'); ok = false; }
+                else setFileErr('passbook','fw-passbook','');
+            }
+
+            return ok;
+        }
+
+        // =============================================
+        // REVIEW BUILDER
+        // =============================================
+        function buildReview() {
+            function txt(id)  { return (document.getElementById(id).value || '').trim(); }
+            function sel(id)  { var e = document.getElementById(id); return e.selectedIndex > 0 ? e.options[e.selectedIndex].text : ''; }
+            function file(id) { var f = document.getElementById(id).files; return f && f.length ? f[0].name : ''; }
+            function rv(id, val) {
+                var el = document.getElementById('rv-' + id);
+                if (!el) return;
+                el.textContent = val || '—';
+                el.className   = 'rv-val' + (val ? '' : ' empty');
+            }
+            rv('name',    txt('farmerName'));
+            rv('phone',   txt('phone'));
+            rv('email',   txt('email') + (isEmailVerified ? ' ✓' : ''));
+            rv('gender',  sel('gender'));
+            rv('dob',     txt('dob') ? new Date(txt('dob')).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '');
+            rv('aadhaar', txt('aadhaar') ? txt('aadhaar').replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3') : '');
+            rv('state',   sel('StateId'));
+            rv('city',    sel('CityId'));
+            rv('village', sel('VillageId'));
+            rv('center',  sel('CenterId'));
+            rv('bank',    txt('bankName'));
+            rv('acc',     txt('accountNo'));
+            rv('ifsc',    txt('ifsc'));
+            rv('photo',       file('profilePhoto'));
+            rv('aadhaarFile', file('aadhaarDoc'));
+            rv('passbook',    file('passbook'));
+        }
+
+        // =============================================
+        // NAVIGATION  (goNext is now async-aware)
+        // =============================================
+        function goNext() {
+            if (currentStep === 1) {
+                validateStep1Async().then(function (valid) {
+                    if (valid) advanceStep();
+                });
+                return; // always return here — advanceStep is called inside the promise
+            }
+
+            var valid = false;
+            if      (currentStep === 2) valid = validateStep2();
+            else if (currentStep === 3) valid = validateStep3();
+            else if (currentStep === 4) valid = validateStep4();
+            else valid = true;
+
+            if (!valid) { showToast('Please fix the errors highlighted below.', 'warning'); return; }
+            advanceStep();
+        }
+
+        function goBack() {
+            if (currentStep > 1) { currentStep--; updateUI(); window.scrollTo({ top:0, behavior:'smooth' }); }
+        }
+
+                // =============================================
+        // FILE PREVIEW — opens uploaded file in new tab
+        // =============================================
+        function previewFile(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input || !input.files || input.files.length === 0) {
+                showToast('No file selected for this document.', 'warning');
+                return;
+            }
+            var file = input.files[0];
+            var url  = URL.createObjectURL(file);
+            var tab  = window.open(url, '_blank');
+            // Revoke the object URL after the tab has loaded to free memory
+            if (tab) {
+                tab.addEventListener('load', function () {
+                    URL.revokeObjectURL(url);
+                });
+            }
+        }
+
+        // =============================================
+        // UI STATE
+        // =============================================
+        function updateUI() {
+            for (var n = 1; n <= totalSteps; n++) {
+                var si = document.getElementById('si' + n);
+                var sn = document.getElementById('sn' + n);
+                si.classList.remove('active','done');
+                if      (n < currentStep) { si.classList.add('done');   sn.innerHTML = '<i class="ti ti-check" style="font-size:14px"></i>'; }
+                else if (n === currentStep){ si.classList.add('active'); sn.textContent = n; }
+                else sn.textContent = n;
+                if (n < totalSteps) document.getElementById('sc' + n).classList.toggle('done-line', n < currentStep);
+            }
+            document.getElementById('progressFill').style.width = (currentStep / totalSteps * 100) + '%';
+            for (var s = 1; s <= totalSteps; s++) {
+                document.getElementById('section' + s).style.display = s === currentStep ? '' : 'none';
+            }
+            document.getElementById('backBtn').style.display   = currentStep > 1            ? '' : 'none';
+            document.getElementById('nextBtn').style.display   = currentStep < totalSteps   ? '' : 'none';
+            document.getElementById('submitBtn').style.display = currentStep === totalSteps  ? '' : 'none';
+            document.getElementById('stepCounter').textContent = 'Step ' + currentStep + ' of ' + totalSteps;
+        }
+
+        // =============================================
+        // SUBMIT
+        // =============================================
+        document.getElementById('regForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!validateStep4()) { showToast('Please fix document upload errors.', 'warning'); return; }
+            var btn = document.getElementById('submitBtn');
+            btn.disabled  = true;
+            btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Submitting...';
+
+            var fd = new FormData(this);
+            fetch('@Url.Action("FarmerSelfRegistration", "Farmer")', { method:'POST', body:fd })
+            .then(function (r) {
+                if (r.redirected) { window.location.href = r.url; return null; }
+                return r.text();
+            })
+            .then(function (html) {
+                if (!html) return;
+                if (html.indexOf('server-error-banner') > -1 || html.indexOf('field-validation-error') > -1) {
+                    document.open(); document.write(html); document.close();
+                } else {
+                    document.getElementById('regForm').style.display = 'none';
+                    document.getElementById('stepBarEl').style.display = 'none';
+                    var pw = document.querySelector('.progress-wrap');
+                    if (pw) pw.style.display = 'none';
+                    document.getElementById('successScreen').classList.add('show');
+                    var ref = 'DCS-' + Date.now().toString(36).toUpperCase();
+                    document.getElementById('refChip').textContent = 'Reference: ' + ref;
+                    showToast('Registration submitted successfully!', 'success', 6000);
+                }
+            })
+            .catch(function () {
+                btn.disabled  = false;
+                btn.innerHTML = '<i class="ti ti-check"></i> Submit registration';
+                showToast('Submission failed. Please check your connection and try again.', 'error');
+            });
         });
 
+        // spinner keyframes
+        var _s = document.createElement('style');
+        _s.textContent = '@@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+        document.head.appendChild(_s);
     </script>
-
 }

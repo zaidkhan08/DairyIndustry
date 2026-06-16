@@ -39,6 +39,7 @@
         var currentRole = Context.Session.GetString("RoleName") ?? "";
         bool isAdmin = currentRole == "Admin";
         bool isPlantManager = currentRole == "Plant Manager";
+        bool isCollectionAgent = currentRole == "Collection Agent";
 
         // ── Helpers ─────────────────────────────────────────────
         bool IsActive(string c, string a = null) =>
@@ -56,8 +57,8 @@
 
         <!-- Brand -->
         <a class="sidebar-brand"
-           asp-controller="@(isAdmin ? "Admin" : "Production")"
-           asp-action="@(isAdmin ? "Index" : "Dashboard")"
+           asp-controller="@(isAdmin ? "Admin" : isPlantManager ? "Production" : "CollectionCenter")"
+           asp-action="@(isAdmin ? "Index" : isPlantManager ? "Dashboard" : "Dashboard")"
            aria-label="DairyManage home">
             <div class="brand-icon" aria-hidden="true">
                 <i class="bi bi-droplet-fill"></i>
@@ -427,6 +428,93 @@
                     <i class="bi bi-person-check-fill" aria-hidden="true"></i>
                     <span>Farmer Payments</span>
                 </a>
+            }
+
+            @* Collection Center *@
+
+            @if (isCollectionAgent) 
+            {
+
+                <!-- ── Overview ──────────────────────── -->
+                <div class="nav-label">Overview</div>
+
+                <a asp-controller="CollectionCenter" asp-action="Dashboard"
+                   class="nav-item-link @(IsActive("CollectionCenter", "Dashboard") ? "active" : "")">
+                    <i class="bi bi-grid-1x2-fill" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!----Farmer Managemnet ─────────────────── -->
+                <div class="nav-label">Farmer Managemnet</div>
+
+                <a asp-controller="Farmer" asp-action="ListAllFarmers"
+                    class="nav-item-link @(IsActive("Farmer", "ListAllFarmers") ? "active" : "")">
+                    <i class="bi bi-droplet-fill" aria-hidden="true"></i>
+                    <span>List All Farmers</span>
+                </a>
+
+                <a asp-controller="CollectionCenter" asp-action="PendingApprovals"
+                    class="nav-item-link @(IsActive("CollectionCenter", "PendingApprovals") ? "active" : "")">
+                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                    <span>PendingApprovals</span>
+                </a>
+
+                <a asp-controller="CollectionCenter" asp-action="RejectedFarmersByCenter"
+                    class="nav-item-link @(IsActive("CollectionCenter", "RejectedFarmersByCenter") ? "active" : "")">
+                    <i class="bi bi-activity" aria-hidden="true"></i>
+                    <span>Rejected Farmers</span>
+                </a>
+
+                <!-- ── Milk Managemnet─────────────────────── -->
+                <div class="nav-label">Production</div>
+
+                <a asp-controller="CollectionCenter" asp-action="AddMilkCollection"
+                   class="nav-item-link @(IsActive("CollectionCenter", "AddMilkCollection") ? "active" : "")">
+                    <i class="bi bi-layers-fill" aria-hidden="true"></i>
+                    <span>Milk Collection</span>
+                </a>
+
+                <a asp-controller="CollectionCenter" asp-action="AllMilkEntriesCenter"
+               class="nav-item-link @(IsActive("CollectionCenter", "AllMilkEntriesCenter") ? "active" : "")">
+                    <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                    <span>All Milk Entries</span>
+                </a>
+
+                <a asp-controller="CollectionCenter" asp-action="Inventory"
+                   class="nav-item-link @(IsActive("CollectionCenter", "Inventory") ? "active" : "")">
+                    <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
+                    <span>Milk Inventory</span>
+                </a>
+
+                <!-- ── Batch Managemnet─────────────────────── -->
+                <div class="nav-label">Batch Managemnet</div>
+                <a asp-controller="CollectionCenter" asp-action="BatchStatus"
+                   class="nav-item-link @(IsActive("CollectionCenter", "BatchStatus") ? "active" : "")">
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        <span>BatchStatus</span>
+                    </a>
+
+                <a asp-controller="CollectionCenter" asp-action="AllBatchDetails"
+                   class="nav-item-link @(IsActive("CollectionCenter", "AllBatchDetails") ? "active" : "")">
+                        <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                        <span>AllBatchDetails</span>
+                </a>
+
+                <!-- ── Dispatch Managemnet─────────────────────── -->
+                <div class="nav-label">Dispatch Managemnet</div>
+                <a asp-controller="CollectionCenter" asp-action="Dispatch"
+                   class="nav-item-link @(IsActive("CollectionCenter", "Dispatch") ? "active" : "")">
+                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                    <span>Dispatch Entry</span>
+                </a>
+
+                <a asp-controller="CollectionCenter" asp-action="DispatchHistory"
+                   class="nav-item-link @(IsActive("CollectionCenter", "DisaptchHistory") ? "active" : "")">
+                    <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                    <span>Dispatch History</span>
+                </a>
+                
+
             }
 
         </nav>

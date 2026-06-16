@@ -3,100 +3,312 @@
 <head>
     <meta charset="utf-8" />
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #f0f0f0;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            color: #000;
-            margin: 20px;
-        }
-
-        .receipt {
-            width: 300px;
-            background: #fff;
-            margin: 0 auto;
-            padding: 15px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        .brand-name {
-            font-size: 18px;
-            font-weight: bold;
-            display: block;
-        }
-
-        .divider {
-            border-top: 1px dashed #000;
-            margin: 8px 0;
-        }
-
-        .row {
-            display: flex;
-            justify-content: space-between;
-            padding: 2px 0;
-        }
-
-        .bold {
-            font-weight: bold;
-        }
-
-        .total-section {
-            font-size: 16px;
-            margin-top: 5px;
-            border-top: 1px solid #000;
-            padding-top: 5px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 15px;
+            font-family: Arial, sans-serif;
             font-size: 12px;
-            font-style: italic;
+            background: #fff;
+            margin: 0;
+            padding: 14px;
+            color: #222;
+        }
+
+        /* HEADER — table-based for wkhtmltopdf */
+        .hdr-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1a3a5c;
+            margin-bottom: 0;
+        }
+
+            .hdr-tbl td {
+                vertical-align: top;
+                padding: 0;
+            }
+
+        .hdr-right {
+            text-align: right;
+        }
+
+        .mr-brand {
+            font-size: 18px;
+            font-weight: normal;
+            color: #1a3a5c;
+        }
+
+        .mr-rh-sub {
+            font-size: 10px;
+            color: #777;
+            margin-top: 3px;
+            line-height: 1.6;
+        }
+
+        .mr-badge {
+            border: 2px solid #1a3a5c;
+            color: #1a3a5c;
+            font-size: 10px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            padding: 4px 8px;
+            display: inline-block;
+        }
+
+        .mr-rh-meta {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.7;
+        }
+
+        /* STATUS */
+        .mr-status {
+            background: #e8f5e9;
+            border-bottom: 1px solid #b2dfdb;
+            padding: 6px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: normal;
+            letter-spacing: .7px;
+            color: #2e7d32;
+        }
+
+        /* INFO CARDS — table-based */
+        .cards-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+            .cards-tbl td {
+                vertical-align: top;
+                width: 33.33%;
+                padding: 10px 12px;
+                border-right: 1px solid #e5e7eb;
+            }
+
+                .cards-tbl td:last-child {
+                    border-right: none;
+                }
+
+        .mr-c-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .mr-c-name {
+            font-size: 12px;
+            font-weight: normal;
+            color: #111;
+            margin-bottom: 3px;
+        }
+
+        .mr-c-row {
+            font-size: 10px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+            .mr-c-row b {
+                color: #111;
+            }
+
+        .mr-green {
+            color: #2e7d32;
+            font-weight: normal;
+        }
+
+        /* MAIN TABLE */
+        table.mr-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+            table.mr-tbl thead tr {
+                background: #1a3a5c;
+            }
+
+            table.mr-tbl th {
+                color: #fff;
+                padding: 7px 10px;
+                font-size: 10px;
+                font-weight: normal;
+                text-align: left;
+            }
+
+                table.mr-tbl th.text-right,
+                table.mr-tbl td.text-right {
+                    text-align: right;
+                }
+
+            table.mr-tbl td {
+                padding: 8px 10px;
+                border-bottom: 1px solid #f0f0f0;
+                color: #222;
+            }
+
+        /* TOTALS — table-based */
+        .tot-outer {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4px 0 12px;
+        }
+
+            .tot-outer td {
+                padding: 0;
+            }
+
+        .tot-inner {
+            width: 230px;
+            float: right;
+        }
+
+        .tot-line {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+            .tot-line td {
+                padding: 2px 0;
+            }
+
+                .tot-line td:last-child {
+                    text-align: right;
+                    font-weight: normal;
+                }
+
+        .tot-grand {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1a3a5c;
+            color: #fff;
+            font-weight: normal;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+            .tot-grand td {
+                padding: 6px 10px;
+            }
+
+                .tot-grand td:last-child {
+                    text-align: right;
+                }
+
+        /* FOOTER */
+        .mr-rfooter {
+            border-top: 1px solid #eee;
+            padding: 8px 14px;
+            text-align: center;
+            font-size: 9px;
+            color: #aaa;
+            line-height: 1.7;
+            clear: both;
         }
     </style>
 </head>
 <body>
-    <div class="receipt">
-        <div class="header">
-            <span class="brand-name">{{CenterName}}</span>
-            DAILY MILK RECEIPT
-        </div>
 
-        <div class="divider"></div>
+    <!-- HEADER -->
+    <table class="hdr-tbl">
+        <tr>
+            <td>
+                <div class="mr-brand">Dairy Management System</div>
+                <div class="mr-rh-sub">Farmer Milk Collection Receipt<br>Collection Type: Single Shift Entry</div>
+            </td>
+            <td class="hdr-right">
+                <div class="mr-badge">MILK RECEIPT</div>
+                <div class="mr-rh-meta">Receipt No: #{{ReceiptNumber}}<br>Date: {{Date}}</div>
+            </td>
+        </tr>
+    </table>
 
-        <div class="row"><span>Rcpt No:</span><span class="bold">{{ReceiptNumber}}</span></div>
-        <div class="row"><span>Date:</span><span>{{Date}}</span></div>
-        <div class="row"><span>Shift:</span><span>{{Shift}}</span></div>
+    <!-- STATUS -->
+    <div class="mr-status">COLLECTION STATUS: ACCEPTED</div>
 
-        <div class="divider"></div>
+    <!-- INFO CARDS -->
+    <table class="cards-tbl">
+        <tr>
+            <td>
+                <div class="mr-c-label">Farmer Details</div>
+                <div class="mr-c-name">{{FarmerName}}</div>
+                <div class="mr-c-row">Code: <span>#{{FarmerCode}}</span></div>
+            </td>
+            <td>
+                <div class="mr-c-label">Collection Center</div>
+                <div class="mr-c-name">{{CenterName}}</div>
+                <div class="mr-c-row">Shift: <span>{{Shift}}</span></div>
+                <div class="mr-c-row">Date: <span>{{Date}}</span></div>
+            </td>
+            <td>
+                <div class="mr-c-label">Quality Info</div>
+                <div class="mr-c-name">{{MilkType}}</div>
+                <div class="mr-c-row">FAT: <span>{{Fat}}</span> &nbsp;/&nbsp; CLR: <span>{{CLR}}</span></div>
+                <div class="mr-c-row">Rate: <span>{{Rate}} / L</span></div>
+                <div class="mr-c-row">Status: <span class="mr-green">Accepted</span></div>
+            </td>
+        </tr>
+    </table>
 
-        <div class="row"><span>Farmer:</span><span class="bold">{{FarmerName}}</span></div>
-        <div class="row"><span>Code:</span><span>#{{FarmerCode}}</span></div>
+    <!-- MAIN TABLE -->
+    <table class="mr-tbl">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Description</th>
+                <th>Milk Type</th>
+                <th class="text-right">Qty (L)</th>
+                <th class="text-right">Amount (&#8377;)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Milk Collection Entry</td>
+                <td>{{MilkType}}</td>
+                <td class="text-right">{{Quantity}}</td>
+                <td class="text-right">{{Amount}}</td>
+            </tr>
+        </tbody>
+    </table>
 
-        <div class="divider"></div>
+    <!-- TOTALS -->
+    <table class="tot-outer">
+        <tr>
+            <td>
+                <div class="tot-inner">
+                    <table class="tot-line">
+                        <tr>
+                            <td>Total Quantity</td>
+                            <td>{{Quantity}}</td>
+                        </tr>
+                    </table>
+                    <table class="tot-grand">
+                        <tr>
+                            <td>Amount Payable</td>
+                            <td>{{Amount}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
 
-        <div class="row"><span>Milk Type:</span><span>{{MilkType}}</span></div>
-        <div class="row"><span>Quantity:</span><span>{{Quantity}} Ltr</span></div>
-        <div class="row"><span>FAT / CLR:</span><span>{{Fat}} / {{CLR}}</span></div>
-        <div class="row"><span>Rate/Ltr:</span><span>₹{{Rate}}</span></div>
-
-        <div class="total-section row bold">
-            <span>TOTAL AMT:</span>
-            <span>₹{{Amount}}</span>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="footer">
-            Thank You for your business!<br />
-            Visit Again
-        </div>
+    <!-- FOOTER -->
+    <div class="mr-rfooter">
+        Computer-generated receipt &middot; No physical signature required &nbsp;|&nbsp;
+        Generated: {{DateTime}} &nbsp;|&nbsp; Dairy Management System
     </div>
+
 </body>
 </html>

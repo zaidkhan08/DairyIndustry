@@ -1,302 +1,915 @@
-@model DairyIndustry.Models.Collection.CollectionAgentDashboardViewModel
+﻿@model DairyIndustry.Models.Collection.CollectionAgentDashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+
+    var activePercent = Model.FarmerStats.TotalFarmers == 0 ? 0
+        : (int)(Model.FarmerStats.ActiveFarmers * 100m / Model.FarmerStats.TotalFarmers);
+
+    var morningShift = Model.Shifts.FirstOrDefault(s => s.Shift != null && s.Shift.ToLower().Contains("morning"));
+    var eveningShift = Model.Shifts.FirstOrDefault(s => s.Shift != null && s.Shift.ToLower().Contains("evening"));
+
+    var initials = string.IsNullOrEmpty(Model.StaffCenter.StaffName) ? "??"
+        : string.Concat(Model.StaffCenter.StaffName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(w => w[0].ToString().ToUpper()));
 }
 
-<div class="container-fluid p-3" style="background:#f6f8fb; min-height:100vh;">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-    <!-- =========================================================
-        1. STAFF HEADER
-    ========================================================= -->
-    <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:14px;">
+<style>
+    :root {
+        --dash-bg: #f4f6fb;
+        --card-bg: #ffffff;
+        --card-border: #e8ecf1;
+        --muted: #6c757d;
+        --label: #9aa0ac;
+        --text: #1a1d23;
+        --green: #1d9e75;
+        --green-light: #e1f5ee;
+        --green-dark: #0f6e56;
+        --blue: #378add;
+        --blue-light: #e6f1fb;
+        --blue-dark: #185fa5;
+        --amber: #ba7517;
+        --amber-light: #faeeda;
+        --amber-dark: #854f0b;
+        --red: #e24b4a;
+        --red-light: #fcebeb;
+        --red-dark: #a32d2d;
+        --gray-light: #f1f3f7;
+        --radius: 12px;
+        --radius-sm: 8px;
+    }
 
-        <div class="d-flex align-items-center gap-3">
+    body {
+        background: var(--dash-bg);
+    }
 
+    .dash-wrap {
+        padding: 20px;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .dash-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+        margin-bottom: 16px;
+    }
+
+    /* ---------- SECTION LABEL ---------- */
+    .sec-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--label);
+        margin-bottom: 14px;
+    }
+
+    /* ---------- KPI CARDS ---------- */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+        gap: 12px;
+    }
+
+    .kpi-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+    }
+
+    .kpi-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .kpi-label {
+        font-size: 11px;
+        color: var(--label);
+        margin-bottom: 4px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .kpi-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.1;
+    }
+
+    .kpi-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 5px;
+    }
+
+    /* ---------- ALERT STRIP ---------- */
+    .alert-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .alert-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        border-left: 4px solid;
+    }
+
+        .alert-card.amber {
+            border-left-color: var(--amber);
+        }
+
+        .alert-card.red {
+            border-left-color: var(--red);
+        }
+
+        .alert-card.gray {
+            border-left-color: #adb5bd;
+        }
+
+    .alert-icon {
+        font-size: 17px;
+        margin-right: 6px;
+    }
+
+    .alert-label {
+        font-size: 11px;
+        color: var(--label);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+    }
+
+    .alert-value {
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .alert-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 3px;
+    }
+
+    /* ---------- BADGES ---------- */
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+    }
+
+    .bp-green {
+        background: var(--green-light);
+        color: var(--green-dark);
+    }
+
+    .bp-amber {
+        background: var(--amber-light);
+        color: var(--amber-dark);
+    }
+
+    .bp-red {
+        background: var(--red-light);
+        color: var(--red-dark);
+    }
+
+    .bp-blue {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+    }
+
+    .bp-gray {
+        background: var(--gray-light);
+        color: var(--muted);
+    }
+
+    /* ---------- PROGRESS BAR ---------- */
+    .prog-wrap {
+        height: 6px;
+        background: #edf0f4;
+        border-radius: 99px;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+
+    .prog-bar {
+        height: 100%;
+        border-radius: 99px;
+    }
+
+    /* ---------- DIVIDER ---------- */
+    .dash-divider {
+        border: none;
+        border-top: 1px solid var(--card-border);
+        margin: 12px 0;
+    }
+
+    /* ---------- ROW BETWEEN ---------- */
+    .row-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        padding: 5px 0;
+    }
+
+        .row-between span {
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .row-between b {
+            font-weight: 600;
+        }
+
+    /* ---------- SHIFT CARDS ---------- */
+    .shift-card {
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 10px;
+    }
+
+        .shift-card:last-child {
+            margin-bottom: 0;
+        }
+
+    .shift-active {
+        border-left: 3px solid var(--green);
+    }
+
+    .shift-inactive {
+        border-left: 3px solid #dee2e6;
+    }
+
+    /* ---------- STAT ROWS (top farmers) ---------- */
+    .stat-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--card-border);
+    }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+    .stat-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    /* ---------- INVENTORY ---------- */
+    .inv-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+        gap: 10px;
+    }
+
+    .inv-card {
+        background: var(--gray-light);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @@media (max-width: 768px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .alert-strip {
+            grid-template-columns: 1fr;
+        }
+
+        .two-col {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+
+<div class="dash-wrap">
+
+    <!-- ================================================================
+         1. STAFF HEADER
+    ================================================================ -->
+    <div class="dash-card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+
+        @if (!string.IsNullOrEmpty(Model.StaffCenter.StaffPhoto))
+        {
             <img src="@Model.StaffCenter.StaffPhoto"
-                 style="width:70px;height:70px;object-fit:cover;border-radius:50%;border:3px solid #e9ecef;" />
-
-            <div>
-                <h5 class="mb-0 fw-bold">@Model.StaffCenter.StaffName</h5>
-                <div class="text-muted small">
-                    @Model.StaffCenter.RoleName � @Model.StaffCenter.CenterName
-                </div>
-                <div class="text-muted small">
-                    @Model.StaffCenter.VillageName, @Model.StaffCenter.CityName
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- =========================================================
-        2. ALERTS (MOST IMPORTANT SECTION)
-    ========================================================= -->
-    <div class="row g-3 mb-3">
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
-                <div class="text-muted small">Pending Approvals</div>
-                <h4 class="fw-bold text-warning">
-                    @Model.FarmerStats.PendingApprovals
-                </h4>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
-                <div class="text-muted small">Pending Payments</div>
-                <h4 class="fw-bold text-danger">
-                    @Model.FarmerStats.TotalPendingPaymentAmount
-                </h4>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center" style="border-radius:14px;">
-                <div class="text-muted small">Rejected Farmers</div>
-                <h4 class="fw-bold text-dark">
-                    @Model.FarmerStats.RejectedFarmers
-                </h4>
-            </div>
-        </div>
-
-    </div>
-    <!-- =========================================================
-        FARMER OVERVIEW (MATCHES YOUR UI IMAGE)
-    ========================================================= -->
-    <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius:14px;">
-
-        <h6 class="fw-bold mb-3">Farmer Overview</h6>
-
-        <div class="row g-3">
-
-            <!-- LEFT BIG CARD -->
-            <div class="col-md-6">
-
-                <div class="p-3 border rounded h-100 bg-light">
-
-                    <div class="text-muted small">TOTAL FARMERS REGISTERED</div>
-                    <h2 class="fw-bold mb-1">@Model.FarmerStats.TotalFarmers</h2>
-                    <div class="text-muted small">At this center</div>
-
-                    <hr />
-
-                    <div class="d-flex justify-content-between">
-                        <span>Active</span>
-                        <b class="text-success">@Model.FarmerStats.ActiveFarmers</b>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Inactive</span>
-                        <b class="text-secondary">@Model.FarmerStats.InactiveFarmers</b>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Pending approval</span>
-                        <b class="text-warning">@Model.FarmerStats.PendingApprovals</b>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Rejected</span>
-                        <b class="text-danger">@Model.FarmerStats.RejectedFarmers</b>
-                    </div>
-
-                    <hr />
-
-                    @{
-                        var activePercent = Model.FarmerStats.TotalFarmers == 0
-                        ? 0
-                        : (Model.FarmerStats.ActiveFarmers * 100 / Model.FarmerStats.TotalFarmers);
-                    }
-
-                    <div class="small text-muted mb-1">
-                        Active Farmers
-                    </div>
-
-                    <div class="progress" style="height:8px;">
-                        <div class="progress-bar bg-success"
-                             style="width:@activePercent%"></div>
-                    </div>
-
-                    <div class="text-end small text-muted mt-1">
-                        @activePercent%
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- RIGHT SIDE CARDS -->
-            <div class="col-md-6">
-
-                <div class="row g-3">
-
-                    <!-- DELIVERED TODAY -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
-                            <div class="text-muted small">DELIVERED TODAY</div>
-                            <h3 class="fw-bold text-success mb-0">
-                                @Model.FarmerStats.FarmersDeliveredToday
-                            </h3>
-                            <div class="text-muted small">
-                                Out of @Model.FarmerStats.ActiveFarmers active farmers
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PENDING APPROVAL -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
-                            <div class="text-muted small">PENDING APPROVAL</div>
-                            <h3 class="fw-bold text-warning mb-0">
-                                @Model.FarmerStats.PendingApprovals
-                            </h3>
-                            <div class="text-muted small">
-                                Waiting for your review
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PAYMENT -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
-                            <div class="text-muted small">FARMERS OWED PAYMENT</div>
-                            <h3 class="fw-bold text-primary mb-0">
-                                @Model.FarmerStats.FarmersPendingPayment
-                            </h3>
-                            <div class="text-muted small">
-                                Payment not yet processed
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-
-    <!-- =========================================================
-        3. TODAY SUMMARY (CLEAN KPI)
-    ========================================================= -->
-    <div class="card border-0 shadow-sm mb-3 p-3" style="border-radius:14px;">
-
-        <h6 class="fw-bold mb-3">Today Summary</h6>
-
-        <div class="row g-3">
-
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-light">
-                    <div class="text-muted small">Milk Collected</div>
-                    <h5 class="fw-bold">@Model.TodaySummary.TotalMilkToday L</h5>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-light">
-                    <div class="text-muted small">Amount</div>
-                    <h5 class="fw-bold">@Model.TodaySummary.TotalAmountToday</h5>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-light">
-                    <div class="text-muted small">Farmers Delivered</div>
-                    <h5 class="fw-bold">
-                        @Model.FarmerStats.FarmersDeliveredToday / @Model.FarmerStats.TotalFarmers
-                    </h5>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-light">
-                    <div class="text-muted small">Rejections</div>
-                    <h5 class="fw-bold">@Model.TodaySummary.RejectionsToday</h5>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-
-    <!-- =========================================================
-        4. SHIFT STATUS (SIMPLIFIED)
-    ========================================================= -->
-    <div class="row g-3 mb-3">
-
-        @foreach (var shift in Model.Shifts)
-        {
-            <div class="col-md-6">
-
-                <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
-
-                    <div class="d-flex justify-content-between">
-                        <h6 class="fw-bold mb-0">@shift.Shift</h6>
-
-                        @if (shift.IsCurrentShift)
-                        {
-                            <span class="badge bg-success">Active</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Inactive</span>
-                        }
-                    </div>
-
-                    <div class="text-muted small">@shift.ShiftWindow</div>
-
-                    <hr />
-
-                    <div class="d-flex justify-content-between">
-                        <span>Status</span>
-                        <b>@shift.BatchStatus</b>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Entries</span>
-                        <b>@shift.EntryCount</b>
-                    </div>
-
-                </div>
-
-            </div>
-        }
-
-    </div>
-
-
-    <!-- =========================================================
-        5. INVENTORY (ONLY ALERT - NOT TABLE)
-    ========================================================= -->
-    <div class="card border-0 shadow-sm p-3" style="border-radius:14px;">
-
-        <h6 class="fw-bold mb-2">Inventory Status</h6>
-
-        @{
-            var highUsage = Model.Inventory
-            .Where(x => x.CapacityUsedPct >= 85)
-            .ToList();
-        }
-
-        @if (highUsage.Any())
-        {
-            foreach (var item in highUsage)
-            {
-                <div class="alert alert-warning mb-2">
-                    @item.MilkTypeName is at @item.CapacityUsedPct% capacity
-                </div>
-            }
+                 style="width:54px;height:54px;object-fit:cover;border-radius:50%;border:2px solid var(--card-border);"
+                 alt="@Model.StaffCenter.StaffName" />
         }
         else
         {
-            <div class="text-muted small">
-                All inventory levels are normal
+            <div style="width:54px;height:54px;border-radius:50%;background:var(--green-light);color:var(--green-dark);
+                            font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                @initials
+            </div>
+        }
+
+        <div style="flex:1;min-width:160px;">
+            <div style="font-size:17px;font-weight:700;color:var(--text);">@Model.StaffCenter.StaffName</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+                <i class="bi bi-briefcase" style="font-size:12px;"></i>&nbsp;@Model.StaffCenter.RoleName
+                &nbsp;&middot;&nbsp;
+                <i class="bi bi-building" style="font-size:12px;"></i>&nbsp;@Model.StaffCenter.CenterName
+            </div>
+            <div style="font-size:12px;color:var(--label);margin-top:2px;">
+                <i class="bi bi-geo-alt" style="font-size:12px;"></i>&nbsp;@Model.StaffCenter.VillageName, @Model.StaffCenter.CityName, @Model.StaffCenter.StateName
+            </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="badge-pill bp-green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> On duty</span>
+            <span class="badge-pill bp-blue"><i class="bi bi-calendar-day"></i> @DateTime.Today.ToString("dd MMM yyyy")</span>
+        </div>
+
+    </div>
+
+
+    <!-- ================================================================
+         2. ALERT STRIP — PENDING APPROVALS · PAYMENTS · REJECTED
+    ================================================================ -->
+    <div class="alert-strip">
+
+
+        <div class="alert-card red">
+            <div class="alert-label">
+                <i class="bi bi-currency-rupee alert-icon" style="color:var(--red);"></i>
+                Pending payments
+            </div>
+            <div class="alert-value" style="color:var(--red);">₹@Model.FarmerStats.TotalPendingPaymentAmount.ToString("N0")</div>
+            <div class="alert-sub">@Model.FarmerStats.FarmersPendingPayment farmers owed</div>
+        </div>
+
+       
+
+    </div>
+
+
+    <!-- ================================================================
+         3. TODAY SUMMARY — 4 KPI CARDS
+    ================================================================ -->
+    <div style="margin-bottom:6px;" class="sec-label">Today's summary</div>
+    <div class="kpi-grid" style="margin-bottom:16px;">
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--green-light);color:var(--green-dark);">
+                <i class="bi bi-droplet-fill"></i>
+            </div>
+            <div class="kpi-label">Milk collected</div>
+            <div class="kpi-value">
+                @Model.TodaySummary.TotalMilkToday.ToString("N0")
+                <span style="font-size:14px;font-weight:400;color:var(--muted);">L</span>
+            </div>
+            <div class="kpi-sub">
+                <i class="bi bi-sunrise" style="color:var(--amber);"></i> @Model.TodaySummary.MorningQty L &nbsp;
+                <i class="bi bi-moon" style="color:var(--blue);"></i> @Model.TodaySummary.EveningQty L
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--amber-light);color:var(--amber-dark);">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="kpi-label">Amount today</div>
+            <div class="kpi-value">₹@Model.TodaySummary.TotalAmountToday.ToString("N0")</div>
+            <div class="kpi-sub">
+                @if (Model.TodaySummary.TotalMilkToday > 0)
+                {
+                    <text>Avg ₹@((Model.TodaySummary.TotalAmountToday / Model.TodaySummary.TotalMilkToday).ToString("N2"))/L</text>
+                }
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--blue-light);color:var(--blue-dark);">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="kpi-label">Farmers delivered</div>
+            <div class="kpi-value">
+                @Model.FarmerStats.FarmersDeliveredToday
+                <span style="font-size:14px;font-weight:400;color:var(--muted);">/ @Model.FarmerStats.ActiveFarmers</span>
+            </div>
+            <div class="kpi-sub">
+                @if (Model.FarmerStats.ActiveFarmers > 0)
+                {
+                    var pct = (int)(Model.FarmerStats.FarmersDeliveredToday * 100m / Model.FarmerStats.ActiveFarmers);
+                    <text>@pct% of active farmers</text>
+                }
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--red-light);color:var(--red-dark);">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="kpi-label">Rejections today</div>
+            <div class="kpi-value">@Model.TodaySummary.RejectionsToday</div>
+            <div class="kpi-sub">@Model.TodaySummary.RejectedQtyToday.ToString("N1") L rejected</div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================================
+         4. QUALITY KPIs (Avg Fat + CLR)
+    ================================================================ -->
+    @if (Model.TodaySummary.AvgFatToday.HasValue || Model.TodaySummary.AvgCLRToday.HasValue)
+    {
+        <div class="kpi-grid" style="margin-bottom:16px;">
+
+            @if (Model.TodaySummary.AvgFatToday.HasValue)
+            {
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background:var(--amber-light);color:var(--amber-dark);">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <div class="kpi-label">Avg fat today</div>
+                    <div class="kpi-value">@Model.TodaySummary.AvgFatToday.Value.ToString("N1")%</div>
+                    <div class="kpi-sub">Across all entries</div>
+                </div>
+            }
+
+            @if (Model.TodaySummary.AvgCLRToday.HasValue)
+            {
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background:var(--blue-light);color:var(--blue-dark);">
+                        <i class="bi bi-activity"></i>
+                    </div>
+                    <div class="kpi-label">Avg CLR today</div>
+                    <div class="kpi-value">@Model.TodaySummary.AvgCLRToday.Value.ToString("N1")</div>
+                    <div class="kpi-sub">Corrected lactometer reading</div>
+                </div>
+            }
+
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:var(--green-light);color:var(--green-dark);">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div class="kpi-label">Total entries</div>
+                <div class="kpi-value">@Model.TodaySummary.TotalEntriesToday</div>
+                <div class="kpi-sub">
+                    <i class="bi bi-sunrise" style="color:var(--amber);"></i> @Model.TodaySummary.MorningEntries &nbsp;
+                    <i class="bi bi-moon" style="color:var(--blue);"></i> @Model.TodaySummary.EveningEntries
+                </div>
+            </div>
+
+        </div>
+    }
+
+
+    <!-- ================================================================
+         5. FARMER OVERVIEW + SHIFT STATUS
+    ================================================================ -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px;" class="two-col">
+
+        <!-- FARMER OVERVIEW -->
+        <div class="dash-card" style="margin-bottom:0;">
+            <div class="sec-label">Farmer overview</div>
+
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+                <span style="font-size:32px;font-weight:700;color:var(--text);">@Model.FarmerStats.TotalFarmers</span>
+                <span style="font-size:13px;color:var(--muted);">registered at this center</span>
+            </div>
+
+            <hr class="dash-divider" />
+
+            <div class="row-between">
+                <span><i class="bi bi-check-circle-fill" style="color:var(--green);"></i> Active</span>
+                <b style="color:var(--green);">@Model.FarmerStats.ActiveFarmers</b>
+            </div>
+            <div class="row-between">
+                <span><i class="bi bi-dash-circle" style="color:var(--muted);"></i> Inactive</span>
+                <b style="color:var(--muted);">@Model.FarmerStats.InactiveFarmers</b>
+            </div>
+            <div class="row-between">
+                <span><i class="bi bi-hourglass-split" style="color:var(--amber);"></i> Pending approval</span>
+                <b style="color:var(--amber);">@Model.FarmerStats.PendingApprovals</b>
+            </div>
+            <div class="row-between">
+                <span><i class="bi bi-x-circle-fill" style="color:var(--red);"></i> Rejected</span>
+                <b style="color:var(--red);">@Model.FarmerStats.RejectedFarmers</b>
+            </div>
+
+            <hr class="dash-divider" />
+
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;">
+                <span>Active rate</span>
+                <span style="font-weight:600;color:var(--green-dark);">@activePercent%</span>
+            </div>
+            <div class="prog-wrap">
+                <div class="prog-bar" style="width:@activePercent%;background:var(--green);"></div>
+            </div>
+
+            <hr class="dash-divider" />
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+                    <div style="font-size:11px;color:var(--label);margin-bottom:3px;">
+                        <i class="bi bi-truck"></i> Delivered today
+                    </div>
+                    <div style="font-size:20px;font-weight:700;color:var(--green);">@Model.FarmerStats.FarmersDeliveredToday</div>
+                </div>
+                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+                    <div style="font-size:11px;color:var(--label);margin-bottom:3px;">
+                        <i class="bi bi-credit-card"></i> Owed payment
+                    </div>
+                    <div style="font-size:20px;font-weight:700;color:var(--blue);">@Model.FarmerStats.FarmersPendingPayment</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SHIFT STATUS -->
+        <div class="dash-card" style="margin-bottom:0;">
+            <div class="sec-label">Shift status</div>
+
+            @foreach (var shift in Model.Shifts)
+            {
+                var isActive = shift.IsCurrentShift;
+                var shiftIcon = shift.Shift?.ToLower().Contains("morning") == true ? "bi-sunrise-fill" : "bi-moon-stars-fill";
+                var shiftColor = shift.Shift?.ToLower().Contains("morning") == true ? "var(--amber)" : "var(--blue)";
+                var cardClass = isActive ? "shift-active" : "shift-inactive";
+
+                <div class="shift-card @cardClass">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="bi @shiftIcon" style="font-size:18px;color:@shiftColor;"></i>
+                            <span style="font-weight:600;font-size:14px;">@shift.Shift</span>
+                        </div>
+                        @if (isActive)
+                        {
+                            <span class="badge-pill bp-green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge-pill bp-gray">Inactive</span>
+                        }
+                    </div>
+
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+                        <i class="bi bi-clock"></i> @shift.ShiftWindow
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                        <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+                            <div style="font-size:10px;color:var(--label);">STATUS</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--text);">@(shift.BatchStatus ?? "—")</div>
+                        </div>
+                        <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+                            <div style="font-size:10px;color:var(--label);">ENTRIES</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--text);">@shift.EntryCount</div>
+                        </div>
+                        <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+                            <div style="font-size:10px;color:var(--label);">QTY (L)</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--text);">@shift.TotalQuantity.ToString("N0")</div>
+                        </div>
+                    </div>
+
+                    @if (shift.AvgFat.HasValue || shift.AvgCLR.HasValue)
+                    {
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                            @if (shift.AvgFat.HasValue)
+                            {
+                                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+                                    <div style="font-size:10px;color:var(--label);">AVG FAT</div>
+                                    <div style="font-size:13px;font-weight:600;color:var(--amber);">@shift.AvgFat.Value.ToString("N1")%</div>
+                                </div>
+                            }
+                            @if (shift.AvgCLR.HasValue)
+                            {
+                                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+                                    <div style="font-size:10px;color:var(--label);">AVG CLR</div>
+                                    <div style="font-size:13px;font-weight:600;color:var(--blue);">@shift.AvgCLR.Value.ToString("N1")</div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+    
+
+    <div style="display:grid;
+            grid-template-columns:2fr 1fr;
+            gap:16px;
+            margin-top:16px;">
+
+        <!-- Trend -->
+        <div class="dash-card">
+            <div class="sec-label">
+                Collection vs Rejection Trend
+            </div>
+
+            <div style="height:320px;">
+                <canvas id="collectionRejectionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut -->
+        <div class="dash-card">
+            <div class="sec-label">
+                Rejection Reasons
+            </div>
+
+            <div style="height:320px;">
+                <canvas id="rejectionDonutChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================================================================
+         8. INVENTORY STATUS
+    ================================================================ -->
+    <div class="dash-card" style="margin-top:16px;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            <div class="sec-label" style="margin:0;">Inventory status</div>
+            @{
+                var highUsage = Model.Inventory.Where(x => x.CapacityUsedPct >= 85).ToList();
+            }
+            @if (highUsage.Any())
+            {
+                <span class="badge-pill bp-red"><i class="bi bi-exclamation-triangle-fill" style="font-size:10px;"></i> @highUsage.Count alert(s)</span>
+            }
+            else
+            {
+                <span class="badge-pill bp-green"><i class="bi bi-check-circle-fill" style="font-size:10px;"></i> All normal</span>
+            }
+        </div>
+
+        <div class="inv-grid">
+            @foreach (var item in Model.Inventory)
+            {
+                var pct = (int)item.CapacityUsedPct;
+                var barColor = pct >= 85 ? "var(--red)" : pct >= 65 ? "var(--amber)" : "var(--green)";
+                var textColor = pct >= 85 ? "var(--red-dark)" : pct >= 65 ? "var(--amber-dark)" : "var(--green-dark)";
+
+                <div class="inv-card">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                        <i class="bi bi-droplet-half" style="color:var(--blue);font-size:15px;"></i>
+                        <span style="font-size:12px;font-weight:600;color:var(--text);">@item.MilkTypeName</span>
+                    </div>
+                    <div style="font-size:20px;font-weight:700;color:@textColor;margin-bottom:6px;">@pct%</div>
+                    <div class="prog-wrap">
+                        <div class="prog-bar" style="width:@pct%;background:@barColor;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:7px;">
+                        <span>@item.AvailableQuantity.ToString("N0") L available</span>
+                        @if (item.CenterCapacity.HasValue)
+                        {
+                            <span>of @item.CenterCapacity.Value.ToString("N0") L</span>
+                        }
+                    </div>
+                    @if (pct >= 85)
+                    {
+                        <div style="font-size:11px;color:var(--red-dark);margin-top:5px;font-weight:600;">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Near capacity
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (!Model.Inventory.Any())
+        {
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
+                <i class="bi bi-inbox" style="font-size:24px;display:block;margin-bottom:6px;"></i>
+                No inventory data available
             </div>
         }
 
     </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('collectionRejectionChart');
+
+const gradientGreen = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+gradientGreen.addColorStop(0, 'rgba(16,185,129,0.25)');
+gradientGreen.addColorStop(1, 'rgba(16,185,129,0)');
+
+const gradientRed = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+gradientRed.addColorStop(0, 'rgba(239,68,68,0.20)');
+gradientRed.addColorStop(1, 'rgba(239,68,68,0)');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [
+@Html.Raw(string.Join(",",
+                Model.CollectionVsRejectionTrend
+                .Select(x => $"'{x.Date:dd MMM}'")))
+        ],
+
+        datasets: [
+        {
+            label: 'Collected Milk',
+            data: [
+@Html.Raw(string.Join(",",
+                    Model.CollectionVsRejectionTrend
+                    .Select(x => x.CollectedQty)))
+            ],
+
+            borderColor: '#10b981',
+            backgroundColor: gradientGreen,
+            fill: true,
+            tension: 0.45,
+            borderWidth: 3,
+
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#10b981'
+        },
+        {
+            label: 'Rejected Milk',
+            data: [
+@Html.Raw(string.Join(",",
+                    Model.CollectionVsRejectionTrend
+                    .Select(x => x.RejectedQty)))
+            ],
+
+            borderColor: '#f59e0b',
+            backgroundColor: gradientRed,
+            fill: true,
+            tension: 0.45,
+            borderWidth: 3,
+
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#f59e0b'
+        }]
+    },
+
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+
+        plugins: {
+
+            legend: {
+                position: 'top',
+                labels: {
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
+
+            tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                padding: 14,
+                cornerRadius: 12,
+                displayColors: true
+            }
+        },
+
+        scales: {
+
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+
+            y: {
+                beginAtZero: true,
+
+                grid: {
+                    color: '#f1f5f9'
+                },
+
+                ticks: {
+                    callback: value => value + ' L'
+                }
+            }
+        }
+    }
+});
+
+</script>
+<script>
+
+    (function () {
+
+            labels: [
+                @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => $"'{x.RejectionReason}'")))
+            ]
+
+        const data = [
+            @Html.Raw(string.Join(",",
+                        Model.RejectionReasons
+                        .Select(x => x.RejectionCount)))
+        ];
+
+            new Chart(document.getElementById('rejectionDonutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: [
+                @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => $"'{x.RejectionReason}'")))
+            ],
+            datasets: [{
+                data: [
+                    @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => x.RejectionCount)))
+                ],
+                backgroundColor: [
+                    '#ef4444',
+                    '#f59e0b',
+                    '#3b82f6',
+                    '#10b981',
+                    '#8b5cf6',
+                    '#6b7280'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 12
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',     // donut thickness
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 18,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                    tooltip: {
+        callbacks: {
+            label: function(context) {
+
+                const data = context.dataset.data;
+                const total = data.reduce((a, b) => a + b, 0);
+
+                const value = context.parsed;
+                const percentage = ((value / total) * 100).toFixed(1);
+
+                return `${context.label}: ${percentage}%`;
+            }
+        }
+    }
+            }
+        }
+    });
+    })();
+</script>

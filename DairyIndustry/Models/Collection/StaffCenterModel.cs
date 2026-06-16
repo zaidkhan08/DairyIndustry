@@ -61,6 +61,11 @@
         // Rejections
         public int RejectionsToday { get; set; }
         public decimal RejectedQtyToday { get; set; }
+        public int MorningRejections { get; set; }
+        public int EveningRejections { get; set; }
+
+        public decimal MorningRejectedQty { get; set; }
+        public decimal EveningRejectedQty { get; set; }
     }
 
 
@@ -122,7 +127,24 @@
         public decimal TotalPendingPaymentAmount { get; set; }
     }
 
-
+    //Charts 
+    public class CollectionTrendModel
+    {
+        public DateTime CollectionDate { get; set; }
+        public decimal TotalQuantity { get; set; }
+    }
+    public class CollectionRejectionTrendModel
+    {
+        public DateTime Date { get; set; }
+        public decimal CollectedQty { get; set; }
+        public decimal RejectedQty { get; set; }
+    }
+    //rejection piechart
+    public class RejectionReasonModel
+    {
+        public string RejectionReason { get; set; }
+        public int RejectionCount { get; set; }
+    }
     /* ============================================================
        COMPOSITE — holds all 5 results together
        Populate each property from its own SP call in the repository.
@@ -135,5 +157,8 @@
         public List<ShiftStatusModel> Shifts { get; set; } = new();
         public List<InventoryModel> Inventory { get; set; } = new();
         public FarmerStatsModel FarmerStats { get; set; }
+        public List<CollectionTrendModel> CollectionTrend { get; set; } = new();
+        public List<CollectionRejectionTrendModel> CollectionVsRejectionTrend { get; set; } = new();
+        public List<RejectionReasonModel> RejectionReasons { get; set; } = new();
     }
 }

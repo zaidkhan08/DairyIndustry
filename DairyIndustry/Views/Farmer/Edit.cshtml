@@ -1,116 +1,440 @@
-@model DairyIndustry.Models.FarmerModel.FarmerEditModel
+﻿@model DairyIndustry.Models.FarmerModel.FarmerEditModel
 
 @{
     ViewData["Title"] = "Edit Farmer";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
-<div class="container py-4">
+<style>
+    :root {
+        --blue-dark: #1d4ed8;
+        --blue-mid: #2563eb;
+        --blue-light: #eff6ff;
+        --blue-border: #93c5fd;
+        --radius-card: 16px;
+        --radius-input: 10px;
+    }
 
-    <!-- HEADER -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body d-flex justify-content-between align-items-center">
+    body {
+        background: #f4f6f8;
+    }
 
-            <div>
-                <h3 class="fw-bold text-dark mb-1">
-                    <i class="bi bi-pencil-square text-success me-2"></i>
-                    Edit Farmer
-                </h3>
+    /* ── Section cards ── */
+    .ef-card {
+        background: #fff;
+        border: 0.5px solid #e2e8f0;
+        border-radius: var(--radius-card);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
 
-                <div class="text-muted">
-                    @Model.FarmerCode
-                </div>
-            </div>
+    .ef-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        border-bottom: 0.5px solid #f1f5f9;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+    }
 
-            <a asp-action="CenterFarmerDetails"
-               asp-route-id="@Model.FarmerId"
-               class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
+    .ef-section-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--blue-light);
+        color: var(--blue-mid);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
 
-        </div>
+    .ef-card-body {
+        padding: 20px;
+    }
+
+    /* ── Inputs ── */
+    .form-control,
+    .form-select {
+        height: 44px;
+        border-radius: var(--radius-input);
+        border: 0.5px solid #cbd5e1;
+        font-size: 13.5px;
+        color: #1e293b;
+        background: #fff;
+        transition: border-color .2s;
+    }
+
+        .form-control:focus,
+        .form-select:focus {
+            box-shadow: none;
+            border-color: var(--blue-mid);
+        }
+
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .readonly-field {
+        background: #f8fafc !important;
+        color: #94a3b8 !important;
+        cursor: not-allowed;
+    }
+
+    /* ── Avatar upload ── */
+    .avatar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding-bottom: 20px;
+        border-bottom: 0.5px solid #f1f5f9;
+        margin-bottom: 20px;
+    }
+
+    .avatar-circle {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--blue-border);
+        background: var(--blue-light);
+        flex-shrink: 0;
+    }
+
+    .upload-zone {
+        flex: 1;
+    }
+
+        .upload-zone .form-control {
+            font-size: 13px;
+        }
+
+    /* ── Doc cards ── */
+    .doc-card {
+        background: #f8fafc;
+        border: 0.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px;
+    }
+
+    .doc-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+        .doc-card-header span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+    .doc-preview-wrap {
+        height: 160px;
+        background: #fff;
+        border: 0.5px solid #e2e8f0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+        .doc-preview-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+    .doc-no-file {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    /* ── Action bar ── */
+    .ef-action-bar {
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        border-top: 0.5px solid #e2e8f0;
+        padding: 14px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        z-index: 100;
+    }
+
+    .btn-ef-cancel {
+        height: 44px;
+        padding: 0 22px;
+        border-radius: var(--radius-input);
+        border: 0.5px solid #cbd5e1;
+        background: #fff;
+        color: #64748b !important;
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none !important;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-ef-cancel:hover {
+            background: #f8fafc;
+            color: #475569 !important;
+        }
+
+    .btn-ef-save {
+        height: 44px;
+        padding: 0 24px;
+        border-radius: var(--radius-input);
+        border: none;
+        background: var(--blue-dark);
+        color: var(--blue-light);
+        font-size: 13.5px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: opacity .15s;
+    }
+
+        .btn-ef-save:hover {
+            opacity: .88;
+            color: var(--blue-light);
+        }
+
+    /* ── Top header card ── */
+    .ef-top-card {
+        background: #fff;
+        border: 0.5px solid #e2e8f0;
+        border-radius: var(--radius-card);
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .ef-top-card h4 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    .ef-farmer-code {
+        display: inline-block;
+        font-size: 12px;
+        color: #64748b;
+        background: #f1f5f9;
+        border: 0.5px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 3px 10px;
+    }
+
+    .btn-ef-back {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: var(--radius-input);
+        border: 0.5px solid #cbd5e1;
+        background: #fff;
+        color: #64748b;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: background .15s;
+    }
+
+        .btn-ef-back:hover {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+    /* ── Toast ── */
+    .ef-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--blue-dark);
+        color: var(--blue-light);
+        border-radius: 14px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 9999;
+        min-width: 260px;
+        max-width: 340px;
+        opacity: 0;
+        transform: translateY(-12px);
+        transition: opacity .3s, transform .3s;
+        pointer-events: none;
+    }
+
+        .ef-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+    .ef-toast-icon {
+        width: 32px;
+        height: 32px;
+        background: rgba(255,255,255,.15);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .ef-toast-title {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .ef-toast-sub {
+        font-size: 11.5px;
+        opacity: .75;
+        margin-top: 2px;
+    }
+
+    .ef-toast-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: var(--blue-light);
+        opacity: .7;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        line-height: 1;
+    }
+
+    @@media (max-width: 768px) {
+        .avatar-circle {
+            width: 60px;
+            height: 60px;
+        }
+
+        .ef-action-bar {
+            flex-direction: column;
+        }
+
+        .btn-ef-cancel, .btn-ef-save {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<!-- ── TOAST ── -->
+<div class="ef-toast" id="efToast">
+    <div class="ef-toast-icon">
+        <i class="bi bi-check-lg"></i>
     </div>
+    <div>
+        <div class="ef-toast-title">Farmer updated successfully</div>
+        <div class="ef-toast-sub" id="efToastSub">Changes saved for @Model.FarmerName</div>
+    </div>
+    <button class="ef-toast-close" onclick="hideToast()" aria-label="Dismiss">
+        <i class="bi bi-x-lg"></i>
+    </button>
+</div>
 
-    <!-- ALERTS -->
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show">
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+<div class="container-fluid py-4 px-4">
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show">
-            @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- TOP HEADER -->
+    <div class="ef-top-card">
+        <div>
+            <h4>
+                <i class="bi bi-pencil-square text-primary"></i>
+                Edit Farmer
+            </h4>
+            <span class="ef-farmer-code">@Model.FarmerCode</span>
         </div>
-    }
+        <a asp-action="CenterFarmerDetails"
+           asp-route-id="@Model.FarmerId"
+           class="btn-ef-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
 
     <form asp-action="Edit" method="post" enctype="multipart/form-data">
 
         <input type="hidden" asp-for="FarmerId" />
         <input type="hidden" asp-for="ProfilePhoto" />
 
-        <!-- ================= PERSONAL ================= -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-person-fill text-success me-2"></i>
-                    Personal Information
-                </h5>
+        <!-- ══════════════ PERSONAL ══════════════ -->
+        <div class="ef-card">
+            <div class="ef-card-header">
+                <div class="ef-section-icon"><i class="bi bi-person-fill"></i></div>
+                Personal Information
             </div>
+            <div class="ef-card-body">
 
-            <div class="card-body">
-
-                <div class="row mb-4 align-items-center">
-
-                    <div class="col-md-2 text-center">
-                        <img id="photoPreview"
-                             src="@(string.IsNullOrEmpty(Model.ProfilePhoto) ? "/images/user.png" : Model.ProfilePhoto)"
-                             class="rounded-circle border"
-                             style="width:120px;height:120px;object-fit:cover;" />
+                <div class="avatar-wrap">
+                    <img id="photoPreview"
+                         src="@(string.IsNullOrEmpty(Model.ProfilePhoto) ? "/images/user.png" : Model.ProfilePhoto)"
+                         class="avatar-circle" alt="Profile photo" />
+                    <div class="upload-zone">
+                        <label class="form-label">Profile Photo</label>
+                        <div style="display:flex;align-items:center;border:0.5px solid #cbd5e1;border-radius:10px;overflow:hidden;height:44px;background:#fff">
+                            <label for="photoFileInput" style="height:100%;padding:0 16px;background:#f1f5f9;border-right:0.5px solid #cbd5e1;display:flex;align-items:center;font-size:13px;font-weight:500;color:#374151;cursor:pointer;white-space:nowrap;margin:0">
+                                Choose File
+                            </label>
+                            <span id="photoFileName" style="padding:0 14px;font-size:13px;color:#94a3b8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                No file chosen
+                            </span>
+                        </div>
+                        <input type="file" id="photoFileInput" name="PhotoFile" accept="image/*" style="display:none" onchange="previewPhoto(this)" />
+                        <div class="mt-1" style="font-size:11.5px;color:#94a3b8">JPG, PNG or GIF · max 2 MB</div>
                     </div>
-
-                    <div class="col-md-10">
-                        <label class="form-label fw-semibold">Profile Photo</label>
-                        <input type="file"
-                               name="PhotoFile"
-                               class="form-control"
-                               accept="image/*"
-                               onchange="previewPhoto(this)" />
-                    </div>
-
                 </div>
 
                 <div class="row g-3">
-
                     <div class="col-md-6">
-                        <label>Farmer Name</label>
+                        <label class="form-label">Farmer Name</label>
                         <input asp-for="FarmerName" class="form-control" />
                     </div>
-
                     <div class="col-md-6">
-                        <label>Phone</label>
+                        <label class="form-label">Phone</label>
                         <input asp-for="Phone" class="form-control" />
                     </div>
-
                     <div class="col-md-6">
-                        <label>Email</label>
-                        <input asp-for="Email" class="form-control" readonly />
+                        <label class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control readonly-field" readonly />
                     </div>
-
                     <div class="col-md-6">
-                        <label>DOB</label>
+                        <label class="form-label">Date of Birth</label>
                         <input asp-for="DateOfBirth" type="date" class="form-control" />
                     </div>
-
                     <div class="col-md-6">
-                        <label>Gender</label>
+                        <label class="form-label">Gender</label>
                         <select asp-for="Gender" class="form-select">
                             <option value="">Select</option>
                             <option value="Male">Male</option>
@@ -118,38 +442,32 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
-
                     <div class="col-md-6">
-                        <label>Aadhaar</label>
-                        <input class="form-control bg-light"
-                               value="@Model.AadhaarNumber"
+                        <label class="form-label">Aadhaar Number</label>
+                        <input value="@Model.AadhaarNumber"
+                               class="form-control readonly-field"
                                readonly />
                     </div>
-
                 </div>
+
             </div>
         </div>
 
-        <!-- ================= LOCATION ================= -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-geo-alt-fill text-success me-2"></i>
-                    Location
-                </h5>
+        <!-- ══════════════ LOCATION ══════════════ -->
+        <div class="ef-card">
+            <div class="ef-card-header">
+                <div class="ef-section-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                Location
             </div>
-
-            <div class="card-body">
-
+            <div class="ef-card-body">
                 <div class="row g-3">
-
                     <div class="col-md-4">
-                        <label>State</label>
+                        <label class="form-label">State</label>
                         <select asp-for="StateId"
                                 id="stateSelect"
                                 class="form-select"
                                 onchange="loadCities(this.value)">
-                            <option value="">Select</option>
+                            <option value="">Select State</option>
                             @foreach (var s in Model.States)
                             {
                                 <option value="@s.StateId"
@@ -159,14 +477,13 @@
                             }
                         </select>
                     </div>
-
                     <div class="col-md-4">
-                        <label>City</label>
+                        <label class="form-label">City</label>
                         <select asp-for="CityId"
                                 id="citySelect"
                                 class="form-select"
                                 onchange="loadVillages(this.value)">
-                            <option value="">Select</option>
+                            <option value="">Select City</option>
                             @foreach (var c in Model.Cities)
                             {
                                 <option value="@c.CityId"
@@ -176,13 +493,12 @@
                             }
                         </select>
                     </div>
-
                     <div class="col-md-4">
-                        <label>Village</label>
+                        <label class="form-label">Village</label>
                         <select asp-for="VillageId"
                                 id="villageSelect"
                                 class="form-select">
-                            <option value="">Select</option>
+                            <option value="">Select Village</option>
                             @foreach (var v in Model.Villages)
                             {
                                 <option value="@v.VillageId"
@@ -192,117 +508,113 @@
                             }
                         </select>
                     </div>
-
                 </div>
-
             </div>
         </div>
 
-        <!-- ================= BANK ================= -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-bank2 text-success me-2"></i>
-                    Bank Details
-                </h5>
+        <!-- ══════════════ BANK ══════════════ -->
+        <div class="ef-card">
+            <div class="ef-card-header">
+                <div class="ef-section-icon"><i class="bi bi-bank2"></i></div>
+                Bank Details
             </div>
-
-            <div class="card-body">
-
+            <div class="ef-card-body">
                 <div class="row g-3">
-
                     <div class="col-md-4">
-                        <label>Bank Name</label>
+                        <label class="form-label">Bank Name</label>
                         <input asp-for="BankName" class="form-control" />
                     </div>
-
                     <div class="col-md-4">
-                        <label>Account Number</label>
+                        <label class="form-label">Account Number</label>
                         <input asp-for="AccountNumber" class="form-control" />
                     </div>
-
                     <div class="col-md-4">
-                        <label>IFSC Code</label>
+                        <label class="form-label">IFSC Code</label>
                         <input asp-for="IFSCCode" class="form-control text-uppercase" />
                     </div>
-
                 </div>
-
             </div>
         </div>
 
-        <!-- ================= DOCUMENTS ================= -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-file-earmark-text text-success me-2"></i>
-                    Documents
-                </h5>
+        <!-- ══════════════ DOCUMENTS ══════════════ -->
+        <div class="ef-card">
+            <div class="ef-card-header">
+                <div class="ef-section-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                Documents
             </div>
-
-            <div class="card-body">
-                <div class="row g-4">
+            <div class="ef-card-body">
+                <div class="row g-3">
 
                     <!-- AADHAAR -->
                     <div class="col-md-6">
-                        <div class="border rounded p-3 h-100 bg-light">
-
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0 fw-semibold">Aadhaar Card</h6>
-
+                        <div class="doc-card">
+                            <div class="doc-card-header">
+                                <span><i class="bi bi-card-heading me-1 text-primary"></i> Aadhaar Card</span>
                                 @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
                                 {
                                     <a href="@Model.AadhaarCardPath"
                                        target="_blank"
-                                       class="btn btn-sm btn-outline-primary">
-                                        View
+                                       class="btn btn-sm btn-outline-primary"
+                                       style="font-size:12px;padding:3px 10px;border-radius:7px">
+                                        <i class="bi bi-eye"></i> View
                                     </a>
                                 }
                             </div>
-
-                            <div class="text-center mb-3">
-                                <img src="@(string.IsNullOrEmpty(Model.AadhaarCardPath)
-                                                                         ? "/images/no-document.png"
-                                                                         : Model.AadhaarCardPath)"
-                                     class="img-fluid rounded border"
-                                     style="height:180px; width:100%; object-fit:contain;" />
+                            <div class="doc-preview-wrap">
+                                @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
+                                {
+                                    <img src="@Model.AadhaarCardPath" alt="Aadhaar preview" />
+                                }
+                                else
+                                {
+                                    <div class="doc-no-file">
+                                        <i class="bi bi-file-earmark-x" style="font-size:30px;color:#cbd5e1"></i>
+                                        <span>No document uploaded</span>
+                                    </div>
+                                }
                             </div>
-
+                            <label class="form-label">Replace document</label>
                             <input type="file"
                                    name="AadhaarFile"
-                                   class="form-control form-control-sm"
+                                   class="form-control"
+                                   style="height:38px;font-size:13px"
                                    accept="image/*,.pdf" />
                         </div>
                     </div>
 
                     <!-- PASSBOOK -->
                     <div class="col-md-6">
-                        <div class="border rounded p-3 h-100 bg-light">
-
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0 fw-semibold">Passbook</h6>
-
+                        <div class="doc-card">
+                            <div class="doc-card-header">
+                                <span><i class="bi bi-book me-1 text-primary"></i> Passbook</span>
                                 @if (!string.IsNullOrEmpty(Model.PassbookPath))
                                 {
                                     <a href="@Model.PassbookPath"
                                        target="_blank"
-                                       class="btn btn-sm btn-outline-primary">
-                                        View
+                                       class="btn btn-sm btn-outline-primary"
+                                       style="font-size:12px;padding:3px 10px;border-radius:7px">
+                                        <i class="bi bi-eye"></i> View
                                     </a>
                                 }
                             </div>
-
-                            <div class="text-center mb-3">
-                                <img src="@(string.IsNullOrEmpty(Model.PassbookPath)
-                                                                         ? "/images/no-document.png"
-                                                                         : Model.PassbookPath)"
-                                     class="img-fluid rounded border"
-                                     style="height:180px; width:100%; object-fit:contain;" />
+                            <div class="doc-preview-wrap">
+                                @if (!string.IsNullOrEmpty(Model.PassbookPath))
+                                {
+                                    <img src="@Model.PassbookPath" alt="Passbook preview" />
+                                }
+                                else
+                                {
+                                    <div class="doc-no-file">
+                                        <i class="bi bi-file-earmark-x" style="font-size:30px;color:#cbd5e1"></i>
+                                        <span>No document uploaded</span>
+                                    </div>
+                                }
                             </div>
-
+                            <label class="form-label">Replace document</label>
                             <input type="file"
                                    name="PassbookFile"
-                                   class="form-control form-control-sm"
+                                   class="form-control"
+                                   style="height:38px;font-size:13px"
                                    accept="image/*,.pdf" />
                         </div>
                     </div>
@@ -310,19 +622,18 @@
                 </div>
             </div>
         </div>
-        <!-- BUTTONS -->
-        <div class="d-flex justify-content-end gap-2 mb-5">
 
+        <!-- ══════════════ ACTION BAR ══════════════ -->
+        <div class="ef-action-bar">
             <a asp-action="CenterFarmerDetails"
                asp-route-id="@Model.FarmerId"
-               class="btn btn-light border">
+               class="btn-ef-cancel">
                 Cancel
             </a>
-
-            <button type="submit" class="btn btn-success px-4">
-                Save Changes
+            <button type="submit" class="btn-ef-save">
+                <i class="bi bi-check-circle-fill"></i>
+                Update Farmer
             </button>
-
         </div>
 
     </form>
@@ -330,78 +641,103 @@
 
 @section Scripts {
 
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            window.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('efToastSub').textContent =
+                    '@Html.Raw(TempData["Success"])';
+                showToast();
+            });
+        </script>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <script>
+            window.addEventListener('DOMContentLoaded', function () {
+                var t = document.getElementById('efToast');
+                t.style.background = '#991b1b';
+                document.querySelector('.ef-toast-title').textContent = 'Update failed';
+                document.getElementById('efToastSub').textContent =
+                    '@Html.Raw(TempData["Error"])';
+                showToast();
+            });
+        </script>
+    }
+
     <script>
 
+        // ── Toast helpers ──
+        function showToast() {
+            var t = document.getElementById('efToast');
+            t.classList.add('show');
+            setTimeout(hideToast, 4000);
+        }
+
+        function hideToast() {
+            document.getElementById('efToast').classList.remove('show');
+        }
+
+        // ── Photo preview ──
         function previewPhoto(input) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e =>
+                var reader = new FileReader();
+                reader.onload = function (e) {
                     document.getElementById('photoPreview').src = e.target.result;
+                };
                 reader.readAsDataURL(input.files[0]);
+                document.getElementById('photoFileName').textContent = input.files[0].name;
+                document.getElementById('photoFileName').style.color = '#1e293b';
             }
         }
 
-        // =========================
-        // LOAD CITIES
-        // =========================
-        function loadCities(stateId, selectedCityId = null, callback = null) {
-
-            document.getElementById("citySelect").innerHTML =
+        // ── Load cities ──
+        function loadCities(stateId, selectedCityId, callback) {
+            document.getElementById('citySelect').innerHTML =
                 '<option value="">Select City</option>';
-
-            document.getElementById("villageSelect").innerHTML =
+            document.getElementById('villageSelect').innerHTML =
                 '<option value="">Select Village</option>';
 
             if (!stateId) return;
 
-            fetch(`/Farmer/GetCities?stateId=${stateId}`)
-                .then(r => r.json())
-                .then(data => {
-
-                    let city = document.getElementById("citySelect");
-
-                    data.forEach(x => {
-                        let selected = x.cityId == selectedCityId ? "selected" : "";
+            fetch('/Farmer/GetCities?stateId=' + stateId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var city = document.getElementById('citySelect');
+                    data.forEach(function (x) {
+                        var sel = x.cityId == selectedCityId ? 'selected' : '';
                         city.innerHTML +=
-                            `<option value="${x.cityId}" ${selected}>${x.cityName}</option>`;
+                            '<option value="' + x.cityId + '" ' + sel + '>' + x.cityName + '</option>';
                     });
-
                     if (callback) callback();
                 });
         }
 
-        // =========================
-        // LOAD VILLAGES
-        // =========================
-        function loadVillages(cityId, selectedVillageId = null) {
-
-            document.getElementById("villageSelect").innerHTML =
+        // ── Load villages ──
+        function loadVillages(cityId, selectedVillageId) {
+            document.getElementById('villageSelect').innerHTML =
                 '<option value="">Select Village</option>';
 
             if (!cityId) return;
 
-            fetch(`/Farmer/GetVillages?cityId=${cityId}`)
-                .then(r => r.json())
-                .then(data => {
-
-                    let village = document.getElementById("villageSelect");
-
-                    data.forEach(x => {
-                        let selected = x.villageId == selectedVillageId ? "selected" : "";
+            fetch('/Farmer/GetVillages?cityId=' + cityId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var village = document.getElementById('villageSelect');
+                    data.forEach(function (x) {
+                        var sel = x.villageId == selectedVillageId ? 'selected' : '';
                         village.innerHTML +=
-                            `<option value="${x.villageId}" ${selected}>${x.villageName}</option>`;
+                            '<option value="' + x.villageId + '" ' + sel + '>' + x.villageName + '</option>';
                     });
                 });
         }
 
-        // =========================
-        // AUTO LOAD ON EDIT (FIXED FLOW)
-        // =========================
-        window.onload = function () {
-
-            let stateId = document.getElementById("stateSelect").value;
-            let cityId = document.getElementById("citySelect").value;
-            let villageId = document.getElementById("villageSelect").value;
+        // ── Auto-load dropdowns on edit ──
+        window.addEventListener('DOMContentLoaded', function () {
+            var stateId   = document.getElementById('stateSelect').value;
+            var cityId    = document.getElementById('citySelect').value;
+            var villageId = document.getElementById('villageSelect').value;
 
             if (stateId) {
                 loadCities(stateId, cityId, function () {
@@ -410,7 +746,7 @@
                     }
                 });
             }
-        };
+        });
 
     </script>
 }

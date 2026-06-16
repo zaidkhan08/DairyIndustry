@@ -194,7 +194,7 @@ namespace DairyIndustry.Controllers
             ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
             return View(payment);
         }
-
+        
         [HttpPost]
         public IActionResult CreateCheckoutSession(int paymentId, decimal totalAmount, string farmerName)
         {

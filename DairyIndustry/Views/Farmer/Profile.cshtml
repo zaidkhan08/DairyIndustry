@@ -16,7 +16,166 @@
         ? "XXXX-XXXX-" + Model.AadhaarNumber[^4..]
         : "Not Available";
 }
+<style>
+    body {
+        background: #f8fafc;
+    }
 
+    .container {
+        max-width: 100%;
+    }
+
+    /* Cards */
+    .card {
+        border: 1px solid #eef2f7 !important;
+        border-radius: 18px !important;
+        transition: all .25s ease;
+        background: #fff;
+    }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
+        }
+
+    /* Header Card */
+    .card-body img {
+        border-radius: 16px !important;
+    }
+
+    .bg-primary {
+        background: linear-gradient(135deg,#2563eb,#3b82f6) !important;
+    }
+
+    h5 {
+        font-weight: 700;
+    }
+
+    /* Card Headers */
+    .card-header {
+        background: #fff !important;
+        border-bottom: 1px solid #edf2f7 !important;
+        font-size: .95rem;
+        color: #334155 !important;
+        font-weight: 600;
+    }
+
+        .card-header i {
+            color: #2563eb;
+        }
+
+    /* Labels */
+    small.text-uppercase {
+        display: block;
+        margin-bottom: 4px;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Values */
+    .fw-medium,
+    .fw-bold,
+    .text-dark {
+        color: #1e293b !important;
+    }
+
+    /* Status Badge */
+    .badge {
+        font-size: .78rem;
+        font-weight: 600;
+        padding: 8px 14px;
+    }
+
+    /* Bank Section */
+    .font-monospace {
+        letter-spacing: .5px;
+    }
+
+    /* Security Card */
+    .btn-outline-primary {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: .25s;
+    }
+
+        .btn-outline-primary:hover {
+            transform: translateY(-1px);
+        }
+
+    /* Responsive */
+    @@media (max-width: 991px) {
+
+        .container {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .card-body.d-flex.align-items-center.gap-3 {
+            flex-wrap: wrap;
+            text-align: center;
+            justify-content: center;
+        }
+
+            .card-body.d-flex.align-items-center.gap-3 .flex-grow-1 {
+                width: 100%;
+            }
+    }
+
+    @@media (max-width: 768px) {
+
+        .row > div {
+            margin-bottom: 4px;
+        }
+
+        .card-body.d-flex.justify-content-between.align-items-center {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+            .card-body.d-flex.justify-content-between.align-items-center .btn {
+                width: 100%;
+            }
+
+        .badge {
+            margin-top: 5px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+
+        .container.py-4 {
+            padding-top: 15px !important;
+            padding-bottom: 15px !important;
+        }
+
+        .card {
+            border-radius: 14px !important;
+        }
+
+        .card-header {
+            padding: 14px 16px !important;
+        }
+
+        .card-body {
+            padding: 16px !important;
+        }
+
+        h5 {
+            font-size: 1.1rem;
+        }
+
+        .fs-6 {
+            font-size: 1rem !important;
+        }
+
+        img,
+        .bg-primary {
+            width: 65px !important;
+            height: 65px !important;
+        }
+    }
+</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <div class="container py-4" style="max-width:900px;">

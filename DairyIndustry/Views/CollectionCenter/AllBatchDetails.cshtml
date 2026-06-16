@@ -2,140 +2,309 @@
 
 @{
     ViewData["Title"] = "All Batch Details";
-    Layout = "_CollectionCenterLayout";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+    body { background: #f5f6f8; }
 
-<div class="container-fluid py-4">
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .summary-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        padding: 14px;
+    }
+    .summary-label {
+        font-size: 11px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+    .summary-value {
+        font-size: 18px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+    .text-green  { color: #198754; }
+    .text-blue   { color: #185FA5; }
+    .text-orange { color: #b58900; }
+    .text-red    { color: #a32d2d; }
 
-    <div class="card border-0 shadow-sm rounded-4">
+    .pw-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .pw-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 18px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .pw-card-title { font-size: 13px; font-weight: 600; }
 
-        <div class="card-header text-white rounded-top-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">
-                    <i class="bi bi-calendar-check"></i>
-                    All Batch Details
-                </h4>
+    .pw-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pw-filters input,
+    .pw-filters select {
+        padding: 7px 11px;
+        font-size: 12px;
+        border: 1px solid #e8e8e8;
+        border-radius: 7px;
+        background: #fafafa;
+        outline: none;
+    }
 
-                <span class="badge bg-light text-dark fs-6">
-                    Total Batches: @Model.Count
-                </span>
+    .pw-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pw-table thead th {
+        padding: 10px 14px;
+        font-size: 11px;
+        text-transform: uppercase;
+        background: #fafafa;
+        border-bottom: 1px solid #f0f0f0;
+        color: #999;
+        text-align: left;
+    }
+    .pw-table tbody tr {
+        border-bottom: 1px solid #f5f5f5;
+        transition: 0.12s;
+    }
+    .pw-table tbody tr:hover { background: #fff8f8; }
+    .pw-table td { padding: 11px 14px; }
+
+    .shift-badge {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .shift-morning { background: #fff4e5; color: #b26a00; }
+    .shift-evening { background: #e7f1ff; color: #185FA5; }
+
+    .status-badge {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .status-open       { background: #e7f1ff; color: #185FA5; }
+    .status-closed     { background: #fff4e5; color: #b26a00; }
+    .status-dispatched { background: #e6f9f0; color: #198754; }
+    .status-cancelled  { background: #fdecea; color: #a32d2d; }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 10px;
+        padding-bottom: 14px;
+    }
+    .page-btn {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .page-btn.active {
+        background: #185FA5;
+        color: #fff;
+        border-color: #185FA5;
+    }
+</style>
+
+<div class="container-fluid py-3">
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-label">Total Batches</div>
+            <div class="summary-value text-blue">@Model.Count</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total Milk</div>
+            <div class="summary-value text-green">
+                @Model.Sum(x => x.TotalMilkCollected).ToString("F2") L
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total Amount</div>
+            <div class="summary-value text-orange">
+                ₹ @Model.Sum(x => x.TotalAmount)
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Avg FAT</div>
+            <div class="summary-value text-red">
+                @(Model.Count > 0 ? Model.Average(x => x.AvgFat).ToString("F2") : "0")
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="pw-card">
+
+        <div class="pw-card-head">
+            <span class="pw-card-title">Batch Records</span>
+            <div class="pw-filters">
+                <input type="text" id="searchBox" placeholder="Search batch / center">
+                <input type="date" id="dateFilter">
+                <select id="shiftFilter">
+                    <option value="">All Shift</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                    <option value="Dispatched">Dispatched</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
             </div>
         </div>
 
-        <div class="card-body">
+        <div class="table-responsive">
+            <table class="pw-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Batch</th>
+                        <th>Date</th>
+                        <th>Shift</th>
+                        <th>Center</th>
+                        <th>Milk</th>
+                        <th>FAT</th>
+                        <th>CLR</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int i = 1;
+                    }
+                    @foreach (var item in Model)
+                    {
+                        var shiftClass = item.Shift == "Morning"
+                        ? "shift-morning" : "shift-evening";
 
-            @if (!Model.Any())
-            {
-                <div class="alert alert-warning">
-                    No batch records found.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
+                        var statusClass = item.Status switch
+                        {
+                            "Open" => "status-open",
+                            "Closed" => "status-closed",
+                            "Dispatched" => "status-dispatched",
+                            "Cancelled" => "status-cancelled",
+                            _ => "status-open"
+                        };
 
-                    <table class="table table-hover align-middle">
+                        <tr class="data-row"
+                            data-search="@item.BatchId @item.CenterName"
+                            data-shift="@item.Shift"
+                            data-date="@item.BatchDate.ToString("yyyy-MM-dd")"
+                            data-status="@item.Status">
 
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Batch ID</th>
-                                <th>Date</th>
-                                <th>Shift</th>
-                                <th>Center</th>
-                                <th>Farmers</th>
-                                <th>Milk Qty</th>
-                                <th>Avg Fat</th>
-                                <th>Avg CLR</th>
-                                <th>Total Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-
-                                    <td>
-                                        <span class="fw-bold text-primary">
-                                            #@item.BatchId
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        @item.BatchDate.ToString("dd-MM-yyyy")
-                                    </td>
-
-                                    <td>
-                                        <span class="badge bg-info text-dark">
-                                            @item.Shift
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        @item.CenterName
-                                    </td>
-
-                                    <td>
-                                        @item.TotalFarmers
-                                    </td>
-
-                                    <td>
-                                        <span class="fw-semibold text-success">
-                                            @item.TotalMilkCollected L
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        @item.AvgFat %
-                                    </td>
-
-                                    <td>
-                                        @item.AvgCLR
-                                    </td>
-
-                                    <td>
-                                        <span class="fw-bold text-warning">
-                                            ₹@item.TotalAmount
-                                        </span>
-                                    </td>
-
-                                    <td>
-
-                                        @if (item.Status == "Open")
-                                        {
-                                            <span class="badge bg-success">
-                                                Open
-                                            </span>
-                                        }
-                                        else if (item.Status == "Closed")
-                                        {
-                                            <span class="badge bg-danger">
-                                                Closed
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                @item.Status
-                                            </span>
-                                        }
-
-                                    </td>
-
-                                </tr>
-                            }
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-            }
-
+                            <td>@i</td>
+                            <td><b>@item.BatchId</b></td>
+                            <td>@item.BatchDate.ToString("dd-MM-yyyy")</td>
+                            <td>
+                                <span class="shift-badge @shiftClass">@item.Shift</span>
+                            </td>
+                            <td>@item.CenterName</td>
+                            <td style="color:#198754;font-weight:600">
+                                @item.TotalMilkCollected.ToString("F2") L
+                            </td>
+                            <td>@item.AvgFat</td>
+                            <td>@item.AvgCLR</td>
+                            <td style="color:#b58900;font-weight:700">
+                                ₹ @item.TotalAmount
+                            </td>
+                            <td>
+                                <span class="status-badge @statusClass">@item.Status</span>
+                            </td>
+                            <td>
+                                <a asp-action="BatchDetail"  asp-route-id="@item.BatchId"
+                                   class="btn btn-sm"
+                                   style="font-size:11px; padding:4px 12px; border-radius:20px; border:1px solid #185FA5; color:#185FA5; text-decoration:none;">
+                                    <i class="ti ti-eye" style="font-size:12px;"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        i++;
+                    }
+                </tbody>
+            </table>
         </div>
 
+        <div class="pagination" id="pagination"></div>
     </div>
-
 </div>
+
+<script>
+    const rowsPerPage  = 8;
+    let currentPage    = 1;
+
+    const rows         = Array.from(document.querySelectorAll(".data-row"));
+    const searchBox    = document.getElementById("searchBox");
+    const shiftFilter  = document.getElementById("shiftFilter");
+    const dateFilter   = document.getElementById("dateFilter");
+    const statusFilter = document.getElementById("statusFilter");
+
+    function filterRows() {
+        const search = searchBox.value.toLowerCase();
+        const shift  = shiftFilter.value;
+        const date   = dateFilter.value;
+        const status = statusFilter.value;
+
+        return rows.filter(r => {
+            const matchSearch = r.dataset.search.toLowerCase().includes(search);
+            const matchShift  = !shift  || r.dataset.shift  === shift;
+            const matchDate   = !date   || r.dataset.date   === date;
+            const matchStatus = !status || r.dataset.status === status;
+            return matchSearch && matchShift && matchDate && matchStatus;
+        });
+    }
+
+    function renderTable() {
+        const filtered = filterRows();
+        const start    = (currentPage - 1) * rowsPerPage;
+        const end      = start + rowsPerPage;
+        rows.forEach(r => r.style.display = "none");
+        filtered.slice(start, end).forEach(r => r.style.display = "");
+        renderPagination(filtered.length);
+    }
+
+    function renderPagination(totalRows) {
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+        for (let i = 1; i <= totalPages; i++) {
+            const btn      = document.createElement("button");
+            btn.innerText  = i;
+            btn.className  = "page-btn" + (i === currentPage ? " active" : "");
+            btn.onclick    = () => { currentPage = i; renderTable(); };
+            pagination.appendChild(btn);
+        }
+    }
+
+    function resetPage() { currentPage = 1; renderTable(); }
+
+    searchBox.addEventListener("input",    resetPage);
+    shiftFilter.addEventListener("change", resetPage);
+    dateFilter.addEventListener("change",  resetPage);
+    statusFilter.addEventListener("change",resetPage);
+
+    renderTable();
+</script>

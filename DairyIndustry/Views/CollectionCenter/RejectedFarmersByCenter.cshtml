@@ -3,200 +3,905 @@
 
 @{
     ViewData["Title"] = "Rejected Farmers";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+
+    int totalRejected = Model.Count;
+    int maleCount = Model.Count(x => x.Gender == "Male");
+    int femaleCount = Model.Count(x => x.Gender == "Female");
+    int otherCount = Model.Count(x => x.Gender == "Other");
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-<div class="container-fluid px-4 mt-4" style="max-width:1200px;">
+<style>
+    .rf {
+        --bg: #fff;
+        --border: #e5e7eb;
+        --text: #111827;
+        --muted: #6b7280;
+        --blue: #2563eb;
+        --green: #16a34a;
+        --red: #dc2626;
+        --pink: #db2777;
+        font-family: system-ui;
+    }
+
+    .rf-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .rf-breadcrumb {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .rf-page-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .btn-back {
+        padding: 8px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text);
+        font-size: 13px;
+        background: #fff;
+    }
+
+    .rf-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .rf-tab {
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        font-size: 13px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .rf-tab.active {
+        background: #f3f4f6;
+        font-weight: 600;
+    }
+
+    .rf-tab-badge {
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 10px;
+        margin-left: 6px;
+    }
+
+    .badge-all  { background: #e5e7eb; }
+    .badge-blue { background: #dbeafe; color: var(--blue); }
+    .badge-pink { background: #fce7f3; color: var(--pink); }
+    .badge-green{ background: #dcfce7; color: var(--green); }
+
+    .rf-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 15px 0;
+    }
+
+    .rf-stat {
+        background: #fff;
+        border: 1px solid var(--border);
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .rf-stat-label {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .rf-stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        margin-top: 5px;
+    }
+
+    .rf-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .rf-toolbar {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .rf-search {
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        width: 220px;
+    }
+
+    .rf-select {
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .rf-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .rf-table th {
+        text-align: left;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 10px;
+        background: #fafafa;
+    }
+
+    .rf-table td {
+        padding: 12px 10px;
+        border-top: 1px solid #f1f1f1;
+        font-size: 13px;
+    }
+
+    .rf-pill {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        background: #fee2e2;
+        color: var(--red);
+        display: inline-block;
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    .rf-empty {
+        padding: 40px;
+        text-align: center;
+        color: var(--muted);
+    }
+
+    .btn-view {
+        padding: 5px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--text);
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .btn-view:hover {
+        background: #f3f4f6;
+    }
+
+    .fm-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    #paginationInfo {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .page-btns { display: flex; gap: 6px; }
+
+    .pg-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .pg-btn.active   { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .pg-btn.disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── DRAWER ── */
+    .drawer-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        display: none;
+        z-index: 9998;
+    }
+
+    .farmer-drawer {
+        position: fixed;
+        top: 0;
+        right: -600px;
+        width: 520px;
+        max-width: 100%;
+        height: 100vh;
+        background: #fff;
+        z-index: 9999;
+        transition: right .32s ease;
+        overflow-y: auto;
+        box-shadow: -4px 0 24px rgba(0,0,0,.10);
+    }
+
+    .farmer-drawer.open { right: 0; }
+
+    .drawer-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .drawer-header h5 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .drawer-close {
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        cursor: pointer;
+        color: #6b7280;
+        line-height: 1;
+        padding: 2px;
+    }
+
+    .drawer-close:hover { color: #111827; }
+
+    .drawer-body { padding: 18px; }
+
+    /* profile */
+    .profile-section {
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .profile-img {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #e5e7eb;
+        margin-bottom: 10px;
+    }
+
+    .profile-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 6px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #fee2e2;
+        color: #dc2626;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* rejection banner */
+    .reject-banner {
+        background: #fff5f5;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #dc2626;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 16px;
+    }
+
+    .reject-banner-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #dc2626;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 5px;
+    }
+
+    .reject-banner-text {
+        font-size: 13px;
+        color: #991b1b;
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    /* cards */
+    .drawer-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 14px;
+    }
+
+    .drawer-card-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin: 0 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .info-grid label {
+        display: block;
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 3px;
+    }
+
+    .info-grid span {
+        font-size: 13px;
+        color: #111827;
+        font-weight: 500;
+    }
+
+    .no-data-text {
+        font-size: 13px;
+        color: #9ca3af;
+        font-style: italic;
+    }
+
+    /* documents */
+    .doc-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .doc-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+    }
+
+    .doc-box img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 7px;
+        margin-bottom: 8px;
+        background: #f3f4f6;
+    }
+
+    .doc-label {
+        font-size: 11px;
+        color: #6b7280;
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .doc-link {
+        font-size: 12px;
+        color: #2563eb;
+        text-decoration: none;
+    }
+
+    .doc-link:hover { text-decoration: underline; }
+
+    .doc-no-file {
+        font-size: 12px;
+        color: #9ca3af;
+        font-style: italic;
+    }
+</style>
+
+<!-- ── DRAWER OVERLAY ── -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<!-- ── DRAWER PANEL ── -->
+<div class="farmer-drawer" id="farmerDrawer">
+
+    <div class="drawer-header">
+        <h5><i class="bi bi-person-x me-2"></i>Rejected Farmer Details</h5>
+        <button type="button" class="drawer-close" onclick="closeDrawer()" title="Close">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="drawer-body">
+
+        <!-- Profile -->
+        <div class="profile-section">
+            <img id="dPhoto" src="/images/user.png" class="profile-img" alt="Profile Photo" />
+            <p class="profile-name" id="dName">—</p>
+            <span class="status-badge">
+                <i class="bi bi-x-circle-fill"></i> Rejected
+            </span>
+        </div>
+
+        <!-- Rejection Reason Banner -->
+        <div class="reject-banner">
+            <div class="reject-banner-label">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> Rejection Reason
+            </div>
+            <p class="reject-banner-text" id="dReason">—</p>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="drawer-card">
+            <p class="drawer-card-title">
+                <i class="bi bi-person"></i> Personal Information
+            </p>
+            <div class="info-grid">
+                <div>
+                    <label>Phone</label>
+                    <span id="dPhone">—</span>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <span id="dEmail">—</span>
+                </div>
+                <div>
+                    <label>Gender</label>
+                    <span id="dGender">—</span>
+                </div>
+                <div>
+                    <label>Date of Birth</label>
+                    <span id="dDOB">—</span>
+                </div>
+                <div>
+                    <label>Aadhaar</label>
+                    <span id="dAadhaar">—</span>
+                </div>
+                <div>
+                    <label>Applied On</label>
+                    <span id="dCreatedDate">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Location -->
+        <div class="drawer-card">
+            <p class="drawer-card-title">
+                <i class="bi bi-geo-alt"></i> Location
+            </p>
+            <div class="info-grid">
+                <div>
+                    <label>Village</label>
+                    <span id="dVillage">—</span>
+                </div>
+                <div>
+                    <label>City</label>
+                    <span id="dCity">—</span>
+                </div>
+                <div>
+                    <label>State</label>
+                    <span id="dState">—</span>
+                </div>
+                <div>
+                    <label>Collection Center</label>
+                    <span id="dCenter">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="drawer-card">
+            <p class="drawer-card-title">
+                <i class="bi bi-bank"></i> Bank Details
+            </p>
+            <div id="dBankBlock">
+                <div class="info-grid">
+                    <div>
+                        <label>Bank Name</label>
+                        <span id="dBank">—</span>
+                    </div>
+                    <div>
+                        <label>Account Number</label>
+                        <span id="dAccount">—</span>
+                    </div>
+                    <div>
+                        <label>IFSC Code</label>
+                        <span id="dIFSC">—</span>
+                    </div>
+                </div>
+            </div>
+            <p id="dNoBankMsg" class="no-data-text" style="display:none;">No bank account linked</p>
+        </div>
+
+        <!-- Documents -->
+        <div class="drawer-card">
+            <p class="drawer-card-title">
+                <i class="bi bi-file-earmark-text"></i> Documents
+            </p>
+            <div class="doc-grid">
+
+                <div class="doc-box">
+                    <span class="doc-label">Aadhaar Card</span>
+                    <img id="aadhaarPreview" src="/images/doc-placeholder.png" alt="Aadhaar" />
+                    <div id="aadhaarLinkWrap">
+                        <a id="aadhaarLink" class="doc-link" href="#" target="_blank">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>View Document
+                        </a>
+                    </div>
+                    <p id="aadhaarNoFile" class="doc-no-file" style="display:none;">Not uploaded</p>
+                </div>
+
+                <div class="doc-box">
+                    <span class="doc-label">Bank Passbook</span>
+                    <img id="passbookPreview" src="/images/doc-placeholder.png" alt="Passbook" />
+                    <div id="passbookLinkWrap">
+                        <a id="passbookLink" class="doc-link" href="#" target="_blank">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>View Document
+                        </a>
+                    </div>
+                    <p id="passbookNoFile" class="doc-no-file" style="display:none;">Not uploaded</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── MAIN PAGE ── -->
+<div class="rf">
 
     <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <a asp-controller="Farmer" asp-action="ListAllFarmers" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Back
+    <div class="rf-page-header">
+        <div>
+            <div class="rf-breadcrumb">Farmer Management › Rejected Applications</div>
+            <h1 class="rf-page-title">Rejected Farmers</h1>
+
+            <div class="rf-tabs">
+                <button class="rf-tab active" data-filter="all">
+                    All <span class="rf-tab-badge badge-all">@totalRejected</span>
+                </button>
+                <button class="rf-tab" data-filter="Male">
+                    Male <span class="rf-tab-badge badge-blue">@maleCount</span>
+                </button>
+                <button class="rf-tab" data-filter="Female">
+                    Female <span class="rf-tab-badge badge-pink">@femaleCount</span>
+                </button>
+                <button class="rf-tab" data-filter="Other">
+                    Other <span class="rf-tab-badge badge-green">@otherCount</span>
+                </button>
+            </div>
+        </div>
+
+        <a asp-action="ListAllFarmers" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
         </a>
     </div>
 
-    <!-- 🔎 FILTER SECTION -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-2">
-
-                <!-- Search -->
-                <div class="col-md-4">
-                    <input type="text" id="searchBox" class="form-control"
-                           placeholder="Search farmer / phone..." />
-                </div>
-
-                <!-- Location Filter -->
-                <div class="col-md-3">
-                    <input type="text" id="locationFilter" class="form-control"
-                           placeholder="Filter by city / village..." />
-                </div>
-
-                <!-- Bank Filter -->
-                <div class="col-md-3">
-                    <select id="bankFilter" class="form-select">
-                        <option value="">All Bank Status</option>
-                        <option value="Added">Bank Added</option>
-                        <option value="Pending">Bank Pending</option>
-                    </select>
-                </div>
-
-                <!-- Reset -->
-                <div class="col-md-2">
-                    <button class="btn btn-outline-danger w-100" onclick="resetFilters()">
-                        Reset
-                    </button>
-                </div>
-
-            </div>
+    <!-- STATS -->
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat-label">Total Rejected</div>
+            <div class="rf-stat-value">@totalRejected</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat-label">Male</div>
+            <div class="rf-stat-value">@maleCount</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat-label">Female</div>
+            <div class="rf-stat-value">@femaleCount</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat-label">Other</div>
+            <div class="rf-stat-value">@otherCount</div>
         </div>
     </div>
 
-    @if (Model == null || !Model.Any())
-    {
-        <div class="card border-0 shadow-sm text-center py-5">
-            <div class="card-body">
-                <i class="bi bi-check-circle text-success" style="font-size:3rem;"></i>
-                <p class="mt-3 text-muted fs-5">No rejected farmers. All clear!</p>
+    <!-- TABLE CARD -->
+    <div class="rf-card">
+
+        <div class="rf-toolbar">
+            <div style="font-size:13px;font-weight:600;color:#374151;">Rejected Farmers List</div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="search" class="rf-search" placeholder="Search farmer...">
+                <select id="genderFilter" class="rf-select">
+                    <option value="">All Gender</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                </select>
             </div>
         </div>
-    }
-    else
-    {
-        <div class="card border-0 shadow-sm">
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="farmersTable">
-
-                    <thead class="table-light">
+        <div style="overflow:auto;">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Farmer</th>
+                        <th>Location</th>
+                        <th>Phone</th>
+                        <th>Aadhaar</th>
+                        <th>Reason</th>
+                        <th>Applied On</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    @if (!Model.Any())
+                    {
                         <tr>
-                            <th>#</th>
-                            <th>Farmer</th>
-                            <th>Phone</th>
-                            <th>Location</th>
-                            <th>Gender</th>
-                            <th>Bank</th>
-                            <th>Reason</th>
-                            <th>Status</th>
+                            <td colspan="8" class="rf-empty">No rejected farmers found</td>
                         </tr>
-                    </thead>
-
-                    <tbody>
-                        @{
-                            int row = 1;
-                        }
-
-                        @foreach (var f in Model)
+                    }
+                    else
+                    {
+                        int i = 1;
+                        foreach (var f in Model)
                         {
-                            <tr>
-
-                                <td class="fw-semibold text-muted">@row</td>
-
-                                <td class="farmer-col">
-                                    <div class="d-flex align-items-center">
-                                        <img src="@(string.IsNullOrEmpty(f.ProfilePhoto) ? "/images/user.png" : f.ProfilePhoto)"
-                                             width="45" height="45"
-                                             class="rounded-circle border me-3"
-                                             style="object-fit:cover;" />
-
-                                        <div class="fw-bold">
-                                            @f.FarmerName
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td class="phone-col">@f.Phone</td>
-
-                                <td class="location-col">
-                                    <div class="fw-semibold">@f.VillageName</div>
-                                    <div class="small text-muted">@f.CityName, @f.StateName</div>
-                                </td>
-
-                                <td>@(string.IsNullOrEmpty(f.Gender) ? "-" : f.Gender)</td>
-
-                                <!-- BANK -->
-                                <td class="bank-col">
-                                    @if (!string.IsNullOrEmpty(f.BankName))
-                                    {
-                                        <span class="badge bg-success-subtle text-success px-3 py-2">
-                                            Added
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning-subtle text-dark px-3 py-2">
-                                            Pending
-                                        </span>
-                                    }
-                            </td>
-
-                            <td class="text-danger small fw-semibold">
-                                @(string.IsNullOrWhiteSpace(f.ApprovalRemark)
-                                                            ? "No reason provided."
-                                                            : f.ApprovalRemark)
-                        </td>
-
+                            <tr data-gender="@f.Gender" data-id="@f.FarmerId">
+                                <td>@i</td>
                                 <td>
-                                    <span class="badge bg-danger px-3 py-2">Rejected</span>
+                                    <b>@f.FarmerName</b><br />
+                                    <small style="color:#6b7280;">@f.Email</small>
                                 </td>
-
+                                <td>
+                                    @f.VillageName<br />
+                                    <small style="color:#6b7280;">@f.CityName, @f.StateName</small>
+                                </td>
+                                <td>@f.Phone</td>
+                                <td>XXXX-XXXX-@f.AadhaarNumber?.Substring(8)</td>
+                                <td>
+                                    <span class="rf-pill" title="@f.ApprovalRemark">@f.ApprovalRemark</span>
+                                </td>
+                                <td>@f.CreatedDate.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <button type="button"
+                                            class="btn-view"
+                                            onclick="openDrawer(@f.FarmerId)">
+                                        <i class="bi bi-eye me-1"></i>View
+                                    </button>
+                                </td>
                             </tr>
-
-                                        row++;
+                            i++;
                         }
-                    </tbody>
+                    }
+                </tbody>
+            </table>
 
-                </table>
+            <div class="fm-pagination" id="paginationBar">
+                <span id="paginationInfo">Showing 0–0 of 0 farmers</span>
+                <div class="page-btns" id="paginationBtns"></div>
             </div>
         </div>
-    }
+
+    </div>
 </div>
 
-<!-- 🔥 FILTER SCRIPT -->
+<!-- ── SERIALIZE MODEL TO JSON ── -->
 <script>
-    const searchBox = document.getElementById("searchBox");
-    const locationFilter = document.getElementById("locationFilter");
-    const bankFilter = document.getElementById("bankFilter");
+    const farmersData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model,
+        new System.Text.Json.JsonSerializerOptions {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        }));
+</script>
 
-    const table = document.getElementById("farmersTable");
+<script>
+    /* ── SEARCH + GENDER FILTER ── */
+    const searchInput  = document.getElementById("search");
+    const genderSelect = document.getElementById("genderFilter");
 
-    function filterTable() {
-        const search = searchBox.value.toLowerCase();
-        const location = locationFilter.value.toLowerCase();
-        const bank = bankFilter.value.toLowerCase();
+    function applyFilter() {
+        const q = searchInput.value.toLowerCase();
+        const g = genderSelect.value;
+        document.querySelectorAll("#tableBody tr").forEach(row => {
+            const matchSearch = row.innerText.toLowerCase().includes(q);
+            const matchGender = !g || row.dataset.gender === g;
+            row.style.display = matchSearch && matchGender ? "" : "none";
+        });
+        currentPage = 1;
+        displayTable();
+    }
 
-        const rows = table.getElementsByTagName("tr");
+    searchInput.addEventListener("input", applyFilter);
+    genderSelect.addEventListener("change", applyFilter);
 
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
+    /* ── GENDER TABS ── */
+    document.querySelectorAll(".rf-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".rf-tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            const val = tab.dataset.filter;
+            document.querySelectorAll("#tableBody tr").forEach(row => {
+                row.style.display = (val === "all" || row.dataset.gender === val) ? "" : "none";
+            });
+            currentPage = 1;
+            displayTable();
+        });
+    });
 
-            const farmer = row.querySelector(".farmer-col")?.innerText.toLowerCase() || "";
-            const phone = row.querySelector(".phone-col")?.innerText.toLowerCase() || "";
-            const loc = row.querySelector(".location-col")?.innerText.toLowerCase() || "";
-            const bankText = row.querySelector(".bank-col")?.innerText.trim().toLowerCase() || "";
+    /* ── PAGINATION ── */
+    let rowsPerPage = 10;
+    let currentPage = 1;
 
-            const matchSearch = farmer.includes(search) || phone.includes(search);
-            const matchLocation = loc.includes(location);
-            const matchBank = bank === "" || bankText.includes(bank);
+    function visibleRows() {
+        return Array.from(document.querySelectorAll("#tableBody tr"))
+            .filter(r => r.style.display !== "none");
+    }
 
-            if (matchSearch && matchLocation && matchBank) {
-                row.style.display = "";
-            } else {
-                row.style.display = "none";
-            }
+    function displayTable() {
+        const allRows = visibleRows();
+        const start   = (currentPage - 1) * rowsPerPage;
+        const end     = start + rowsPerPage;
+
+        // hide all first, then show current page slice
+        Array.from(document.querySelectorAll("#tableBody tr")).forEach(r => {
+            if (r.style.display !== "none") r.style.display = "none";
+        });
+        allRows.forEach((row, idx) => {
+            row.style.display = (idx >= start && idx < end) ? "" : "none";
+        });
+
+        renderPagination(allRows.length);
+    }
+
+    function renderPagination(totalRows) {
+        const pageCount = Math.ceil(totalRows / rowsPerPage) || 1;
+        const btns      = document.getElementById("paginationBtns");
+        btns.innerHTML  = "";
+
+        const prev = document.createElement("button");
+        prev.className  = "pg-btn" + (currentPage === 1 ? " disabled" : "");
+        prev.innerHTML  = "&lt;";
+        prev.onclick    = () => { if (currentPage > 1) { currentPage--; displayTable(); } };
+        btns.appendChild(prev);
+
+        const cur = document.createElement("button");
+        cur.className   = "pg-btn active";
+        cur.innerText   = currentPage;
+        btns.appendChild(cur);
+
+        const next = document.createElement("button");
+        next.className  = "pg-btn" + (currentPage >= pageCount ? " disabled" : "");
+        next.innerHTML  = "&gt;";
+        next.onclick    = () => { if (currentPage < pageCount) { currentPage++; displayTable(); } };
+        btns.appendChild(next);
+
+        const s = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+        const e = Math.min(currentPage * rowsPerPage, totalRows);
+        document.getElementById("paginationInfo").innerText =
+            `Showing ${s}–${e} of ${totalRows} farmers`;
+    }
+
+    displayTable();
+
+    /* ── DRAWER ── */
+    function openDrawer(id) {
+        const data = farmersData.find(x => x.farmerId === id);
+        if (!data) return;
+
+        // Profile
+        document.getElementById('dName').innerText  = data.farmerName || '—';
+        document.getElementById('dPhoto').src        = data.profilePhoto || '/images/user.png';
+
+        // Rejection reason
+        document.getElementById('dReason').innerText = data.approvalRemark || 'No reason provided';
+
+        // Personal
+        document.getElementById('dPhone').innerText  = data.phone  || '—';
+        document.getElementById('dEmail').innerText  = data.email  || '—';
+        document.getElementById('dGender').innerText = data.gender || '—';
+        document.getElementById('dDOB').innerText = data.dateOfBirth
+    ? new Date(data.dateOfBirth).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+    : '—';
+
+        const aadh = data.aadhaarNumber;
+            document.getElementById('dAadhaar').innerText = aadh || '—';
+
+        // Applied On
+        if (data.createdDate) {
+            const d = new Date(data.createdDate);
+            document.getElementById('dCreatedDate').innerText =
+                d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+        } else {
+            document.getElementById('dCreatedDate').innerText = '—';
         }
+
+        // Location
+        document.getElementById('dVillage').innerText = data.villageName || '—';
+        document.getElementById('dCity').innerText    = data.cityName    || '—';
+        document.getElementById('dState').innerText   = data.stateName   || '—';
+        document.getElementById('dCenter').innerText  = data.centerName  || '—';
+
+        // Bank
+        if (data.bankName) {
+            document.getElementById('dBankBlock').style.display  = '';
+            document.getElementById('dNoBankMsg').style.display  = 'none';
+            document.getElementById('dBank').innerText    = data.bankName      || '—';
+            document.getElementById('dAccount').innerText = data.accountNumber || '—';
+            document.getElementById('dIFSC').innerText    = data.ifscCode      || '—';
+        } else {
+            document.getElementById('dBankBlock').style.display  = 'none';
+            document.getElementById('dNoBankMsg').style.display  = '';
+        }
+
+        // Aadhaar Document
+        if (data.aadhaarDocumentPath) {
+            document.getElementById('aadhaarPreview').src    = data.aadhaarDocumentPath;
+            document.getElementById('aadhaarLink').href      = data.aadhaarDocumentPath;
+            document.getElementById('aadhaarLinkWrap').style.display = '';
+            document.getElementById('aadhaarNoFile').style.display   = 'none';
+        } else {
+            document.getElementById('aadhaarPreview').src    = '/images/doc-placeholder.png';
+            document.getElementById('aadhaarLinkWrap').style.display = 'none';
+            document.getElementById('aadhaarNoFile').style.display   = '';
+        }
+
+        // Passbook Document
+        if (data.bankPassbookPath) {
+            document.getElementById('passbookPreview').src   = data.bankPassbookPath;
+            document.getElementById('passbookLink').href     = data.bankPassbookPath;
+            document.getElementById('passbookLinkWrap').style.display = '';
+            document.getElementById('passbookNoFile').style.display   = 'none';
+        } else {
+            document.getElementById('passbookPreview').src   = '/images/doc-placeholder.png';
+            document.getElementById('passbookLinkWrap').style.display = 'none';
+            document.getElementById('passbookNoFile').style.display   = '';
+        }
+
+        // Open
+        document.getElementById('drawerOverlay').style.display = 'block';
+        document.getElementById('farmerDrawer').classList.add('open');
+        document.body.style.overflow = 'hidden';
     }
 
-    searchBox.addEventListener("keyup", filterTable);
-    locationFilter.addEventListener("keyup", filterTable);
-    bankFilter.addEventListener("change", filterTable);
-
-    function resetFilters() {
-        searchBox.value = "";
-        locationFilter.value = "";
-        bankFilter.value = "";
-        filterTable();
+    function closeDrawer() {
+        document.getElementById('drawerOverlay').style.display = 'none';
+        document.getElementById('farmerDrawer').classList.remove('open');
+        document.body.style.overflow = '';
     }
+
+    document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
 </script>

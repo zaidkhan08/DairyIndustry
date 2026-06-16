@@ -1,0 +1,1 @@
+﻿var emailRegex = new RegExp('.+[@].+[.].+');

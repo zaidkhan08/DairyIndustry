@@ -1,4 +1,5 @@
-﻿using DairyIndustry.Filters;
+﻿using DairyIndustry.Data;
+using DairyIndustry.Filters;
 using DairyIndustry.Models.Collection;
 using DairyIndustry.Models.FarmerModel;
 using DairyIndustry.Repositories;
@@ -6,6 +7,8 @@ using DairyIndustry.Services;
 using DinkToPdf;
 using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace DairyIndustry.Controllers
 {
@@ -42,7 +45,10 @@ namespace DairyIndustry.Controllers
                 TodaySummary = _collectionCenterRepo.GetTodaySummary(staffId.Value),
                 Shifts = _collectionCenterRepo.GetShiftStatus(staffId.Value),
                 Inventory = _collectionCenterRepo.GetInventory(staffId.Value),
-                FarmerStats = _collectionCenterRepo.GetFarmerStats(staffId.Value)
+                FarmerStats = _collectionCenterRepo.GetFarmerStats(staffId.Value),
+                CollectionTrend = _collectionCenterRepo.GetCollectionTrend(staffId.Value),
+                CollectionVsRejectionTrend =_collectionCenterRepo.GetCollectionVsRejectionTrend(staffId.Value),
+                RejectionReasons = _collectionCenterRepo.GetRejectionReasons(staffId.Value)
             };
 
             if (model == null)
@@ -77,6 +83,12 @@ namespace DairyIndustry.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult BatchDetail(int id)
+        {
+            var detail = _collectionCenterRepo.GetBatchDetail(id);
+            return View(detail);
+        }
 
         [SessionAuthorize("Collection Agent")]
         [HttpGet]
@@ -403,29 +415,77 @@ namespace DairyIndustry.Controllers
             return View(receipt);
         }
 
+        //[SessionAuthorize("Collection Agent")]
+        //public IActionResult DownloadReceipt(int id)
+        //{
+        //    var r = _collectionCenterRepo.GetReceiptByCollectionId(id);
+        //    if (r == null) return NotFound();
+
+        //    // Read HTML file
+        //    var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/templates/Receipt.html");
+        //    var html = System.IO.File.ReadAllText(path);
+
+        //    // Replace placeholders
+        //    html = html.Replace("{{CenterName}}", r.CenterName ?? "MILK COLLECTION CENTER")
+        //               .Replace("{{ReceiptNumber}}", r.ReceiptNumber ?? "")
+        //               .Replace("{{Date}}", r.CollectionDate.ToString("dd-MM-yyyy"))
+        //               .Replace("{{Shift}}", r.Shift ?? "")
+        //               .Replace("{{FarmerName}}", r.FarmerName ?? "")
+        //               .Replace("{{FarmerCode}}", r.FarmerCode ?? "")
+        //               .Replace("{{MilkType}}", r.MilkTypeName ?? "")
+        //               .Replace("{{Quantity}}", $"{r.Quantity:F2} L")
+        //               .Replace("{{Fat}}", r.AppliedFat?.ToString("F2") ?? "-")
+        //               .Replace("{{CLR}}", r.AppliedCLR?.ToString("F2") ?? "-")
+        //               .Replace("{{Rate}}", $"₹{r.RatePerLiter?.ToString("F2") ?? "-"}")
+        //               .Replace("{{Amount}}", $"₹{r.Amount?.ToString("F2") ?? "0.00"}");
+
+        //    var doc = new HtmlToPdfDocument()
+        //    {
+        //        GlobalSettings = new GlobalSettings
+        //        {
+        //            ColorMode = ColorMode.Color,
+        //            Orientation = Orientation.Portrait,
+        //            // 80mm is approx 3.15 inches. Set height long (e.g., 200mm/7.87in) to fit data.
+        //            PaperSize = new PechkinPaperSize("80mm", "200mm"),
+        //            Margins = new MarginSettings { Top = 2, Bottom = 2, Left = 2, Right = 2 }
+        //        },
+        //        Objects =
+        //        {
+        //            new ObjectSettings()
+        //            {
+        //                HtmlContent = html,
+        //                WebSettings = { DefaultEncoding = "utf-8" }
+        //            }
+        //        }
+        //    };
+
+        //    var pdf = _converter.Convert(doc);
+
+        //    return File(pdf, "application/pdf", $"Receipt_{r.ReceiptNumber}.pdf");
+        //}
+
         [SessionAuthorize("Collection Agent")]
         public IActionResult DownloadReceipt(int id)
         {
             var r = _collectionCenterRepo.GetReceiptByCollectionId(id);
             if (r == null) return NotFound();
 
-            // Read HTML file
             var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/templates/Receipt.html");
             var html = System.IO.File.ReadAllText(path);
 
-            // Replace placeholders
             html = html.Replace("{{CenterName}}", r.CenterName ?? "MILK COLLECTION CENTER")
                        .Replace("{{ReceiptNumber}}", r.ReceiptNumber ?? "")
-                       .Replace("{{Date}}", r.CollectionDate.ToString("dd-MM-yyyy"))
+                       .Replace("{{Date}}", r.CollectionDate.ToString("dd MMM yyyy"))
                        .Replace("{{Shift}}", r.Shift ?? "")
                        .Replace("{{FarmerName}}", r.FarmerName ?? "")
                        .Replace("{{FarmerCode}}", r.FarmerCode ?? "")
                        .Replace("{{MilkType}}", r.MilkTypeName ?? "")
-                       .Replace("{{Quantity}}", $"{r.Quantity:F2} L")
-                       .Replace("{{Fat}}", r.AppliedFat?.ToString("F2") ?? "-")
-                       .Replace("{{CLR}}", r.AppliedCLR?.ToString("F2") ?? "-")
-                       .Replace("{{Rate}}", $"₹{r.RatePerLiter?.ToString("F2") ?? "-"}")
-                       .Replace("{{Amount}}", $"₹{r.Amount?.ToString("F2") ?? "0.00"}");
+                       .Replace("{{Quantity}}", r.Quantity.ToString("F2"))
+                       .Replace("{{Fat}}", r.AppliedFat?.ToString("F2") ?? "—")
+                       .Replace("{{CLR}}", r.AppliedCLR?.ToString("F2") ?? "—")
+                       .Replace("{{Rate}}", $"₹{r.RatePerLiter?.ToString("F2") ?? "—"}")
+                       .Replace("{{Amount}}", $"₹{r.Amount?.ToString("F2") ?? "0.00"}")
+                       .Replace("{{DateTime}}", DateTime.Now.ToString("dd MMM yyyy, hh:mm tt"));
 
             var doc = new HtmlToPdfDocument()
             {
@@ -433,9 +493,8 @@ namespace DairyIndustry.Controllers
                 {
                     ColorMode = ColorMode.Color,
                     Orientation = Orientation.Portrait,
-                    // 80mm is approx 3.15 inches. Set height long (e.g., 200mm/7.87in) to fit data.
-                    PaperSize = new PechkinPaperSize("80mm", "200mm"),
-                    Margins = new MarginSettings { Top = 2, Bottom = 2, Left = 2, Right = 2 }
+                    PaperSize = new PechkinPaperSize("170mm", "100mm"),
+                    Margins = new MarginSettings { Top = 6, Bottom = 6, Left = 8, Right = 8 }
                 },
                 Objects =
                 {
@@ -448,10 +507,8 @@ namespace DairyIndustry.Controllers
             };
 
             var pdf = _converter.Convert(doc);
-
             return File(pdf, "application/pdf", $"Receipt_{r.ReceiptNumber}.pdf");
         }
-
         [HttpGet]
         public IActionResult ToggleStatus(int id, bool isActive)
         {
@@ -737,6 +794,7 @@ namespace DairyIndustry.Controllers
 
             return View(history);
         }
+
 
     }
 }
