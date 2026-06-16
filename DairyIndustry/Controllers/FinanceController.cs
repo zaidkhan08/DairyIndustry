@@ -723,10 +723,11 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
         [HttpPost]
+        [HttpPost]
         public IActionResult CreateStaffPayment(int staffId, int plantId, DateTime fromDate,
-                                                DateTime toDate, decimal totalAmount)
+                                        DateTime toDate, decimal totalAmount)
         {
-            // Validate bank account before creating record
+            // ── 1. Bank account check ────────────────────────────────────────
             bool hasBankAccount = _financeRepo.StaffHasBankAccount(staffId);
             if (!hasBankAccount)
             {
@@ -734,6 +735,17 @@ namespace DairyIndustry.Controllers
                 return RedirectToAction("CreateStaffPayment");
             }
 
+            // ── 2. Duplicate payment check ───────────────────────────────────
+            bool alreadyPaid = _financeRepo.StaffPaymentExists(staffId, fromDate, toDate);
+            if (alreadyPaid)
+            {
+                // Get a human-readable month label for the error message
+                string period = fromDate.ToString("MMM yyyy");
+                TempData["Error"] = $"A payment already exists for this staff member covering {period}. Cancel the existing record first if you need to reprocess.";
+                return RedirectToAction("CreateStaffPayment");
+            }
+
+            // ── 3. Create payment ────────────────────────────────────────────
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
 
             try

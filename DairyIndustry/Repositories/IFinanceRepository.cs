@@ -93,6 +93,12 @@ namespace DairyIndustry.Repositories
 
         StaffPaymentModel GetStaffPaymentById(int paymentId);
 
+        /// <summary>
+        /// Returns true if an active (non-Cancelled) payment already exists
+        /// for this staff member overlapping the given date range.
+        /// </summary>
+        bool StaffPaymentExists(int staffId, DateTime fromDate, DateTime toDate);
+
         int CreateStaffPayment(int staffId, int plantId, DateTime fromDate, DateTime toDate,
                                decimal totalAmount, DateTime paymentDate, int paidByUserId);
 

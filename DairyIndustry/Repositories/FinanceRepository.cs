@@ -1545,6 +1545,28 @@ namespace DairyIndustry.Repositories
             };
         }
 
+        // ── DUPLICATE PAYMENT GUARD ──────────────────────────────────────────
+        public bool StaffPaymentExists(int staffId, DateTime fromDate, DateTime toDate)
+        {
+            const string query = @"
+        SELECT COUNT(*)
+        FROM Finance.StaffPayments
+        WHERE StaffId      = @StaffId
+          AND PaymentStatus NOT IN ('Cancelled')
+          AND FromDate     <= @ToDate
+          AND ToDate       >= @FromDate";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@StaffId", staffId);
+                cmd.Parameters.AddWithValue("@FromDate", fromDate.Date);
+                cmd.Parameters.AddWithValue("@ToDate", toDate.Date);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
+
 
     }
 }
