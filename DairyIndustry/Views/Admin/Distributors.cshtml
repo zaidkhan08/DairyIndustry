@@ -4,120 +4,231 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="d-flex gap-2">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <a asp-action="DownloadDistributorsPdf"
-       class="btn btn-danger btn-sm">
-        <i class="bi bi-file-earmark-pdf me-1"></i>
-        Download PDF
-    </a>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
 
-    <a asp-action="PendingDistributors"
-       class="btn btn-outline-warning btn-sm">
-        Pending Approvals
-    </a>
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Stripe */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
 
-    <a asp-action="RegisterDistributor"
-       class="btn btn-primary btn-sm">
-        + Add Distributor
-    </a>
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
 
-</div>
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
 
-@if (TempData["success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Muted Status Badges */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-badge-green {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .pill-badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .pill-badge-red {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    .pill-badge-secondary {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Distributors Directory</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Sales & Logistics</span> &gt; <span class="text-muted">Distributor Networks</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="DownloadDistributorsPdf" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-file-earmark-pdf text-danger me-1"></i> Export PDF
+            </a>
+            <a asp-action="PendingDistributors" class="btn btn-light bg-white border text-warning px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-hourglass-split me-1"></i> Pending Approvals
+            </a>
+            <a asp-action="RegisterDistributor" class="btn btn-custom-blue shadow-sm px-3 py-2" style="border-radius: 6px; font-size: 0.9rem;">
+                <i class="bi bi-plus-lg me-1"></i> Add Distributor
+            </a>
+        </div>
     </div>
-}
-@if (TempData["error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
 
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    @* <th>#</th> *@
-                    <th>Name</th>
-                    <th>Contact</th>
-                    <th>Location</th>
-                    <th>GSTIN</th>
-                    <th>Status</th>
-                    <th>Registered</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var d in Model)
-                {
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+        </div>
+    }
+    @if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i> @TempData["error"]
+        </div>
+    }
+
+    <!-- Core Grid Data Matrix Container -->
+    <div class="card premium-data-card border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <span class="panel-header-text"><i class="bi bi-people text-primary me-2"></i>All Verified Distributors</span>
+            <span class="badge bg-light text-dark border px-2 py-1" style="font-weight: 500; border-radius: 6px;">Active Records: @Model.Count</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0">
+                <thead>
                     <tr>
-                        @* <td>@d.DistributorId</td> *@
-                        <td>
-                            <div class="fw-semibold">@d.DistributorName</div>
-                            <small class="text-muted">@d.Email</small>
-                        </td>
-                        <td>@(d.ContactNumber ?? "—")</td>
-                        <td>@(d.Location ?? "—")</td>
-                        <td><code>@(d.GSTIN ?? "—")</code></td>
-                        <td>
-                            @{
-                                var badge = d.Status switch
-                                {
-                                    "Approved" => "success",
-                                    "Pending" => "warning",
-                                    "Rejected" => "danger",
-                                    "Suspended" => "secondary",
-                                    _ => "light"
-                                };
-                            }
-                            <span class="badge bg-@badge">@d.Status</span>
-                        </td>
-                        <td>@d.RegisteredOn.ToString("dd MMM yyyy")</td>
-                        <td>
-                            @if (d.Status == "Approved")
-                            {
-                                <form asp-action="UpdateDistributorStatus" method="post"
-                                      onsubmit="return confirm('Suspend @d.DistributorName?')">
-                                    <input type="hidden" name="distributorId" value="@d.DistributorId" />
-                                    <input type="hidden" name="status" value="Suspended" />
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        Suspend
-                                    </button>
-                                </form>
-                            }
-                            else if (d.Status == "Suspended")
-                            {
-                                <form asp-action="UpdateDistributorStatus" method="post">
-                                    <input type="hidden" name="distributorId" value="@d.DistributorId" />
-                                    <input type="hidden" name="status" value="Approved" />
-                                    <button type="submit" class="btn btn-sm btn-outline-success">
-                                        Re-activate
-                                    </button>
-                                </form>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
+                        <th class="ps-4">Distributor Identity</th>
+                        <th>Contact Number</th>
+                        <th>Hub Location</th>
+                        <th>Tax Identity (GSTIN)</th>
+                        <th>Timeline Registered</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
                     </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            No distributors found.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                No distributors found in the central registry system.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var d in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">@d.DistributorName</div>
+                                        <div class="text-muted tiny" style="font-size: 11px;"><i class="bi bi-envelope me-1"></i>@d.Email</div>
+                                    </div>
+                                </td>
+                                <td class="text-secondary fw-medium">
+                                    <i class="bi bi-telephone me-1 text-muted small"></i>@(d.ContactNumber ?? "—")
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2 py-1" style="font-weight: 500; font-size: 0.8rem; border-radius: 4px;">
+                                        <i class="bi bi-geo-alt-fill text-danger me-1 small"></i>@(d.Location ?? "—")
+                                    </span>
+                                </td>
+                                <td>
+                                    <code class="text-dark bg-light px-2 py-1 rounded small border font-monospace">@(d.GSTIN ?? "—")</code>
+                                </td>
+                                <td class="text-secondary small font-monospace">
+                                    <i class="bi bi-calendar3 me-1.5 text-muted small"></i>@d.RegisteredOn.ToString("dd MMM yyyy")
+                                </td>
+                                <td>
+                                    @{
+                                        string statusStyle = d.Status switch
+                                        {
+                                            "Approved" => "pill-badge-green",
+                                            "Pending" => "pill-badge-warning",
+                                            "Rejected" => "pill-badge-red",
+                                            "Suspended" => "pill-badge-secondary",
+                                            _ => "bg-light text-dark"
+                                        };
+                                    }
+                                    <span class="pill-counter-badge @statusStyle">@d.Status</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    @if (d.Status == "Approved")
+                                    {
+                                        <form asp-action="UpdateDistributorStatus" method="post" class="m-0" onsubmit="return confirm('Suspend operations for @d.DistributorName?')">
+                                            <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                            <input type="hidden" name="status" value="Suspended" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-danger px-3" style="border-radius: 6px; font-weight: 500;">
+                                                <i class="bi bi-slash-circle me-1"></i> Suspend
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (d.Status == "Suspended")
+                                    {
+                                        <form asp-action="UpdateDistributorStatus" method="post" class="m-0">
+                                            <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                            <input type="hidden" name="status" value="Approved" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success px-3" style="border-radius: 6px; font-weight: 500;">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Re-activate
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

@@ -4,172 +4,240 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-order-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .panel-inner-heading {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #4b5563;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 12px 16px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tfoot td {
+        padding: 14px 16px;
+        background-color: #f8fafc;
+        border-top: 2px solid #e2e8f0;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Place Order</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Sales</span> &gt; <span class="text-muted">New Order Node</span>
+            </div>
+        </div>
+    </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
 
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Place Order (Admin)</h4>
-        </div>
-        <div class="card-body">
+    <!-- Master Registration Form Panel Frame -->
+    <div class="card premium-order-card border-start-0 border-end-0 border-bottom-0 p-4">
+        <form method="post" asp-action="AdminOrder" asp-controller="Admin" id="orderForm">
+            @Html.AntiForgeryToken()
 
-            <form method="post" asp-action="AdminOrder" asp-controller="Admin" id="orderForm">
-                @Html.AntiForgeryToken()
+            @* ── SECTION 1: ORDER HEADER ── *@
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Target Distributor</label>
+                    <select asp-for="DistributorId" class="form-select" style="border-radius: 6px; padding: 10px;">
+                        <option value="">-- Select Distributor --</option>
+                        @foreach (var d in Model.DistributorList.Where(d => d.Status == "Approved"))
+                        {
+                            <option value="@d.DistributorId" selected="@(Model.DistributorId == d.DistributorId ? "selected" : null)">
+                                @d.DistributorName
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="DistributorId" class="text-danger small mt-1 d-block"></span>
+                </div>
 
-                @* ── Order Header ── *@
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Distributor</label>
-                        <select asp-for="DistributorId" class="form-select">
-                            <option value="">-- Select Distributor --</option>
-                            @foreach (var d in Model.DistributorList.Where(d => d.Status == "Approved"))
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Plant Source</label>
+                    <select asp-for="PlantId" class="form-select" style="border-radius: 6px; padding: 10px;">
+                        <option value="">-- Select Plant --</option>
+                        @foreach (var p in Model.PlantList)
+                        {
+                            <option value="@p.PlantId" selected="@(Model.PlantId == p.PlantId ? "selected" : null)">
+                                @p.PlantName &mdash; @p.Location
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="PlantId" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Effective Order Date</label>
+                    <input asp-for="OrderDate" type="date" class="form-control" style="border-radius: 6px; padding: 10px;" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            @* ── SECTION 2: ADD PRODUCT TO CART CONTAINER ── *@
+            <div class="card p-3 mb-4 bg-light border-0" style="border-radius: 8px; border: 1px solid #e2e8f0 !important;">
+                <h6 class="panel-inner-heading mb-3"><i class="bi bi-cart-plus me-2 text-primary"></i>Append Product Stock Item</h6>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small text-muted mb-1">Product SKU</label>
+                        <select id="productDropdown" class="form-select form-select-sm" style="border-radius: 6px; padding: 8px;">
+                            <option value="">-- Select Product --</option>
+                            @foreach (var p in Model.ProductList)
                             {
-                                <option value="@d.DistributorId"
-                                        selected="@(Model.DistributorId == d.DistributorId)">
-                                    @d.DistributorName
+                                <option value="@p.ProductId" data-price="@p.MRP" data-name="@p.ProductName" data-unit="@p.Unit">
+                                    @p.ProductName (@p.Unit) &mdash; ₹@p.MRP.ToString("N2")
                                 </option>
                             }
                         </select>
-                        <span asp-validation-for="DistributorId" class="text-danger small"></span>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Plant</label>
-                        <select asp-for="PlantId" class="form-select">
-                            <option value="">-- Select Plant --</option>
-                            @foreach (var p in Model.PlantList)
-                            {
-                                <option value="@p.PlantId"
-                                        selected="@(Model.PlantId == p.PlantId)">
-                                    @p.PlantName — @p.Location
-                                </option>
-                            }
-                        </select>
-                        <span asp-validation-for="PlantId" class="text-danger small"></span>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted mb-1">Quantity</label>
+                        <input type="number" id="qtyInput" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" min="0.01" step="0.01" placeholder="0.00" />
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Order Date</label>
-                        <input asp-for="OrderDate" type="date" class="form-control"
-                               value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Unit Value (₹)</label>
+                        <input type="number" id="priceInput" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" min="0.01" step="0.01" placeholder="Auto-mapped" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-dark btn-sm w-100" style="height: 38px; border-radius: 6px; font-weight: 500;" onclick="addToCart()">
+                            <i class="bi bi-plus-lg me-1"></i> Add Item
+                        </button>
                     </div>
                 </div>
+                <div id="addError" class="text-danger small mt-2 fw-semibold" style="display:none"></div>
+            </div>
 
-                @* ── Add Product to Cart ── *@
-                <div class="card bg-light border mb-4">
-                    <div class="card-body">
-                        <h6 class="fw-semibold mb-3">Add Product to Cart</h6>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-5">
-                                <label class="form-label small">Product</label>
-                                <select id="productDropdown" class="form-select">
-                                    <option value="">-- Select Product --</option>
-                                    @foreach (var p in Model.ProductList)
-                                    {
-                                        <option value="@p.ProductId"
-                                                data-price="@p.MRP"
-                                                data-name="@p.ProductName"
-                                                data-unit="@p.Unit">
-                                            @p.ProductName (@p.Unit) — ₹@p.MRP
-                                        </option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small">Quantity</label>
-                                <input type="number" id="qtyInput" class="form-control"
-                                       min="0.01" step="0.01" placeholder="0" />
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Unit Price (₹)</label>
-                                <input type="number" id="priceInput" class="form-control"
-                                       min="0.01" step="0.01" placeholder="Auto-filled" />
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-outline-dark w-100"
-                                        onclick="addToCart()">
-                                    + Add
-                                </button>
-                            </div>
-                        </div>
-                        <div id="addError" class="text-danger small mt-2" style="display:none"></div>
-                    </div>
+            @* ── SECTION 3: CART DATA LIST MATRIX ── *@
+            <div class="mb-4">
+                <h6 class="panel-inner-heading mb-3 d-flex align-items-center">
+                    <i class="bi bi-list-stars me-2 text-secondary"></i>Itemized Order Summary
+                    <span id="cartBadge" class="badge bg-primary ms-2" style="display:none; border-radius: 4px; font-size: 0.75rem;">0</span>
+                </h6>
+
+                <div id="emptyCart" class="text-center text-muted py-5 border rounded-3 bg-light bg-opacity-50 small">
+                    <i class="bi bi-cart-x d-block display-6 mb-2 text-secondary opacity-50"></i>
+                    No active product elements staged inside form layout. Select properties above.
                 </div>
 
-                @* ── Cart Table ── *@
-                <div class="mb-4">
-                    <h6 class="fw-semibold mb-2">
-                        Order Items
-                        <span id="cartBadge" class="badge bg-secondary ms-1" style="display:none">0</span>
-                    </h6>
-
-                    <div id="emptyCart" class="text-center text-muted py-4 border rounded">
-                        No products added yet. Use the form above to add items.
-                    </div>
-
-                    <div id="cartTableWrap" style="display:none">
-                        <table class="table table-bordered table-sm align-middle">
-                            <thead class="table-dark">
+                <div id="cartTableWrap" style="display:none">
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-clean align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Product</th>
-                                    <th>Unit</th>
-                                    <th class="text-end">Qty</th>
-                                    <th class="text-end">Unit Price</th>
-                                    <th class="text-end">Line Total</th>
-                                    <th></th>
+                                    <th class="ps-3" style="width: 60px;">#</th>
+                                    <th>Staged Stock Item Name</th>
+                                    <th>Packaging Unit</th>
+                                    <th class="text-end">Quantity Mapped</th>
+                                    <th class="text-end">Staged Unit Price</th>
+                                    <th class="text-end">Cumulative Total</th>
+                                    <th class="text-center" style="width: 80px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="cartBody"></tbody>
                             <tfoot>
-                                <tr class="table-light fw-semibold">
-                                    <td colspan="5" class="text-end">Order Total</td>
-                                    <td class="text-end" id="orderTotal">₹0.00</td>
+                                <tr class="fw-bold text-dark">
+                                    <td colspan="5" class="text-end">Staged Gross Order Evaluation Total:</td>
+                                    <td class="text-end text-success font-monospace" id="orderTotal" style="font-size: 1.05rem;">₹0.00</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
+            </div>
 
-                @* ── Hidden fields built by JS ── *@
-                <div id="hiddenCartFields"></div>
+            @* Hidden Fields Container Box *@
+            <div id="hiddenCartFields"></div>
 
-                @* ── Cart validation error from server ── *@
-                @if (!ViewData.ModelState.IsValid &&
-                                ViewData.ModelState.ContainsKey("CartItems"))
-                {
-                    <div class="alert alert-danger">
-                        @ViewData.ModelState["CartItems"]!.Errors.First().ErrorMessage
-                    </div>
-                }
-
-                <div class="d-flex gap-2 align-items-center">
-                    <button type="submit" class="btn btn-success px-4" id="submitBtn" disabled>
-                        Place Order
-                    </button>
-                    <span id="submitHint" class="text-muted small">
-                        Add at least one product to place the order.
-                    </span>
+            @* Server-side Validation Error Output Frame *@
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ContainsKey("CartItems"))
+            {
+                <div class="alert alert-danger border-0 mb-4" style="border-radius: 8px;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @ViewData.ModelState["CartItems"]!.Errors.First().ErrorMessage
                 </div>
+            }
 
-            </form>
-        </div>
+            <!-- Bottom Control Submit Panel Row -->
+            <div class="d-flex gap-3 align-items-center pt-3 border-top flex-wrap">
+                <button type="submit" class="btn btn-custom-blue px-4 py-2" id="submitBtn" style="border-radius: 6px;" disabled>
+                    <i class="bi bi-bag-check me-1"></i> Place Order Entry
+                </button>
+                <span id="submitHint" class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i> Add at least one physical product line node to authorize compilation.
+                </span>
+            </div>
+
+        </form>
     </div>
 </div>
 
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
     <script>
-        // ── State ──────────────────────────────────────────
+        // ── State Storage ───────────────────────────────────
         let cart = [];
 
-        // ── Auto-fill price when product selected ──────────
+        // ── Dropdown Mapping Lifecycle Hook ─────────────────
         document.getElementById('productDropdown').addEventListener('change', function () {
             const opt = this.options[this.selectedIndex];
             document.getElementById('priceInput').value = opt.dataset.price || '';
@@ -177,7 +245,7 @@
             document.getElementById('addError').style.display = 'none';
         });
 
-        // ── Add to cart ────────────────────────────────────
+        // ── Add Item Element logic ──────────────────────────
         function addToCart() {
             const sel    = document.getElementById('productDropdown');
             const opt    = sel.options[sel.selectedIndex];
@@ -192,21 +260,21 @@
             errEl.style.display = 'none';
 
             if (!productId) {
-                showError('Please select a product.'); return;
+                showError('Please select a valid product variant.'); return;
             }
             if (!qty || qty <= 0) {
-                showError('Please enter a valid quantity.'); return;
+                showError('Please populate a non-zero positive quantity.'); return;
             }
             if (!price || price <= 0) {
-                showError('Please enter a valid unit price.'); return;
+                showError('Staged evaluation pricing cannot be less than or equal to zero.'); return;
             }
             if (cart.some(i => i.productId === productId)) {
-                showError('This product is already in the cart. Remove it first to change.'); return;
+                showError('This specific SKU item currently holds a configuration slot in your cart. Strip the target entry first.'); return;
             }
 
             cart.push({ productId, productName, unit, qty, price });
 
-            // Reset add-row
+            // Form Entry Flush Reset
             sel.value = '';
             document.getElementById('qtyInput').value   = '';
             document.getElementById('priceInput').value = '';
@@ -220,13 +288,13 @@
             el.style.display   = 'block';
         }
 
-        // ── Remove from cart ───────────────────────────────
+        // ── Strip Array Slot Node ───────────────────────────
         function removeFromCart(index) {
             cart.splice(index, 1);
             renderCart();
         }
 
-        // ── Render cart UI + hidden fields ─────────────────
+        // ── Staged Data Matrix Compilation Engine ───────────
         function renderCart() {
             const empty   = document.getElementById('emptyCart');
             const wrap    = document.getElementById('cartTableWrap');
@@ -263,24 +331,24 @@
                 const lineTotal = item.qty * item.price;
                 total += lineTotal;
 
-                // Table row
+                // Document Mapped Append Template Format
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td>${item.productName}</td>
-                    <td class="text-muted">${item.unit}</td>
-                    <td class="text-end">${item.qty.toLocaleString()}</td>
-                    <td class="text-end">₹${item.price.toFixed(2)}</td>
-                    <td class="text-end fw-semibold">
-                        ₹${lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    <td class="ps-3 text-muted small fw-medium">${i + 1}</td>
+                    <td class="fw-bold text-dark">${item.productName}</td>
+                    <td class="text-secondary small">${item.unit}</td>
+                    <td class="text-end fw-semibold">${item.qty.toLocaleString()}</td>
+                    <td class="text-end text-secondary font-monospace">₹${item.price.toFixed(2)}</td>
+                    <td class="text-end fw-bold text-dark font-monospace">
+                        ₹${lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="removeFromCart(${i})">✕</button>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0 border-0 text-decoration-none"
+                                onclick="removeFromCart(${i})"><i class="bi bi-trash"></i></button>
                     </td>`;
                 body.appendChild(tr);
 
-                // Hidden fields for model binding
+                // Compilation Injection for Downstream Controller Processing Actions
                 hidden.innerHTML += `
                     <input type="hidden" name="CartItems[${i}].ProductId"   value="${item.productId}" />
                     <input type="hidden" name="CartItems[${i}].ProductName" value="${item.productName}" />
@@ -292,11 +360,11 @@
                 { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // ── Guard submit ───────────────────────────────────
+        // ── Validation Submit Guard ─────────────────────────
         document.getElementById('orderForm').addEventListener('submit', function (e) {
             if (cart.length === 0) {
                 e.preventDefault();
-                alert('Please add at least one product before placing the order.');
+                alert('Please register at least one physical line item before compiling form submission.');
             }
         });
     </script>

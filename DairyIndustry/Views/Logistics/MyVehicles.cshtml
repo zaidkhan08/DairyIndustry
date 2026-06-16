@@ -1,116 +1,202 @@
 ﻿@model DairyIndustry.Models.Logistics.DriversModel
 @{
     ViewData["Title"] = "My Vehicles";
-    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
     var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
 
     int totalVehicles = vehicles?.Count ?? 0;
     int activeVehicles = vehicles?.Count(v => v.Status == "Active" || v.Status == "Approved") ?? 0;
     int pendingVehicles = vehicles?.Count(v => v.Status == "Pending") ?? 0;
-    int rejectedVehicles = vehicles?.Count(v => v.Status == "Rejected" || v.Status == "Suspended") ?? 0;
-
-    string GetStatusClass(string s) => s switch
-    {
-        "Active" or "Approved" => "bg-success",
-        "Pending" => "bg-warning text-dark",
-        "Rejected" or "Suspended" => "bg-danger",
-        _ => "bg-secondary"
-    };
 
     string GetStatusBadgeClass(string s) => s switch
     {
-        "Active" or "Approved" => "bg-success bg-opacity-10 text-success border border-success border-opacity-25",
-        "Pending" => "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25",
-        "Rejected" or "Suspended" => "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25",
-        _ => "bg-secondary bg-opacity-10 text-secondary"
+        "Active" or "Approved" => "pill-Approved",
+        "Pending" => "pill-Pending",
+        _ => "pill-Rejected"
     };
 }
 
-<div class="container-fluid p-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-profile-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Stripe */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .panel-header-text {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .stat-label-text {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 12px 16px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Soft Pill Badges for Operational States */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-Approved {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .pill-Pending {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .pill-Rejected {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Logistics Fleet Settings</h4>
+        <div class="breadcrumb-custom mt-1">
+            <span>Driver Portal</span> &gt; <span class="text-muted">Logistics</span> &gt; <span class="text-muted">My Fleet Assets</span>
+        </div>
+    </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                <div>@TempData["Success"]</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
 
-    <!-- ── DRIVER HEADER ──────────────────────────────── -->
-    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
-        <div class="bg-primary" style="height:4px;"></div>
-        <div class="card-body p-4">
-            <div class="row align-items-center">
-                <div class="col-auto">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow"
-                         style="width:60px;height:60px;font-size:1.5rem;">
-                        @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
-                    </div>
-                </div>
-                <div class="col">
-                    <h5 class="mb-1 fw-bold text-dark">@Model?.DriverName</h5>
-                    <p class="text-muted small mb-0">
-                        <i class="bi bi-card-text me-1"></i>@Model?.LicenseNo &bull;
-                        <i class="bi bi-calendar3 ms-2 me-1"></i>Joined @Model?.RegisteredOn.ToString("MMM yyyy")
-                    </p>
-                </div>
-                <div class="col-md-auto mt-3 mt-md-0 d-flex gap-2 flex-wrap">
-                    <span class="badge @GetStatusClass(Model?.Status ?? "Pending") px-3 py-2 rounded-pill">
-                        Account: @Model?.Status
-                    </span>
-                    <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3 shadow-sm">
-                        <i class="bi bi-plus-lg me-1"></i> Add Vehicle
-                    </a>
+    <!-- ── DRIVER SUMMARY HEADER CARD ──────────────────────── -->
+    <div class="card premium-profile-card border-start-0 border-end-0 border-bottom-0 p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-auto">
+                <div class="bg-light text-primary border rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width:56px; height:56px; font-size:1.35rem; flex-shrink:0;">
+                    @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
                 </div>
             </div>
+            <div class="col">
+                <h5 class="fw-bold text-dark mb-0.5">@Model?.DriverName</h5>
+                <div class="text-muted small">
+                    <i class="bi bi-card-text me-1.5 text-secondary"></i>DL: <span class="text-secondary font-monospace fw-medium">@Model?.LicenseNo</span>
+                    <span class="text-muted mx-2">&middot;</span>
+                    <i class="bi bi-calendar3 me-1.5 text-secondary"></i>Registered: @Model?.RegisteredOn.ToString("dd MMM yyyy")
+                </div>
+            </div>
+            <div class="col-md-auto d-flex align-items-center gap-2 flex-wrap justify-content-md-end">
+                <span class="pill-counter-badge pill-@Model?.Status">
+                    Profile Status: @Model?.Status
+                </span>
+                <a asp-action="RegisterVehicle" class="btn btn-custom-blue btn-sm px-3 py-2 shadow-sm" style="border-radius: 6px;">
+                    <i class="bi bi-plus-lg me-1"></i> Add Vehicle Node
+                </a>
+            </div>
+        </div>
 
-            <!-- Quick stats row -->
-            <div class="row mt-4 pt-3 border-top g-3">
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Total Fleet</small>
-                    <span class="fw-bold text-primary fs-5">@totalVehicles</span>
-                    <span class="text-muted small"> vehicle(s)</span>
-                </div>
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Active</small>
-                    <span class="fw-bold text-success fs-5">@activeVehicles</span>
-                </div>
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Pending Approval</small>
-                    <span class="fw-bold text-warning fs-5">@pendingVehicles</span>
-                </div>
-                <div class="col-6 col-md-3">
-                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Username</small>
-                    <span class="fw-semibold">@@@Model?.Username</span>
-                </div>
+        <!-- Metric Data Highlights Block Row -->
+        <div class="row mt-4 pt-3 border-top g-3">
+            <div class="col-6 col-md-3">
+                <span class="stat-label-text d-block mb-0.5">Total Registered Fleet</span>
+                <span class="fw-bold text-dark font-monospace fs-5">@totalVehicles</span>
+                <span class="text-muted small"> asset(s)</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="stat-label-text d-block mb-0.5">Active Links</span>
+                <span class="fw-bold text-success font-monospace fs-5">@activeVehicles</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="stat-label-text d-block mb-0.5">Awaiting Review</span>
+                <span class="fw-bold text-warning font-monospace fs-5">@pendingVehicles</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="stat-label-text d-block mb-0.5">Portal Security User</span>
+                <span class="fw-bold text-secondary font-monospace" style="font-size: 0.92rem;"><i class="bi bi-at text-muted"></i>@Model?.Username</span>
             </div>
         </div>
     </div>
 
-    <!-- ── FILTER BAR ──────────────────────────────────── -->
+    <!-- ── FILTER UTILITY TOOLBAR ─────────────────────────── -->
     @if (vehicles != null && vehicles.Any())
     {
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body py-3 px-4">
+        <div class="card premium-profile-card border-0 p-0 mb-4" style="border: 1px solid #e2e8f0 !important; border-top: none !important;">
+            <div class="card-body p-3">
                 <div class="row g-2 align-items-center">
                     <div class="col-md-4">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-end-0 text-muted">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" id="searchInput" class="form-control border-start-0 ps-1"
-                                   placeholder="Search vehicle number..." />
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search small"></i></span>
+                            <input type="text" id="searchInput" class="form-control form-control-sm border-start-0 ps-1" style="border-radius: 0 6px 6px 0;" placeholder="Search vehicle plates number..." />
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <select id="statusFilter" class="form-select form-select-sm">
-                            <option value="">All Statuses</option>
+                        <select id="statusFilter" class="form-select form-select-sm" style="border-radius: 6px;">
+                            <option value="">All Verification Statuses</option>
                             <option value="Approved">Active / Approved</option>
-                            <option value="Pending">Pending</option>
+                            <option value="Pending">Pending Review</option>
                             <option value="Rejected">Rejected / Suspended</option>
                         </select>
                     </div>
@@ -119,44 +205,39 @@
         </div>
     }
 
-    <!-- ── VEHICLE TABLE ──────────────────────────────── -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center justify-content-between">
-            <h6 class="mb-0 fw-bold text-dark">
-                <i class="bi bi-truck me-2 text-primary"></i>Vehicle List
-            </h6>
+    <!-- ── CORE GRID MATRIX VEHICLE TABLE ─────────────────── -->
+    <div class="card premium-profile-card border-start-0 border-end-0 border-bottom-0 p-0">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+            <span class="panel-header-text"><i class="bi bi-truck text-primary me-2"></i>My Ownership Logistics Ledger</span>
             @if (totalVehicles > 0)
             {
-                <small class="text-muted">@totalVehicles registered</small>
+                <span class="badge bg-light text-dark border px-2 py-1" style="font-weight: 500; border-radius: 4px;">Matrix: @totalVehicles Nodes</span>
             }
         </div>
 
         <div class="card-body p-0">
-
             @if (vehicles == null || !vehicles.Any())
             {
-                <div class="text-center py-5 px-4">
-                    <div class="bg-light d-inline-flex p-4 rounded-circle mb-3">
-                        <i class="bi bi-truck-flatbed display-4 text-muted"></i>
-                    </div>
-                    <h5 class="fw-bold">No Vehicles Registered</h5>
-                    <p class="text-muted small mb-4">You currently have no transport vehicles linked to your profile.</p>
-                    <a asp-action="RegisterVehicle" class="btn btn-primary px-4 shadow-sm">
+                <div class="text-center py-5 px-4 text-muted">
+                    <i class="bi bi-truck-flatbed display-6 text-secondary opacity-50 d-block mb-2"></i>
+                    <h6 class="fw-bold text-dark mb-1">No Transport Assets Mapped</h6>
+                    <p class="mb-4 small">You currently have no physical transport elements registered inside your profile profile framework.</p>
+                    <a asp-action="RegisterVehicle" class="btn btn-custom-blue btn-sm px-4 py-2" style="border-radius: 6px;">
                         <i class="bi bi-plus-lg me-1"></i> Register Your First Vehicle
                     </a>
                 </div>
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="vehicleTable">
-                        <thead class="bg-light text-muted small text-uppercase">
+                <div class="table-responsive" style="overflow-x: hidden;">
+                    <table class="table table-clean align-middle mb-0" id="vehicleTable">
+                        <thead>
                             <tr>
-                                <th class="border-0 px-4">Vehicle Identity</th>
-                                <th class="border-0">Payload Capacity</th>
-                                <th class="border-0">Status</th>
-                                <th class="border-0">Registered On</th>
-                                <th class="border-0">Verification</th>
+                                <th class="ps-4">Vehicle Tracking Footprint</th>
+                                <th>Volumetric Payload Capacity</th>
+                                <th>Operational Status</th>
+                                <th>Timeline Registered</th>
+                                <th class="pe-4">Security Verification Clearance</th>
                             </tr>
                         </thead>
                         <tbody id="vehicleBody">
@@ -164,52 +245,43 @@
                             {
                                 string rowStatus = (v.Status == "Active" || v.Status == "Approved") ? "Approved"
                                 : v.Status == "Pending" ? "Pending" : "Rejected";
-                                <tr data-status="@rowStatus"
-                                    data-search="@v.VehicleNumber.ToLower()">
-                                    <td class="px-4">
+                                <tr data-status="@rowStatus" data-search="@v.VehicleNumber.ToLower()">
+                                    <td class="ps-4">
                                         <div class="d-flex align-items-center gap-3">
-                                            <div class="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                 style="width:42px;height:42px;">
-                                                <i class="bi bi-truck text-primary fs-5"></i>
+                                            <div class="rounded-3 bg-light text-secondary border d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px; height:38px; border-radius: 6px;">
+                                                <i class="bi bi-truck text-primary small"></i>
                                             </div>
                                             <div>
-                                                <span class="fw-bold d-block text-dark">@v.VehicleNumber</span>
-                                                <small class="text-muted">ID: #@v.VehicleId</small>
+                                                <span class="fw-bold d-block text-dark" style="font-size: 0.92rem;">@v.VehicleNumber</span>
+                                                <small class="text-muted font-monospace" style="font-size: 11px;">System Node ID: #@v.VehicleId</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border px-3 py-2 fw-medium">
-                                            <i class="bi bi-droplet-fill text-info me-1"></i>
-                                            @v.Capacity.ToString("N0") Ltr
+                                        <span class="badge bg-light text-dark border px-2.5 py-1.5 font-monospace fw-bold" style="font-size: 0.8rem; border-radius: 4px;">
+                                            <i class="bi bi-droplet text-info me-1 small"></i>@v.Capacity.ToString("N0") <span class="text-muted font-normal" style="font-size: 11px;">Ltrs</span>
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge @GetStatusBadgeClass(v.Status) rounded-pill px-3 py-2">
+                                        <span class="pill-counter-badge @GetStatusBadgeClass(v.Status)">
                                             @v.Status
                                         </span>
                                     </td>
-                                    <td>
-                                        <small class="text-muted">@v.RegisteredOn.ToString("dd MMM yyyy")</small>
+                                    <td class="text-secondary small font-monospace">
+                                        <i class="bi bi-calendar3 text-muted me-1.5 small"></i>@v.RegisteredOn.ToString("dd MMM yyyy")
                                     </td>
-                                    <td>
+                                    <td class="pe-4">
                                         @if (v.Status == "Approved" || v.Status == "Active")
                                         {
-                                            <div class="d-flex align-items-center gap-1 text-success small fw-semibold">
-                                                <i class="bi bi-shield-check"></i> Verified
-                                            </div>
+                                            <span class="text-success small fw-bold d-inline-flex align-items-center gap-1.5"><i class="bi bi-shield-check-fill fs-6"></i> Verified Integrity</span>
                                         }
                                         else if (v.Status == "Pending")
                                         {
-                                            <div class="d-flex align-items-center gap-1 text-warning small fw-semibold">
-                                                <i class="bi bi-hourglass-split"></i> Awaiting Review
-                                            </div>
+                                            <span class="text-warning small fw-bold d-inline-flex align-items-center gap-1.5"><i class="bi bi-hourglass-split"></i> Gate Audit Pending</span>
                                         }
                                         else
                                         {
-                                            <div class="d-flex align-items-center gap-1 text-danger small fw-semibold">
-                                                <i class="bi bi-x-circle"></i> @v.Status
-                                            </div>
+                                            <span class="text-danger small fw-bold d-inline-flex align-items-center gap-1.5"><i class="bi bi-x-circle-fill"></i> Clearance Flag: Revoked</span>
                                         }
                                     </td>
                                 </tr>
@@ -218,26 +290,23 @@
                     </table>
                 </div>
 
-                <!-- no-results -->
-                <div id="noResults" class="text-center py-5" style="display:none;">
-                    <i class="bi bi-search display-4 text-muted"></i>
-                    <p class="text-muted mt-3">No vehicles match your search.</p>
+                <!-- Dynamic Search Empty State Fallback -->
+                <div id="noResults" class="text-center py-5 text-muted" style="display:none;">
+                    <i class="bi bi-search display-6 text-secondary opacity-50 d-block mb-2"></i>
+                    <p class="mb-0 small">No verified transport assets match your filter query parameters.</p>
                 </div>
             }
-
         </div>
 
         @if (vehicles?.Any() == true)
         {
-            <div class="card-footer bg-light border-0 py-3 px-4">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle me-1"></i>
-                    All vehicles require administrative verification before use in active logistics shifts.
+            <div class="card-footer bg-light border-top py-3 px-4">
+                <small class="text-muted d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                    <i class="bi bi-info-circle-fill text-secondary"></i> All registered transport asset numbers require authorized administrative document confirmation sweeps before inclusion inside live regional shifts records.
                 </small>
             </div>
         }
     </div>
-
 </div>
 
 @section Scripts {

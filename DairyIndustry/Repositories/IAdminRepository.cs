@@ -86,6 +86,23 @@ namespace DairyIndustry.Repositories
                         string bankName, string accountNumber, string ifscCode,
                         decimal salary, string profilePhoto,
                         int? centerId, int? plantId);
+        Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash);
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
@@ -94,6 +111,9 @@ namespace DairyIndustry.Repositories
         void AssignUserToPlant(int userId, int plantId);
 
         void AssignUserToCenter(int userId, int centerId);
+        List<User> GetUsersByRole(string roleName);
+        List<User> GetPlantManagers();
+        List<User> GetCollectionAgents();
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════

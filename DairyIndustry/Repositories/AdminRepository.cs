@@ -165,7 +165,6 @@ namespace DairyIndustry.Repositories
                                 StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
                                 FirstName = reader["FirstName"] == DBNull.Value ? null : reader["FirstName"].ToString(),
                                 LastName = reader["LastName"] == DBNull.Value ? null : reader["LastName"].ToString(),
-                                FullName = reader["FullName"] == DBNull.Value ? null : reader["FullName"].ToString(),
                                 Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
                                 Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
 
@@ -174,6 +173,14 @@ namespace DairyIndustry.Repositories
                                 CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
                                 PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
                                 PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
+
+                                DriverId = reader["DriverId"] == DBNull.Value ? null : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString(),
+
+                                FullName = reader["FullName"] == DBNull.Value
+        ? (reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString())
+        : reader["FullName"].ToString(),
                             };
                         }
                     }
@@ -272,7 +279,34 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<User> GetUsersByRole(string roleName)
+        {
+            var users = new List<User>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_GetUsersByRole", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@RoleName", roleName);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            users.Add(new User
+                            {
+                                UserId = (int)reader["UserId"],
+                                Username = reader["Username"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return users;
+        }
 
+        public List<User> GetPlantManagers() => GetUsersByRole("Plant Manager");
+        public List<User> GetCollectionAgents() => GetUsersByRole("Collection Agent");
         // ════════════════════════════════════════════════════════
         // AUDIT LOG
         // ════════════════════════════════════════════════════════
@@ -864,6 +898,7 @@ namespace DairyIndustry.Repositories
               AND s.StaffId NOT IN (
                   SELECT StaffId FROM Admin.Users WHERE StaffId IS NOT NULL
               )
+              AND r.RoleName NOT IN ('Collection Staff', 'Plant Staff')
             ORDER BY s.LastName, s.FirstName", con))
                 {
                     con.Open();
@@ -946,6 +981,78 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
 
             await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
+        }
+        public async Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash)
+        {
+            using SqlConnection con = _db.GetConnection();
+
+            using SqlCommand cmd = new SqlCommand(
+                "Admin.usp_Admin_UpdateStaffWithUser",
+                con);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            cmd.Parameters.AddWithValue("@FirstName", firstName);
+            cmd.Parameters.AddWithValue("@LastName", lastName);
+
+            cmd.Parameters.AddWithValue("@Phone",
+                (object?)phone ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Email",
+                (object?)email ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+
+            cmd.Parameters.AddWithValue("@DOJ",
+                (object?)doj ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@BankName",
+                (object?)bankName ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@AccountNumber",
+                (object?)accountNumber ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@IFSCCode",
+                (object?)ifscCode ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Salary", salary);
+
+            cmd.Parameters.AddWithValue("@ProfilePhoto",
+                (object?)profilePhoto ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@CenterId",
+                (object?)centerId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PlantId",
+                (object?)plantId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Username",
+                (object?)username ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PasswordHash",
+                (object?)passwordHash ?? DBNull.Value);
+
+            await con.OpenAsync();
+
             await cmd.ExecuteNonQueryAsync();
         }
         // ════════════════════════════════════════════════════════

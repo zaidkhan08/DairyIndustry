@@ -19,10 +19,10 @@ namespace DairyIndustry
         {
 
             //  LOAD DLL
-            var context = new CustomAssemblyLoadContext();
-            context.LoadUnmanagedLibrary(
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
-            );
+            //var context = new CustomAssemblyLoadContext();
+            //context.LoadUnmanagedLibrary(
+            //    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
+            //);
 
 
             var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +37,7 @@ namespace DairyIndustry
             builder.Services.AddScoped<IReportRepository, ReportRepository>();
             builder.Services.AddScoped<ICollectionCenterRepository, CollectionCenterRepository>();
             builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
+            builder.Services.AddScoped<IHomeRepository, HomeRepository>();
             builder.Services.AddScoped<FileUploadService>();
 
 
