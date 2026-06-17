@@ -588,5 +588,104 @@ namespace DairyIndustry.Repositories
                 Console.WriteLine($"[Email] Failed to send to {toEmail}: {ex.Message}");
             }
         }
+        public DriverDashboardViewModel GetDriverDashboard(int driverId)
+        {
+            var vm = new DriverDashboardViewModel();
+
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetDriverDashboard", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                vm.Transfers.Add(new MilkTransferModel
+                {
+                    TransferId = Convert.ToInt32(r["TransferId"]),
+                    DispatchDate = Convert.ToDateTime(r["DispatchDate"]),
+                    ReceivedDate = r["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(r["ReceivedDate"]),
+                    DispatchQty = Convert.ToDecimal(r["DispatchQty"]),
+                    ReceivedQty = r["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(r["ReceivedQty"]),
+                    LossQty = r["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(r["LossQty"]),
+                    LossPercent = Convert.ToDecimal(r["LossPercent"]),
+                    TransferStatus = r["TransferStatus"].ToString(),
+                    CenterId = Convert.ToInt32(r["CenterId"]),
+                    CenterName = r["CenterName"].ToString(),
+                    PlantId = Convert.ToInt32(r["PlantId"]),
+                    PlantName = r["PlantName"].ToString(),
+                    VehicleId = Convert.ToInt32(r["VehicleId"]),
+                    VehicleNumber = r["VehicleNumber"].ToString(),
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"] == DBNull.Value ? null : r["DriverName"].ToString(),
+                    DriverPhone = r["DriverPhone"] == DBNull.Value ? null : r["DriverPhone"].ToString(),
+                    TestedFat = r["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedFat"]),
+                    TestedCLR = r["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedCLR"]),
+                    TestDate = r["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(r["TestDate"]),
+                    BatchId = Convert.ToInt32(r["BatchId"]),
+                    Shift = r["Shift"].ToString(),
+                    BatchDate = Convert.ToDateTime(r["BatchDate"]),
+                    BatchAvgFat = r["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgFat"]),
+                    BatchAvgCLR = r["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgCLR"])
+                });
+            }
+
+            if (r.NextResult() && r.Read())
+            {
+                vm.LossSummary = new DriverLossSummary
+                {
+                    TotalLossEvents = Convert.ToInt32(r["TotalLossEvents"]),
+                    TotalLossLitres = Convert.ToDecimal(r["TotalLossLitres"]),
+                    AvgLossPct = Convert.ToDecimal(r["AvgLossPct"]),
+                    MaxSingleLoss = Convert.ToDecimal(r["MaxSingleLoss"]),
+                    SevereCount = Convert.ToInt32(r["SevereCount"]),
+                    ModerateCount = Convert.ToInt32(r["ModerateCount"]),
+                    MinorCount = Convert.ToInt32(r["MinorCount"])
+                };
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Vehicles.Add(new VehiclesModel
+                    {
+                        VehicleId = Convert.ToInt32(r["VehicleId"]),
+                        DriverId = driverId,
+                        VehicleNumber = r["VehicleNumber"].ToString(),
+                        Capacity = Convert.ToDecimal(r["Capacity"]),
+                        Status = r["Status"].ToString(),
+                        RegisteredOn = Convert.ToDateTime(r["RegisteredOn"]),
+                        VehicleRCPath = r["VehicleRCPath"] == DBNull.Value ? null : r["VehicleRCPath"].ToString()
+                    });
+                }
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Notifications.Add(new DriverNotification
+                    {
+                        NotificationId = Convert.ToInt32(r["NotificationId"]),
+                        Title = r["Title"].ToString(),
+                        Message = r["Message"].ToString(),
+                        Category = r["Category"].ToString(),
+                        Severity = r["Severity"].ToString(),
+                        EntityType = r["EntityType"] == DBNull.Value ? null : r["EntityType"].ToString(),
+                        EntityId = r["EntityId"] == DBNull.Value ? null : Convert.ToInt32(r["EntityId"]),
+                        ActionUrl = r["ActionUrl"] == DBNull.Value ? null : r["ActionUrl"].ToString(),
+                        IsRead = Convert.ToBoolean(r["IsRead"]),
+                        CreatedAt = Convert.ToDateTime(r["CreatedAt"])
+                    });
+                }
+            }
+
+            return vm;
+        }
     }
 }

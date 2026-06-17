@@ -5,6 +5,7 @@ namespace DairyIndustry.Repositories
 {
     public interface ILogisticsRepository
     {
+        DriverDashboardViewModel GetDriverDashboard(int driverId);
         void SaveEmailOtp(string email, string otpCode);
         bool VerifyEmailOtp(string email, string otpCode);
 

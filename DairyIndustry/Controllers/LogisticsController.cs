@@ -25,10 +25,12 @@ namespace DairyIndustry.Controllers
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
-            var driver = _logisticRepo.GetDriverByUserId(userId);
-            var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
-            ViewBag.Vehicles = vehicles;
-            return View(driver);
+
+            var vm = _logisticRepo.GetDriverDashboard(driverId);
+
+            vm.Driver = _logisticRepo.GetDriverByUserId(userId);
+
+            return View(vm);
         }
 
         [SessionAuthorize("Driver")]

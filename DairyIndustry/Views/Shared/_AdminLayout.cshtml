@@ -262,11 +262,11 @@
 
                 <div class="nav-label">Finance</div>
 
-                <a asp-controller="Admin" asp-action="CenterPayments"
+                @* <a asp-controller="Admin" asp-action="CenterPayments"
                    class="nav-item-link @(IsActive("Admin", "CenterPayments") ? "active" : "")">
                     <i class="bi bi-bucket-fill" aria-hidden="true"></i>
                     <span>Center Payments</span>
-                </a>
+                </a> *@
 
                 {
                     var finActions = new[] { "Index", "FarmerPayments", "StaffPayments" };
@@ -287,10 +287,10 @@
                         <i class="bi bi-grid" aria-hidden="true"></i>
                         <span>Overview</span>
                     </a>
-                    <a asp-controller="Finance" asp-action="FarmerPayments"
-                       class="nav-item-link ps-4 @(ctrl == "Finance" && act == "FarmerPayments" ? "active" : "")">
-                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-                        <span>Farmer Payments</span>
+                    <a asp-controller="Finance" asp-action="CenterPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "CenterPayments") ? "active" : "")">
+                        <i class="bi bi-currency-rupee" aria-hidden="true"></i>
+                        <span>Pay to Center</span>
                     </a>
                     <a asp-controller="Finance" asp-action="StaffPayments"
                        class="nav-item-link ps-4 @(ctrl == "Finance" && act == "StaffPayments" ? "active" : "")">
@@ -301,11 +301,11 @@
 
                 <div class="nav-label">System</div>
 
-                <a asp-controller="HR" asp-action="Index"
+                @* <a asp-controller="HR" asp-action="Index"
                    class="nav-item-link @(ctrl == "HR" ? "active" : "")">
                     <i class="bi bi-people-fill" aria-hidden="true"></i>
                     <span>HR</span>
-                </a>
+                </a> *@
 
                 <a asp-controller="Reports" asp-action="Index"
                    class="nav-item-link @(ctrl == "Reports" ? "active" : "")">
