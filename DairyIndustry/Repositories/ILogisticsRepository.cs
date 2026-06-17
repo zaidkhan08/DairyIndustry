@@ -15,8 +15,7 @@ namespace DairyIndustry.Repositories
         List<DriversModel> GetAllDrivers();
         void UpdateDriverStatus(int driverId, string status);
 
-        int AddVehicle(int driverId, string vehicleNumber, decimal capacity,
-                         string vehicleRcPath);
+        Task<int> AddVehicleAsync(int driverId, string vehicleNumber, decimal capacity, string rcPath);
         List<VehiclesModel> GetVehiclesByDriverId(int driverId);
         List<VehiclesModel> GetAllVehicles();
         void UpdateVehicleStatus(int vehicleId, string status);
@@ -25,12 +24,11 @@ namespace DairyIndustry.Repositories
 
         DriverContactInfo GetDriverContactInfo(int driverId);
         DriverContactInfo GetDriverContactInfoByVehicleId(int vehicleId);
-        void SendDriverStatusEmail(string toEmail, string driverName,
-                                           string username, string status);
-
-        void SendVehicleStatusEmail(string toEmail, string driverName,
-                                                       string vehicleNumber, string status);
-        //void SendSmtpEmail(string toEmail, string subject, string htmlBody);
+        Task SendDriverStatusEmailAsync(string toEmail, string driverName,
+                                                      string username, string status);
+        Task SendVehicleStatusEmailAsync(string toEmail, string driverName,
+                                                               string vehicleNumber, string status);
+        //Task SendEmailAsync(string toEmail, string subject, string htmlBody);
 
     }
 }
