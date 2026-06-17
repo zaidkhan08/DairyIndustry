@@ -638,13 +638,13 @@ namespace DairyIndustry.Repositories
             {
                 vm.LossSummary = new DriverLossSummary
                 {
-                    TotalLossEvents = Convert.ToInt32(r["TotalLossEvents"]),
-                    TotalLossLitres = Convert.ToDecimal(r["TotalLossLitres"]),
-                    AvgLossPct = Convert.ToDecimal(r["AvgLossPct"]),
-                    MaxSingleLoss = Convert.ToDecimal(r["MaxSingleLoss"]),
-                    SevereCount = Convert.ToInt32(r["SevereCount"]),
-                    ModerateCount = Convert.ToInt32(r["ModerateCount"]),
-                    MinorCount = Convert.ToInt32(r["MinorCount"])
+                    TotalLossEvents = r["TotalLossEvents"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalLossEvents"]),
+                    TotalLossLitres = r["TotalLossLitres"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalLossLitres"]),
+                    AvgLossPct = r["AvgLossPct"] == DBNull.Value ? 0 : Convert.ToDecimal(r["AvgLossPct"]),
+                    MaxSingleLoss = r["MaxSingleLoss"] == DBNull.Value ? 0 : Convert.ToDecimal(r["MaxSingleLoss"]),
+                    SevereCount = r["SevereCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["SevereCount"]),
+                    ModerateCount = r["ModerateCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ModerateCount"]),
+                    MinorCount = r["MinorCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["MinorCount"])
                 };
             }
 
