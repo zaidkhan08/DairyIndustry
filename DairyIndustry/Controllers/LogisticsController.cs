@@ -25,10 +25,12 @@ namespace DairyIndustry.Controllers
         {
             int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
-            var driver = _logisticRepo.GetDriverByUserId(userId);
-            var vehicles = _logisticRepo.GetVehiclesByDriverId(driverId);
-            ViewBag.Vehicles = vehicles;
-            return View(driver);
+
+            var vm = _logisticRepo.GetDriverDashboard(driverId);
+
+            vm.Driver = _logisticRepo.GetDriverByUserId(userId);
+
+            return View(vm);
         }
 
         [SessionAuthorize("Driver")]
@@ -58,15 +60,14 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        // FIX #2: Removed MemoryStream double-buffer. Now streams directly to disk
-        // via FileStream + CopyToAsync — no thread pool blocking, no double memory copy.
         [HttpPost]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> CompleteRegistration(
-            string licenseNo,
-            string phone,
-            string username,
-            string password,
-            IFormFile drivingLicenseFile)
+    string licenseNo,
+    string phone,
+    string username,
+    string password,
+    IFormFile drivingLicenseFile)
         {
             string email = HttpContext.Session.GetString("PendingDriverEmail");
             string driverName = HttpContext.Session.GetString("PendingDriverName");
@@ -88,7 +89,7 @@ namespace DairyIndustry.Controllers
 
             string extension = Path.GetExtension(drivingLicenseFile.FileName).ToLower();
             HashSet<string> allowed = new(StringComparer.OrdinalIgnoreCase)
-                { ".jpg", ".jpeg", ".png", ".pdf" };
+        { ".jpg", ".jpeg", ".png", ".pdf" };
 
             if (!allowed.Contains(extension))
             {
@@ -110,10 +111,6 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX #2 APPLIED HERE:
-                // OLD: Read entire file into MemoryStream → Task.Run → WriteAllBytes (blocking)
-                // NEW: Build path first (sync, cheap), then stream directly to disk with
-                //      FileStream(Async flag) + CopyToAsync — truly async, no double-buffer.
                 string folder = Path.Combine(webRoot, "uploads", "documents", "drivinglicences");
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);
@@ -122,18 +119,13 @@ namespace DairyIndustry.Controllers
                 string fullPath = Path.Combine(folder, fileName);
                 string dlPath = "/uploads/documents/drivinglicences/" + fileName;
 
-                using (var fileStream = new FileStream(
-                    fullPath, FileMode.Create, FileAccess.Write,
-                    FileShare.None, bufferSize: 4096, useAsync: true))
+                using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
                 {
                     await drivingLicenseFile.CopyToAsync(fileStream);
                 }
 
-                // Password hashing is CPU-bound — Task.Run is correct here
-                string passHash = await Task.Run(() =>
-                    BCrypt.Net.BCrypt.HashPassword(password));
+                string passHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-                // Async DB call
                 await _logisticRepo.RegisterDriverAsync(
                     driverName, licenseNo, phone,
                     email, username, passHash, dlPath);
@@ -219,15 +211,14 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        // FIX #2: Same fix applied — direct FileStream instead of MemoryStream + WriteAllBytes.
         [SessionAuthorize("Driver")]
         [HttpPost]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> RegisterVehicle(
             string vehicleNumber,
             decimal capacity,
             IFormFile vehicleRcFile)
         {
-            // Read session BEFORE any await
             int driverId = HttpContext.Session.GetInt32("DriverId") ?? 0;
 
             if (driverId == 0)
@@ -256,7 +247,7 @@ namespace DairyIndustry.Controllers
 
             string extension = Path.GetExtension(vehicleRcFile.FileName).ToLower();
             HashSet<string> allowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-                { ".jpg", ".jpeg", ".png", ".pdf" };
+        { ".jpg", ".jpeg", ".png", ".pdf" };
 
             if (!allowedExtensions.Contains(extension))
             {
@@ -274,10 +265,6 @@ namespace DairyIndustry.Controllers
 
             try
             {
-                // FIX #2 APPLIED HERE:
-                // OLD: Read entire file into MemoryStream → Task.Run → WriteAllBytes (blocking)
-                // NEW: Build path first (sync, cheap), then stream directly to disk with
-                //      FileStream(Async flag) + CopyToAsync — truly async, no double-buffer.
                 string folderPath = Path.Combine(webRoot, "uploads", "documents", "vehiclercs");
                 if (!Directory.Exists(folderPath))
                     Directory.CreateDirectory(folderPath);
@@ -286,14 +273,12 @@ namespace DairyIndustry.Controllers
                 string fullPath = Path.Combine(folderPath, fileName);
                 string dbPath = "/uploads/documents/vehiclercs/" + fileName;
 
-                using (var fileStream = new FileStream(
-                    fullPath, FileMode.Create, FileAccess.Write,
-                    FileShare.None, bufferSize: 4096, useAsync: true))
+                using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
                 {
                     await vehicleRcFile.CopyToAsync(fileStream);
                 }
 
-                _logisticRepo.AddVehicle(driverId, vehicleNumber, capacity, dbPath);
+                await _logisticRepo.AddVehicleAsync(driverId, vehicleNumber, capacity, dbPath);
 
                 TempData["Success"] = "Vehicle registered successfully.";
                 return RedirectToAction("Index");
@@ -311,17 +296,22 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult UpdateDriverStatus(int driverId, string status)
+        public async Task<IActionResult> UpdateDriverStatus(int driverId, string status)
         {
             _logisticRepo.UpdateDriverStatus(driverId, status);
             try
             {
                 var contact = _logisticRepo.GetDriverContactInfo(driverId);
                 if (contact != null && !string.IsNullOrEmpty(contact.Email))
-                    _logisticRepo.SendDriverStatusEmail(
+                {
+                    await _logisticRepo.SendDriverStatusEmailAsync(
                         contact.Email, contact.DriverName, contact.Username, status);
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DriverStatus Email] Failed: {ex.Message}");
+            }
 
             TempData["Success"] = status == "Active"
                 ? "Driver approved and notified by email."
@@ -336,17 +326,22 @@ namespace DairyIndustry.Controllers
 
         [SessionAuthorize("Admin")]
         [HttpPost]
-        public IActionResult UpdateVehicleStatus(int vehicleId, string status)
+        public async Task<IActionResult> UpdateVehicleStatus(int vehicleId, string status)
         {
             _logisticRepo.UpdateVehicleStatus(vehicleId, status);
             try
             {
                 var contact = _logisticRepo.GetDriverContactInfoByVehicleId(vehicleId);
                 if (contact != null && !string.IsNullOrEmpty(contact.Email))
-                    _logisticRepo.SendVehicleStatusEmail(
+                {
+                    await _logisticRepo.SendVehicleStatusEmailAsync(
                         contact.Email, contact.DriverName, contact.VehicleNumber, status);
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[VehicleStatus Email] Failed: {ex.Message}");
+            }
 
             TempData["Success"] = status == "Approved"
                 ? "Vehicle approved and driver notified by email."

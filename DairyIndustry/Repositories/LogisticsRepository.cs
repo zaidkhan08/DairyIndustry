@@ -45,24 +45,27 @@ namespace DairyIndustry.Repositories
             return Convert.ToInt32(result) == 1;
         }
         public async Task<int> RegisterDriverAsync(string driverName, string licenseNo,
-            string phone, string email, string username, string passwordHash,
-            string drivingLicensePath)
+    string phone, string email, string username, string passwordHash,
+    string drivingLicensePath)
         {
-            using SqlConnection con = _db.GetConnection();
-            using SqlCommand cmd = new("Logistics.usp_Logistics_RegisterDriver", con)
+            using (SqlConnection con = _db.GetConnection())
             {
-                CommandType = CommandType.StoredProcedure
-            };
-            cmd.Parameters.AddWithValue("@DriverName", driverName);
-            cmd.Parameters.AddWithValue("@LicenseNo", licenseNo);
-            cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@Email", email);
-            cmd.Parameters.AddWithValue("@Username", username);
-            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
-            cmd.Parameters.AddWithValue("@DrivingLicensePath", drivingLicensePath);
+                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_RegisterDriver", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@DriverName", driverName);
+                    cmd.Parameters.AddWithValue("@LicenseNo", licenseNo);
+                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", email);
+                    cmd.Parameters.AddWithValue("@Username", username);
+                    cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    cmd.Parameters.AddWithValue("@DrivingLicensePath", drivingLicensePath);
 
-            await con.OpenAsync();
-            return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    await con.OpenAsync();
+                    var result = await cmd.ExecuteScalarAsync();
+                    return Convert.ToInt32(result);
+                }
+            }
         }
 
         public DriversModel GetDriverByUserId(int userId)
@@ -105,9 +108,8 @@ namespace DairyIndustry.Repositories
             con.Open();
             cmd.ExecuteNonQuery();
         }
-
-        public int AddVehicle(int driverId, string vehicleNumber, decimal capacity,
-                              string vehicleRcPath)
+        public async Task<int> AddVehicleAsync(int driverId, string vehicleNumber, decimal capacity,
+                          string vehicleRcPath)
         {
             using SqlConnection con = _db.GetConnection();
             using SqlCommand cmd = new("Logistics.usp_Logistics_AddVehicle", con)
@@ -118,8 +120,9 @@ namespace DairyIndustry.Repositories
             cmd.Parameters.AddWithValue("@VehicleNumber", vehicleNumber);
             cmd.Parameters.AddWithValue("@Capacity", capacity);
             cmd.Parameters.AddWithValue("@VehicleRCPath", vehicleRcPath);
-            con.Open();
-            return Convert.ToInt32(cmd.ExecuteScalar());
+            await con.OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result);
         }
 
         public List<VehiclesModel> GetVehiclesByDriverId(int driverId)
@@ -353,8 +356,8 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
 
         // ── 1. Driver approval / rejection email ─────────────────
-        public void SendDriverStatusEmail(string toEmail, string driverName,
-                                           string username, string status)
+        public async Task SendDriverStatusEmailAsync(string toEmail, string driverName,
+                                                      string username, string status)
         {
             if (string.IsNullOrWhiteSpace(toEmail)) return;
 
@@ -371,71 +374,52 @@ namespace DairyIndustry.Repositories
             string statusIcon = approved ? "✅" : "❌";
 
             string actionBlock = approved ? $@"
-        <div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
-            <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>What happens next?</p>
-            <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
-                <li>Log in at <strong>DMS</strong> using your username: <strong>{username}</strong></li>
-                <li>Register your vehicle from your dashboard</li>
-                <li>Your vehicle will also need admin approval before assignments</li>
-                <li>Once your vehicle is approved, you will start receiving transfer assignments</li>
-            </ul>
-        </div>" : $@"
-        <div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
-            <p style='margin:0;color:#713f12;font-size:14px;'>
-                If you believe this is a mistake or need more information,
-                please contact the DMS admin team.
-            </p>
-        </div>";
+<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>What happens next?</p>
+    <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
+        <li>Log in at <strong>DMS</strong> using your username: <strong>{username}</strong></li>
+        <li>Register your vehicle from your dashboard</li>
+        <li>Your vehicle will also need admin approval before assignments</li>
+        <li>Once your vehicle is approved, you will start receiving transfer assignments</li>
+    </ul>
+</div>" : @"
+<div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0;color:#713f12;font-size:14px;'>
+        If you believe this is a mistake or need more information,
+        please contact the DMS admin team.
+    </p>
+</div>";
 
-            string body = $@"
-<!DOCTYPE html>
-<html>
-<head><meta charset='utf-8'/></head>
+            string body = $@"<!DOCTYPE html>
+<html><head><meta charset='utf-8'/></head>
 <body style='margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;'>
 <table width='100%' cellpadding='0' cellspacing='0' style='padding:40px 20px;'>
   <tr><td align='center'>
     <table width='560' cellpadding='0' cellspacing='0'
            style='background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);'>
-
-      <!-- Header -->
       <tr>
         <td style='background:linear-gradient(135deg,#0a1628,#1e40af);padding:32px 36px;text-align:center;'>
           <div style='font-size:28px;margin-bottom:8px;'>🥛</div>
-          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;letter-spacing:-0.3px;'>
-            DMS
-          </div>
-          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>
-            Driver Registration Update
-          </div>
+          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;'>DMS</div>
+          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>Driver Registration Update</div>
         </td>
       </tr>
-
-      <!-- Status Badge -->
       <tr>
         <td style='padding:28px 36px 0;text-align:center;'>
-          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};
-                      border-radius:50px;padding:8px 24px;'>
-            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>
-              {statusIcon} &nbsp; {statusLabel}
-            </span>
+          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};border-radius:50px;padding:8px 24px;'>
+            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>{statusIcon} &nbsp; {statusLabel}</span>
           </div>
         </td>
       </tr>
-
-      <!-- Body -->
       <tr>
         <td style='padding:24px 36px 32px;'>
-          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>
-            Hi <strong>{driverName}</strong>,
-          </p>
+          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>Hi <strong>{driverName}</strong>,</p>
           <p style='font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px;'>
             {(approved
-                        ? "Great news! Your driver registration on <strong>DMS</strong> has been reviewed and <strong style='color:#16a34a;'>approved</strong> by the admin team. You can now log in and get started."
+                        ? "Great news! Your driver registration on <strong>DMS</strong> has been reviewed and <strong style='color:#16a34a;'>approved</strong> by the admin team."
                         : $"Your driver registration on <strong>DMS</strong> has been <strong style='color:#dc2626;'>{status.ToLower()}</strong> by the admin team."
                     )}
           </p>
-
-          <!-- Info Row -->
           <table width='100%' cellpadding='0' cellspacing='0'
                  style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 16px;'>
             <tr>
@@ -450,42 +434,34 @@ namespace DairyIndustry.Repositories
             </tr>
             <tr>
               <td colspan='2' style='padding:6px 12px;'>
-                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Status Updated</div>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Status</div>
                 <div style='font-size:14px;font-weight:600;color:{statusColor};margin-top:2px;'>{statusLabel}</div>
               </td>
             </tr>
           </table>
-
           {actionBlock}
-
           <p style='font-size:13px;color:#94a3b8;margin:20px 0 0;border-top:1px solid #f1f5f9;padding-top:16px;'>
-            This is an automated message from DMS. Please do not reply to this email.
+            This is an automated message from DMS. Please do not reply.
           </p>
         </td>
       </tr>
-
-      <!-- Footer -->
       <tr>
         <td style='background:#0a1628;padding:16px 36px;text-align:center;'>
-          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>
-            © {DateTime.Now.Year} DMS Management System · All rights reserved
-          </p>
+          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>© {DateTime.Now.Year} DMS Management System</p>
         </td>
       </tr>
-
     </table>
   </td></tr>
 </table>
-</body>
-</html>";
+</body></html>";
 
-            SendEmail(toEmail, subject, body);
+            await SendEmailAsync(toEmail, subject, body);
         }
 
 
         // ── 2. Vehicle approval / rejection email ────────────────
-        public void SendVehicleStatusEmail(string toEmail, string driverName,
-                                            string vehicleNumber, string status)
+        public async Task SendVehicleStatusEmailAsync(string toEmail, string driverName,
+                                                       string vehicleNumber, string status)
         {
             if (string.IsNullOrWhiteSpace(toEmail)) return;
 
@@ -502,70 +478,51 @@ namespace DairyIndustry.Repositories
             string statusIcon = approved ? "✅" : "❌";
 
             string actionBlock = approved ? @"
-        <div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
-            <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>You are all set!</p>
-            <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
-                <li>Your vehicle is now active in the DMS system</li>
-                <li>You may receive milk transfer assignments to your vehicle</li>
-                <li>Log in to your dashboard to view upcoming transfers</li>
-            </ul>
-        </div>" : @"
-        <div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
-            <p style='margin:0;color:#713f12;font-size:14px;'>
-                If you believe this is a mistake, please contact the DMS admin team
-                or register a different vehicle from your dashboard.
-            </p>
-        </div>";
+<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>You are all set!</p>
+    <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
+        <li>Your vehicle is now active in the DMS system</li>
+        <li>You may receive milk transfer assignments to your vehicle</li>
+        <li>Log in to your dashboard to view upcoming transfers</li>
+    </ul>
+</div>" : @"
+<div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0;color:#713f12;font-size:14px;'>
+        If you believe this is a mistake, please contact the DMS admin team
+        or register a different vehicle from your dashboard.
+    </p>
+</div>";
 
-            string body = $@"
-<!DOCTYPE html>
-<html>
-<head><meta charset='utf-8'/></head>
+            string body = $@"<!DOCTYPE html>
+<html><head><meta charset='utf-8'/></head>
 <body style='margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;'>
 <table width='100%' cellpadding='0' cellspacing='0' style='padding:40px 20px;'>
   <tr><td align='center'>
     <table width='560' cellpadding='0' cellspacing='0'
            style='background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);'>
-
-      <!-- Header -->
       <tr>
         <td style='background:linear-gradient(135deg,#0a1628,#1e40af);padding:32px 36px;text-align:center;'>
           <div style='font-size:28px;margin-bottom:8px;'>🚛</div>
-          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;letter-spacing:-0.3px;'>
-            DMS
-          </div>
-          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>
-            Vehicle Registration Update
-          </div>
+          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;'>DMS</div>
+          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>Vehicle Registration Update</div>
         </td>
       </tr>
-
-      <!-- Status Badge -->
       <tr>
         <td style='padding:28px 36px 0;text-align:center;'>
-          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};
-                      border-radius:50px;padding:8px 24px;'>
-            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>
-              {statusIcon} &nbsp; {statusLabel}
-            </span>
+          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};border-radius:50px;padding:8px 24px;'>
+            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>{statusIcon} &nbsp; {statusLabel}</span>
           </div>
         </td>
       </tr>
-
-      <!-- Body -->
       <tr>
         <td style='padding:24px 36px 32px;'>
-          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>
-            Hi <strong>{driverName}</strong>,
-          </p>
+          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>Hi <strong>{driverName}</strong>,</p>
           <p style='font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px;'>
             {(approved
-                        ? $"Your vehicle <strong>{vehicleNumber}</strong> has been reviewed and <strong style='color:#16a34a;'>approved</strong> by the admin team. It is now active in the DMS system."
-                        : $"Your vehicle <strong>{vehicleNumber}</strong> registration has been <strong style='color:#dc2626;'>{status.ToLower()}</strong> by the admin team."
+                        ? $"Your vehicle <strong>{vehicleNumber}</strong> has been <strong style='color:#16a34a;'>approved</strong> by the admin team."
+                        : $"Your vehicle <strong>{vehicleNumber}</strong> has been <strong style='color:#dc2626;'>{status.ToLower()}</strong> by the admin team."
                     )}
           </p>
-
-          <!-- Vehicle Info -->
           <table width='100%' cellpadding='0' cellspacing='0'
                  style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 16px;'>
             <tr>
@@ -575,49 +532,40 @@ namespace DairyIndustry.Repositories
               </td>
               <td style='padding:6px 12px;width:50%;'>
                 <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Vehicle Number</div>
-                <div style='font-size:14px;font-weight:700;color:#1e293b;margin-top:2px;
-                            letter-spacing:0.05em;'>{vehicleNumber}</div>
+                <div style='font-size:14px;font-weight:700;color:#1e293b;margin-top:2px;'>{vehicleNumber}</div>
               </td>
             </tr>
             <tr>
               <td colspan='2' style='padding:6px 12px;'>
-                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Vehicle Status</div>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Status</div>
                 <div style='font-size:14px;font-weight:600;color:{statusColor};margin-top:2px;'>{statusLabel}</div>
               </td>
             </tr>
           </table>
-
           {actionBlock}
-
           <p style='font-size:13px;color:#94a3b8;margin:20px 0 0;border-top:1px solid #f1f5f9;padding-top:16px;'>
-            This is an automated message from DMS. Please do not reply to this email.
+            This is an automated message from DMS. Please do not reply.
           </p>
         </td>
       </tr>
-
-      <!-- Footer -->
       <tr>
         <td style='background:#0a1628;padding:16px 36px;text-align:center;'>
-          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>
-            © {DateTime.Now.Year} DMS Management System · All rights reserved
-          </p>
+          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>© {DateTime.Now.Year} DMS Management System</p>
         </td>
       </tr>
-
     </table>
   </td></tr>
 </table>
-</body>
-</html>";
+</body></html>";
 
-            SendEmail(toEmail, subject, body);
+            await SendEmailAsync(toEmail, subject, body);
         }
 
 
         // ── 3. Private shared SendEmail helper ───────────────────
         // If you already have this from SendOtpEmail, skip it.
         // Otherwise add this private method to AdminRepository.
-        private void SendEmail(string toEmail, string subject, string htmlBody)
+        private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
         {
             try
             {
@@ -629,16 +577,115 @@ namespace DairyIndustry.Repositories
 
                 using var client = new MailKit.Net.Smtp.SmtpClient();
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                client.Connect(_settings.SmtpHost, _settings.SmtpPort,
-                               MailKit.Security.SecureSocketOptions.StartTls);
-                client.Authenticate(_settings.SenderEmail, _settings.AppPassword);
-                client.Send(message);
-                client.Disconnect(true);
+                await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort,
+                                          MailKit.Security.SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync(_settings.SenderEmail, _settings.AppPassword);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[Email] Failed to send to {toEmail}: {ex.Message}");
             }
+        }
+        public DriverDashboardViewModel GetDriverDashboard(int driverId)
+        {
+            var vm = new DriverDashboardViewModel();
+
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetDriverDashboard", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                vm.Transfers.Add(new MilkTransferModel
+                {
+                    TransferId = Convert.ToInt32(r["TransferId"]),
+                    DispatchDate = Convert.ToDateTime(r["DispatchDate"]),
+                    ReceivedDate = r["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(r["ReceivedDate"]),
+                    DispatchQty = Convert.ToDecimal(r["DispatchQty"]),
+                    ReceivedQty = r["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(r["ReceivedQty"]),
+                    LossQty = r["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(r["LossQty"]),
+                    LossPercent = Convert.ToDecimal(r["LossPercent"]),
+                    TransferStatus = r["TransferStatus"].ToString(),
+                    CenterId = Convert.ToInt32(r["CenterId"]),
+                    CenterName = r["CenterName"].ToString(),
+                    PlantId = Convert.ToInt32(r["PlantId"]),
+                    PlantName = r["PlantName"].ToString(),
+                    VehicleId = Convert.ToInt32(r["VehicleId"]),
+                    VehicleNumber = r["VehicleNumber"].ToString(),
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"] == DBNull.Value ? null : r["DriverName"].ToString(),
+                    DriverPhone = r["DriverPhone"] == DBNull.Value ? null : r["DriverPhone"].ToString(),
+                    TestedFat = r["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedFat"]),
+                    TestedCLR = r["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedCLR"]),
+                    TestDate = r["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(r["TestDate"]),
+                    BatchId = Convert.ToInt32(r["BatchId"]),
+                    Shift = r["Shift"].ToString(),
+                    BatchDate = Convert.ToDateTime(r["BatchDate"]),
+                    BatchAvgFat = r["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgFat"]),
+                    BatchAvgCLR = r["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgCLR"])
+                });
+            }
+
+            if (r.NextResult() && r.Read())
+            {
+                vm.LossSummary = new DriverLossSummary
+                {
+                    TotalLossEvents = r["TotalLossEvents"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalLossEvents"]),
+                    TotalLossLitres = r["TotalLossLitres"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalLossLitres"]),
+                    AvgLossPct = r["AvgLossPct"] == DBNull.Value ? 0 : Convert.ToDecimal(r["AvgLossPct"]),
+                    MaxSingleLoss = r["MaxSingleLoss"] == DBNull.Value ? 0 : Convert.ToDecimal(r["MaxSingleLoss"]),
+                    SevereCount = r["SevereCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["SevereCount"]),
+                    ModerateCount = r["ModerateCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ModerateCount"]),
+                    MinorCount = r["MinorCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["MinorCount"])
+                };
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Vehicles.Add(new VehiclesModel
+                    {
+                        VehicleId = Convert.ToInt32(r["VehicleId"]),
+                        DriverId = driverId,
+                        VehicleNumber = r["VehicleNumber"].ToString(),
+                        Capacity = Convert.ToDecimal(r["Capacity"]),
+                        Status = r["Status"].ToString(),
+                        RegisteredOn = Convert.ToDateTime(r["RegisteredOn"]),
+                        VehicleRCPath = r["VehicleRCPath"] == DBNull.Value ? null : r["VehicleRCPath"].ToString()
+                    });
+                }
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Notifications.Add(new DriverNotification
+                    {
+                        NotificationId = Convert.ToInt32(r["NotificationId"]),
+                        Title = r["Title"].ToString(),
+                        Message = r["Message"].ToString(),
+                        Category = r["Category"].ToString(),
+                        Severity = r["Severity"].ToString(),
+                        EntityType = r["EntityType"] == DBNull.Value ? null : r["EntityType"].ToString(),
+                        EntityId = r["EntityId"] == DBNull.Value ? null : Convert.ToInt32(r["EntityId"]),
+                        ActionUrl = r["ActionUrl"] == DBNull.Value ? null : r["ActionUrl"].ToString(),
+                        IsRead = Convert.ToBoolean(r["IsRead"]),
+                        CreatedAt = Convert.ToDateTime(r["CreatedAt"])
+                    });
+                }
+            }
+
+            return vm;
         }
     }
 }
