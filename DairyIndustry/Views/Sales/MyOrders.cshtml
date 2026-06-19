@@ -247,7 +247,7 @@ else
             <table class="table table-hover align-middle mb-0" id="ordersTable">
                 <thead class="table-light">
                     <tr>
-                        <th>Order #</th>
+                        <th>Order id</th>
                         <th>Date</th>
                         <th>Items</th>
                         <th>Total</th>
@@ -261,7 +261,7 @@ else
                         <tr data-date="@o.OrderDate.ToString("yyyy-MM-dd")"
                             data-status="@o.OrderStatus">
                             <td>
-                                <strong>#@o.OrderId</strong>
+                                <strong>@o.OrderId</strong>
                                 @if (o.OrderDetails.Any(d => inactiveIds.Contains(d.ProductId)))
                                 {
                                     <span class="badge bg-warning text-dark ms-1"

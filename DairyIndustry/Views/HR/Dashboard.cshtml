@@ -101,34 +101,53 @@
         @if (Model.NewJoiningsThisMonth.Any())
         {
             string col = Model.AnniversariesThisMonth.Any() ? "col-md-6" : "col-12";
-            <div class="@col">
+            <div class="@col" id="new-joinings-card">
                 <div class="hr-card h-100">
                     <div class="hr-card-header" style="background:#f0fdf4; border-color:#bbf7d0;">
                         <div class="hch-icon" style="background:#dcfce7; color:#16a34a;"><i class="bi bi-person-plus-fill"></i></div>
                         <span style="color:#166534;">New Joinings — @DateTime.Today.ToString("MMMM yyyy")</span>
-                        <span class="ms-auto badge bg-success" style="border-radius:20px;font-size:.68rem;padding:4px 10px;">@Model.NewJoiningsThisMonth.Count</span>
+                        <span class="ms-auto badge bg-success" style="border-radius:20px;font-size:.68rem;padding:4px 10px;margin-right:8px;">@Model.NewJoiningsThisMonth.Count</span>
                     </div>
-                    @foreach (var s in Model.NewJoiningsThisMonth)
-                    {
-                        <div class="d-flex align-items-center gap-3 px-4 py-3" style="border-bottom:1px solid #f0fdf4;">
-                            @if (!string.IsNullOrEmpty(s.ProfilePhoto))
-                            {
-                                <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:38px;height:38px;object-fit:cover;" />
-                            }
-                            else
-                            {
-                                <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:38px;height:38px;background:#dcfce7;color:#16a34a;font-size:1rem;"><i class="bi bi-person-fill"></i></div>
-                            }
-                            <div class="flex-grow-1">
-                                <div style="font-size:.83rem;font-weight:600;color:#0f172a;">@s.FullName</div>
-                                <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                    <div id="new-joinings-list">
+                        @foreach (var s in Model.NewJoiningsThisMonth)
+                        {
+                            string dismissKey = $"hr_newjoin_{s.StaffId}_{DateTime.Today.Month}_{DateTime.Today.Year}";
+                            <div class="d-flex align-items-center gap-3 px-4 py-3 new-join-row"
+                                 id="newjoin-@s.StaffId"
+                                 data-dismiss-key="@dismissKey"
+                                 style="border-bottom:1px solid #f0fdf4;">
+                                @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                {
+                                    <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0" style="width:38px;height:38px;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:38px;height:38px;background:#dcfce7;color:#16a34a;font-size:1rem;"><i class="bi bi-person-fill"></i></div>
+                                }
+                                <div class="flex-grow-1">
+                                    <div style="font-size:.83rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                                    <div style="font-size:.72rem;color:#94a3b8;">@s.RoleName</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="text-end">
+                                        <span style="background:#dcfce7;color:#166534;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;">✨ New</span>
+                                        <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">@s.DOJ!.Value.ToString("dd MMM yyyy")</div>
+                                    </div>
+                                    <!-- Dismiss button -->
+                                    <button onclick="dismissNewJoin('@s.StaffId', '@dismissKey')"
+                                            title="Dismiss this alert"
+                                            style="width:26px;height:26px;border-radius:50%;border:1px solid #bbf7d0;
+                                                               background:#f0fdf4;color:#94a3b8;font-size:.7rem;cursor:pointer;
+                                                               display:flex;align-items:center;justify-content:center;
+                                                               flex-shrink:0;transition:all .15s;"
+                                            onmouseover="this.style.background='#fee2e2';this.style.borderColor='#fecaca';this.style.color='#dc2626';"
+                                            onmouseout="this.style.background='#f0fdf4';this.style.borderColor='#bbf7d0';this.style.color='#94a3b8';">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <span style="background:#dcfce7;color:#166534;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;">✨ New</span>
-                                <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">@s.DOJ!.Value.ToString("dd MMM yyyy")</div>
-                            </div>
-                        </div>
-                    }
+                        }
+                    </div>
                     <div class="hr-card-footer">
                         <a asp-action="Index" class="btn-hr-secondary w-100 justify-content-center" style="font-size:.78rem;">View All Staff <i class="bi bi-arrow-right ms-1"></i></a>
                     </div>
@@ -346,6 +365,55 @@
             btn.innerHTML = hidden
                 ? '<i class="bi bi-chevron-up me-1"></i>Show less'
                 : '<i class="bi bi-chevron-down me-1"></i>Show all @Model.InactiveStaffList.Count inactive staff';
+        }
+
+        // ── New Joining Dismiss Logic ──────────────────────────────────
+        // On page load — hide any rows that were previously dismissed
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.new-join-row').forEach(function (row) {
+                var key = row.getAttribute('data-dismiss-key');
+                if (key && localStorage.getItem(key) === 'dismissed') {
+                    row.style.display = 'none';
+                }
+            });
+            checkNewJoinsEmpty();
+        });
+
+        // Dismiss a specific staff's new joining alert
+        function dismissNewJoin(staffId, key) {
+            // Save dismissed state to localStorage
+            localStorage.setItem(key, 'dismissed');
+
+            // Hide the row with smooth animation
+            var row = document.getElementById('newjoin-' + staffId);
+            if (row) {
+                row.style.transition = 'opacity .2s, max-height .3s';
+                row.style.opacity    = '0';
+                row.style.overflow   = 'hidden';
+                setTimeout(function () {
+                    row.style.maxHeight = '0';
+                    row.style.padding   = '0';
+                    setTimeout(function () {
+                        row.style.display = 'none';
+                        checkNewJoinsEmpty();
+                    }, 300);
+                }, 200);
+            }
+        }
+
+        // Hide the entire New Joinings card if all rows are dismissed
+        function checkNewJoinsEmpty() {
+            var card    = document.getElementById('new-joinings-card');
+            var rows    = document.querySelectorAll('.new-join-row');
+            var visible = 0;
+            rows.forEach(function (r) {
+                if (r.style.display !== 'none') visible++;
+            });
+            if (card && visible === 0) {
+                card.style.transition = 'opacity .3s';
+                card.style.opacity    = '0';
+                setTimeout(function () { card.style.display = 'none'; }, 300);
+            }
         }
     </script>
 }

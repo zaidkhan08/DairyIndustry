@@ -418,6 +418,14 @@
     </style>
 }
 
+<!-- Hidden antiforgery token for QuickEdit fetch calls -->
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<input type="hidden" id="cc-csrf-token" value="@requestToken" />
+
 <!-- Filter Bar -->
 <div class="cc-filter-bar">
     <form method="get" asp-action="Index">
@@ -689,7 +697,9 @@
             var qeLabel    = document.getElementById('qeEntryLabel');
             var currentId  = null;
             var currentRow = null;
-            var token      = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            var token = document.getElementById('cc-csrf-token')?.value
+                     || document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                     || '';
 
             // Open popover
             document.querySelectorAll('.cc-qe-trigger').forEach(function (btn) {
@@ -751,7 +761,14 @@
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body.toString()
                 })
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) {
+                        // Server returned 400/401/500 — not a network error
+                        throw new Error('Server error: ' + r.status +
+                            (r.status === 400 ? ' (antiforgery token missing or invalid)' : ''));
+                    }
+                    return r.json();
+                })
                 .then(function (data) {
                     if (data.success) {
                         qeMsg.style.color = '#16a34a';
@@ -792,9 +809,12 @@
                         qeMsg.textContent = data.message;
                     }
                 })
-                .catch(function () {
+                .catch(function (err) {
                     qeMsg.style.color = '#dc2626';
-                    qeMsg.textContent = 'Network error. Please try again.';
+                    qeMsg.textContent = err.message.includes('antiforgery')
+                        ? 'Token error — please refresh the page and try again.'
+                        : 'Network error. Please try again.';
+                    console.error('[QuickEdit]', err);
                 });
             });
 
