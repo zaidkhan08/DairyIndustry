@@ -3,186 +3,314 @@
 @{
     ViewData["Title"] = "My Dashboard";
     Layout = "_FarmerLayout";
-
     var farmerName = Context.Session.GetString("FarmerName");
     var farmerCode = Context.Session.GetString("FarmerCode");
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<div class="container-fluid py-4" style="background:#f8fafc;">
+<style>
+    :root {
+        --dash-bg: #f4f6fb;
+        --card-bg: #ffffff;
+        --card-border: #e8ecf1;
+        --muted: #6c757d;
+        --label: #9aa0ac;
+        --text: #1a1d23;
+        --green: #1d9e75;
+        --green-light: #e1f5ee;
+        --green-dark: #0f6e56;
+        --blue: #378add;
+        --blue-light: #e6f1fb;
+        --blue-dark: #185fa5;
+        --amber: #ba7517;
+        --amber-light: #faeeda;
+        --amber-dark: #854f0b;
+        --red: #e24b4a;
+        --red-light: #fcebeb;
+        --red-dark: #a32d2d;
+        --radius: 12px;
+        --radius-sm: 8px;
+    }
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    body {
+        background: var(--dash-bg);
+    }
 
+    .dash-wrap {
+        padding: 24px;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .dash-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+        margin-bottom: 16px;
+    }
+
+    .sec-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--label);
+        margin-bottom: 14px;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+    }
+
+    .kpi-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+    }
+
+    .kpi-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .kpi-label {
+        font-size: 11px;
+        color: var(--label);
+        margin-bottom: 4px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .kpi-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.1;
+    }
+
+    .kpi-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 5px;
+    }
+
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+    }
+
+    .bp-green {
+        background: var(--green-light);
+        color: var(--green-dark);
+    }
+
+    .bp-blue {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+    }
+
+    .bp-amber {
+        background: var(--amber-light);
+        color: var(--amber-dark);
+    }
+
+    .bp-red {
+        background: var(--red-light);
+        color: var(--red-dark);
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        text-decoration: none;
+        transition: border-color .15s, background .15s;
+    }
+
+    .action-btn:hover {
+        border-color: #c0c8d4;
+        background: #fafbfc;
+        color: var(--text);
+    }
+
+    .action-btn i {
+        font-size: 22px;
+    }
+
+    .dash-divider {
+        border: none;
+        border-top: 1px solid var(--card-border);
+        margin: 12px 0;
+    }
+
+    @@media (max-width: 768px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="dash-wrap">
+
+    <!-- HEADER -->
+    <div class="dash-card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
         <div>
-            <h4 class="fw-bold mb-1">
-                Good Morning, @farmerName 
-            </h4>
+            <div style="font-size:18px; font-weight:700; color:var(--text);">@farmerName</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:3px;">
+                <i class="bi bi-person-badge"></i>&nbsp;@farmerCode
+                &nbsp;&middot;&nbsp;
+                <i class="bi bi-calendar3"></i>&nbsp;@DateTime.Today.ToString("dd MMM yyyy")
+            </div>
+        </div>
+        <span class="badge-pill bp-green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+    </div>
 
-            <p class="text-muted small mb-0">
-                Here’s your milk collection overview for today
-            </p>
+    <!-- TODAY KPIs -->
+    <div class="sec-label">Today's collection</div>
+    <div class="kpi-grid" style="margin-bottom:16px;">
 
-            <span class="badge bg-light text-dark border mt-2">
-                Farmer Code: @farmerCode
-            </span>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--blue-light); color:var(--blue-dark);">
+                <i class="bi bi-sunrise"></i>
+            </div>
+            <div class="kpi-label">Morning</div>
+            <div class="kpi-value">
+                @Model.TodayMorningQty.ToString("F1")
+                <span style="font-size:14px; font-weight:400; color:var(--muted);">L</span>
+            </div>
+            <div class="kpi-sub"><i class="bi bi-currency-rupee"></i>@Model.TodayMorningAmount.ToString("N0")</div>
         </div>
 
-        <div class="text-muted small">
-            <i class="bi bi-calendar3"></i>
-            @DateTime.Today.ToString("dd MMM yyyy")
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--blue-light); color:var(--blue-dark);">
+                <i class="bi bi-moon-stars"></i>
+            </div>
+            <div class="kpi-label">Evening</div>
+            <div class="kpi-value">
+                @Model.TodayEveningQty.ToString("F1")
+                <span style="font-size:14px; font-weight:400; color:var(--muted);">L</span>
+            </div>
+            <div class="kpi-sub"><i class="bi bi-currency-rupee"></i>@Model.TodayEveningAmount.ToString("N0")</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--green-light); color:var(--green-dark);">
+                <i class="bi bi-droplet-fill"></i>
+            </div>
+            <div class="kpi-label">Total today</div>
+            <div class="kpi-value">
+                @Model.TodayTotalQty.ToString("F1")
+                <span style="font-size:14px; font-weight:400; color:var(--muted);">L</span>
+            </div>
+            <div class="kpi-sub"><i class="bi bi-currency-rupee"></i>@Model.TodayTotalAmount.ToString("N0")</div>
+        </div>
+    </div>
+
+    <!-- FINANCIAL KPIs -->
+    <div class="sec-label">Financials</div>
+    <div class="kpi-grid" style="margin-bottom:16px;">
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--green-light); color:var(--green-dark);">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="kpi-label">This month</div>
+            <div class="kpi-value">
+                <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.MonthTotalAmount.ToString("N0")
+            </div>
+            <div class="kpi-sub">@Model.MonthTotalQty.ToString("F1") L collected</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--amber-light); color:var(--amber-dark);">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="kpi-label">Pending payment</div>
+            <div class="kpi-value">
+                <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.PendingAmount.ToString("N0")
+            </div>
+            <div class="kpi-sub">To be processed</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--blue-light); color:var(--blue-dark);">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="kpi-label">Last payment</div>
+            @if (Model.LastPaymentAmount.HasValue)
+            {
+                <div class="kpi-value">
+                    <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.LastPaymentAmount.Value.ToString("N0")
+                </div>
+                <div class="kpi-sub">@Model.LastPaymentDate?.ToString("dd MMM yyyy")</div>
+            }
+            else
+            {
+                <div class="kpi-value" style="font-size:18px; color:var(--muted);">—</div>
+                <div class="kpi-sub">No payment yet</div>
+            }
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--red-light); color:var(--red-dark);">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="kpi-label">Rejections (30d)</div>
+            <div class="kpi-value">@Model.TotalRejectionsLast30Days</div>
+            <div class="kpi-sub">@Model.TotalRejectedQtyLast30Days.ToString("F1") L lost</div>
         </div>
 
     </div>
 
-    <!-- ================= TODAY SUMMARY ================= -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body">
+    <!-- QUICK ACTIONS -->
+    <div class="sec-label">Quick actions</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:16px;">
 
-            <h6 class="fw-bold text-dark mb-3">Today’s Milk Summary</h6>
+        <a asp-action="TodayMilk" class="action-btn">
+            <i class="bi bi-droplet" style="color:var(--blue);"></i>
+            Today Milk
+        </a>
 
-            <div class="row g-3">
+        <a asp-action="AllMilkEntriesFarmer" class="action-btn">
+            <i class="bi bi-list-ul" style="color:var(--blue);"></i>
+            History
+        </a>
 
-                <div class="col-md-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <small class="text-muted">Morning</small>
-                        <h5 class="mb-0">@Model.TodayMorningQty.ToString("F2") L</h5>
-                        <small class="text-success">₹@Model.TodayMorningAmount.ToString("N0")</small>
-                    </div>
-                </div>
+        <a asp-action="RejectionHistory" class="action-btn">
+            <i class="bi bi-x-circle" style="color:var(--red);"></i>
+            Rejections
+        </a>
 
-                <div class="col-md-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <small class="text-muted">Evening</small>
-                        <h5 class="mb-0">@Model.TodayEveningQty.ToString("F2") L</h5>
-                        <small class="text-success">₹@Model.TodayEveningAmount.ToString("N0")</small>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="p-3 bg-light rounded-3 border">
-                        <small class="text-muted">Total Today</small>
-                        <h5 class="mb-0 fw-bold">
-                            @Model.TodayTotalQty.ToString("F2") L
-                        </h5>
-                        <small class="text-success">
-                            ₹@Model.TodayTotalAmount.ToString("N0")
-                        </small>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <small class="text-muted">Avg Rate</small>
-                        <h5 class="mb-0">
-                            ₹@(Model.TodayTotalQty > 0
-                                                        ? (Model.TodayTotalAmount / Model.TodayTotalQty)
-                                                        : 0)
-                        </h5>
-                        <small class="text-muted">per liter</small>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= FINANCIAL SUMMARY ================= -->
-    <div class="row g-3 mb-4">
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body">
-                    <small class="text-muted">This Month Earnings</small>
-                    <h4 class="text-success fw-bold">₹@Model.MonthTotalAmount.ToString("N0")</h4>
-                    <p class="text-muted small mb-0">@Model.MonthTotalQty.ToString("F2") L collected</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 border-start border-warning border-4">
-                <div class="card-body">
-                    <small class="text-muted">Pending Payment</small>
-                    <h4 class="text-warning fw-bold">₹@Model.PendingAmount.ToString("N2")</h4>
-                    <p class="text-muted small mb-0">To be processed</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 border-start border-success border-4">
-                <div class="card-body">
-                    <small class="text-muted">Last Payment</small>
-
-                    @if (Model.LastPaymentAmount.HasValue)
-                    {
-                        <h4 class="text-success fw-bold">
-                            ₹@Model.LastPaymentAmount.Value.ToString("N2")
-                        </h4>
-                        <p class="text-muted small mb-0">
-                            @Model.LastPaymentDate?.ToString("dd MMM yyyy")
-                        </p>
-                    }
-                    else
-                    {
-                        <h4 class="text-muted">No Payment</h4>
-                    }
-
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ================= REJECTION ALERT ================= -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body d-flex justify-content-between align-items-center">
-
-            <div>
-                <h6 class="text-danger fw-bold mb-1">⚠ Rejections (Last 30 Days)</h6>
-
-                <p class="mb-0 text-muted small">
-                    Total: <b>@Model.TotalRejectionsLast30Days</b> |
-                    Lost Milk: <b>@Model.TotalRejectedQtyLast30Days.ToString("F1") L</b>
-                </p>
-            </div>
-
-            <a asp-action="RejectionHistory" class="btn btn-outline-danger btn-sm rounded-pill">
-                View Details
-            </a>
-
-        </div>
-    </div>
-
-    <!-- ================= RECENT ACTIONS ================= -->
-    <h6 class="fw-bold text-muted mb-3">Quick Actions</h6>
-
-    <div class="row g-2 mb-4">
-
-        <div class="col-6 col-md-3">
-            <a asp-action="TodayMilk" class="btn btn-light border w-100 py-3 shadow-sm rounded-3">
-                <i class="bi bi-droplet text-primary"></i><br />Today Milk
-            </a>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <a asp-action="AllMilkEntries" class="btn btn-light border w-100 py-3 shadow-sm rounded-3">
-                <i class="bi bi-list-ul text-primary"></i><br />History
-            </a>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <a asp-action="RejectionHistory" class="btn btn-light border w-100 py-3 shadow-sm rounded-3">
-                <i class="bi bi-x-circle text-danger"></i><br />Rejections
-            </a>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <a asp-action="Profile" class="btn btn-light border w-100 py-3 shadow-sm rounded-3">
-                <i class="bi bi-person text-primary"></i><br />Profile
-            </a>
-        </div>
+        <a asp-action="Profile" class="action-btn">
+            <i class="bi bi-person" style="color:var(--blue);"></i>
+            Profile
+        </a>
 
     </div>
 

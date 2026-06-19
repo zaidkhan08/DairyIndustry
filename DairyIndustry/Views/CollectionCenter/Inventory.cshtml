@@ -2,71 +2,536 @@
 
 @{
     ViewData["Title"] = "Center Milk Inventory";
+
     var centerName = Model.FirstOrDefault()?.CenterName ?? "—";
     var totalStock = Model.Sum(x => x.AvailableQuantity);
+    var totalTypes = Model.Select(x => x.MilkTypeName).Distinct().Count();
+    var lastSync = Model.Any() ? Model.Max(x => x.LastUpdated) : DateTime.Now;
 
-    Layout = "_CollectionCenterLayout";
+    var rows = Model
+        .OrderByDescending(x => x.AvailableQuantity)
+        .ToList();
 
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
-<div class="container-fluid px-4 py-3">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+
+<style>
+    :root {
+        --bg:        #F4F5F7;
+        --surface:   #FFFFFF;
+        --surface-2: #F9FAFB;
+        --border:    #E4E7EC;
+        --text-1:    #101828;
+        --text-2:    #344054;
+        --text-3:    #667085;
+        --text-4:    #98A2B3;
+        --accent:    #1D4ED8;
+        --accent-bg: #EFF4FF;
+        --accent-bd: #C7D7FD;
+        --green:     #027A48;
+        --green-bg:  #ECFDF3;
+        --green-bd:  #ABEFC6;
+        --radius:    10px;
+        --radius-lg: 14px;
+        --shadow:    0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
+    }
+
+    .inv {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+        padding: 2rem 1.75rem 4rem;
+        color: var(--text-1);
+    }
+
+    /* TOP BAR */
+    .inv-topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 1.75rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .inv-page-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 6px;
+    }
+
+    .inv-page-title {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.4px;
+        line-height: 1.1;
+    }
+
+    .inv-page-sub {
+        font-size: 13px;
+        color: var(--text-3);
+        margin-top: 5px;
+    }
+
+    .inv-sync-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 13px;
+        font-size: 12px;
+        color: var(--text-3);
+        font-weight: 500;
+        box-shadow: var(--shadow);
+        white-space: nowrap;
+    }
+
+    .sync-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #17B26A;
+        flex-shrink: 0;
+        animation: blink 2.4s ease-in-out infinite;
+    }
+
+    @@keyframes blink {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: .4; }
+    }
+
+    /* KPI CARDS */
+    .inv-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .875rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .inv-kpi {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.35rem 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .kpi-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        margin-bottom: 10px;
+    }
+
+    .kpi-val {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: -.6px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-val .u {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-4);
+        margin-left: 3px;
+    }
+
+    .kpi-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 6px;
+    }
+
+    /* TABLE CARD */
+    .inv-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .inv-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .inv-tbl thead tr {
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .inv-tbl thead th {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        padding: 11px 20px;
+        text-align: left;
+    }
+
+    .inv-tbl thead th.right { text-align: right; }
+
+    .inv-tbl tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background .12s;
+    }
+
+    .inv-tbl tbody tr:last-child { border-bottom: none; }
+    .inv-tbl tbody tr:hover      { background: var(--surface-2); }
+
+    .inv-tbl td {
+        padding: 15px 20px;
+        vertical-align: middle;
+    }
+
+    .row-num {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-4);
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .milk-name { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .milk-meta { font-size: 11.5px; color: var(--text-4); margin-top: 3px; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 20px;
+        padding: 3px 10px;
+    }
+
+    .status-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .badge-good {
+        background: var(--green-bg);
+        color: var(--green);
+        border: 1px solid var(--green-bd);
+    }
+    .badge-good::before   { background: #17B26A; }
+
+    .badge-medium {
+        background: #FFFAEB;
+        color: #B54708;
+        border: 1px solid #FEF0C7;
+    }
+    .badge-medium::before { background: #F79009; }
+
+    .badge-low {
+        background: #FEF3F2;
+        color: #B42318;
+        border: 1px solid #FECDCA;
+    }
+    .badge-low::before    { background: #F04438; }
+
+    .prog-wrap {
+        width: 160px;
+        height: 8px;
+        background: #EEF2F6;
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    .prog-bar {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg,#2563EB,#60A5FA);
+        transition: width .4s ease;
+    }
+    
+    .qty-num {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-1);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.3px;
+    }
+
+    .qty-num .u {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-4);
+        margin-left: 3px;
+    }
+
+    /* table footer */
+    .tbl-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 20px;
+        background: var(--surface-2);
+        border-top: 1px solid var(--border);
+    }
+
+    .tbl-foot-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .tbl-foot-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tbl-foot-val .u {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-4);
+        margin-left: 3px;
+    }
+
+    /* empty */
+    .inv-empty {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 4rem 2rem;
+        text-align: center;
+        color: var(--text-3);
+        font-size: 14px;
+    }
+
+    /* footer */
+    .inv-footer {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 11.5px;
+        color: var(--text-4);
+    }
+
+    @@media (max-width: 680px) {
+        .inv-kpis { grid-template-columns: 1fr 1fr; }
+        .inv-kpi:last-child { grid-column: 1/-1; }
+        .hide-sm  { display: none; }
+    }
+
+    @@media (max-width: 440px) {
+        .inv-kpis { grid-template-columns: 1fr; }
+        .inv-kpi:last-child { grid-column: auto; }
+    }
+</style>
+
+<div class="inv">
+
+    <!-- TOP BAR -->
+    <div class="inv-topbar">
+        <div>
+            <div class="inv-page-label">Collection Center · Milk Stock</div>
+            <div class="inv-page-title">Milk Inventory</div>
+            <div class="inv-page-sub">@centerName</div>
+        </div>
+        <div class="inv-sync-tag">
+            <span class="sync-dot"></span>
+            Updated @lastSync.ToString("dd MMM yyyy, h:mm tt")
+        </div>
+    </div>
 
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger">@TempData["Error"]</div>
+        <div class="alert alert-danger mb-4">@TempData["Error"]</div>
     }
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="mb-0 fw-semibold">Milk Inventory</h4>
-            <small class="text-muted">@centerName</small>
+    <!-- KPI STRIP -->
+    <div class="inv-kpis">
+        <div class="inv-kpi">
+            <div class="kpi-label">Total Stock</div>
+            <div class="kpi-val">
+                @totalStock.ToString("N0")<span class="u">L</span>
+            </div>
+            <div class="kpi-sub">All milk types combined</div>
         </div>
-        <span class="badge bg-primary fs-6">
-            Total Stock : @totalStock.ToString("F2") L
-        </span>
+        <div class="inv-kpi">
+            <div class="kpi-label">Milk Types</div>
+            <div class="kpi-val">@totalTypes</div>
+            <div class="kpi-sub">Active varieties</div>
+        </div>
+        <div class="inv-kpi">
+            <div class="kpi-label">Last Updated</div>
+            <div class="kpi-val"
+                 style="font-size:20px; letter-spacing:-.3px;">
+                @lastSync.ToString("dd MMM yyyy")
+            </div>
+            <div class="kpi-sub">@lastSync.ToString("h:mm tt")</div>
+        </div>
     </div>
-
-    <!-- Table -->
     @if (!Model.Any())
     {
-        <div class="alert alert-info">No inventory records found for your center.</div>
+        <div class="inv-empty">
+            No inventory records found for @centerName.
+        </div>
     }
     else
     {
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <table class="table table-hover table-bordered mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Milk Type</th>
-                            <th class="text-end">Available Qty (L)</th>
-                            <th>Last Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var (item, index) in Model.Select((x, i) => (x, i + 1)))
-                        {
-                            <tr>
-                                <td>@index</td>
-                                <td>@item.MilkTypeName</td>
-                                <td class="text-end fw-semibold">@item.AvailableQuantity.ToString("F2")</td>
-                                <td class="text-muted">
-                                    @item.LastUpdated.ToString("dd MMM yyyy, hh:mm tt")
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light">
-                        <tr>
-                            <td colspan="2" class="fw-bold text-end">Total</td>
-                            <td class="text-end fw-bold">@totalStock.ToString("F2") L</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+        <div class="inv-card">
+
+            <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+                <h6 class="mb-0 fw-semibold">Inventory Details</h6>
+
+                <span class="badge bg-light text-dark border">
+                    @rows.Count Record(s)
+                </span>
             </div>
+
+            <table class="inv-tbl">
+
+                <thead>
+                    <tr>
+                        <th class="hide-sm" style="width:52px;">#</th>
+                        <th>Milk Type</th>
+                        <th class="hide-sm">Inventory Share</th>
+                        <th class="right">Available Stock</th>
+                        <th class="hide-sm">Last Updated</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @for (int i = 0; i < rows.Count; i++)
+                    {
+                        var item = rows[i];
+
+                        var sharePercent = totalStock > 0
+                        ? Math.Round((item.AvailableQuantity / totalStock) * 100, 1)
+                        : 0;
+
+                        var badgeClass = item.MilkTypeName.ToLower() switch
+                        {
+                            "cow milk" => "bg-primary-subtle text-primary border-primary-subtle",
+                            "buffalo milk" => "bg-dark-subtle text-dark border-dark-subtle",
+                            _ => "bg-success-subtle text-success border-success-subtle"
+                        };
+
+                        <tr>
+
+                            <td class="hide-sm">
+                                <div class="row-num">
+                                    @(i + 1)
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="badge border fw-normal px-2 py-1 @badgeClass">
+                                    @item.MilkTypeName
+                                </span>
+
+                                <div class="milk-meta">
+                                    @centerName · Raw Milk
+                                </div>
+                            </td>
+
+                            <td class="hide-sm">
+
+                                <div style="display:flex;align-items:center;gap:10px;">
+
+                                    <div class="prog-wrap">
+
+                                        <div class="prog-bar"
+                                             style="width:@sharePercent%;">
+                                        </div>
+
+                                    </div>
+
+                                    <span style="
+                                            font-size:12px;
+                                            font-weight:600;
+                                            color:var(--text-3);">
+
+                                        @sharePercent%
+
+                                    </span>
+
+                                </div>
+
+                            </td>
+
+                            <td class="right">
+
+                                <span class="qty-num">
+
+                                    @item.AvailableQuantity.ToString("N2")
+
+                                    <span class="u">L</span>
+
+                                </span>
+
+                            </td>
+
+                            <td class="hide-sm"
+                                style="font-size:12px;color:var(--text-3);">
+
+                                @item.LastUpdated.ToString("dd MMM yyyy, h:mm tt")
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+            <div class="tbl-foot">
+
+                <span class="tbl-foot-label">
+                    Net Total — @centerName
+                </span>
+
+                <span class="tbl-foot-val">
+
+                    @totalStock.ToString("N2")
+
+                    <span class="u">L</span>
+
+                </span>
+
+            </div>
+
         </div>
     }
 

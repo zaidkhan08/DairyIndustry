@@ -1,0 +1,387 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.FarmerPaymentHistoryModel>
+@{
+    ViewData["Title"] = "Payment History";
+    Layout = "_FarmerLayout";
+}
+<style>
+    .table-card {
+        background: #fff;
+        border: 1px solid #e8eef6;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .table-card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .payment-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.84rem;
+        margin-bottom: 0;
+    }
+
+        .payment-table thead th {
+            background: #f8fafc;
+            padding: 11px 16px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid #e8eef6;
+            white-space: nowrap;
+        }
+
+        .payment-table tbody td {
+            padding: 13px 16px;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            font-weight: 400;
+            font-size: 0.84rem;
+        }
+
+        .payment-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .payment-table tbody tr:hover td {
+            background: #fafbfd;
+        }
+
+    .status-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.74rem;
+        font-weight: 600;
+    }
+
+    .status-processed {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+
+    .status-failed {
+        background: #fff5f5;
+        color: #dc2626;
+    }
+
+    .status-cancelled {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .status-pending {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .row-num {
+        color: #cbd5e1;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .period-text {
+        color: #1e293b;
+    }
+
+    .period-sep {
+        color: #94a3b8;
+        margin: 0 4px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 30px;
+        color: #94a3b8;
+    }
+
+        .empty-state i {
+            font-size: 2.6rem;
+            opacity: .35;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+    /* PAGINATION */
+    .ph-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .ph-page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 7px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 0.78rem;
+        color: #475569;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.12s;
+        line-height: 1;
+    }
+
+        .pg-btn:hover {
+            background: #f8fafc;
+        }
+
+        .pg-btn.active {
+            background: #1d6fce;
+            color: #fff;
+            border-color: #1d6fce;
+            font-weight: 600;
+        }
+
+        .pg-btn.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            cursor: default;
+        }
+
+    @@media (max-width: 768px) {
+        .payment-table {
+            min-width: 700px;
+        }
+    }
+</style>
+
+<!-- Page Header -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h5 class="fw-bold m-0" style="color:#0a2540;">Payment History</h5>
+        <div class="text-muted" style="font-size:.78rem; margin-top:2px;">All payments processed for your milk deliveries</div>
+    </div>
+    <span style="font-size:.78rem; color:#94a3b8;">@Model.Count record(s)</span>
+</div>
+
+<!-- KPI Row -->
+@if (Model.Any())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div style="background:#fff; border:1px solid #e8eef6; border-radius:14px; padding:16px 20px;">
+                <div style="font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:4px;">Total Payments</div>
+                <div style="font-size:1.05rem; color:#0a2540;">@Model.Count</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div style="background:#fff; border:1px solid #e8eef6; border-radius:14px; padding:16px 20px;">
+                <div style="font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:4px;">Total Qty</div>
+                <div style="font-size:1.05rem; color:#0a2540;">@Model.Sum(p => p.TotalQty).ToString("N2") L</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div style="background:#fff; border:1px solid #e8eef6; border-radius:14px; padding:16px 20px;">
+                <div style="font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:4px;">Total Earned</div>
+                <div style="font-size:1.05rem; color:#0a2540;">
+                    <i class="bi bi-currency-rupee" style="font-size:.9rem;"></i>@Model.Sum(p => p.TotalAmount).ToString("N2")
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div style="background:#fff; border:1px solid #e8eef6; border-radius:14px; padding:16px 20px;">
+                <div style="font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:4px;">Processed</div>
+                <div style="font-size:1.05rem; color:#0a2540;">@Model.Count(p => p.PaymentStatus == "Processed") of @Model.Count</div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Table -->
+<div class="table-card">
+    <div class="table-card-header">
+        <span style="font-size:.88rem; font-weight:600; color:#0a2540;">
+            <i class="bi bi-table me-2" style="color:#94a3b8;"></i>Payment Records
+        </span>
+        @if (Model.Any())
+        {
+            <span style="font-size:.75rem; color:#94a3b8;">@Model.Count entr@(Model.Count == 1 ? "y" : "ies")</span>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-credit-card"></i>
+            <div style="font-size:.95rem; font-weight:600; color:#475569; margin-bottom:4px;">No payment records found</div>
+            <div style="font-size:.82rem;">Your payments will appear here once processed by the center.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Payment ID</th>
+                        <th>Period</th>
+                        <th>Qty (L)</th>
+                        <th>Amount</th>
+                        <th>Payment Date</th>
+                        <th>Status</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody id="phTableBody">
+                    @{
+                        int row = 1;
+                    }
+                    @foreach (var p in Model)
+                    {
+                        <tr class="ph-data-row">
+                            <td><span class="row-num ph-sr">@row</span></td>
+                            <td>@p.PaymentId</td>
+                            <td>
+                                <span class="period-text">@p.FromDate.ToString("dd-MM-yyyy")</span>
+                                <span class="period-sep">To</span>
+                                <span class="period-text">@p.ToDate.ToString("dd-MM-yyyy")</span>
+                            </td>
+                            <td>@p.TotalQty.ToString("N2") L</td>
+                            <td>
+                                <i class="bi bi-currency-rupee" style="font-size:.78rem; color:#475569;"></i>@p.TotalAmount.ToString("N2")
+                            </td>
+                            <td>@p.PaymentDate.ToString("dd-MM-yyyy")</td>
+                            <td>
+                                @{
+                                    var pillClass = p.PaymentStatus switch
+                                    {
+                                        "Processed" => "status-processed",
+                                        "Failed" => "status-failed",
+                                        "Cancelled" => "status-cancelled",
+                                        _ => "status-pending"
+                                    };
+                                }
+                                <span class="status-pill @pillClass">@p.PaymentStatus</span>
+                            </td>
+                        </tr>
+                        row++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATION BAR -->
+        <div class="ph-pagination" id="phPaginationBar">
+            <span id="phPaginationInfo">Showing 1–@(Math.Min(10, Model.Count)) of @Model.Count records</span>
+            <div class="ph-page-btns" id="phPaginationBtns"></div>
+        </div>
+    }
+</div>
+
+<script>
+    const PH_PAGE_SIZE = 10;
+    let phCurrentPage = 1;
+
+    const phAllRows = Array.from(document.querySelectorAll(".ph-data-row"));
+    const phPaginationInfo = document.getElementById("phPaginationInfo");
+    const phPaginationBtns = document.getElementById("phPaginationBtns");
+
+    function phRenderPage() {
+        const total = phAllRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / PH_PAGE_SIZE));
+        phCurrentPage = Math.min(phCurrentPage, totalPages);
+
+        const start = (phCurrentPage - 1) * PH_PAGE_SIZE;
+        const end = Math.min(start + PH_PAGE_SIZE, total);
+
+        phAllRows.forEach((row, i) => {
+            const visible = i >= start && i < end;
+            row.style.display = visible ? "" : "none";
+            if (visible) {
+                const srCell = row.querySelector(".ph-sr");
+                if (srCell) srCell.textContent = i + 1;
+            }
+        });
+
+        if (phPaginationInfo) {
+            const from = total === 0 ? 0 : start + 1;
+            phPaginationInfo.textContent =
+                `Showing ${from}–${end} of ${total} record${total !== 1 ? "s" : ""}`;
+        }
+
+        phRenderPagination(totalPages);
+    }
+
+    function phRenderPagination(totalPages) {
+        if (!phPaginationBtns) return;
+        phPaginationBtns.innerHTML = "";
+
+        function addBtn(html, page, extraClass) {
+            const btn = document.createElement("button");
+            btn.className = "pg-btn" + (extraClass ? " " + extraClass : "");
+            btn.innerHTML = html;
+            if (extraClass !== "disabled") {
+                btn.onclick = () => { phCurrentPage = page; phRenderPage(); };
+            }
+            phPaginationBtns.appendChild(btn);
+        }
+
+        // Prev
+        addBtn('<i class="bi bi-chevron-left" style="font-size:10px;"></i>',
+            phCurrentPage - 1, phCurrentPage === 1 ? "disabled" : "");
+
+        // Page numbers
+        phBuildPageList(phCurrentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "pg-btn disabled";
+                el.textContent = "…";
+                phPaginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === phCurrentPage ? "active" : "");
+            }
+        });
+
+        // Next
+        addBtn('<i class="bi bi-chevron-right" style="font-size:10px;"></i>',
+            phCurrentPage + 1, phCurrentPage === totalPages ? "disabled" : "");
+    }
+
+    function phBuildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    if (phAllRows.length > 0) {
+        phRenderPage();
+    }
+</script>

@@ -1,343 +1,333 @@
 ﻿@model DairyIndustry.Models.Collection.FarmerMilkReceiptModel
-
 @{
     ViewData["Title"] = "Milk Receipt";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+<style>
+    * {
+        box-sizing: border-box;
+    }
 
-<div class="container py-4">
+    .mr-page {
+        padding: 24px;
+        background: #fff;
+        min-height: 100vh;
+    }
 
-    <div class="mx-auto" style="max-width:700px;">
+    .mr-wrap {
+        max-width: 740px;
+        margin: auto;
+    }
 
-        <!-- ACTION BUTTONS -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
+    .mr-topbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
 
-            <a asp-action="AllMilkEntries"
-               class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="bi bi-arrow-left me-1"></i> Back
-            </a>
+    .mr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #333;
+        text-decoration: none;
+        transition: background 0.2s ease;
+    }
 
-            <a asp-action="DownloadReceipt"
-               asp-route-id="@Model.CollectionId"
-               class="btn rounded-pill px-4 text-white"
-               style="background:#0f172a;">
-                <i class="bi bi-download me-1"></i> Download PDF
-            </a>
+        .mr-btn:hover {
+            background: #f3f4f6;
+        }
 
+    .mr-btn-dark {
+        background: #111827;
+        color: #fff;
+        border: none;
+    }
+
+        .mr-btn-dark:hover {
+            background: #0b1220;
+        }
+
+    .mr-rc {
+        background: #fff;
+        border: 1px solid #d8dce3;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .mr-rh {
+        padding: 16px 22px 12px;
+        border-bottom: 2px solid #1a3a5c;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .mr-brand {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a3a5c;
+    }
+
+    .mr-rh-sub {
+        font-size: 11px;
+        color: #777;
+        margin-top: 3px;
+        line-height: 1.6;
+    }
+
+    .mr-badge {
+        border: 2px solid #1a3a5c;
+        color: #1a3a5c;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 5px 10px;
+        display: inline-block;
+    }
+
+    .mr-rh-meta {
+        font-size: 11px;
+        color: #666;
+        margin-top: 5px;
+        text-align: right;
+        line-height: 1.7;
+    }
+
+    .mr-status {
+        background: #e8f5e9;
+        border-bottom: 1px solid #b2dfdb;
+        padding: 8px;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .7px;
+        color: #2e7d32;
+    }
+
+    .mr-cards {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .mr-card {
+        flex: 1;
+        border-right: 1px solid #e5e7eb;
+        padding: 12px 14px;
+    }
+
+        .mr-card:last-child {
+            border-right: none;
+        }
+
+    .mr-c-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #aaa;
+        margin-bottom: 5px;
+    }
+
+    .mr-c-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 3px;
+    }
+
+    .mr-c-row {
+        font-size: 11px;
+        color: #555;
+        line-height: 1.8;
+    }
+
+        .mr-c-row b {
+            color: #111;
+        }
+
+    .mr-green {
+        color: #2e7d32;
+        font-weight: 700;
+    }
+
+    table.mr-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        table.mr-tbl thead tr {
+            background: #1a3a5c;
+        }
+
+        table.mr-tbl th {
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+            table.mr-tbl th.text-right,
+            table.mr-tbl td.text-right {
+                text-align: right;
+            }
+
+        table.mr-tbl td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #222;
+        }
+
+    .mr-tot {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 12px 14px;
+    }
+
+    .mr-tot-inner {
+        width: 240px;
+        margin-top: 4px;
+    }
+
+    .mr-tot-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #555;
+        padding: 2px 0;
+    }
+
+    .mr-tot-grand {
+        display: flex;
+        justify-content: space-between;
+        background: #1a3a5c;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 7px 10px;
+        margin-top: 5px;
+    }
+
+    .mr-rfooter {
+        border-top: 1px solid #eee;
+        padding: 9px 22px;
+        text-align: center;
+        font-size: 10px;
+        color: #aaa;
+        line-height: 1.7;
+    }
+
+    @@media print {
+        body {
+            background: #fff;
+        }
+
+        .mr-page {
+            padding: 0;
+        }
+
+        .mr-topbar {
+            display: none !important;
+        }
+
+        .mr-rc {
+            border: none;
+        }
+    }
+</style>
+
+<div class="mr-page">
+    <div class="mr-wrap">
+
+        <div class="mr-topbar">
+            <a asp-action="AllMilkEntries" class="mr-btn">← Back</a>
+            <a asp-action="DownloadReceipt" asp-route-id="@Model.CollectionId" class="mr-btn mr-btn-dark">⬇ Download PDF</a>
         </div>
 
-        <!-- RECEIPT CARD -->
-        <div class="card border-0 shadow-sm"
-             style="border-radius:18px;
-                    overflow:hidden;
-                    background:#ffffff;">
+        <div class="mr-rc">
 
-            <!-- HEADER -->
-            <div class="text-center text-white"
-                 style="background:#0f172a;
-                        padding:35px 25px;">
-
-                <div class="mb-2"
-                     style="font-size:2rem;">
-                    🥛
+            <div class="mr-rh">
+                <div>
+                    <div class="mr-brand">Dairy Management System</div>
+                    <div class="mr-rh-sub">Farmer Milk Collection Receipt<br>Collection Type: Single Shift Entry</div>
                 </div>
-
-                <h2 class="fw-bold mb-1"
-                    style="letter-spacing:.5px;">
-                    DAIRY MANAGEMENT SYSTEM
-                </h2>
-
-                <div style="font-size:.95rem; opacity:.85;">
-                    @Model.CenterName
+                <div>
+                    <div class="mr-badge">MILK RECEIPT</div>
+                    <div class="mr-rh-meta">Receipt No: #@Model.ReceiptNumber<br>Date: @Model.CollectionDate.ToString("dd MMM yyyy")</div>
                 </div>
-
             </div>
 
-            <!-- BODY -->
-            <div class="card-body p-4">
+            <div class="mr-status">COLLECTION STATUS: ACCEPTED</div>
 
-                <!-- RECEIPT TOP -->
-                <div class="row g-3 mb-4">
-
-                    <div class="col-md-6">
-
-                        <div class="border rounded-4 p-3 h-100"
-                             style="background:#f8fafc;">
-
-                            <div class="text-muted small mb-1">
-                                Receipt Number
-                            </div>
-
-                            <div class="fw-bold"
-                                 style="font-size:1.1rem;
-                                        color:#0f172a;">
-
-                                #@Model.ReceiptNumber
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="col-md-6">
-
-                        <div class="border rounded-4 p-3 h-100"
-                             style="background:#f8fafc;">
-
-                            <div class="text-muted small mb-1">
-                                Collection Date
-                            </div>
-
-                            <div class="fw-bold"
-                                 style="font-size:1.1rem;
-                                        color:#0f172a;">
-
-                                @Model.CollectionDate.ToString("dd MMM yyyy")
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
+            <div class="mr-cards">
+                <div class="mr-card">
+                    <div class="mr-c-label">Farmer Details</div>
+                    <div class="mr-c-name">@Model.FarmerName</div>
+                    <div class="mr-c-row">Code: <b>#@Model.FarmerCode</b></div>
                 </div>
-
-                <!-- SHIFT -->
-                <div class="border rounded-4 p-3 mb-4"
-                     style="background:#f8fafc;">
-
-                    <div class="d-flex justify-content-between align-items-center">
-
-                        <div>
-
-                            <div class="text-muted small mb-1">
-                                Shift
-                            </div>
-
-                            <div class="fw-semibold"
-                                 style="color:#0f172a;">
-                                Milk Collection Shift
-                            </div>
-
-                        </div>
-
-                        <span class="badge rounded-pill px-3 py-2"
-                              style="background:#dbeafe;
-                                     color:#1e3a8a;
-                                     font-size:.85rem;">
-
-                            <i class="bi bi-clock me-1"></i>
-                            @Model.Shift
-
-                        </span>
-
-                    </div>
-
+                <div class="mr-card">
+                    <div class="mr-c-label">Collection Center</div>
+                    <div class="mr-c-name">@Model.CenterName</div>
+                    <div class="mr-c-row">Shift: <b>@Model.Shift</b></div>
+                    <div class="mr-c-row">Date: <b>@Model.CollectionDate.ToString("dd MMM yyyy")</b></div>
                 </div>
-
-                <!-- FARMER DETAILS -->
-                <div class="mb-4">
-
-                    <h5 class="fw-bold mb-3"
-                        style="color:#0f172a;">
-                        Farmer Details
-                    </h5>
-
-                    <div class="table-responsive">
-
-                        <table class="table table-bordered align-middle mb-0">
-
-                            <tbody>
-
-                                <tr>
-                                    <th width="35%"
-                                        style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Farmer Code
-                                    </th>
-
-                                    <td class="fw-semibold">
-                                        @Model.FarmerCode
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <th style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Farmer Name
-                                    </th>
-
-                                    <td class="fw-semibold">
-                                        @Model.FarmerName
-                                    </td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
+                <div class="mr-card">
+                    <div class="mr-c-label">Quality Info</div>
+                    <div class="mr-c-name">@Model.MilkTypeName</div>
+                    <div class="mr-c-row">FAT: <b>@(Model.AppliedFat?.ToString("F2") ?? "—")</b> &nbsp;/&nbsp; CLR: <b>@(Model.AppliedCLR?.ToString("F2") ?? "—")</b></div>
+                    <div class="mr-c-row">Rate: <b>₹@(Model.RatePerLiter?.ToString("F2") ?? "0.00") / L</b></div>
+                    <div class="mr-c-row">Status: <span class="mr-green">Accepted</span></div>
                 </div>
+            </div>
 
-                <!-- MILK DETAILS -->
-                <div class="mb-4">
+            <table class="mr-tbl">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Description</th>
+                        <th>Milk Type</th>
+                        <th class="text-right">Qty (L)</th>
+                        <th class="text-right">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Milk Collection Entry</td>
+                        <td>@Model.MilkTypeName</td>
+                        <td class="text-right">@Model.Quantity.ToString("F2")</td>
+                        <td class="text-right">₹@(Model.Amount?.ToString("F2") ?? "0.00")</td>
+                    </tr>
+                </tbody>
+            </table>
 
-                    <h5 class="fw-bold mb-3"
-                        style="color:#0f172a;">
-                        Milk Details
-                    </h5>
-
-                    <div class="table-responsive">
-
-                        <table class="table table-bordered align-middle mb-0">
-
-                            <tbody>
-
-                                <tr>
-                                    <th width="35%"
-                                        style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Milk Type
-                                    </th>
-
-                                    <td>
-                                        @Model.MilkTypeName
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <th style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Quantity
-                                    </th>
-
-                                    <td>
-                                        @Model.Quantity.ToString("F2") L
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <th style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Fat %
-                                    </th>
-
-                                    <td>
-                                        @(Model.AppliedFat?.ToString("F2") ?? "—")
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <th style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        CLR
-                                    </th>
-
-                                    <td>
-                                        @(Model.AppliedCLR?.ToString("F2") ?? "—")
-                                    </td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
+            <div class="mr-tot">
+                <div class="mr-tot-inner">
+                    <div class="mr-tot-line">
+                        <span>Total Quantity</span>
+                        <strong>@Model.Quantity.ToString("F2") L</strong>
                     </div>
-
+                    <div class="mr-tot-grand">
+                        <span>Amount Payable</span>
+                        <span>₹ @(Model.Amount?.ToString("F2") ?? "0.00")</span>
+                    </div>
                 </div>
+            </div>
 
-                <!-- PAYMENT DETAILS -->
-                <div class="mb-4">
-
-                    <h5 class="fw-bold mb-3"
-                        style="color:#0f172a;">
-                        Payment Details
-                    </h5>
-
-                    <div class="table-responsive">
-
-                        <table class="table table-bordered align-middle mb-0">
-
-                            <tbody>
-
-                                <tr>
-                                    <th width="35%"
-                                        style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Rate Per Liter
-                                    </th>
-
-                                    <td>
-                                        ₹ @Model.RatePerLiter?.ToString("F2")
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <th style="background:#f8fafc;
-                                               color:#0f172a;">
-                                        Quantity
-                                    </th>
-
-                                    <td>
-                                        @Model.Quantity.ToString("F2") L
-                                    </td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-                <!-- TOTAL -->
-                <div class="rounded-4 text-center p-4 mb-4"
-                     style="background:#f8fafc;
-                            border:2px solid #dbeafe;">
-
-                    <div class="text-muted mb-2"
-                         style="font-size:1rem;">
-                        Total Amount
-                    </div>
-
-                    <div class="fw-bold"
-                         style="font-size:2.2rem;
-                                color:#0f172a;">
-
-                        ₹ @Model.Amount?.ToString("F2")
-
-                    </div>
-
-                </div>
-
-                <!-- FOOTER -->
-                <div class="text-center pt-3 border-top">
-
-                    <div class="fw-semibold"
-                         style="color:#0f172a;">
-                        Thank You!
-                    </div>
-
-                    <div class="text-muted small">
-                        Computer Generated Receipt
-                    </div>
-
-                    <div class="text-muted small mt-1">
-                        @DateTime.Now.ToString("dd MMM yyyy hh:mm tt")
-                    </div>
-
-                </div>
-
+            <div class="mr-rfooter">
+                Computer-generated receipt · No physical signature required &nbsp;|&nbsp;
+                Generated: @DateTime.Now.ToString("dd MMM yyyy, hh:mm tt") &nbsp;|&nbsp; Dairy Management System
             </div>
 
         </div>
-
     </div>
-
 </div>

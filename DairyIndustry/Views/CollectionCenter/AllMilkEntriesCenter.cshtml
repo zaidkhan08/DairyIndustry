@@ -1,105 +1,245 @@
 ﻿@using DairyIndustry.Models.Collection
 @model List<DairyIndustry.Models.Collection.AllMilkEntriesModel>
+
 @{
     ViewData["Title"] = "All Milk Entries Page";
-    Layout = "_CollectionCenterLayout";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
+<style>
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-warning shadow-sm">
-        No entries available.
-    </div>
-}
-else
-{
-    <!-- FILTERS -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
+    .pw-page {
+        padding: 24px;
+        font-family: inherit;
+    }
 
-            <div class="row g-3">
+    /* TOP INFO */
+    .pw-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-                <!-- Search -->
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">
-                        Search Farmer
-                    </label>
+    .pw-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+    }
 
-                    <input type="text"
-                           id="searchInput"
-                           class="form-control"
-                           placeholder="Farmer name or code..." />
-                </div>
+    .pw-subtitle {
+        font-size: 12px;
+        color: #888;
+        margin-top: 4px;
+    }
 
-                <!-- Shift -->
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">
-                        Shift
-                    </label>
+    /* CARD */
+    .pw-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
 
-                    <select id="shiftFilter" class="form-select">
-                        <option value="all">All Shifts</option>
-                        <option value="Morning">Morning</option>
-                        <option value="Evening">Evening</option>
-                    </select>
-                </div>
+    .pw-card-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-                <!-- Date -->
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">
-                        Date
-                    </label>
+    /* FILTERS */
+    .pw-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
 
-                    <input type="date"
-                           id="dateFilter"
-                           class="form-control" />
-                </div>
+        .pw-filters input,
+        .pw-filters select {
+            padding: 7px 10px;
+            font-size: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 7px;
+            background: #fafafa;
+            outline: none;
+        }
 
-                <!-- Reset -->
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-secondary w-100"
-                            id="resetFilters">
-                        Reset
-                    </button>
-                </div>
+            .pw-filters input:focus,
+            .pw-filters select:focus {
+                border-color: #2563eb;
+                background: #fff;
+            }
 
-            </div>
+    /* STATUS */
+    .pw-status-bar {
+        padding: 12px 16px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
 
-            <!-- STATUS FILTERS -->
-            <div class="d-flex gap-2 mt-4">
+    .status-pill {
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+        border: 1px solid transparent;
+    }
 
-                <button class="btn btn-dark filter-btn active"
-                        data-status="all">
-                    All
-                </button>
+        .status-pill.active {
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+            transform: translateY(-1px);
+        }
 
-                <button class="btn btn-success filter-btn"
-                        data-status="Accepted">
-                    Accepted
-                </button>
+    /* TABLE */
+    .pw-table-wrap {
+        overflow-x: auto;
+    }
 
-                <button class="btn btn-danger filter-btn"
-                        data-status="Rejected">
-                    Rejected
-                </button>
+    .pw-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
 
-            </div>
+        .pw-table thead th {
+            background: #fafafa;
+            padding: 10px 14px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #999;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
 
+        .pw-table tbody tr {
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+            .pw-table tbody tr:hover {
+                background: #f9fafb;
+            }
+
+        .pw-table td {
+            padding: 11px 14px;
+            vertical-align: middle;
+            color: #222;
+        }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 50px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #EAF3DE;
+        color: #2f6b10;
+    }
+
+    .badge-danger {
+        background: #FCEBEB;
+        color: #a32d2d;
+    }
+
+    .badge-warning {
+        background: #FFF4E5;
+        color: #8a5a00;
+    }
+
+    .badge-info {
+        background: #E6F2FF;
+        color: #185FA5;
+    }
+
+    /* PAGINATION */
+    .pagination-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        font-size: 12px;
+        color: #666;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .page-btn {
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+        .page-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+</style>
+
+<div class="pw-page">
+
+    <!-- TOP -->
+    <div class="pw-topbar">
+        <div>
+            <div class="pw-title">Milk Entries</div>
+            <div class="pw-subtitle">Collection Center › All Records</div>
         </div>
     </div>
+
+    <!-- FILTER CARD -->
+    <div class="pw-card">
+
+        <div class="pw-card-head">
+            <div class="pw-filters">
+                <input type="text" id="searchInput" placeholder="Search farmer / code..." />
+                <select id="shiftFilter">
+                    <option value="all">All Shifts</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                </select>
+                <input type="date" id="dateFilter" />
+                <button id="resetFilters" class="btn btn-light">Reset</button>
+            </div>
+        </div>
+
+        <!-- STATUS -->
+        <div class="pw-status-bar">
+            <span class="status-pill bg-dark text-white filter-btn active" data-status="all">All</span>
+            <span class="status-pill bg-success text-white filter-btn" data-status="Accepted">Accepted</span>
+            <span class="status-pill bg-danger text-white filter-btn" data-status="Rejected">Rejected</span>
+        </div>
+
+    </div>
+
     <!-- TABLE -->
-    <div class="card shadow-sm border-0">
+    <div class="pw-card">
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+        <div class="pw-table-wrap">
+            <table class="pw-table">
 
-                <thead class="table-dark">
+                <thead>
                     <tr>
-                        <th>Farmer</th>
-                        <th>Code</th>
-                        <th>Date</th>
+                        <th>#</th>
+                        <th>Farmer Name</th>
+                        <th>Farmer Code</th>
+                        <th>Collection Date</th>
                         <th>Shift</th>
+                        <th>MilkType</th>
                         <th>Qty</th>
                         <th>Fat</th>
                         <th>CLR</th>
@@ -117,95 +257,68 @@ else
 
                     @foreach (var item in Model)
                     {
-                        var shiftClass = item.Shift == "Morning"? "bg-warning text-dark": "bg-info";
-
-                        var statusClass = item.Status == "Accepted"? "bg-success": "bg-danger";
+                        var shiftClass = item.Shift == "Morning" ? "badge-warning" : "badge-info";
+                        var statusClass = item.Status == "Accepted" ? "badge-success" : "badge-danger";
+                        
 
                         <tr data-status="@item.Status"
                             data-shift="@item.Shift"
                             data-date="@item.CollectionDate.ToString("yyyy-MM-dd")">
 
-                            <td class="fw-semibold farmer-name">
-                                @item.FarmerName
-                            </td>
+                            <td class="row-no"></td>
 
-                            <td class="farmer-code">
-                                @item.FarmerCode
-                            </td>
+                            <td class="farmer-name ">@item.FarmerName</td>
+                            <td class="farmer-code">@item.FarmerCode</td>
 
+                            <td>@item.CollectionDate.ToString("dd-MM-yyyy")</td>
+
+                            <td><span class="badge @shiftClass">@item.Shift</span></td>
                             <td>
-                                @item.CollectionDate.ToString("dd-MM-yyyy")
-                            </td>
-
-                            <td>
-                                <span class="badge @shiftClass">
-                                    @item.Shift
+                                <span class="badge @(item.MilkType == "Cow" ? "badge-info" : "badge-warning")">
+                                    @item.MilkType
                                 </span>
                             </td>
 
                             <td>@item.Quantity</td>
-
                             <td>@item.AppliedFat</td>
-
                             <td>@item.AppliedCLR</td>
 
                             <td>
-                                @(item.Status == "Accepted"? $"₹ {item.RatePerLiter}": "-")
-                            </td>
-
-                            <td class="fw-semibold">
-
-                                @(item.Status == "Accepted"? $"₹ {item.Amount}": "-")
-
+                                @(item.Status == "Accepted" ? $"{item.RatePerLiter}" : "-")
                             </td>
 
                             <td>
-                                <span class="badge @statusClass">
-                                    @item.Status
-                                </span>
+                                @(item.Status == "Accepted" ? $"{item.Amount}" : "-")
                             </td>
 
-                            <td>
-                                @(string.IsNullOrEmpty(item.RejectionReason)? "-": item.RejectionReason)
-                            </td>
-                            <td>
-                                @(string.IsNullOrEmpty(item.Remarks)? "-": item.Remarks)
-                            </td>
+                            <td><span class="badge @statusClass">@item.Status</span></td>
+
+                            <td>@(string.IsNullOrEmpty(item.RejectionReason) ? "-" : item.RejectionReason)</td>
+
+                            <td>@(string.IsNullOrEmpty(item.Remarks) ? "-" : item.Remarks)</td>
 
                             <td>
-
                                 @if (item.Status == "Accepted")
                                 {
-                                    <a asp-action="MilkReceipt"
-                                       asp-route-id="@item.CollectionId"
-                                       class="btn btn-sm btn-outline-primary">
-
-                                        <i class="bi bi-receipt"></i> View
-                                    </a>
+                                    <a asp-action="MilkReceipt" asp-route-id="@item.CollectionId">View</a>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
-                                }
 
+                                    <span>-</span>
+                                }
                             </td>
 
                             <td>
-
                                 @if (item.Status == "Accepted")
                                 {
-                                    <a asp-action="DownloadReceipt"
-                                       asp-route-id="@item.CollectionId"
-                                       class="btn btn-sm btn-outline-success">
-
-                                        <i class="bi bi-download"></i> PDF
-                                    </a>
+                                    <a asp-action="DownloadReceipt" asp-route-id="@item.CollectionId">PDF</a>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
-                                }
 
+                                    <span>-</span>
+                                }
                             </td>
 
                         </tr>
@@ -216,13 +329,25 @@ else
             </table>
         </div>
 
+        <!-- PAGINATION -->
+        <div class="pagination-wrap">
+
+            <div>
+                Showing <span id="showFrom">0</span> to
+                <span id="showTo">0</span> of
+                <span id="totalCount">@Model.Count</span> entries
+            </div>
+
+            <div id="pagination"></div>
+
+        </div>
 
     </div>
-}
+</div>
+
 <script>
 
-    const rows = document.querySelectorAll("tbody tr");
-
+    const rows = Array.from(document.querySelectorAll("tbody tr"));
     const buttons = document.querySelectorAll(".filter-btn");
 
     const searchInput = document.getElementById("searchInput");
@@ -230,105 +355,119 @@ else
     const dateFilter = document.getElementById("dateFilter");
     const resetBtn = document.getElementById("resetFilters");
 
-    let currentStatus = "all";
+    const pagination = document.getElementById("pagination");
+    const showFrom = document.getElementById("showFrom");
+    const showTo = document.getElementById("showTo");
+    const totalCount = document.getElementById("totalCount");
 
-    function applyFilters() {
+    let currentStatus = "all";
+    let currentPage = 1;
+    const pageSize = 10;
+
+    function getFilteredRows() {
 
         const search = searchInput.value.toLowerCase();
         const shift = shiftFilter.value;
         const date = dateFilter.value;
 
-        rows.forEach(row => {
+        return rows.filter(row => {
 
-            const farmerName = row.querySelector(".farmer-name")
-                .innerText.toLowerCase();
-
-            const farmerCode = row.querySelector(".farmer-code")
-                .innerText.toLowerCase();
+            const name = row.querySelector(".farmer-name")?.innerText.toLowerCase() || "";
+            const code = row.querySelector(".farmer-code")?.innerText.toLowerCase() || "";
 
             const rowStatus = row.dataset.status;
             const rowShift = row.dataset.shift;
             const rowDate = row.dataset.date;
 
-            let visible = true;
+            let ok = true;
 
-            // STATUS FILTER
-            if (
-                currentStatus !== "all" &&
-                rowStatus !== currentStatus
-            ) {
-                visible = false;
-            }
+            if (currentStatus !== "all" && rowStatus !== currentStatus) ok = false;
+            if (!name.includes(search) && !code.includes(search)) ok = false;
+            if (shift !== "all" && rowShift !== shift) ok = false;
+            if (date && rowDate !== date) ok = false;
 
-            // SEARCH FILTER
-            if (
-                !farmerName.includes(search) &&
-                !farmerCode.includes(search)
-            ) {
-                visible = false;
-            }
-
-            // SHIFT FILTER
-            if (
-                shift !== "all" &&
-                rowShift !== shift
-            ) {
-                visible = false;
-            }
-
-            // DATE FILTER
-            if (
-                date &&
-                rowDate !== date
-            ) {
-                visible = false;
-            }
-
-            row.style.display = visible ? "" : "none";
-
+            return ok;
         });
     }
 
-    // STATUS BUTTONS
-    buttons.forEach(button => {
+    function renderTable() {
 
-        button.addEventListener("click", function () {
+        const filtered = getFilteredRows();
+        const total = filtered.length;
 
-            buttons.forEach(btn =>
-                btn.classList.remove("active"));
+        const pages = Math.ceil(total / pageSize);
+        if (currentPage > pages) currentPage = 1;
 
-            this.classList.add("active");
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
 
-            currentStatus = this.dataset.status;
+        rows.forEach(r => r.style.display = "none");
 
-            applyFilters();
+        const pageRows = filtered.slice(start, end);
+
+        pageRows.forEach((row, i) => {
+            row.style.display = "";
+            row.querySelector(".row-no").innerText = start + i + 1;
         });
 
+        showFrom.innerText = total ? start + 1 : 0;
+        showTo.innerText = Math.min(end, total);
+        totalCount.innerText = total;
+
+        renderPagination(pages);
+    }
+
+    function renderPagination(pages) {
+
+        pagination.innerHTML = "";
+
+        if (pages <= 1) return;
+
+        for (let i = 1; i <= pages; i++) {
+
+            const btn = document.createElement("button");
+            btn.className = "page-btn";
+            btn.innerText = i;
+
+            if (i === currentPage) btn.classList.add("active");
+
+            btn.onclick = () => {
+                currentPage = i;
+                renderTable();
+            };
+
+            pagination.appendChild(btn);
+        }
+    }
+
+    // EVENTS
+    buttons.forEach(b => {
+        b.addEventListener("click", function () {
+            buttons.forEach(x => x.classList.remove("active"));
+            this.classList.add("active");
+            currentStatus = this.dataset.status;
+            currentPage = 1;
+            renderTable();
+        });
     });
 
-    // OTHER FILTERS
-    searchInput.addEventListener("keyup", applyFilters);
+    searchInput.addEventListener("keyup", () => { currentPage = 1; renderTable(); });
+    shiftFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
+    dateFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
 
-    shiftFilter.addEventListener("change", applyFilters);
-
-    dateFilter.addEventListener("change", applyFilters);
-
-    // RESET
-    resetBtn.addEventListener("click", function () {
-
+    resetBtn.addEventListener("click", () => {
         searchInput.value = "";
         shiftFilter.value = "all";
         dateFilter.value = "";
-
         currentStatus = "all";
+        currentPage = 1;
 
-        buttons.forEach(btn =>
-            btn.classList.remove("active"));
+        buttons.forEach(b => b.classList.remove("active"));
+        document.querySelector('[data-status="all"]').classList.add("active");
 
-        document.querySelector('[data-status="all"]')
-            .classList.add("active");
-
-        applyFilters();
+        renderTable();
     });
+
+    renderTable();
 
 </script>

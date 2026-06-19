@@ -18,5 +18,11 @@
         public string BankName { get; set; }
         public string AccountNumber { get; set; }
         public string IFSCCode { get; set; }
+        public DateTime CreatedDate { get; set; }
+
+        public DateTime? DateOfBirth { get; set; }
+
+        public string AadhaarDocumentPath { get; set; }
+        public string BankPassbookPath { get; set; }
     }
 }

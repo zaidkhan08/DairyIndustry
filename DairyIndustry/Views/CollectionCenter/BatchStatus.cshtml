@@ -2,268 +2,597 @@
 
 @{
     ViewData["Title"] = "Batch Operations";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 
-    var totalMilk = Model.Sum(x => x.TotalQuantity);
-
-    var totalAmount = Model.Sum(x => x.TotalAmount);
-
+    var totalMilk    = Model.Sum(x => x.TotalQuantity);
+    var totalAmount  = Model.Sum(x => x.TotalAmount);
     var totalEntries = Model.Sum(x => x.EntryCount);
+    var totalRejected= Model.Sum(x => x.RejectionCount);
 
-    var totalRejected = Model.Sum(x => x.RejectionCount);
-
-    var todayEntries = Model.FirstOrDefault()?.TodayEntries;
+    var todayEntries    = Model.FirstOrDefault().TodayEntries;
+    var morning         = todayEntries.Where(x => x.Shift == "Morning").ToList();
+    var evening         = todayEntries.Where(x => x.Shift == "Evening").ToList();
+    var morningAccepted = morning.Count(x => x.Status == "Accepted");
+    var morningRejected = morning.Count(x => x.Status != "Accepted");
+    var eveningAccepted = evening.Count(x => x.Status == "Accepted");
+    var eveningRejected = evening.Count(x => x.Status != "Accepted");
 }
 
-<div class="container-fluid py-4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
 
-    <!-- KPI -->
-    <div class="row g-3 mb-4">
+<style>
+    /* ── BASE ── */
+    *, *::before, *::after { box-sizing: border-box; }
 
-        <div class="col-md-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <div class="small text-muted">Total Milk</div>
-                    <h5 class="fw-bold text-primary mb-0">@totalMilk.ToString("F2") L</h5>
-                </div>
-            </div>
-        </div>
+    body, .page-wrap {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: #f0f2f5;
+        color: #111;
+        font-size: 13.5px;
+    }
 
-        <div class="col-md-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <div class="small text-muted">Collection Amount</div>
-                    <h5 class="fw-bold mb-0">₹ @totalAmount</h5>
-                </div>
-            </div>
-        </div>
+    /* ── PAGE HEADER ── */
+    .page-header {
+        margin-bottom: 20px;
+    }
+    .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111;
+        line-height: 1.2;
+        margin: 0 0 2px;
+    }
+    .page-breadcrumb {
+        font-size: 12.5px;
+        color: #9ca3af;
+        font-weight: 400;
+    }
+    .page-breadcrumb a { color: #9ca3af; text-decoration: none; }
+    .page-breadcrumb a:hover { color: #555; }
+    .page-breadcrumb span { margin: 0 5px; }
 
-        <div class="col-md-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <div class="small text-muted">Entries</div>
-                    <h5 class="fw-bold text-success mb-0">@totalEntries</h5>
-                </div>
-            </div>
-        </div>
+    /* ── KPI CARDS ── */
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 900px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
 
-        <div class="col-md-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <div class="small text-muted">Rejections</div>
-                    <h5 class="fw-bold text-danger mb-0">@totalRejected</h5>
-                </div>
-            </div>
-        </div>
+    .kpi-card {
+        background: #fff;
+        border: 1px solid #e9ebee;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .kpi-icon {
+        width: 30px; height: 30px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; margin-bottom: 6px;
+    }
+    .kpi-icon.blue  { background: #e8f1fb; color: #1a5fb4; }
+    .kpi-icon.green { background: #e8f5e9; color: #2e7d32; }
+    .kpi-icon.amber { background: #fff8e1; color: #e65100; }
+    .kpi-icon.red   { background: #fde8e8; color: #b91c1c; }
 
+    .kpi-label { font-size: 11.5px; color: #9ca3af; font-weight: 400; }
+    .kpi-value { font-size: 20px; font-weight: 700; color: #111; line-height: 1.2; }
+    .kpi-value.blue  { color: #1a5fb4; }
+    .kpi-value.green { color: #2e7d32; }
+    .kpi-value.red   { color: #b91c1c; }
+    .kpi-sub { font-size: 11px; color: #d1d5db; }
+
+    /* ── SHIFT TILES ── */
+    .shift-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    .shift-tile {
+        background: #fff;
+        border: 1px solid #e9ebee;
+        border-radius: 10px;
+        padding: 14px 16px;
+        flex: 1; min-width: 200px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .shift-tile:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); transform: translateY(-1px); }
+    .shift-tile::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; width: 3px; height: 100%;
+        border-radius: 10px 0 0 10px;
+    }
+    .shift-tile.morning::before { background: #f59e0b; }
+    .shift-tile.evening::before { background: #3b82f6; }
+
+    .shift-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .shift-name { font-size: 13px; font-weight: 600; color: #111; display: flex; align-items: center; gap: 5px; }
+    .shift-name i.morning { color: #f59e0b; }
+    .shift-name i.evening { color: #3b82f6; }
+    .shift-window {
+        font-size: 11px; color: #9ca3af;
+        background: #f5f6f8; border-radius: 20px;
+        padding: 2px 9px; border: 1px solid #eee;
+    }
+    .batch-status-badge {
+        font-size: 10.5px; font-weight: 500;
+        padding: 2px 9px; border-radius: 20px;
+        border: 1px solid transparent; display: inline-flex; align-items: center; gap: 3px;
+    }
+    .batch-status-badge.open        { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
+    .batch-status-badge.closed      { background: #fde8e8; color: #b91c1c; border-color: #f5c0c0; }
+    .batch-status-badge.not-started { background: #f5f5f5; color: #9ca3af; border-color: #e0e0e0; }
+
+    .shift-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .shift-stat { background: #f8f9fb; border-radius: 7px; padding: 7px 10px; }
+    .shift-stat-label { font-size: 10px; color: #b0b7c3; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1px; }
+    .shift-stat-val   { font-size: 14px; font-weight: 600; color: #111; }
+
+    .shift-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge-pill {
+        font-size: 11px; padding: 3px 9px; border-radius: 20px;
+        display: inline-flex; align-items: center; gap: 3px; font-weight: 400;
+    }
+    .badge-pill.success { background: #e8f5e9; color: #2e7d32; }
+    .badge-pill.danger  { background: #fde8e8; color: #b91c1c; }
+
+    /* ── FILTER SECTION (matches screenshot exactly) ── */
+    .filter-card {
+        background: #fff;
+        border: 1px solid #e9ebee;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+    }
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .filter-input {
+        height: 36px;
+        border: 1px solid #e2e5ea;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        color: #374151;
+        background: #fff;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .filter-input:focus { border-color: #a5b4fc; }
+    .filter-input::placeholder { color: #b0b7c3; }
+    .filter-input.search { min-width: 200px; flex: 1; }
+    .filter-select {
+        height: 36px;
+        border: 1px solid #e2e5ea;
+        border-radius: 8px;
+        padding: 0 28px 0 12px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        color: #374151;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+        appearance: none;
+        outline: none;
+        cursor: pointer;
+        transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: #a5b4fc; }
+    .reset-btn {
+        height: 36px;
+        padding: 0 18px;
+        background: transparent;
+        border: none;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background .15s;
+    }
+    .reset-btn:hover { background: #f3f4f6; }
+
+    /* Status pills row — All / Accepted / Rejected */
+    .status-pills { display: flex; gap: 8px; }
+    .status-pill {
+        height: 32px;
+        padding: 0 18px;
+        border-radius: 999px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: opacity .15s;
+    }
+    .status-pill.all      { background: #1a1a1a; color: #fff; }
+    .status-pill.accepted { background: #16a34a; color: #fff; }
+    .status-pill.rejected { background: #dc2626; color: #fff; }
+    .status-pill:not(.all):not(.accepted):not(.rejected) {
+        background: #f3f4f6; color: #6b7280;
+    }
+    .status-pill.inactive { opacity: .45; }
+
+    /* ── TABLE ── */
+    .table-wrap {
+        background: #fff;
+        border: 1px solid #e9ebee;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .table-scroll { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+
+    table.milk-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Inter', sans-serif;
+        font-size: 13.5px;
+    }
+    table.milk-table thead tr {
+        background: #fff;
+        border-bottom: 1.5px solid #f0f2f5;
+        position: sticky; top: 0; z-index: 1;
+    }
+    table.milk-table thead th {
+        padding: 11px 14px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #9ca3af;
+        white-space: nowrap;
+        background: #fff;
+    }
+    table.milk-table tbody tr {
+        border-bottom: 1px solid #f5f6f8;
+        transition: background .1s;
+    }
+    table.milk-table tbody tr:hover { background: #fafbfc; }
+    table.milk-table td {
+        padding: 14px 14px;
+        color: #111;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    table.milk-table td.num-col { color: #9ca3af; font-size: 13px; }
+
+            table.milk-table td.farmer-name {
+                font-weight: normal;
+                white-space: normal;
+                min-width: 120px;
+            }
+    table.milk-table td.mono { font-variant-numeric: tabular-nums; }
+
+    /* Shift badge */
+    .shift-badge {
+        display: inline-flex; align-items: center;
+        padding: 3px 11px; border-radius: 999px;
+        font-size: 12px; font-weight: 500;
+    }
+    .shift-badge.morning { background: #fff7e6; color: #b45309; }
+    .shift-badge.evening { background: #eff6ff; color: #1d4ed8; }
+
+    /* MilkType badge */
+    .milk-badge {
+        display: inline-flex; align-items: center;
+        padding: 3px 11px; border-radius: 999px;
+        font-size: 12px; font-weight: 500;
+    }
+    .milk-badge.cow    { background: #fff7e6; color: #b45309; }
+    .milk-badge.buffalo { background: #ecfdf5; color: #065f46; }
+
+    /* Status badge */
+    .status-badge {
+        display: inline-flex; align-items: center;
+        padding: 3px 12px; border-radius: 999px;
+        font-size: 12px; font-weight: 500;
+    }
+    .status-badge.accepted { background: #dcfce7; color: #15803d; }
+    .status-badge.rejected { background: #fee2e2; color: #b91c1c; }
+
+    .dash-cell { color: #d1d5db; }
+
+    /* ── PAGINATION ── */
+    .pagination-bar {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #f0f2f5;
+        background: #fff;
+    }
+    .pagination-info { font-size: 12.5px; color: #9ca3af; }
+    .pagination-controls { display: flex; align-items: center; gap: 4px; }
+    .pg-btn {
+        width: 30px; height: 30px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 7px;
+        font-size: 12.5px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        color: #6b7280;
+        font-family: 'Inter', sans-serif;
+        transition: all .12s;
+    }
+    .pg-btn:hover:not(:disabled) { border-color: #1a5fb4; color: #1a5fb4; }
+    .pg-btn.active { background: #1a5fb4; color: #fff; border-color: #1a5fb4; font-weight: 600; }
+    .pg-btn:disabled { opacity: .3; cursor: not-allowed; }
+</style>
+
+<div class="container-fluid py-3 page-wrap">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <h1 class="page-title">Milk Entries</h1>
+        <div class="page-breadcrumb">Collection Center <span>›</span> All Records</div>
     </div>
 
-    <!-- SHIFT CARDS -->
-    <div class="row g-4 mb-4">
+    <!-- KPI CARDS -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="ti ti-droplet"></i></div>
+            <div class="kpi-label">Total Milk</div>
+            <div class="kpi-value blue">@totalMilk.ToString("F2") L</div>
+            <div class="kpi-sub">Across all batches</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon amber"><i class="ti ti-currency-rupee"></i></div>
+            <div class="kpi-label">Amount</div>
+            <div class="kpi-value">@totalAmount</div>
+            <div class="kpi-sub">Total payout</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon green"><i class="ti ti-clipboard-list"></i></div>
+            <div class="kpi-label">Entries</div>
+            <div class="kpi-value green">@totalEntries</div>
+            <div class="kpi-sub">Milk collections</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon red"><i class="ti ti-circle-x"></i></div>
+            <div class="kpi-label">Rejections</div>
+            <div class="kpi-value red">@totalRejected</div>
+            <div class="kpi-sub">Failed QC checks</div>
+        </div>
+    </div>
 
+    <!-- SHIFT TILES -->
+    <div class="shift-row">
         @foreach (var batch in Model)
         {
-            var statusClass = batch.BatchStatus == "Open"? "success": batch.BatchStatus == "Closed"? "secondary": "danger";
+            var isMorning   = batch.Shift == "Morning";
+            var shiftClass  = isMorning ? "morning" : "evening";
+            var shiftIcon   = isMorning ? "ti-sun" : "ti-moon";
+            var accepted    = isMorning ? morningAccepted : eveningAccepted;
+            var rejected    = isMorning ? morningRejected : eveningRejected;
+            var statusClass = batch.BatchStatus switch { "Open" => "open", "Closed" => "closed", _ => "not-started" };
+            var statusIcon  = batch.BatchStatus switch { "Open" => "ti-circle-check", "Closed" => "ti-lock", _ => "ti-clock" };
 
-            <div class="col-lg-6">
-
-                <div class="card border-0 shadow-sm h-100">
-
-                    <div class="card-header bg-white border-0">
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <div>
-                                <h5 class="fw-semibold mb-1">@batch.Shift Shift</h5>
-                                <div class="small text-muted">@batch.ShiftWindow</div>
-                            </div>
-
-                            <span class="badge bg-@statusClass-subtle text-@statusClass border">
-                                @batch.BatchStatus
-                            </span>
-                        </div>
+            <div class="shift-tile @shiftClass shift-filter-btn" data-shift="@batch.Shift">
+                <div class="shift-header">
+                    <div class="shift-name">
+                        <i class="ti @shiftIcon @shiftClass"></i>
+                        @batch.Shift Shift
                     </div>
-
-                    <div class="card-body">
-                        <div class="border rounded">
-                            <div class="d-flex justify-content-between p-3 border-bottom">
-                                <span>Total Milk</span>
-                                <strong>@batch.TotalQuantity.ToString("F2") L</strong>
-                            </div>
-
-                            <div class="d-flex justify-content-between p-3 border-bottom">
-                                <span>Amount</span>
-                                <strong>₹ @batch.TotalAmount</strong>
-                            </div>
-
-                            <div class="d-flex justify-content-between p-3 border-bottom">
-                                <span>Entries</span>
-                                <strong>@batch.EntryCount</strong>
-                            </div>
-
-                            <div class="d-flex justify-content-between p-3 border-bottom">
-                                <span>Rejections</span>
-                                <strong class="text-danger">
-                                    @batch.RejectionCount
-                                </strong>
-                            </div>
-
-                            <div class="d-flex justify-content-between p-3 border-bottom">
-                                <span>Avg FAT</span>
-
-                                <strong>
-                                    @(batch.AvgFat.HasValue? batch.AvgFat.Value.ToString("F2"): "-")
-                                </strong>
-                            </div>
-
-                            <div class="d-flex justify-content-between p-3">
-                                <span>Avg CLR</span>
-
-                                <strong>
-                                    @(batch.AvgCLR.HasValue? batch.AvgCLR.Value.ToString("F2"): "-")
-                                </strong>
-                            </div>
-
-                        </div>
-
-                        <div class="mt-3">
-                            <button class="btn btn-sm btn-outline-primary shift-filter-btn" data-shift="@batch.Shift">
-                                <i class="bi bi-eye"></i>View Entries
-                            </button>
-                        </div>
-
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <span class="shift-window">@batch.ShiftWindow</span>
+                        <span class="batch-status-badge @statusClass">
+                            <i class="ti @statusIcon"></i> @batch.BatchStatus
+                        </span>
                     </div>
-
                 </div>
-
+                <div class="shift-stats">
+                    <div class="shift-stat">
+                        <div class="shift-stat-label">Milk collected</div>
+                        <div class="shift-stat-val">@batch.TotalQuantity.ToString("F1") L</div>
+                    </div>
+                    <div class="shift-stat">
+                        <div class="shift-stat-label">Amount</div>
+                        <div class="shift-stat-val">₹ @batch.TotalAmount</div>
+                    </div>
+                </div>
+                <div class="shift-badges">
+                    <span class="badge-pill success"><i class="ti ti-check"></i> @accepted Accepted</span>
+                    <span class="badge-pill danger"><i class="ti ti-x"></i> @rejected Rejected</span>
+                </div>
             </div>
-                }
-
+        }
     </div>
 
-    <!-- TODAY LIVE ENTRIES -->
-    <div class="card border-0 shadow-sm"
-         id="todayEntriesSection">
-
-        <div class="card-header bg-white">
-
-            <div class="d-flex justify-content-between align-items-center">
-
-                <h5 class="fw-semibold mb-0">
-                    Today's Live Milk Entries
-                </h5>
-
-                <button class="btn btn-sm btn-dark" id="showAllEntries">Show All</button>
-
-            </div>
-
+    <!-- FILTER CARD -->
+    <div class="filter-card">
+        <div class="filter-row">
+            <input type="text"   id="searchBox"   class="filter-input search"  placeholder="Search farmer / code...">
+            <select             id="shiftFilter"  class="filter-select">
+                <option value="">All Shifts</option>
+                <option>Morning</option>
+                <option>Evening</option>
+            </select>
+            <input type="date"  id="dateFilter"   class="filter-input" style="width:160px;">
+            <button            id="resetBtn"      class="reset-btn">Reset</button>
         </div>
+        <div class="status-pills">
+            <button class="status-pill all"      data-status="">All</button>
+            <button class="status-pill accepted" data-status="Accepted">Accepted</button>
+            <button class="status-pill rejected" data-status="Rejected">Rejected</button>
+        </div>
+    </div>
 
-        <div class="table-responsive">
-
-            <table class="table align-middle table-hover mb-0">
-                <thead class="table-light">
+    <!-- TABLE -->
+    <div class="table-wrap">
+        <div class="table-scroll">
+            <table class="milk-table">
+                <thead>
                     <tr>
-                        <th>Farmer</th>
-                        <th>Code</th>
+                        <th>#</th>
+                        <th>Farmer Name</th>
+                        <th>Farmer Code</th>
+                        <th>Collection Date</th>
                         <th>Shift</th>
+                        <th>MilkType</th>
                         <th>Qty</th>
                         <th>FAT</th>
                         <th>CLR</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Reason</th>
+                        <th>Remark</th>
                     </tr>
                 </thead>
-
-                <tbody>
-
+                <tbody id="tableBody">
+                    @{int rowNum = 0;}
                     @foreach (var item in todayEntries)
                     {
-                        var statusClass =
-                        item.Status == "Accepted"? "success": "danger";
-
+                        rowNum++;
+                        var milkClass = item.MilkType?.Contains("Buffalo") == true ? "buffalo" : "cow";
+                        var shiftBadgeClass = item.Shift == "Morning" ? "morning" : "evening";
                         <tr class="entry-row"
-                            data-shift="@item.Shift">
+                            data-shift="@item.Shift"
+                            data-date="@DateTime.Now.ToString("yyyy-MM-dd")"
+                            data-search="@item.FarmerName @item.FarmerCode"
+                            data-status="@item.Status">
 
-                            <td>@item.FarmerName</td>
-
-                            <td>@item.FarmerCode</td>
-
-                            <td>@item.Shift</td>
-
-                            <td>@item.Quantity</td>
-
-                            <td>@item.Fat</td>
-
-                            <td>@item.CLR</td>
-
+                            <td class="num-col">@rowNum</td>
+                            <td class="farmer-name">@item.FarmerName</td>
+                            <td class="mono">@item.FarmerCode</td>
+                            <td class="mono">@DateTime.Now.ToString("dd-MM-yyyy")</td>
+                            <td><span class="shift-badge @shiftBadgeClass">@item.Shift</span></td>
+                            <td><span class="milk-badge @milkClass">@item.MilkType</span></td>
+                            <td class="mono">@item.Quantity</td>
+                            <td class="mono">@item.Fat</td>
+                            <td class="mono">@item.CLR</td>
+                            <td class="mono">@(item.Status == "Accepted" ? $"₹ {item.Amount:F2}" : "-")</td>
                             <td>
-                                @(item.Status == "Accepted"? $"₹ {item.Amount}": "-")
-                            </td>
-
-                            <td>
-                                <span class="badge bg-@statusClass-subtle text-@statusClass border">
+                                <span class="status-badge @(item.Status == "Accepted" ? "accepted" : "rejected")">
                                     @item.Status
                                 </span>
                             </td>
-
-                            <td>
-                                @(string.IsNullOrEmpty(item.RejectionReason)? "-": item.RejectionReason)
-                            </td>
-
+                            <td class="dash-cell">@(string.IsNullOrEmpty(item.RejectionReason) ? "–" : item.RejectionReason)</td>
+                            <td class="dash-cell"></td>
                         </tr>
                     }
-
                 </tbody>
-
             </table>
-
         </div>
 
+        <div class="pagination-bar">
+            <span class="pagination-info" id="paginationInfo"></span>
+            <div class="pagination-controls" id="pagination"></div>
+        </div>
     </div>
 
 </div>
 
 <script>
+    const rows = Array.from(document.querySelectorAll(".entry-row"));
+    const searchBox   = document.getElementById("searchBox");
+    const shiftFilter = document.getElementById("shiftFilter");
+    const dateFilter  = document.getElementById("dateFilter");
+    const pageSize    = 10;
+    let currentPage   = 1;
+    let filteredRows  = [...rows];
+    let activeStatus  = "";
 
-    const shiftButtons =
-        document.querySelectorAll(".shift-filter-btn");
-
-    const rows =
-        document.querySelectorAll(".entry-row");
-
-    shiftButtons.forEach(button => {
-
-        button.addEventListener("click", function () {
-
-            const shift = this.dataset.shift;
-
-            rows.forEach(row => {
-
-                row.style.display =
-                    row.dataset.shift === shift? "": "none";
-
-            });
-
-            document.getElementById("todayEntriesSection")
-                .scrollIntoView({
-                    behavior: "smooth"
-                });
-
+    // Status pill toggle
+    document.querySelectorAll(".status-pill").forEach(btn => {
+        btn.addEventListener("click", function () {
+            activeStatus = this.dataset.status;
+            document.querySelectorAll(".status-pill").forEach(b => b.classList.add("inactive"));
+            this.classList.remove("inactive");
+            applyFilters();
         });
-
     });
 
-    document
-        .getElementById("showAllEntries")
-        .addEventListener("click", function () {
+    function applyFilters() {
+        const search = searchBox.value.toLowerCase();
+        const shift  = shiftFilter.value;
+        const date   = dateFilter.value;
 
-            rows.forEach(row => {
-
-                row.style.display = "";
-
-            });
-
+        filteredRows = rows.filter(r => {
+            const matchSearch = r.dataset.search.toLowerCase().includes(search);
+            const matchShift  = !shift  || r.dataset.shift  === shift;
+            const matchDate   = !date   || r.dataset.date   === date;
+            const matchStatus = !activeStatus || r.dataset.status === activeStatus;
+            return matchSearch && matchShift && matchDate && matchStatus;
         });
 
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    }
+
+    function renderTable() {
+        rows.forEach(r => r.style.display = "none");
+        const start = (currentPage - 1) * pageSize;
+        filteredRows.slice(start, start + pageSize).forEach(r => r.style.display = "");
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredRows.length / pageSize);
+        const pagination = document.getElementById("pagination");
+        const info       = document.getElementById("paginationInfo");
+        const start = filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        const end   = Math.min(currentPage * pageSize, filteredRows.length);
+        info.textContent = `Showing ${start}–${end} of ${filteredRows.length} entries`;
+        pagination.innerHTML = "";
+
+        const prev = document.createElement("button");
+        prev.className = "pg-btn";
+        prev.innerHTML = `<i class="ti ti-chevron-left"></i>`;
+        prev.disabled = currentPage === 1;
+        prev.onclick = () => { currentPage--; renderTable(); renderPagination(); };
+        pagination.appendChild(prev);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.textContent = i;
+            btn.className = "pg-btn" + (i === currentPage ? " active" : "");
+            btn.onclick = () => { currentPage = i; renderTable(); renderPagination(); };
+            pagination.appendChild(btn);
+        }
+
+        const next = document.createElement("button");
+        next.className = "pg-btn";
+        next.innerHTML = `<i class="ti ti-chevron-right"></i>`;
+        next.disabled = currentPage === totalPages || totalPages === 0;
+        next.onclick = () => { currentPage++; renderTable(); renderPagination(); };
+        pagination.appendChild(next);
+    }
+
+    searchBox.addEventListener("input",  applyFilters);
+    shiftFilter.addEventListener("change", applyFilters);
+    dateFilter.addEventListener("change",  applyFilters);
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+        searchBox.value = "";
+        shiftFilter.value = "";
+        dateFilter.value = "";
+        activeStatus = "";
+        document.querySelectorAll(".status-pill").forEach(b => b.classList.remove("inactive"));
+        applyFilters();
+    });
+
+    // Shift tile click → filter table
+    document.querySelectorAll(".shift-filter-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            shiftFilter.value = this.dataset.shift;
+            applyFilters();
+        });
+    });
+
+    applyFilters();
 </script>

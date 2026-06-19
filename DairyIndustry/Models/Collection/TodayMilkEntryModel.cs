@@ -9,6 +9,7 @@
         public string FarmerCode { get; set; }
 
         public string Shift { get; set; }
+        public string MilkType { get; set; }
 
         public decimal? Quantity { get; set; }
 

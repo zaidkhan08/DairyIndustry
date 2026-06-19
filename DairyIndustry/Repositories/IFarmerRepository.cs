@@ -11,47 +11,31 @@ namespace DairyIndustry.Repositories
         List<CityModel> GetCitiesByState(int stateId);
         List<VillageModel> GetVillagesByCity(int cityId);
 
-        //Registration of farmer will be done by Collection Center
-        //  RegByCenterModel AddFarmer(RegByCenterModel model, int staffId);
-
-
         Task<RegByCenterModel> AddFarmerAsync(RegByCenterModel model, int staffId);
+        Task<bool> IsEmailAlreadyRegisteredAsync(string email);
         Task<string> GenerateOtpAsync(string email);
         Task<bool> VerifyOtpAsync(string email, string otp);
 
-        List<FarmerViewModel> GetAllFarmers(int staffId, bool? isActive = null, string search = null);
+        List<FarmerViewModel> GetAllFarmers(int staffId);
 
         void ToggleFarmerStatus(int staffId, int farmerId, bool isActive);
-
         List<CenterRejectedFarmerModel> GetRejectedFarmersByCenter(int staffId);
-
-        // Update basic farmer details
-        //int UpdateFarmer(FarmerViewModel model, int staffId);
-
-        //// Update farmer documents
-        //int UpdateFarmerDocuments(int staffId,int farmerId,string documentType,string filePath);
-        //FarmerViewModel GetFarmerById(int farmerId, int staffId);
-
-        // //FarmerEditModel GetFarmerById(int farmerId, int staffId);
         Task<FarmerEditModel> GetFarmerByIdAsync(int farmerId, int staffId);
-
         Task<int> UpdateFarmerAsync(FarmerEditModel model, int staffId);
         Task<int> UpdateFarmerDocumentAsync(int staffId, int farmerId, string documentType, string filePath);
-
-        //int UpdateFarmer(FarmerEditModel model, int staffId);
-
-        //int UpdateFarmerDocument(int staffId, int farmerId, string documentType, string filePath);
-
-        //Farmer Module
-
+      
         //Login
         FarmerViewModel FarmerLogin(string farmerCode, string password);
-
+        
+        //Forgot Password
+        (int FarmerId, string Email, string FarmerName)? GetFarmerEmailByCode(string farmerCode);
+        // Resets password 
+        bool ResetFarmerPassword(string farmerCode, string newPassword);
+        
         // Profile
         FarmerProfileModel GetFarmerProfile(int farmerId);
 
         //today milk entries
-
         List<MilkCollectionModel> GetTodayMilkEntries(int farmerId);
 
         List<AllMilkHistoryModel> GetAllMilkEntriesFarmer(int farmerId);
@@ -60,8 +44,9 @@ namespace DairyIndustry.Repositories
         FarmerDashboardViewModel GetDashboard(int farmerId);
 
 
-        //// Self-registration (public page, no login)
-        //void SelfRegisterFarmer(SelfRegisterViewModel model);
+        // Self-registration 
+        Task<bool> IsPhoneAlreadyRegisteredAsync(string phone);
+        Task<bool> IsAadhaarAlreadyRegisteredAsync(string aadhaar);
         Task SelfRegisterFarmerAsync(SelfRegisterViewModel model);
 
         // Status check by phone (public page)
@@ -81,8 +66,9 @@ namespace DairyIndustry.Repositories
         List<FarmerRejectionViewModel> GetRejectionHistory(
         int farmerId, DateTime? fromDate = null, DateTime? toDate = null);
 
-        //string GenerateOtp(string email);
-        //bool VerifyOtp(string email, string otp);
         string ChangePassword(int farmerId, string currentPassword, string newPassword);
+
+        //farmer payment history
+        List<FarmerPaymentHistoryModel> GetPaymentHistory(int farmerId);
     }
 }

@@ -61,6 +61,11 @@
         // Rejections
         public int RejectionsToday { get; set; }
         public decimal RejectedQtyToday { get; set; }
+        public int MorningRejections { get; set; }
+        public int EveningRejections { get; set; }
+
+        public decimal MorningRejectedQty { get; set; }
+        public decimal EveningRejectedQty { get; set; }
     }
 
 
@@ -122,7 +127,50 @@
         public decimal TotalPendingPaymentAmount { get; set; }
     }
 
+    //Charts 
+    public class CollectionTrendModel
+    {
+        public DateTime CollectionDate { get; set; }
+        public decimal TotalQuantity { get; set; }
+    }
+    public class CollectionRejectionTrendModel
+    {
+        public DateTime Date { get; set; }
+        public decimal CollectedQty { get; set; }
+        public decimal RejectedQty { get; set; }
+    }
+    //rejection piechart
+    public class RejectionReasonModel
+    {
+        public string RejectionReason { get; set; }
+        public int RejectionCount { get; set; }
+        public string ChartLabel => $"{RejectionReason} ({RejectionCount})";
+    }
 
+    //to giev top 5 farmers of month
+    public class TopFarmerModel
+    {
+        public int FarmerId { get; set; }
+        public string FarmerName { get; set; }
+        public string FarmerCode { get; set; }
+        public decimal TotalQty { get; set; }
+        public decimal TotalAmount { get; set; }
+        public int DaysDelivered { get; set; }
+    }
+
+
+    //payments 
+    public class PaymentStatsModel
+    {
+        public int PendingCount { get; set; }
+        public decimal PendingAmount { get; set; }
+
+        public int ProcessedCount { get; set; }
+        public decimal ProcessedAmount { get; set; }
+
+        public int FailedCount { get; set; }
+        public decimal FailedAmount { get; set; }
+    }
     /* ============================================================
        COMPOSITE — holds all 5 results together
        Populate each property from its own SP call in the repository.
@@ -135,5 +183,11 @@
         public List<ShiftStatusModel> Shifts { get; set; } = new();
         public List<InventoryModel> Inventory { get; set; } = new();
         public FarmerStatsModel FarmerStats { get; set; }
+        public List<CollectionTrendModel> CollectionTrend { get; set; } = new();
+        public List<CollectionRejectionTrendModel> CollectionVsRejectionTrend { get; set; } = new();
+        public List<RejectionReasonModel> RejectionReasons { get; set; } = new();
+        public List<TopFarmerModel> TopFarmers { get; set; }
+
+        public PaymentStatsModel PaymentStats { get; set; }
     }
 }

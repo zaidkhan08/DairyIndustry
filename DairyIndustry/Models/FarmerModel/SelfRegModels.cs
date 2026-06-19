@@ -54,12 +54,17 @@ namespace DairyIndustry.Models.FarmerModel
         public string EmailOTP { get; set; }
 
         // ================= OTHER DETAILS =================
+        // Gender is now required
+        [Required(ErrorMessage = "Please select gender")]
 
         [RegularExpression(@"^(Male|Female|Other)?$", ErrorMessage = "Invalid gender")]
         public string Gender { get; set; }
 
         [Required(ErrorMessage = "DateOfBirth is required")]
         public DateTime? DateOfBirth { get; set; }
+
+        // Aadhaar is now required
+        [Required(ErrorMessage = "Aadhaar number is required")]
 
         [RegularExpression(@"^\d{12}$", ErrorMessage = "Aadhaar must be 12 digits")]
         public string AadhaarNumber { get; set; }

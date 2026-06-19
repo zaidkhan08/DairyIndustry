@@ -112,7 +112,12 @@ namespace DairyIndustry.Repository
                 PendingPaymentAmount = r["PendingPaymentAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["PendingPaymentAmount"]),
 
                 RejectionsToday = r["RejectionsToday"] == DBNull.Value ? 0 : Convert.ToInt32(r["RejectionsToday"]),
-                RejectedQtyToday = r["RejectedQtyToday"] == DBNull.Value ? 0 : Convert.ToDecimal(r["RejectedQtyToday"])
+                RejectedQtyToday = r["RejectedQtyToday"] == DBNull.Value ? 0 : Convert.ToDecimal(r["RejectedQtyToday"]),
+                MorningRejections =r["MorningRejections"] == DBNull.Value ? 0 :Convert.ToInt32(r["MorningRejections"]),
+
+                EveningRejections =r["EveningRejections"] == DBNull.Value ? 0 :Convert.ToInt32(r["EveningRejections"]),
+                MorningRejectedQty =r["MorningRejectedQty"] == DBNull.Value ? 0 :Convert.ToDecimal(r["MorningRejectedQty"]),
+                EveningRejectedQty =r["EveningRejectedQty"] == DBNull.Value ? 0 :Convert.ToDecimal(r["EveningRejectedQty"]),
             };
         }
 
@@ -189,8 +194,6 @@ namespace DairyIndustry.Repository
 
             return list;
         }
-
-
         /* ============================================================
            5. FARMER STATS
            SP: Collection.usp_Dashboard_FarmerStats
@@ -222,6 +225,234 @@ namespace DairyIndustry.Repository
             };
         }
 
+        public List<TopFarmerModel> GetTopFarmersThisMonth(int staffId)
+        {
+            var list = new List<TopFarmerModel>();
+
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                DECLARE @CenterId INT;
+                SELECT @CenterId = CenterId FROM HR.Staffs WHERE StaffId = @StaffId;
+
+                SELECT TOP 5
+                    f.FarmerId,
+                    f.FarmerName,
+                    f.FarmerCode,
+                    ISNULL(SUM(mc.Quantity), 0)                  AS TotalQty,
+                    ISNULL(SUM(mc.Amount), 0)                    AS TotalAmount,
+                    COUNT(DISTINCT mc.CollectionDate)             AS DaysDelivered
+                FROM Collection.MilkCollection mc
+                INNER JOIN Farmer.Farmers f ON f.FarmerId = mc.FarmerId
+                WHERE mc.CenterId = @CenterId
+                  AND mc.CollectionDate >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)
+                  AND mc.CollectionDate <= CAST(GETDATE() AS DATE)
+                GROUP BY f.FarmerId, f.FarmerName, f.FarmerCode
+                ORDER BY SUM(mc.Quantity) DESC";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new TopFarmerModel
+                {
+                    FarmerId = Convert.ToInt32(r["FarmerId"]),
+                    FarmerName = r["FarmerName"].ToString(),
+                    FarmerCode = r["FarmerCode"].ToString(),
+                    TotalQty = Convert.ToDecimal(r["TotalQty"]),
+                    TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                    DaysDelivered = Convert.ToInt32(r["DaysDelivered"])
+                });
+            }
+
+            return list;
+        }
+
+        //payment kpi
+        public PaymentStatsModel GetPaymentStats(int staffId)
+        {
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                DECLARE @CenterId INT;
+                SELECT @CenterId = CenterId FROM HR.Staffs WHERE StaffId = @StaffId;
+
+                SELECT
+                    SUM(CASE WHEN fp.PaymentStatus = 'Pending'
+                        THEN 1 ELSE 0 END)                      AS PendingCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Pending'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS PendingAmount,
+
+                    SUM(CASE WHEN fp.PaymentStatus = 'Processed'
+                        THEN 1 ELSE 0 END)                      AS ProcessedCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Processed'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS ProcessedAmount,
+
+                    SUM(CASE WHEN fp.PaymentStatus = 'Failed'
+                        THEN 1 ELSE 0 END)                      AS FailedCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Failed'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS FailedAmount
+
+                FROM Finance.FarmerPayments fp
+                WHERE fp.CenterId = @CenterId";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            if (!r.Read())
+                return new PaymentStatsModel();
+
+            return new PaymentStatsModel
+            {
+                PendingCount = r["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingCount"]),
+                PendingAmount = r["PendingAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["PendingAmount"]),
+                ProcessedCount = r["ProcessedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ProcessedCount"]),
+                ProcessedAmount = r["ProcessedAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["ProcessedAmount"]),
+                FailedCount = r["FailedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["FailedCount"]),
+                FailedAmount = r["FailedAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["FailedAmount"])
+            };
+        }
+        public List<CollectionTrendModel> GetCollectionTrend(int staffId)
+        {
+            var list = new List<CollectionTrendModel>();
+
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string query = @"
+                SELECT
+                    mc.CollectionDate,
+                    SUM(mc.Quantity) AS TotalQuantity
+                FROM Collection.MilkCollection mc
+                INNER JOIN HR.Staffs s
+                    ON s.CenterId = mc.CenterId
+                WHERE s.StaffId = @StaffId
+                  AND mc.CollectionDate >= DATEADD(DAY, -6, CAST(GETDATE() AS DATE))
+                GROUP BY mc.CollectionDate
+                ORDER BY mc.CollectionDate";
+
+            using SqlCommand cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new CollectionTrendModel
+                {
+                    CollectionDate = Convert.ToDateTime(r["CollectionDate"]),
+                    TotalQuantity = Convert.ToDecimal(r["TotalQuantity"])
+                });
+            }
+
+            return list;
+        }
+        public List<CollectionRejectionTrendModel> GetCollectionVsRejectionTrend(int staffId)
+        {
+            var list = new List<CollectionRejectionTrendModel>();
+
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                DECLARE @CenterId INT;
+
+                SELECT @CenterId = CenterId
+                FROM HR.Staffs
+                WHERE StaffId = @StaffId;
+
+                ;WITH Last7Days AS
+                (
+                    SELECT CAST(DATEADD(DAY,-6,GETDATE()) AS DATE) AS Dt
+                    UNION ALL
+                    SELECT DATEADD(DAY,1,Dt)
+                    FROM Last7Days
+                    WHERE Dt < CAST(GETDATE() AS DATE)
+                )
+                SELECT
+                    d.Dt AS TrendDate,
+
+                    ISNULL(
+                    (
+                        SELECT SUM(mc.Quantity)
+                        FROM Collection.MilkCollection mc
+                        WHERE mc.CenterId = @CenterId
+                          AND mc.CollectionDate = d.Dt
+                    ),0) AS CollectedQty,
+
+                    ISNULL(
+                    (
+                        SELECT SUM(mr.Quantity)
+                        FROM Collection.MilkRejections mr
+                        WHERE mr.CenterId = @CenterId
+                          AND mr.RejectionDate = d.Dt
+                    ),0) AS RejectedQty
+
+                FROM Last7Days d
+                OPTION (MAXRECURSION 7);";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new CollectionRejectionTrendModel
+                {
+                    Date = Convert.ToDateTime(r["TrendDate"]),
+                    CollectedQty = Convert.ToDecimal(r["CollectedQty"]),
+                    RejectedQty = Convert.ToDecimal(r["RejectedQty"])
+                });
+            }
+
+            return list;
+        }
+        public List<RejectionReasonModel> GetRejectionReasons(int staffId)
+        {
+            var list = new List<RejectionReasonModel>();
+
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                SELECT
+                    mr.RejectionReason,
+                    COUNT(*) AS RejectionCount
+                FROM Collection.MilkRejections mr
+                INNER JOIN HR.Staffs s
+                    ON s.CenterId = mr.CenterId
+                WHERE s.StaffId = @StaffId
+                  AND mr.RejectionDate >= DATEADD(DAY,-30,CAST(GETDATE() AS DATE))
+                GROUP BY mr.RejectionReason
+                ORDER BY COUNT(*) DESC";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new RejectionReasonModel
+                {
+                    RejectionReason = r["RejectionReason"].ToString(),
+                    RejectionCount = Convert.ToInt32(r["RejectionCount"])
+                });
+            }
+
+            return list;
+        }
         public int AddMilkCollection(int staffId, int farmerId, int milkTypeId,decimal quantity, decimal appliedFat, decimal appliedCLR)
         {
             using var con = _dbHelper.GetConnection();
@@ -393,6 +624,7 @@ namespace DairyIndustry.Repository
                 using (SqlCommand cmd = new SqlCommand("Collection.usp_GetTodayBatchStatus", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 60;
 
                     cmd.Parameters.AddWithValue("@StaffId", staffId);
 
@@ -438,6 +670,7 @@ namespace DairyIndustry.Repository
                                 FarmerName = reader["FarmerName"].ToString(),
                                 FarmerCode = reader["FarmerCode"].ToString(),
                                 Shift = reader["Shift"].ToString(),
+                                MilkType = reader["MilkType"]?.ToString(),
                                 Quantity = reader["Quantity"] != DBNull.Value? Convert.ToDecimal(reader["Quantity"]): null,
                                 Fat = reader["Fat"] != DBNull.Value? Convert.ToDecimal(reader["Fat"]): null,
                                 CLR = reader["CLR"] != DBNull.Value? Convert.ToDecimal(reader["CLR"]): null,
@@ -463,7 +696,68 @@ namespace DairyIndustry.Repository
             return batches;
         }
 
+        public BatchDetailModel GetBatchDetail(int batchId)
+        {
+            BatchDetailModel detail = new BatchDetailModel();
 
+            using (SqlConnection con = _dbHelper.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Collection.usp_GetBatchDetail", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 60;
+                    cmd.Parameters.AddWithValue("@BatchId", batchId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        //--------------------------------------------
+                        // RESULT SET 1: Batch Header + KPIs
+                        //--------------------------------------------
+                        if (reader.Read())
+                        {
+                            detail.BatchId = Convert.ToInt32(reader["BatchId"]);
+                            detail.Shift = reader["Shift"]?.ToString();
+                            detail.BatchDate = Convert.ToDateTime(reader["BatchDate"]);
+                            detail.Status = reader["Status"]?.ToString();
+                            detail.CenterName = reader["CenterName"]?.ToString();
+                            detail.TotalQuantity = reader["TotalQuantity"] != DBNull.Value ? Convert.ToDecimal(reader["TotalQuantity"]) : 0;
+                            detail.TotalAmount = reader["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalAmount"]) : 0;
+                            detail.AvgFat = reader["AvgFat"] != DBNull.Value ? Convert.ToDecimal(reader["AvgFat"]) : null;
+                            detail.AvgCLR = reader["AvgCLR"] != DBNull.Value ? Convert.ToDecimal(reader["AvgCLR"]) : null;
+                            detail.AcceptedCount = reader["AcceptedCount"] != DBNull.Value ? Convert.ToInt32(reader["AcceptedCount"]) : 0;
+                            detail.RejectedCount = reader["RejectedCount"] != DBNull.Value ? Convert.ToInt32(reader["RejectedCount"]) : 0;
+                        }
+
+                        //--------------------------------------------
+                        // RESULT SET 2: Entries
+                        //--------------------------------------------
+                        reader.NextResult();
+
+                        while (reader.Read())
+                        {
+                            detail.Entries.Add(new BatchEntryModel
+                            {
+                                FarmerName = reader["FarmerName"]?.ToString(),
+                                FarmerCode = reader["FarmerCode"]?.ToString(),
+                                MilkType = reader["MilkType"]?.ToString(),
+                                Quantity = reader["Quantity"] != DBNull.Value ? Convert.ToDecimal(reader["Quantity"]) : null,
+                                Fat = reader["Fat"] != DBNull.Value ? Convert.ToDecimal(reader["Fat"]) : null,
+                                CLR = reader["CLR"] != DBNull.Value ? Convert.ToDecimal(reader["CLR"]) : null,
+                                Rate = reader["Rate"] != DBNull.Value ? Convert.ToDecimal(reader["Rate"]) : null,
+                                Amount = reader["Amount"] != DBNull.Value ? Convert.ToDecimal(reader["Amount"]) : null,
+                                Status = reader["Status"]?.ToString(),
+                                RejectionReason = reader["RejectionReason"] != DBNull.Value ? reader["RejectionReason"]?.ToString() : null,
+                                Remarks = reader["Remarks"] != DBNull.Value ? reader["Remarks"]?.ToString() : null
+                            });
+                        }
+                    }
+                }
+            }
+
+            return detail;
+        }
         public List<FarmerViewModel> GetFarmers(int centerId)
         {
             var farmers = new List<FarmerViewModel>();
@@ -546,6 +840,7 @@ namespace DairyIndustry.Repository
                         f.FarmerName,
                         f.FarmerCode,
                         mc.Shift,
+                        mt.MilkTypeName AS MilkType,
                         mc.Quantity,
                         mc.AppliedFat,
                         mc.AppliedCLR,
@@ -554,11 +849,10 @@ namespace DairyIndustry.Repository
                         mc.BatchId,
                         'Accepted' AS Status,
                         NULL AS RejectionReason,
-                        NULL As Remarks
-
+                        NULL AS Remarks
                     FROM Collection.MilkCollection mc
-                    INNER JOIN Farmer.Farmers f
-                        ON mc.FarmerId = f.FarmerId
+                    INNER JOIN Farmer.Farmers f ON mc.FarmerId = f.FarmerId
+                    INNER JOIN Finance.MilkTypes mt ON mc.MilkTypeId = mt.MilkTypeId
                     WHERE mc.CenterId = @CenterId
 
                     UNION ALL
@@ -569,6 +863,7 @@ namespace DairyIndustry.Repository
                         f.FarmerName,
                         f.FarmerCode,
                         mr.Shift,
+                        mt.MilkTypeName AS MilkType,
                         mr.Quantity,
                         mr.AppliedFat,
                         mr.AppliedCLR,
@@ -578,10 +873,9 @@ namespace DairyIndustry.Repository
                         'Rejected' AS Status,
                         mr.RejectionReason,
                         mr.Remarks
-
                     FROM Collection.MilkRejections mr
-                    INNER JOIN Farmer.Farmers f
-                        ON mr.FarmerId = f.FarmerId
+                    INNER JOIN Farmer.Farmers f ON mr.FarmerId = f.FarmerId
+                    INNER JOIN Finance.MilkTypes mt ON mr.MilkTypeId = mt.MilkTypeId
                     WHERE mr.CenterId = @CenterId
 
                     ORDER BY CollectionDate DESC";
@@ -602,8 +896,8 @@ namespace DairyIndustry.Repository
                                 CollectionDate = Convert.ToDateTime(reader["CollectionDate"]),
                                 FarmerName = reader["FarmerName"].ToString(),
                                 FarmerCode = reader["FarmerCode"].ToString(),
+                                MilkType = reader["MilkType"]?.ToString(),
                                 Shift = reader["Shift"].ToString(),
-
                                 Quantity = reader["Quantity"] as decimal?,
                                 AppliedFat = reader["AppliedFat"] as decimal?,
                                 AppliedCLR = reader["AppliedCLR"] as decimal?,
@@ -1017,5 +1311,8 @@ namespace DairyIndustry.Repository
 
             return list;
         }
+
+
+      
     }
- }
+}

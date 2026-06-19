@@ -2,795 +2,1811 @@
 
 @{
     ViewData["Title"] = "Farmer Registration";
-    Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
 <style>
+    @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    .form-control,
-    .form-select {
-        min-height: 46px;
-        border-radius: 12px;
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --primary-light: #eff6ff;
+        --primary-border: #bfdbfe;
+        --success: #16a34a;
+        --success-light: #f0fdf4;
+        --success-border: #bbf7d0;
+        --success-dark: #14532d;
+        --danger: #dc2626;
+        --danger-light: #fef2f2;
+        --danger-border: #fecaca;
+        --warning: #d97706;
+        --border: #e5e7eb;
+        --border-light: #f3f4f6;
+        --text: #111827;
+        --text-muted: #6b7280;
+        --text-hint: #9ca3af;
+        --surface: #ffffff;
+        --bg: #ffffff;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+        --shadow-md: 0 4px 16px rgba(0,0,0,.10);
     }
 
-    .card {
-        border-radius: 20px;
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .fr-page {
+        font-family: var(--font);
+        background: #fff;
+        min-height: 100vh;
+        padding: 1.5rem 1.75rem 3rem;
+        color: var(--text);
+    }
+
+    /* ── TOPBAR ── */
+    .fr-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: .6rem;
+    }
+
+    .fr-topbar-left h1 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .fr-topbar-left p {
+        font-size: .78rem;
+        color: var(--text-muted);
+        margin-top: .1rem;
+    }
+
+    .fr-topbar-right {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .fr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        height: 36px;
+        padding: 0 .9rem;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .8rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .15s, color .15s, border-color .15s;
+        border: 1px solid var(--border);
+    }
+
+    .fr-btn-back {
+        background: #fff;
+        color: var(--text);
+    }
+
+        .fr-btn-back:hover {
+            background: #f9fafb;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+    .fr-btn-clear {
+        background: #fff;
+        color: var(--danger);
+        border-color: var(--danger-border);
+    }
+
+        .fr-btn-clear:hover {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+    .fr-btn i {
+        font-size: .85rem;
+    }
+
+    /* ── SUCCESS TOAST ── */
+    .fr-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        background: var(--success-light);
+        border: 1px solid var(--success-border);
+        border-left: 4px solid var(--success);
+        border-radius: var(--radius-md);
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+        animation: toastIn .3s ease;
+    }
+
+    @@keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fr-toast-icon {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        background: var(--success);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .fr-toast-body h5 {
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--success-dark);
+    }
+
+    .fr-toast-body p {
+        font-size: .78rem;
+        color: var(--success-dark);
+        margin-top: .15rem;
+    }
+
+    .fr-toast-kv {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: .6rem;
+    }
+
+    .fr-kv-chip {
+        background: #fff;
+        border: 1px solid var(--success-border);
+        border-radius: var(--radius-sm);
+        padding: .35rem .65rem;
+        flex: 1;
+        min-width: 130px;
+    }
+
+        .fr-kv-chip label {
+            display: block;
+            font-size: .62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-muted);
+            margin-bottom: .1rem;
+        }
+
+        .fr-kv-chip span {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+    .fr-toast-note {
+        font-size: .72rem;
+        color: var(--success-dark);
+        margin-top: .45rem;
+    }
+
+    .fr-toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--success);
+        border-radius: 0 0 0 var(--radius-md);
+        animation: toastProgress 5s linear forwards;
+    }
+
+    @@keyframes toastProgress {
+        from {
+            width: 100%;
+        }
+
+        to {
+            width: 0%;
+        }
+    }
+
+    .fr-toast-close {
+        position: absolute;
+        top: .6rem;
+        right: .65rem;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background .15s;
+    }
+
+        .fr-toast-close:hover {
+            background: rgba(0,0,0,.07);
+        }
+
+  
+
+    /* ── INLINE FIELD ERROR ── */
+    .fr-err {
+        display: none;
+        align-items: center;
+        gap: .25rem;
+        font-size: .7rem;
+        color: var(--danger);
+        margin-top: .22rem;
+    }
+
+        .fr-err.show {
+            display: flex;
+        }
+
+        .fr-err i {
+            font-size: .75rem;
+        }
+
+
+    /* ── SECTION CARDS ── */
+    .fr-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
         overflow: hidden;
     }
 
-    .form-label {
-        font-weight: 600;
-        margin-bottom: 6px;
+    .fr-card-head {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .85rem 1.25rem;
+        border-bottom: 1px solid var(--border-light);
+        background: #fafafa;
     }
 
-    .section-title {
-        color: #0d6efd;
+    .fr-card-badge {
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .68rem;
         font-weight: 700;
-        margin-bottom: 20px;
     }
 
-    .required {
-        color: red;
+        .fr-card-badge.done {
+            background: var(--success);
+        }
+
+    .fr-card-icon {
+        color: var(--primary);
+        font-size: 1rem;
+        line-height: 1;
     }
 
-    .upload-box {
+    .fr-card-head-text h2 {
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .fr-card-head-text p {
+        font-size: .71rem;
+        color: var(--text-hint);
+        margin-top: .03rem;
+    }
+
+    .fr-card-body {
+        padding: 1.1rem 1.25rem 1.1rem;
+    }
+
+    /* ── GRID ── */
+    .fr-grid {
+        display: grid;
+        gap: .85rem;
+    }
+
+    .fr-g2 {
+        grid-template-columns: repeat(2,1fr);
+    }
+
+    .fr-g3 {
+        grid-template-columns: repeat(3,1fr);
+    }
+
+    /* ── FIELDS ── */
+    .fr-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fr-label {
+        font-size: .71rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: .3rem;
+        display: flex;
+        align-items: center;
+        gap: .2rem;
+    }
+
+        .fr-label .req {
+            color: var(--danger);
+        }
+
+    .fr-input, .fr-select {
+        height: 38px;
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0 .75rem;
+        font-family: var(--font);
+        font-size: .84rem;
+        color: var(--text);
+        background: #fff;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+        .fr-input:focus, .fr-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+
+        .fr-input.is-invalid, .fr-select.is-invalid {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220,38,38,.10);
+        }
+
+        .fr-input.is-valid, .fr-select.is-valid {
+            border-color: var(--success);
+        }
+
+        .fr-input::placeholder {
+            color: var(--text-hint);
+            font-size: .8rem;
+        }
+
+        .fr-input.uc {
+            text-transform: uppercase;
+        }
+
+    .fr-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        padding-right: 2.1rem;
+        cursor: pointer;
+    }
+
+    /* input group for email+button */
+    .fr-input-group {
+        display: flex;
+        gap: .4rem;
+    }
+
+        .fr-input-group .fr-input {
+            flex: 1;
+            min-width: 0;
+        }
+
+    .fr-otp-btn {
+        height: 38px;
+        padding: 0 .9rem;
+        flex-shrink: 0;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .77rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        transition: background .15s;
+    }
+
+        .fr-otp-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .fr-otp-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+    .fr-verified {
+        display: none;
+        align-items: center;
+        gap: .3rem;
+        height: 38px;
+        padding: 0 .75rem;
+        flex-shrink: 0;
+        background: var(--success-light);
+        border: 1px solid var(--success-border);
+        border-radius: var(--radius-sm);
+        font-size: .74rem;
+        font-weight: 700;
+        color: var(--success-dark);
+        white-space: nowrap;
+    }
+
+        .fr-verified.show {
+            display: flex;
+        }
+
+    /* ── UPLOAD TILES ── */
+    .fr-uploads {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        gap: .85rem;
+    }
+
+    .fr-upload-tile {
+        border: 1.5px dashed var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.1rem .9rem .9rem;
+        text-align: center;
+        background: #fff;
+        cursor: pointer;
+        display: block;
+        transition: border-color .15s, background .15s;
+    }
+
+        .fr-upload-tile:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .fr-upload-tile.is-invalid {
+            border-color: var(--danger);
+            border-style: solid;
+            background: var(--danger-light);
+        }
+
+    .fr-upload-icon {
+        width: 42px;
+        height: 42px;
         background: #f8f9fa;
-        border: 1px dashed #ced4da;
-        border-radius: 14px;
-        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin: 0 auto .55rem;
+    }
+
+    .fr-upload-tile:hover .fr-upload-icon {
+        background: #fff;
+        color: var(--primary);
+        border-color: var(--primary-border);
+    }
+
+    .fr-upload-name {
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: .1rem;
+    }
+
+    .fr-upload-hint {
+        font-size: .66rem;
+        color: var(--text-hint);
+        margin-bottom: .55rem;
+    }
+
+    .fr-upload-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-size: .7rem;
+        font-weight: 600;
+        color: var(--primary);
+        background: var(--primary-light);
+        border: 1px solid var(--primary-border);
+        border-radius: 99px;
+        padding: .22rem .7rem;
+    }
+
+    .fr-upload-fname {
+        margin-top: .38rem;
+        font-size: .68rem;
+        color: var(--success);
+        font-weight: 600;
+        min-height: .9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: .2rem;
+        justify-content: center;
+    }
+
+    .fr-file-repop {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-size: .68rem;
+        color: #1e40af;
+        background: var(--primary-light);
+        border: 1px solid var(--primary-border);
+        border-radius: 99px;
+        padding: .2rem .55rem;
+        margin-top: .35rem;
+        font-weight: 600;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ── FORM FOOTER ── */
+    .fr-form-footer {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: .9rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .75rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .fr-footer-text h3 {
+        font-size: .86rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .fr-footer-text p {
+        font-size: .71rem;
+        color: var(--text-hint);
+        margin-top: .07rem;
+    }
+
+    .fr-submit {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        height: 40px;
+        padding: 0 1.5rem;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .15s;
+        box-shadow: 0 1px 3px rgba(37,99,235,.35);
+    }
+
+        .fr-submit:hover {
+            background: var(--primary-dark);
+        }
+
+    /* ── INLINE TOAST (non-alert) for email errors ── */
+    .fr-inline-msg {
+        display: none;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 500;
+        padding: .35rem .6rem;
+        border-radius: var(--radius-sm);
+        margin-top: .3rem;
+    }
+
+        .fr-inline-msg.error {
+            color: #991b1b;
+            background: var(--danger-light);
+            border: 1px solid var(--danger-border);
+        }
+
+        .fr-inline-msg.info {
+            color: #1e40af;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+        }
+
+        .fr-inline-msg.show {
+            display: flex;
+        }
+
+    /* ── OTP MODAL ── */
+    .fr-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1055;
+        background: rgba(17,24,39,.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s;
+        padding: 1rem;
+    }
+
+        .fr-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+    .fr-modal {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-md);
+        transform: translateY(10px) scale(.97);
+        transition: transform .22s;
+        overflow: hidden;
+    }
+
+    .fr-overlay.open .fr-modal {
+        transform: translateY(0) scale(1);
+    }
+
+    .fr-modal-head {
+        background: var(--primary);
+        padding: .9rem 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+
+    .fr-modal-head-ico {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        background: rgba(255,255,255,.18);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        color: #fff;
+    }
+
+    .fr-modal-head-text h5 {
+        font-size: .9rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+
+    .fr-modal-head-text p {
+        font-size: .71rem;
+        color: rgba(255,255,255,.72);
+        margin: .04rem 0 0;
+    }
+
+    .fr-modal-body {
+        padding: 1.25rem 1.15rem .9rem;
+    }
+
+    .fr-otp-dest {
+        display: flex;
+        align-items: flex-start;
+        gap: .4rem;
+        background: var(--primary-light);
+        border: 1px solid var(--primary-border);
+        border-radius: var(--radius-sm);
+        padding: .55rem .8rem;
+        font-size: .79rem;
+        color: #1e40af;
+        margin-bottom: 1.1rem;
+        word-break: break-all;
+        line-height: 1.4;
+    }
+
+        .fr-otp-dest i {
+            flex-shrink: 0;
+            margin-top: .1rem;
+        }
+
+    .fr-modal-lbl {
+        font-size: .68rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: .6rem;
+    }
+
+    .fr-otp-boxes {
+        display: flex;
+        gap: .45rem;
+        justify-content: center;
+        margin-bottom: .55rem;
+    }
+
+    .fr-otp-box {
+        width: 50px;
+        height: 58px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        background: #f9fafb;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+
+        .fr-otp-box:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+
+        .fr-otp-box.filled {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .fr-otp-box.error {
+            border-color: var(--danger);
+            background: var(--danger-light);
+        }
+
+    .fr-otp-err {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: .25rem;
+        font-size: .74rem;
+        color: var(--danger);
+        text-align: center;
+        margin-top: .35rem;
+    }
+
+        .fr-otp-err.show {
+            display: flex;
+        }
+
+    .fr-otp-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: .7rem;
+    }
+
+    .fr-otp-expires {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .73rem;
+        color: var(--text-muted);
+    }
+
+    .fr-otp-expires-val {
+        font-weight: 700;
+        color: var(--warning);
+    }
+
+    .fr-otp-resend-wrap {
+        font-size: .73rem;
+        color: var(--text-muted);
+    }
+
+    .fr-otp-resend-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        font-family: var(--font);
+        font-size: .73rem;
+        font-weight: 600;
+        color: var(--primary);
+        cursor: pointer;
+        display: none;
+        text-decoration: underline;
+    }
+
+        .fr-otp-resend-btn:hover {
+            color: var(--primary-dark);
+        }
+
+    .fr-modal-foot {
+        padding: .75rem 1.15rem .9rem;
+        display: flex;
+        gap: .5rem;
+        justify-content: flex-end;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .fr-modal-cancel {
+        height: 36px;
+        padding: 0 .95rem;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: background .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+    }
+
+        .fr-modal-cancel:hover {
+            background: #f9fafb;
+        }
+
+    .fr-modal-verify {
+        height: 36px;
+        padding: 0 1.2rem;
+        background: var(--primary);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .8rem;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+        .fr-modal-verify:hover {
+            background: var(--primary-dark);
+        }
+
+        .fr-modal-verify:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 640px) {
+        .fr-page {
+            padding: 1rem .9rem 3rem;
+        }
+
+        .fr-g2, .fr-g3 {
+            grid-template-columns: 1fr;
+        }
+
+        .fr-uploads {
+            grid-template-columns: 1fr;
+        }
+
+        .fr-submit {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .fr-form-footer {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .fr-otp-box {
+            width: 42px;
+            height: 52px;
+            font-size: 1.3rem;
+        }
+    }
+
+    @@media (min-width: 480px) and (max-width: 640px) {
+        .fr-g2 {
+            grid-template-columns: repeat(2,1fr);
+        }
+
+        .fr-uploads {
+            grid-template-columns: repeat(2,1fr);
+        }
+    }
+
+    @@media (min-width: 641px) and (max-width: 900px) {
+        .fr-g3 {
+            grid-template-columns: repeat(2,1fr);
+        }
     }
 </style>
 
-<div class="container py-4">
 
-    <div class="card border-0 shadow-lg">
+<!-- SUCCESS TOAST -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Farmer Registered Successfully!</strong><br />
+        Code: <b>@TempData["FarmerCode"]</b> |
+        Password: <b>@TempData["Password"]</b>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-        <!-- HEADER -->
-        <div class="card-header bg-primary text-white py-3 px-4">
+<div class="fr-page">
 
-            <h3 class="fw-bold mb-1">
-                Farmer Registration
-            </h3>
-
-            <small class="opacity-75">
-                Register farmer from collection center
-            </small>
-
+    <!-- TOPBAR -->
+    <div class="fr-topbar">
+        <div class="fr-topbar-left">
+            <h1>Register New Farmer</h1>
+            <p>Dairy Management System &mdash; Collection Center Portal</p>
         </div>
-
-        <div class="card-body p-4">
-
-            <!-- SUCCESS -->
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0">
-
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert">
-                    </button>
-
-                    <h5 class="fw-bold mb-3">
-                        Registration Successful
-                    </h5>
-
-                    <p class="mb-2">
-                        @TempData["Success"]
-                    </p>
-
-                    <div class="row">
-
-                        <div class="col-md-6 mb-2">
-                            <strong>Farmer Code:</strong>
-                            @TempData["FarmerCode"]
-                        </div>
-
-                        <div class="col-md-6 mb-2">
-                            <strong>Default Password:</strong>
-                            @TempData["Password"]
-                        </div>
-
-                    </div>
-
-                    <small class="text-muted">
-                        Default password = last 4 digits of farmer mobile number.
-                    </small>
-
-                </div>
-            }
-
-            <!-- VALIDATION -->
-            <div asp-validation-summary="All"
-                 class="alert alert-danger rounded-4">
-            </div>
-
-            <!-- FORM -->
-            <form asp-action="FarmerRegistrationByCenter"
-                  method="post"
-                  enctype="multipart/form-data">
-
-                @Html.AntiForgeryToken()
-
-                <!-- PERSONAL -->
-                <section class="mb-5">
-
-                    <h5 class="section-title">
-                        Personal Information
-                    </h5>
-
-                    <div class="row">
-
-                        <div class="col-md-6 mb-4">
-
-                            <label class="form-label">
-                                Farmer Name
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="FarmerName"
-                                   class="form-control shadow-sm"
-                                   placeholder="Enter full name" />
-
-                            <span asp-validation-for="FarmerName"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-
-                            <label class="form-label">
-                                Email Address
-                            </label>
-
-                            <div class="input-group">
-
-                                <input asp-for="Email"
-                                       id="Email"
-                                       class="form-control shadow-sm"
-                                       placeholder="farmer@example.com" />
-
-                                <button type="button"
-                                        class="btn btn-outline-primary"
-                                        id="sendOtpBtn">
-                                    Send OTP
-                                </button>
-
-                                <span class="input-group-text bg-white d-none"
-                                      id="emailVerifiedBadge">
-
-                                    <span class="text-success fw-bold">
-                                        ✓ Verified
-                                    </span>
-
-                                </span>
-
-                            </div>
-
-                            <span asp-validation-for="Email"
-                                  class="text-danger small">
-                            </span>
-
-                            <input type="hidden"
-                                   asp-for="IsEmailVerified"
-                                   id="IsEmailVerified"
-                                   value="false" />
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Gender
-                                <span class="required">*</span>
-                            </label>
-
-                            <select asp-for="Gender"
-                                    class="form-select shadow-sm">
-
-                                <option value="">
-                                    Select Gender
-                                </option>
-
-                                <option value="Male">
-                                    Male
-                                </option>
-
-                                <option value="Female">
-                                    Female
-                                </option>
-
-                                <option value="Other">
-                                    Other
-                                </option>
-
-                            </select>
-
-                            <span asp-validation-for="Gender"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Date of Birth
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="DateOfBirth"
-                                   type="date"
-                                   class="form-control shadow-sm" />
-
-                            <span asp-validation-for="DateOfBirth"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Phone Number
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="Phone"
-                                   class="form-control shadow-sm"
-                                   maxlength="10"
-                                   placeholder="10 digit mobile" />
-
-                            <span asp-validation-for="Phone"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                <!-- LOCATION -->
-                <section class="mb-5">
-
-                    <h5 class="section-title">
-                        Location Details
-                    </h5>
-
-                    <div class="row">
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                State
-                                <span class="required">*</span>
-                            </label>
-
-                            <select asp-for="StateId"
-                                    class="form-select shadow-sm"
-                                    id="StateId">
-
-                                <option value="">
-                                    Select State
-                                </option>
-
-                                @foreach (var s in Model.States)
-                                {
-                                    <option value="@s.StateId">
-                                        @s.StateName
-                                    </option>
-                                }
-
-                            </select>
-
-                            <span asp-validation-for="StateId"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                City
-                                <span class="required">*</span>
-                            </label>
-
-                            <select asp-for="CityId"
-                                    class="form-select shadow-sm"
-                                    id="CityId">
-
-                                <option value="">
-                                    Select City
-                                </option>
-
-                            </select>
-
-                            <span asp-validation-for="CityId"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Village
-                                <span class="required">*</span>
-                            </label>
-
-                            <select asp-for="VillageId"
-                                    class="form-select shadow-sm"
-                                    id="VillageId">
-
-                                <option value="">
-                                    Select Village
-                                </option>
-
-                            </select>
-
-                            <span asp-validation-for="VillageId"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                <!-- BANK -->
-                <section class="mb-5">
-
-                    <h5 class="section-title">
-                        Bank & Identity Details
-                    </h5>
-
-                    <div class="row">
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Bank Name
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="BankName"
-                                   class="form-control shadow-sm" />
-
-                            <span asp-validation-for="BankName"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                Account Number
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="AccountNumber"
-                                   class="form-control shadow-sm" />
-
-                            <span asp-validation-for="AccountNumber"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <label class="form-label">
-                                IFSC Code
-                                <span class="required">*</span>
-                            </label>
-
-                            <input asp-for="IFSCCode"
-                                   class="form-control shadow-sm text-uppercase" />
-
-                            <span asp-validation-for="IFSCCode"
-                                  class="text-danger small">
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <div class="mb-4">
-
-                        <label class="form-label">
-                            Aadhaar Number
-                            <span class="required">*</span>
-                        </label>
-
-                        <input asp-for="AadhaarNumber"
-                               class="form-control shadow-sm"
-                               maxlength="12"
-                               placeholder="12 digit Aadhaar number" />
-
-                        <span asp-validation-for="AadhaarNumber"
-                              class="text-danger small">
-                        </span>
-
-                    </div>
-
-                </section>
-
-                <!-- DOCUMENTS -->
-                <section class="mb-5">
-
-                    <h5 class="section-title">
-                        Upload Documents
-                    </h5>
-
-                    <div class="row">
-
-                        <div class="col-md-4 mb-4">
-
-                            <div class="upload-box">
-
-                                <label class="form-label">
-                                    Profile Photo
-                                    <span class="required">*</span>
-                                </label>
-
-                                <input asp-for="PhotoFile"
-                                       type="file"
-                                       class="form-control shadow-sm"
-                                       accept=".jpg,.jpeg,.png" />
-
-                                <span asp-validation-for="PhotoFile"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <div class="upload-box">
-
-                                <label class="form-label">
-                                    Aadhaar Card Copy
-                                    <span class="required">*</span>
-                                </label>
-
-                                <input asp-for="AadhaarFile"
-                                       type="file"
-                                       class="form-control shadow-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" />
-
-                                <span asp-validation-for="AadhaarFile"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-
-                            <div class="upload-box">
-
-                                <label class="form-label">
-                                    Bank Passbook
-                                    <span class="required">*</span>
-                                </label>
-
-                                <input asp-for="PassbookFile"
-                                       type="file"
-                                       class="form-control shadow-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" />
-
-                                <span asp-validation-for="PassbookFile"
-                                      class="text-danger small">
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-                <!-- SUBMIT -->
-                <div class="d-grid">
-
-                    <button type="submit"
-                            class="btn btn-success btn-lg rounded-4 py-3 fw-semibold shadow-sm">
-
-                        Complete Registration
-
-                    </button>
-
-                </div>
-
-            </form>
-
+        <div class="fr-topbar-right">
+            <button type="button" class="fr-btn fr-btn-clear" id="clearFormBtn">
+                <i class="bi bi-trash3"></i> Clear Form
+            </button>
+            <a href="javascript:history.back()" class="fr-btn fr-btn-back">
+                <i class="bi bi-arrow-left"></i> Back to Farmer List
+            </a>
         </div>
-
     </div>
 
+    
+
+   
+
+    <!-- MAIN FORM -->
+    <form asp-action="FarmerRegistrationByCenter" method="post"
+          enctype="multipart/form-data" id="regForm" novalidate>
+
+        @Html.AntiForgeryToken()
+
+        <!-- ── SECTION 1: PERSONAL INFORMATION ── -->
+        <div class="fr-card" id="card1">
+            <div class="fr-card-head">
+                <div class="fr-card-badge" id="badge1">1</div>
+                <i class="bi bi-person fr-card-icon"></i>
+                <div class="fr-card-head-text">
+                    <h2>Personal Information</h2>
+                    <p>Full name, contact and basic details</p>
+                </div>
+            </div>
+            <div class="fr-card-body">
+                <div class="fr-grid fr-g2">
+                    <!-- Farmer Name -->
+                    <div class="fr-field">
+                        <label class="fr-label">Farmer Name <span class="req">*</span></label>
+                        <input asp-for="FarmerName" id="FarmerName" class="fr-input"
+                               placeholder="Enter full name" autocomplete="off" />
+                       
+                        <span class="fr-err" id="err-FarmerName">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- Email + OTP -->
+                    <div class="fr-field">
+                        <label class="fr-label">Email Address <span class="req">*</span></label>
+                        <div class="fr-input-group">
+                            <input asp-for="Email" id="Email" class="fr-input"
+                                   placeholder="farmer@example.com" type="email" autocomplete="off" />
+                            <button type="button" class="fr-otp-btn" id="sendOtpBtn">
+                                <i class="bi bi-send"></i> Send OTP
+                            </button>
+                            <div class="fr-verified" id="emailVerifiedBadge">
+                                <i class="bi bi-patch-check-fill"></i> Verified
+                            </div>
+                        </div>
+                       
+                        <div class="fr-inline-msg" id="emailMsg"></div>
+                        <span class="fr-err @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "show" : "")"
+                              id="err-Email">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span class="fr-err-msg">
+                                @Html.ValidationMessage("Email")
+                            </span>
+                        </span>
+                        <input type="hidden" asp-for="IsEmailVerified" id="IsEmailVerified" />
+                        @* <input type="hidden" asp-for="IsEmailVerified" id="IsEmailVerified" /> *@
+                    </div>
+                </div>
+
+                <div class="fr-grid fr-g3" style="margin-top:.85rem">
+                    <!-- Gender -->
+                    <div class="fr-field">
+                        <label class="fr-label">Gender <span class="req">*</span></label>
+                        <select asp-for="Gender" id="Gender" class="fr-select">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                      
+                        <span class="fr-err" id="err-Gender">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- Date of Birth -->
+                    <div class="fr-field">
+                        <label class="fr-label">Date of Birth <span class="req">*</span></label>
+                        <input asp-for="DateOfBirth" id="DateOfBirth" type="date" class="fr-input" />
+                       
+                        <span class="fr-err" id="err-DateOfBirth">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- Phone -->
+                    <div class="fr-field">
+                        <label class="fr-label">Phone Number <span class="req">*</span></label>
+                        <input asp-for="Phone" id="Phone" class="fr-input"
+                               maxlength="10" placeholder="10-digit mobile" inputmode="numeric" />
+                      
+                        <span class="fr-err @(ViewData.ModelState["Phone"]?.Errors.Count > 0 ? "show" : "")"
+                              id="err-Phone">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span class="fr-err-msg">
+                                @Html.ValidationMessage("Phone")
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECTION 2: LOCATION ── -->
+        <div class="fr-card" id="card2">
+            <div class="fr-card-head">
+                <div class="fr-card-badge" id="badge2">2</div>
+                <i class="bi bi-geo-alt fr-card-icon"></i>
+                <div class="fr-card-head-text">
+                    <h2>Location Details</h2>
+                    <p>State, city and village of the farmer</p>
+                </div>
+            </div>
+            <div class="fr-card-body">
+                <div class="fr-grid fr-g3">
+                    <!-- State -->
+                    <div class="fr-field">
+                        <label class="fr-label">State <span class="req">*</span></label>
+                        <select asp-for="StateId" class="fr-select" id="StateId">
+                            <option value="">Select State</option>
+                            @foreach (var s in Model.States)
+                            {
+                                <option value="@s.StateId">@s.StateName</option>
+                            }
+                        </select>
+                      
+                        <span class="fr-err" id="err-StateId">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- City -->
+                    <div class="fr-field">
+                        <label class="fr-label">City <span class="req">*</span></label>
+                        <select asp-for="CityId" class="fr-select" id="CityId">
+                            <option value="">Select City</option>
+                            @if (Model.Cities != null)
+                            {
+                                foreach (var c in Model.Cities)
+                                {
+                                    <option value="@c.CityId" selected="@(Model.CityId == c.CityId ? "selected" : null)">@c.CityName</option>
+                                }
+                            }
+                        </select>
+                       
+                        <span class="fr-err" id="err-CityId">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- Village -->
+                    <div class="fr-field">
+                        <label class="fr-label">Village <span class="req">*</span></label>
+                        <select asp-for="VillageId" class="fr-select" id="VillageId">
+                            <option value="">Select Village</option>
+                            @if (Model.Villages != null)
+                            {
+                                foreach (var v in Model.Villages)
+                                {
+                                    <option value="@v.VillageId" selected="@(Model.VillageId == v.VillageId ? "selected" : null)">@v.VillageName</option>
+                                }
+                            }
+                        </select>
+                        
+                        <span class="fr-err" id="err-VillageId">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECTION 3: BANK & IDENTITY ── -->
+        <div class="fr-card" id="card3">
+            <div class="fr-card-head">
+                <div class="fr-card-badge" id="badge3">3</div>
+                <i class="bi bi-bank fr-card-icon"></i>
+                <div class="fr-card-head-text">
+                    <h2>Bank &amp; Identity Details</h2>
+                    <p>Banking information and Aadhaar number</p>
+                </div>
+            </div>
+            <div class="fr-card-body">
+                <div class="fr-grid fr-g3">
+                    <!-- Bank Name -->
+                    <div class="fr-field">
+                        <label class="fr-label">Bank Name <span class="req">*</span></label>
+                        <input asp-for="BankName" id="BankName" class="fr-input" placeholder="e.g. SBI, PNB" />
+                       
+                        <span class="fr-err" id="err-BankName">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- Account Number -->
+                    <div class="fr-field">
+                        <label class="fr-label">Account Number <span class="req">*</span></label>
+                        <input asp-for="AccountNumber" id="AccountNumber" class="fr-input"
+                               placeholder="Enter account number" inputmode="numeric" />
+                        
+                        <span class="fr-err" id="err-AccountNumber">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                    <!-- IFSC -->
+                    <div class="fr-field">
+                        <label class="fr-label">IFSC Code <span class="req">*</span></label>
+                        <input asp-for="IFSCCode" id="IFSCCode" class="fr-input uc"
+                               placeholder="e.g. SBIN0001234" maxlength="11" />
+                        
+                        <span class="fr-err" id="err-IFSCCode">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="fr-grid fr-g2" style="margin-top:.85rem">
+                    <!-- Aadhaar -->
+                    <div class="fr-field">
+                        <label class="fr-label">Aadhaar Number <span class="req">*</span></label>
+                        <input asp-for="AadhaarNumber" id="AadhaarNumber" class="fr-input"
+                               maxlength="12" placeholder="12-digit Aadhaar number" inputmode="numeric" />
+
+                        <span class="fr-err @(ViewData.ModelState["AadhaarNumber"]?.Errors.Count > 0 ? "show" : "")"
+                              id="err-AadhaarNumber">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span class="fr-err-msg">
+                                @Html.ValidationMessage("AadhaarNumber")
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECTION 4: DOCUMENTS ── -->
+        <div class="fr-card" id="card4">
+            <div class="fr-card-head">
+                <div class="fr-card-badge" id="badge4">4</div>
+                <i class="bi bi-paperclip fr-card-icon"></i>
+                <div class="fr-card-head-text">
+                    <h2>Upload Documents</h2>
+                    <p>Profile photo, Aadhaar copy and bank passbook</p>
+                </div>
+            </div>
+            <div class="fr-card-body">
+                <div class="fr-uploads">
+
+                    <!-- Profile Photo -->
+                    <div class="fr-field">
+                        <label class="fr-upload-tile" for="PhotoFileInput" id="tile-photo">
+                            <div class="fr-upload-icon">
+                                <i class="bi bi-person-square"></i>
+                            </div>
+                            <div class="fr-upload-name">Profile Photo <span style="color:var(--danger)">*</span></div>
+                            <div class="fr-upload-hint">JPG &middot; JPEG &middot; PNG</div>
+                            <span class="fr-upload-cta">
+                                <i class="bi bi-upload"></i> Upload File
+                            </span>
+                        </label>
+                        <input asp-for="PhotoFile" id="PhotoFileInput" type="file"
+                               accept=".jpg,.jpeg,.png" style="display:none"
+                               onchange="showFile(this,'fn-photo','tile-photo','err-PhotoFile')" />
+                        <div class="fr-upload-fname" id="fn-photo"></div>
+                        @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                        {
+                            <div class="fr-file-repop" title="@Model.ProfilePhoto">
+                                <i class="bi bi-paperclip"></i> @System.IO.Path.GetFileName(Model.ProfilePhoto)
+                            </div>
+                        }
+                       
+                        <span class="fr-err" id="err-PhotoFile">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+
+                    <!-- Aadhaar Card -->
+                    <div class="fr-field">
+                        <label class="fr-upload-tile" for="AadhaarFileInput" id="tile-aadhaar">
+                            <div class="fr-upload-icon">
+                                <i class="bi bi-card-text"></i>
+                            </div>
+                            <div class="fr-upload-name">Aadhaar Card Copy <span style="color:var(--danger)">*</span></div>
+                            <div class="fr-upload-hint">JPG &middot; JPEG &middot; PNG &middot; PDF</div>
+                            <span class="fr-upload-cta">
+                                <i class="bi bi-upload"></i> Upload File
+                            </span>
+                        </label>
+                        <input asp-for="AadhaarFile" id="AadhaarFileInput" type="file"
+                               accept=".jpg,.jpeg,.png,.pdf" style="display:none"
+                               onchange="showFile(this,'fn-aadhaar','tile-aadhaar','err-AadhaarFile')" />
+                        <div class="fr-upload-fname" id="fn-aadhaar"></div>
+                        @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
+                        {
+                            <div class="fr-file-repop" title="@Model.AadhaarCardPath">
+                                <i class="bi bi-paperclip"></i> @System.IO.Path.GetFileName(Model.AadhaarCardPath)
+                            </div>
+                        }
+                        
+                        <span class="fr-err" id="err-AadhaarFile">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+
+                    <!-- Bank Passbook -->
+                    <div class="fr-field">
+                        <label class="fr-upload-tile" for="PassbookFileInput" id="tile-passbook">
+                            <div class="fr-upload-icon">
+                                <i class="bi bi-journal-bookmark"></i>
+                            </div>
+                            <div class="fr-upload-name">Bank Passbook <span style="color:var(--danger)">*</span></div>
+                            <div class="fr-upload-hint">JPG &middot; JPEG &middot; PNG &middot; PDF</div>
+                            <span class="fr-upload-cta">
+                                <i class="bi bi-upload"></i> Upload File
+                            </span>
+                        </label>
+                        <input asp-for="PassbookFile" id="PassbookFileInput" type="file"
+                               accept=".jpg,.jpeg,.png,.pdf" style="display:none"
+                               onchange="showFile(this,'fn-passbook','tile-passbook','err-PassbookFile')" />
+                        <div class="fr-upload-fname" id="fn-passbook"></div>
+                        @if (!string.IsNullOrEmpty(Model.PassbookPath))
+                        {
+                            <div class="fr-file-repop" title="@Model.PassbookPath">
+                                <i class="bi bi-paperclip"></i> @System.IO.Path.GetFileName(Model.PassbookPath)
+                            </div>
+                        }
+                        
+                        <span class="fr-err" id="err-PassbookFile">
+                            <i class="bi bi-exclamation-circle"></i> <span class="fr-err-msg"></span>
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="fr-form-footer">
+            <div class="fr-footer-text">
+                <h3>Ready to submit?</h3>
+                <p>All fields marked <span style="color:var(--danger)">*</span> are required.</p>
+            </div>
+            <button type="submit" class="fr-submit" id="submitBtn">
+                <i class="bi bi-check-circle"></i> Register Farmer
+            </button>
+        </div>
+
+    </form>
 </div>
 
 <!-- OTP MODAL -->
-<div class="modal fade"
-     id="otpModal"
-     tabindex="-1"
-     aria-hidden="true"
-     data-bs-backdrop="static"
-     data-bs-keyboard="false">
-
-    <div class="modal-dialog modal-dialog-centered">
-
-        <div class="modal-content border-0 rounded-4 shadow">
-
-            <div class="modal-header bg-primary text-white border-0">
-
-                <h5 class="modal-title fw-bold">
-                    Verify Email OTP
-                </h5>
-
+<div class="fr-overlay" id="otpOverlay">
+    <div class="fr-modal">
+        <div class="fr-modal-head">
+            <div class="fr-modal-head-ico"><i class="bi bi-envelope"></i></div>
+            <div class="fr-modal-head-text">
+                <h5>Email Verification</h5>
+                <p>One-time password</p>
             </div>
-
-            <div class="modal-body p-4">
-
-                <p class="text-muted small mb-1">
-                    OTP sent to
-                </p>
-
-                <div class="fw-bold mb-3"
-                     id="otpTargetEmail">
-                </div>
-
-                <label class="form-label fw-semibold">
-                    Enter OTP
-                </label>
-
-                <input type="text"
-                       id="otpInput"
-                       class="form-control form-control-lg text-center fw-bold"
-                       maxlength="6"
-                       placeholder="------"
-                       autocomplete="off"
-                       style="letter-spacing:6px;" />
-
-                <div id="otpError"
-                     class="text-danger small mt-2 d-none">
-                </div>
-
-            </div>
-
-            <div class="modal-footer border-0">
-
-                <button type="button"
-                        class="btn btn-outline-secondary rounded-3"
-                        data-bs-dismiss="modal">
-
-                    Cancel
-
-                </button>
-
-                <button type="button"
-                        class="btn btn-success rounded-3"
-                        id="verifyOtpBtn">
-
-                    Verify OTP
-
-                </button>
-
-            </div>
-
         </div>
-
+        <div class="fr-modal-body">
+            <div class="fr-otp-dest">
+                <i class="bi bi-envelope-at"></i>
+                A 6-digit code was sent to <strong id="otpTargetEmail" style="margin-left:.25rem"></strong>.
+                It is valid for 10 minutes.
+            </div>
+            <div class="fr-modal-lbl">Enter Verification Code</div>
+            <div class="fr-otp-boxes">
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="0" />
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="1" />
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="2" />
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="3" />
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="4" />
+                <input class="fr-otp-box" type="text" maxlength="1" inputmode="numeric" autocomplete="off" data-idx="5" />
+            </div>
+            <div id="otpError" class="fr-otp-err">
+                <i class="bi bi-exclamation-circle"></i> <span id="otpErrMsg"></span>
+            </div>
+            <div class="fr-otp-meta">
+                <div class="fr-otp-expires">
+                    <i class="bi bi-clock"></i>
+                    Expires in <span class="fr-otp-expires-val" id="otpCountdown">09:58</span>
+                </div>
+                <div class="fr-otp-resend-wrap">
+                    <span id="otpResendCooldown">Resend in <strong id="otpResendSec">30</strong>s</span>
+                    <button type="button" class="fr-otp-resend-btn" id="otpResendBtn">Resend OTP</button>
+                </div>
+            </div>
+        </div>
+        <div class="fr-modal-foot">
+            <button type="button" class="fr-modal-cancel" id="otpCancelBtn">
+                <i class="bi bi-x"></i> Cancel
+            </button>
+            <button type="button" class="fr-modal-verify" id="verifyOtpBtn">
+                <i class="bi bi-shield-check"></i> Verify
+            </button>
+        </div>
     </div>
-
 </div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="~/js/email-regex.js"></script>
 
 @section Scripts {
-
-    <partial name="_ValidationScriptsPartial" />
-
     <script>
+        function showFile(input, fnId, tileId, errId) {
+            const fnEl  = document.getElementById(fnId);
+            const tile  = document.getElementById(tileId);
+            const inp   = input;
+            if (inp.files && inp.files[0]) {
+                const f  = inp.files[0];
+                const mb = (f.size / 1024 / 1024).toFixed(2);
+                fnEl.innerHTML = '<i class="bi bi-check-circle-fill" style="color:var(--success)"></i> ' + f.name + ' (' + mb + ' MB)';
+                tile.classList.remove('is-invalid');
+                hideErr(errId);
+                inp.classList.remove('is-invalid');
+            } else {
+                fnEl.textContent = '';
+            }
+        }
 
-        $(document).ready(function () {
+        function showErr(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.querySelector('.fr-err-msg').textContent = msg;
+            el.classList.add('show');
+        }
+        function hideErr(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('show');
+        }
+        function markInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+        function markValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+        function markNeutral(el) { el.classList.remove('is-invalid', 'is-valid'); }
 
-            const otpModal =
-                new bootstrap.Modal(document.getElementById('otpModal'));
+        function showEmailMsg(type, msg) {
+            const el = document.getElementById('emailMsg');
+            el.className = 'fr-inline-msg ' + type + ' show';
+            el.innerHTML = '<i class="bi bi-' + (type === 'error' ? 'exclamation-circle' : 'info-circle') + '"></i> ' + msg;
+        }
+        function hideEmailMsg() {
+            const el = document.getElementById('emailMsg');
+            el.className = 'fr-inline-msg';
+            el.textContent = '';
+        }
 
-            // SEND OTP
+        document.addEventListener('DOMContentLoaded', function () {
 
-            $('#sendOtpBtn').click(function () {
+            /* ── Anti-forgery on all AJAX ── */
+            $.ajaxSetup({
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('RequestVerificationToken',
+                        document.querySelector('input[name="__RequestVerificationToken"]').value);
+                }
+            });
 
-                let email = $('#Email').val().trim();
+            /* ── Success toast auto-dismiss ── */
+            const toast = document.getElementById('successToast');
+            if (toast) {
+                setTimeout(function () {
+                    toast.style.transition = 'opacity .4s';
+                    toast.style.opacity = '0';
+                    setTimeout(function () { toast.remove(); }, 420);
+                }, 5000);
+            }
 
-                if (email === '') {
-                    alert('Please enter email first');
+            /* ── Validation rules ── */
+            const rules = {
+                FarmerName:    { req: true, pattern: /^[a-zA-Z\s]+$/,          msg: 'Only alphabets allowed.',              maxlen: 100 },
+                Gender:        { req: true, select: true },
+                DateOfBirth:   { req: true, date: true },
+                Phone:         { req: true, pattern: /^[6-9]\d{9}$/,           msg: 'Enter valid 10-digit mobile number starting with 6-9.' },
+                StateId:       { req: true, select: true },
+                CityId:        { req: true, select: true },
+                VillageId:     { req: true, select: true },
+                BankName:      { req: true, pattern: /^[a-zA-Z\s&.\-]+$/,      msg: 'Invalid bank name.' },
+                AccountNumber: { req: true, pattern: /^\d{9,18}$/,             msg: 'Account number must be 9-18 digits.' },
+                IFSCCode:      { req: true, pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/i, msg: 'Invalid IFSC code (e.g. SBIN0001234).' },
+                AadhaarNumber: { req: true, pattern: /^\d{12}$/,               msg: 'Aadhaar must be exactly 12 digits.' }
+            };
+
+            function validateField(id) {
+                const rule = rules[id];
+                if (!rule) return true;
+                const el  = document.getElementById(id);
+                if (!el) return true;
+                const val = el.value.trim();
+
+                if (rule.req && !val) {
+                    markInvalid(el); showErr('err-' + id, 'This field is required.'); return false;
+                }
+                if (rule.maxlen && val.length > rule.maxlen) {
+                    markInvalid(el); showErr('err-' + id, 'Maximum ' + rule.maxlen + ' characters allowed.'); return false;
+                }
+                if (rule.pattern && val && !rule.pattern.test(val)) {
+                    markInvalid(el); showErr('err-' + id, rule.msg); return false;
+                }
+                if (rule.date && val) {
+                    const d   = new Date(val);
+                    const now = new Date();
+                    if (isNaN(d.getTime()))    { markInvalid(el); showErr('err-' + id, 'Invalid date.'); return false; }
+                    if (d >= now)              { markInvalid(el); showErr('err-' + id, 'Date of birth must be in the past.'); return false; }
+                    const age = (now - d) / (1000 * 60 * 60 * 24 * 365.25);
+                    if (age < 18)              { markInvalid(el); showErr('err-' + id, 'Farmer must be at least 18 years old.'); return false; }
+                }
+                markValid(el); hideErr('err-' + id); return true;
+            }
+
+            /* Blur/input/change listeners */
+            Object.keys(rules).forEach(function (id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('blur',   function () { validateField(id); });
+                el.addEventListener('change', function () { validateField(id); });
+                el.addEventListener('input',  function () { if (el.classList.contains('is-invalid')) validateField(id); });
+            });
+
+            /* Email blur */
+            document.getElementById('Email').addEventListener('blur', function () {
+                const val = this.value.trim();
+
+                if (!val) {
+                    markNeutral(this);
+                    hideEmailMsg();
                     return;
                 }
 
-                let btn = $(this);
-
-                btn.prop('disabled', true)
-                   .text('Sending...');
-
-                $.ajax({
-
-                    url: '/Farmer/SendEmailOTP',
-                    type: 'POST',
-                    data: { email: email },
-
-                    success: function (res) {
-
-                        btn.prop('disabled', false)
-                           .text('Resend OTP');
-
-                        if (res.success) {
-
-                            $('#otpTargetEmail').text(email);
-
-                            $('#otpInput').val('');
-
-                            $('#otpError').addClass('d-none');
-
-                            otpModal.show();
-
-                        } else {
-
-                            alert(res.message);
-                        }
-                    },
-
-                    error: function () {
-
-                        btn.prop('disabled', false)
-                           .text('Send OTP');
-
-                        alert('Something went wrong');
-                    }
-
-                });
-
+                if (!emailRegex.test(val)) {
+                    markInvalid(this);
+                    showEmailMsg('error', 'Invalid email address format.');
+                }
+                else {
+                    markNeutral(this);
+                    hideEmailMsg();
+                }
             });
 
-            // VERIFY OTP
+            /* File validation */
+            function validateFile(inputId, tileId, errId, required) {
+                const inp  = document.getElementById(inputId);
+                const tile = document.getElementById(tileId);
+                if (required && (!inp.files || !inp.files[0])) {
+                    tile.classList.add('is-invalid');
+                    showErr(errId, 'This document is required.');
+                    return false;
+                }
+                tile.classList.remove('is-invalid');
+                hideErr(errId);
+                return true;
+            }
 
-            $('#verifyOtpBtn').click(function () {
+            /* ── SUBMIT HANDLER ── */
+            document.getElementById('regForm').addEventListener('submit', function (e) {
+                e.preventDefault(); // always prevent first, then submit manually if ok
 
-                let email = $('#Email').val().trim();
+                let ok = true;
 
-                let otp = $('#otpInput').val().trim();
+                Object.keys(rules).forEach(function (id) {
+                    if (!validateField(id)) ok = false;
+                });
 
-                if (otp === '') {
+                // Email
+                const emailEl  = document.getElementById('Email');
+                const emailVal = emailEl.value.trim();
+                const isVerified = document.getElementById('IsEmailVerified').value === 'true';
 
-                    $('#otpError')
-                        .removeClass('d-none')
-                        .text('Please enter OTP');
+                if (!emailVal) {
+                    markInvalid(emailEl);
+                    showEmailMsg('error', 'Email address is required.');
+                    ok = false;
+                }
+                else if (!emailRegex.test(emailVal)) {
+                    markInvalid(emailEl);
+                    showEmailMsg('error', 'Invalid email address format.');
+                    ok = false;
+                }else if (!isVerified) {
+                    markInvalid(emailEl); showEmailMsg('error', 'Please verify this email (click Send OTP) before submitting.'); ok = false;
+                } else {
+                    markValid(emailEl); hideEmailMsg();
+                }
 
+                // Files
+                if (!validateFile('PhotoFileInput',    'tile-photo',    'err-PhotoFile',    true)) ok = false;
+                if (!validateFile('AadhaarFileInput',  'tile-aadhaar',  'err-AadhaarFile',  true)) ok = false;
+                if (!validateFile('PassbookFileInput', 'tile-passbook', 'err-PassbookFile', true)) ok = false;
+
+                if (!ok) {
+                    // Scroll to first error
+                    const first = document.querySelector('.is-invalid, .fr-err.show, .fr-upload-tile.is-invalid');
+                    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return; // stop — form stays
+                }
+
+                // All valid — submit for real
+                this.submit();
+            });
+
+            /* ── CLEAR FORM ── */
+            document.getElementById('clearFormBtn').addEventListener('click', function () {
+                if (document.getElementById('confirmClear')) return;
+                const bar = document.createElement('div');
+                bar.id = 'confirmClear';
+                bar.style.cssText = 'display:flex;align-items:center;gap:.6rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;font-size:.8rem;color:#991b1b;';
+                bar.innerHTML =
+                    '<i class="bi bi-exclamation-triangle-fill"></i>' +
+                    '<span>This will clear all form fields. Are you sure?</span>' +
+                    '<button id="confirmClearYes" style="margin-left:auto;background:#dc2626;color:#fff;border:none;border-radius:5px;padding:.3rem .8rem;font-size:.78rem;font-weight:600;cursor:pointer;">Yes, Clear</button>' +
+                    '<button id="confirmClearNo"  style="background:#fff;border:1px solid #e5e7eb;border-radius:5px;padding:.3rem .8rem;font-size:.78rem;font-weight:600;cursor:pointer;color:#374151;">Cancel</button>';
+                document.querySelector('.fr-page').insertBefore(bar, document.getElementById('regForm'));
+                document.getElementById('confirmClearYes').addEventListener('click', function () { doClearForm(); bar.remove(); });
+                document.getElementById('confirmClearNo').addEventListener('click',  function () { bar.remove(); });
+            });
+
+            function doClearForm() {
+                const form = document.getElementById('regForm');
+                form.querySelectorAll('input:not([type=hidden])').forEach(function (el) { el.value = ''; markNeutral(el); });
+                form.querySelectorAll('select').forEach(function (el) { el.selectedIndex = 0; markNeutral(el); });
+                ['fn-photo','fn-aadhaar','fn-passbook'].forEach(function (id) {
+                    const el = document.getElementById(id); if (el) el.textContent = '';
+                });
+                ['tile-photo','tile-aadhaar','tile-passbook'].forEach(function (id) {
+                    const el = document.getElementById(id); if (el) el.classList.remove('is-invalid');
+                });
+                document.querySelectorAll('.fr-err[id^="err-"]').forEach(function (el) { el.classList.remove('show'); });
+                document.getElementById('IsEmailVerified').value = 'false';
+                document.getElementById('emailVerifiedBadge').classList.remove('show');
+                document.getElementById('sendOtpBtn').style.display = '';
+                document.getElementById('sendOtpBtn').disabled = false;
+                document.getElementById('sendOtpBtn').innerHTML = '<i class="bi bi-send"></i> Send OTP';
+                document.getElementById('Email').readOnly = false;
+                hideEmailMsg();
+                document.getElementById('CityId').innerHTML    = '<option value="">Select City</option>';
+                document.getElementById('VillageId').innerHTML = '<option value="">Select Village</option>';
+            }
+
+            /* ── OTP MODAL ── */
+            const overlay = document.getElementById('otpOverlay');
+            let expireInterval = null;
+            let resendInterval = null;
+
+            function openModal()  { overlay.classList.add('open'); }
+            function closeModal() { overlay.classList.remove('open'); clearInterval(expireInterval); clearInterval(resendInterval); }
+
+            document.getElementById('otpCancelBtn').addEventListener('click', closeModal);
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+            const boxes = Array.from(document.querySelectorAll('.fr-otp-box'));
+            boxes.forEach(function (box, idx) {
+                box.addEventListener('input', function () {
+                    const v = this.value.replace(/\D/g, '');
+                    this.value = v ? v[0] : '';
+                    this.classList.toggle('filled', !!this.value);
+                    this.classList.remove('error');
+                    if (this.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+                });
+                box.addEventListener('keydown', function (e) {
+                    if (e.key === 'Backspace' && !this.value && idx > 0) {
+                        boxes[idx - 1].value = '';
+                        boxes[idx - 1].classList.remove('filled', 'error');
+                        boxes[idx - 1].focus();
+                    }
+                });
+                box.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const p = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                    p.split('').forEach(function (ch, i) { if (boxes[i]) { boxes[i].value = ch; boxes[i].classList.add('filled'); } });
+                    const nxt = boxes[Math.min(p.length, boxes.length - 1)];
+                    if (nxt) nxt.focus();
+                });
+            });
+
+            function getOtp()     { return boxes.map(function (b) { return b.value; }).join(''); }
+            function clearBoxes() { boxes.forEach(function (b) { b.value = ''; b.classList.remove('filled', 'error'); }); if (boxes[0]) boxes[0].focus(); }
+
+            function showOtpErr(msg) {
+                document.getElementById('otpErrMsg').textContent = msg;
+                document.getElementById('otpError').classList.add('show');
+                boxes.forEach(function (b) { b.classList.add('error'); });
+            }
+            function hideOtpErr() {
+                document.getElementById('otpError').classList.remove('show');
+                boxes.forEach(function (b) { b.classList.remove('error'); });
+            }
+
+            function startExpire(sec) {
+                clearInterval(expireInterval);
+                const el = document.getElementById('otpCountdown');
+                let r = sec;
+                function tick() {
+                    el.textContent = String(Math.floor(r / 60)).padStart(2, '0') + ':' + String(r % 60).padStart(2, '0');
+                    if (r <= 0) { clearInterval(expireInterval); return; }
+                    r--;
+                }
+                tick(); expireInterval = setInterval(tick, 1000);
+            }
+
+            function startResend(sec) {
+                clearInterval(resendInterval);
+                const cool  = document.getElementById('otpResendCooldown');
+                const secEl = document.getElementById('otpResendSec');
+                const btn   = document.getElementById('otpResendBtn');
+                cool.style.display = 'inline'; btn.style.display = 'none';
+                let r = sec; secEl.textContent = r;
+                resendInterval = setInterval(function () {
+                    r--; secEl.textContent = r;
+                    if (r <= 0) { clearInterval(resendInterval); cool.style.display = 'none'; btn.style.display = 'inline'; }
+                }, 1000);
+            }
+
+            function doSendOtp() {
+
+
+               const email = document.getElementById('Email').value.trim();
+
+                if (!email) {
+                    markInvalid(document.getElementById('Email'));
+                    showEmailMsg('error', 'Please enter an email address before sending OTP.');
                     return;
                 }
 
-                let btn = $(this);
-
-                btn.prop('disabled', true)
-                   .text('Verifying...');
+                if (!emailRegex.test(email)) {
+                    markInvalid(document.getElementById('Email'));
+                    showEmailMsg('error', 'Please enter a valid email address.');
+                    return;
+                }
+                const btn = document.getElementById('sendOtpBtn');
+                btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
 
                 $.ajax({
-
-                    url: '/Farmer/VerifyEmailOTP',
-                    type: 'POST',
-
-                    data: {
-                        email: email,
-                        otp: otp
-                    },
-
+                    url: '/Farmer/SendEmailOTP', type: 'POST',
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                    data: 'email=' + encodeURIComponent(email),
                     success: function (res) {
-
-                        btn.prop('disabled', false)
-                           .text('Verify OTP');
-
                         if (res.success) {
-
-                            $('#IsEmailVerified').val('true');
-
-                            $('#emailVerifiedBadge')
-                                .removeClass('d-none');
-
-                            $('#Email').prop('readonly', true);
-
-                            $('#sendOtpBtn').hide();
-
-                            otpModal.hide();
-
+                            document.getElementById('otpTargetEmail').textContent = email;
+                            clearBoxes(); hideOtpErr(); openModal();
+                            startExpire(600); startResend(30);
+                            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Resend OTP';
+                            hideEmailMsg();
                         } else {
-
-                            $('#otpError')
-                                .removeClass('d-none')
-                                .text('Invalid OTP');
-
-                            $('#otpInput').val('');
+                            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Send OTP';
+                            showEmailMsg('error', res.message || 'Could not send OTP. Please try again.');
                         }
                     },
-
                     error: function () {
-
-                        btn.prop('disabled', false)
-                           .text('Verify OTP');
-
-                        $('#otpError')
-                            .removeClass('d-none')
-                            .text('Server error');
+                        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Send OTP';
+                        showEmailMsg('error', 'Server error. Could not send OTP.');
                     }
-
                 });
+            }
 
+            document.getElementById('sendOtpBtn').addEventListener('click', doSendOtp);
+
+            document.getElementById('otpResendBtn').addEventListener('click', function () {
+                const email = document.getElementById('Email').value.trim();
+                if (!email) return;
+                this.style.display = 'none';
+                $.ajax({
+                    url: '/Farmer/SendEmailOTP', type: 'POST',
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                    data: 'email=' + encodeURIComponent(email),
+                    success: function (res) { if (res.success) { clearBoxes(); hideOtpErr(); startExpire(600); startResend(30); } }
+                });
             });
 
-            // STATE -> CITY
+            document.getElementById('verifyOtpBtn').addEventListener('click', function () {
+                const email = document.getElementById('Email').value.trim();
+                const otp   = getOtp();
+                if (otp.length < 6) { showOtpErr('Please enter all 6 digits.'); return; }
+                const btn = this;
+                btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Verifying...';
+                $.ajax({
+                    url: '/Farmer/VerifyEmailOTP', type: 'POST',
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                    data: 'email=' + encodeURIComponent(email) + '&otp=' + encodeURIComponent(otp),
+                    success: function (res) {
+                        btn.disabled = false; btn.innerHTML = '<i class="bi bi-shield-check"></i> Verify';
+                        if (res.success) {
+                            document.getElementById('IsEmailVerified').value = 'true';
+                            document.getElementById('emailVerifiedBadge').classList.add('show');
+                            document.getElementById('Email').readOnly = true;
+                            markValid(document.getElementById('Email'));
+                            document.getElementById('sendOtpBtn').style.display = 'none';
+                            closeModal();
+                        } else {
+                            showOtpErr('Invalid OTP. Please try again.'); clearBoxes();
+                        }
+                    },
+                    error: function () {
+                        btn.disabled = false; btn.innerHTML = '<i class="bi bi-shield-check"></i> Verify';
+                        showOtpErr('Server error. Please try again.');
+                    }
+                });
+            });
 
-            $('#StateId').change(function () {
+            /* Restore verified state on postback */
+            if (document.getElementById('IsEmailVerified').value === 'true') {
+                document.getElementById('emailVerifiedBadge').classList.add('show');
+                document.getElementById('sendOtpBtn').style.display = 'none';
+                document.getElementById('Email').readOnly = true;
+                markValid(document.getElementById('Email'));
+            }
 
-                let stateId = $(this).val();
-
-                $('#CityId').html('<option value="">Select City</option>');
-
-                $('#VillageId').html('<option value="">Select Village</option>');
-
-                if (stateId === '')
-                    return;
-
-                $.get('/Farmer/GetCities',
-                    { stateId: stateId },
-
-                    function (data) {
-
-                        $.each(data, function (i, city) {
-
-                            $('#CityId').append(
-                                `<option value="${city.cityId}">
-                                    ${city.cityName}
-                                </option>`
-                            );
-                        });
+            /* ── CASCADING DROPDOWNS ── */
+            document.getElementById('StateId').addEventListener('change', function () {
+                const stateId = this.value;
+                document.getElementById('CityId').innerHTML    = '<option value="">Select City</option>';
+                document.getElementById('VillageId').innerHTML = '<option value="">Select Village</option>';
+                if (!stateId) return;
+                $.get('/Farmer/GetCities', { stateId: stateId }, function (data) {
+                    data.forEach(function (c) {
+                        document.getElementById('CityId').insertAdjacentHTML('beforeend', '<option value="' + c.cityId + '">' + c.cityName + '</option>');
                     });
-
+                });
             });
 
-            // CITY -> VILLAGE
-
-            $('#CityId').change(function () {
-
-                let cityId = $(this).val();
-
-                $('#VillageId').html('<option value="">Select Village</option>');
-
-                if (cityId === '')
-                    return;
-
-                $.get('/Farmer/GetVillages',
-                    { cityId: cityId },
-
-                    function (data) {
-
-                        $.each(data, function (i, village) {
-
-                            $('#VillageId').append(
-                                `<option value="${village.villageId}">
-                                    ${village.villageName}
-                                </option>`
-                            );
-                        });
+            document.getElementById('CityId').addEventListener('change', function () {
+                const cityId = this.value;
+                document.getElementById('VillageId').innerHTML = '<option value="">Select Village</option>';
+                if (!cityId) return;
+                $.get('/Farmer/GetVillages', { cityId: cityId }, function (data) {
+                    data.forEach(function (v) {
+                        document.getElementById('VillageId').insertAdjacentHTML('beforeend', '<option value="' + v.villageId + '">' + v.villageName + '</option>');
                     });
-
+                });
             });
 
-        });
-
+        }); // end DOMContentLoaded
     </script>
 }

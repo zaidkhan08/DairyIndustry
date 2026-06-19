@@ -2,479 +2,571 @@
 
 @{
     ViewData["Title"] = "Dispatch Milk";
-    Layout = "_CollectionCenterLayout";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
 }
 
-<div class="container mt-5" style="max-width:700px;">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-    <div class="card shadow rounded-4 border-0">
+<style>
 
-        <div class="card-body p-4">
+    body {
+        background: #f0f2f5;
+    }
 
-            <h4 class="text-center text-primary mb-4">
-                Dispatch Milk to Plant
-            </h4>
+    .page-wrap {
+        max-width: 1000px;
+        margin: auto;
+        padding: 28px 16px;
+    }
 
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger">
-                    @TempData["Error"]
-                </div>
+    /* ── CARD ── */
+    .dispatch-card {
+        background: #fff;
+        border: 0.5px solid rgba(0,0,0,0.08);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .card-header-bar {
+        background: #fff;
+        border-bottom: 0.5px solid rgba(0,0,0,0.08);
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .header-icon {
+        width: 42px;
+        height: 42px;
+        background: #f0f2f5;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .header-icon i {
+            font-size: 20px;
+            color: #495057;
+        }
+
+    .header-text h2 {
+        font-size: 17px;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+    }
+
+    .header-text p {
+        font-size: 13px;
+        color: #6c757d;
+        margin: 2px 0 0;
+    }
+
+    .today-badge {
+        margin-left: auto;
+        background: #f8f9fb;
+        border: 0.5px solid rgba(0,0,0,0.1);
+        border-radius: 10px;
+        padding: 7px 14px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+        .today-badge .tb-label {
+            font-size: 10px;
+            color: #6c757d;
+        }
+
+        .today-badge .tb-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+    /* ── FORM BODY ── */
+    .form-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    /* ── ALERTS ── */
+    .alert {
+        border-radius: 10px;
+        font-size: 14px;
+        padding: 12px 16px;
+    }
+
+    /* ── SECTION CARD ── */
+    .form-section {
+        border: 0.5px solid rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .form-section-head {
+        background: #f8f9fb;
+        padding: 9px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 0.5px solid rgba(0,0,0,0.07);
+    }
+
+        .form-section-head i {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .form-section-head span {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            letter-spacing: 0.3px;
+        }
+
+    .form-section-body {
+        padding: 16px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* ── FIELD ── */
+    .field-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        border: 0.5px solid #ced4da;
+        min-height: 42px;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #495057;
+            box-shadow: 0 0 0 3px rgba(73,80,87,0.1);
+        }
+
+        .form-control[readonly] {
+            background: #f8f9fb;
+            color: #6c757d;
+            cursor: not-allowed;
+            border-color: #e2e5ea;
+        }
+
+    /* ── TWO-COL ROW ── */
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    /* ── STAT STRIP ── */
+    .stat-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .stat-box {
+        background: #f8f9fb;
+        border: 0.5px solid rgba(0,0,0,0.07);
+        border-radius: 8px;
+        padding: 9px 14px;
+    }
+
+        .stat-box .s-label {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+
+        .stat-box .s-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+            .stat-box .s-value.green {
+                color: #1a7a4a;
             }
 
+    /* ── QTY HINT ── */
+    .qty-hint {
+        font-size: 11px;
+        color: #6c757d;
+        margin-top: -4px;
+    }
+
+    /* ── ACTIONS ── */
+    .action-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    @@media (max-width: 640px) {
+        .two-col {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .btn-cancel {
+        padding: 11px 20px;
+        border: 0.5px solid #ced4da;
+        border-radius: 8px;
+        background: #fff;
+        color: #6c757d;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+        .btn-cancel:hover {
+            background: #f8f9fb;
+            color: #495057;
+        }
+
+    .btn-dispatch {
+        flex: 1;
+        padding: 11px;
+        border: 0.5px solid #ced4da;
+        border-radius: 8px;
+        background: #fff;
+        color: #212529;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .btn-dispatch:hover {
+            background: #f8f9fb;
+            color: #495057;
+        }
+
+        .btn-dispatch i {
+            font-size: 16px;
+        }
+
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 540px) {
+        .field-row {
+            grid-template-columns: 1fr;
+        }
+
+        .today-badge {
+            display: none;
+        }
+
+        .card-header-bar {
+            padding: 16px;
+        }
+
+        .form-body {
+            padding: 16px;
+        }
+    }
+
+</style>
+
+<div class="page-wrap">
+    <div class="dispatch-card">
+
+        <!-- HEADER -->
+        <div class="card-header-bar">
+            <div class="header-icon">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="header-text">
+                <h2>Dispatch milk</h2>
+                <p>Collection center &rarr; processing plant</p>
+            </div>
+            <div class="today-badge">
+                <div class="tb-label">Dispatch date</div>
+                <div class="tb-date">@DateTime.Today.ToString("dd MMM yyyy")</div>
+            </div>
+        </div>
+
+        <div class="form-body">
+
+            <!-- ALERTS -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger">@TempData["Error"]</div>
+            }
             @if (TempData["Success"] != null)
             {
-                <div class="alert alert-success">
-                    @TempData["Success"]
-                </div>
+                <div class="alert alert-success">@TempData["Success"]</div>
             }
 
             <form asp-action="Dispatch" method="post">
 
                 @Html.AntiForgeryToken()
 
-                <!-- ========================================= -->
-                <!-- BATCH -->
-                <!-- ========================================= -->
+                <!-- Hidden dispatch date — always today -->
+                <input type="hidden" asp-for="DispatchDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
 
-                <div class="mb-3">
+                <!-- ── BATCH ── -->
+                <!-- TWO-PANEL GRID -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
 
-                    <label class="form-label fw-semibold">
-                        Select Batch
-                        <span class="text-danger">*</span>
-                    </label>
+                    <!-- ── LEFT COLUMN: Batch & Milk Type ── -->
+                    <div style="display:flex; flex-direction:column; gap:16px;">
 
-                    <select class="form-select"
-                            asp-for="BatchId"
-                            id="batch-select">
-
-                        <option value="">
-                            -- Select Batch --
-                        </option>
-
-                        @foreach (var b in Model.ClosedBatches)
-                        {
-                            <option value="@b.BatchId"
-                                    data-total="@b.TotalQuantity"
-                                    data-remaining="@b.RemainingQty">
-
-                                @b.DisplayText
-
-                            </option>
-                        }
-
-                    </select>
-
-                    <span asp-validation-for="BatchId"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- BATCH INFO PANEL -->
-                <!-- ========================================= -->
-
-                <div id="batch-panel"
-                     class="alert alert-info py-2 mb-3"
-                     style="display:none;">
-
-                    <div class="row text-center">
-
-                        <div class="col-6">
-
-                            <small class="text-muted d-block">
-                                Total Batch Qty
-                            </small>
-
-                            <strong id="b-total">
-                                -
-                            </strong>
-
+                        <!-- BATCH -->
+                        <div class="form-section">
+                            <div class="form-section-head">
+                                <i class="bi bi-box-seam"></i>
+                                <span>Batch</span>
+                            </div>
+                            <div class="form-section-body">
+                                <div>
+                                    <label class="field-label">Select batch</label>
+                                    <select class="form-select" asp-for="BatchId" id="batch-select">
+                                        <option value="">— choose a closed batch —</option>
+                                        @foreach (var b in Model.ClosedBatches)
+                                        {
+                                            <option value="@b.BatchId"
+                                                    data-total="@b.TotalQuantity"
+                                                    data-remaining="@b.RemainingQty">
+                                                @b.BatchDate.ToString("dd MM yyyy") &nbsp;|&nbsp; @b.Shift
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="stat-strip" id="batch-stats" style="display:none;">
+                                    <div class="stat-box">
+                                        <div class="s-label">Total collected</div>
+                                        <div class="s-value" id="b-total">—</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <div class="s-label">Remaining</div>
+                                        <div class="s-value green" id="b-remaining">—</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="col-6">
+                        <!-- MILK TYPE -->
+                        <div class="form-section">
+                            <div class="form-section-head">
+                                <i class="bi bi-droplet-half"></i>
+                                <span>Milk type</span>
+                            </div>
+                            <div class="form-section-body">
+                                <div>
+                                    <label class="field-label">Select milk type</label>
+                                    <select class="form-select" asp-for="MilkTypeId" id="milktype-select">
+                                        <option value="">— choose milk type —</option>
+                                        @foreach (var mt in Model.MilkTypes)
+                                        {
+                                            <option value="@mt.MilkTypeId">@mt.MilkTypeName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="stat-strip" id="mt-stats" style="display:none;">
+                                    <div class="stat-box">
+                                        <div class="s-label">Type total qty</div>
+                                        <div class="s-value" id="mt-total">—</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <div class="s-label">Available</div>
+                                        <div class="s-value green" id="mt-available">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                            <small class="text-muted d-block">
-                                Remaining Batch Qty
-                            </small>
+                    </div>
 
-                            <strong id="b-remaining">
-                                -
-                            </strong>
+                    <!-- ── RIGHT COLUMN: Vehicle, Plant & Quantity ── -->
+                    <div style="display:flex; flex-direction:column; gap:16px;">
 
+                        <!-- VEHICLE & DRIVER -->
+                        <div class="form-section">
+                            <div class="form-section-head">
+                                <i class="bi bi-truck"></i>
+                                <span>Vehicle &amp; driver</span>
+                            </div>
+                            <div class="form-section-body">
+                                <div>
+                                    <label class="field-label">Vehicle</label>
+                                    <select class="form-select" asp-for="VehicleId" id="vehicle-select">
+                                        <option value="">— select vehicle —</option>
+                                        @foreach (var v in Model.Vehicles)
+                                        {
+                                            <option value="@v.VehicleId" data-driver="@v.DriverName">
+                                                @v.VehicleNumber
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">Driver name</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="driver-name-display"
+                                           placeholder="Auto-filled on vehicle selection"
+                                           readonly />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DESTINATION & QUANTITY -->
+                        <div class="form-section">
+                            <div class="form-section-head">
+                                <i class="bi bi-building"></i>
+                                <span>Destination &amp; quantity</span>
+                            </div>
+                            <div class="form-section-body">
+                                <div>
+                                    <label class="field-label">Plant</label>
+                                    <select class="form-select" asp-for="PlantId">
+                                        <option value="">— select plant —</option>
+                                        @foreach (var p in Model.Plants)
+                                        {
+                                            <option value="@p.PlantId">@p.PlantName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">Dispatch quantity (L)</label>
+                                    <input type="number"
+                                           step="0.01"
+                                           class="form-control"
+                                           asp-for="DispatchQty"
+                                           id="dispatch-qty"
+                                           placeholder="Enter litres" />
+                                </div>
+                                <div class="qty-hint" id="qty-hint" style="display:none;">
+                                    Max available: <strong id="qty-max">—</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ACTIONS -->
+                        <div class="action-row">
+                            <a href="@Url.Action("Index", "Collectioncenter")" class="btn-cancel">Cancel</a>
+                            <button type="submit" class="btn-dispatch">
+                                <i class="bi bi-truck"></i> Confirm dispatch
+                            </button>
                         </div>
 
                     </div>
 
                 </div>
-
-                <!-- ========================================= -->
-                <!-- MILK TYPE -->
-                <!-- ========================================= -->
-
-                <div class="mb-3">
-
-                    <label class="form-label fw-semibold">
-                        Milk Type
-                        <span class="text-danger">*</span>
-                    </label>
-
-                    <select class="form-select"
-                            asp-for="MilkTypeId"
-                            id="milktype-select">
-
-                        <option value="">
-                            -- Select Milk Type --
-                        </option>
-
-                        @foreach (var mt in Model.MilkTypes)
-                        {
-                            <option value="@mt.MilkTypeId">
-                                @mt.MilkTypeName
-                            </option>
-                        }
-
-                    </select>
-
-                    <span asp-validation-for="MilkTypeId"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- MILK TYPE PANEL -->
-                <!-- ========================================= -->
-
-                <div id="milktype-panel"
-                     class="alert alert-warning py-2 mb-3"
-                     style="display:none;">
-
-                    <div class="row text-center">
-
-                        <div class="col-6">
-
-                            <small class="text-muted d-block">
-                                Total Milk Type Qty
-                            </small>
-
-                            <strong id="mt-total">
-                                -
-                            </strong>
-
-                        </div>
-
-                        <div class="col-6">
-
-                            <small class="text-muted d-block">
-                                Available Milk Qty
-                            </small>
-
-                            <strong id="mt-available">
-                                -
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- VEHICLE -->
-                <!-- ========================================= -->
-
-                <div class="mb-3">
-
-                    <label class="form-label fw-semibold">
-                        Select Vehicle
-                        <span class="text-danger">*</span>
-                    </label>
-
-                    <select class="form-select"
-                            asp-for="VehicleId"
-                            id="vehicle-select">
-
-                        <option value="">
-                            -- Select Vehicle --
-                        </option>
-
-                        @foreach (var v in Model.Vehicles)
-                        {
-                            <option value="@v.VehicleId"
-                                    data-driver="@v.DriverName">
-
-                                @v.DisplayText
-
-                            </option>
-                        }
-
-                    </select>
-
-                    <span asp-validation-for="VehicleId"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- DRIVER PANEL -->
-                <!-- ========================================= -->
-
-                <div id="driver-panel"
-                     class="alert alert-secondary py-2 mb-3"
-                     style="display:none;">
-
-                    <small class="text-muted d-block">
-                        Driver
-                    </small>
-
-                    <strong id="driver-name-display">
-                        -
-                    </strong>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- PLANT -->
-                <!-- ========================================= -->
-
-                <div class="mb-3">
-
-                    <label class="form-label fw-semibold">
-                        Select Plant
-                        <span class="text-danger">*</span>
-                    </label>
-
-                    <select class="form-select"
-                            asp-for="PlantId">
-
-                        <option value="">
-                            -- Select Plant --
-                        </option>
-
-                        @foreach (var p in Model.Plants)
-                        {
-                            <option value="@p.PlantId">
-                                @p.PlantName
-                            </option>
-                        }
-
-                    </select>
-
-                    <span asp-validation-for="PlantId"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- DISPATCH QUANTITY -->
-                <!-- ========================================= -->
-
-                <div class="mb-3">
-
-                    <label class="form-label fw-semibold">
-                        Dispatch Quantity (L)
-                        <span class="text-danger">*</span>
-                    </label>
-
-                    <input type="number"
-                           step="0.01"
-                           class="form-control"
-                           asp-for="DispatchQty"
-                           id="dispatch-qty"
-                           placeholder="Enter quantity" />
-
-                    <span asp-validation-for="DispatchQty"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- DATE -->
-                <!-- ========================================= -->
-
-                <div class="mb-4">
-
-                    <label class="form-label fw-semibold">
-                        Dispatch Date
-                        <span class="text-danger">*</span>
-                    </label>
-
-                    <input type="date"
-                           class="form-control"
-                           asp-for="DispatchDate" />
-
-                    <span asp-validation-for="DispatchDate"
-                          class="text-danger small">
-                    </span>
-
-                </div>
-
-                <!-- ========================================= -->
-                <!-- SUBMIT -->
-                <!-- ========================================= -->
-
-                <button type="submit"
-                        class="btn btn-primary w-100">
-
-                    Dispatch Milk
-
-                </button>
 
             </form>
 
         </div>
-
     </div>
-
 </div>
 
 @section Scripts {
-
     <script>
 
-        // =========================================
-        // BATCH SELECTION
-        // =========================================
-
-        document
-            .getElementById('batch-select')
+        // ── BATCH CHANGE ──
+        document.getElementById('batch-select')
             .addEventListener('change', function () {
-
-                const opt =
-                    this.options[this.selectedIndex];
-
-                const panel =
-                    document.getElementById('batch-panel');
+                const opt = this.options[this.selectedIndex];
+                const panel = document.getElementById('batch-stats');
 
                 if (!opt.value) {
-
                     panel.style.display = 'none';
                     return;
                 }
 
                 document.getElementById('b-total').textContent =
                     parseFloat(opt.dataset.total || 0).toFixed(2) + ' L';
-
                 document.getElementById('b-remaining').textContent =
                     parseFloat(opt.dataset.remaining || 0).toFixed(2) + ' L';
 
-                panel.style.display = 'block';
+                panel.style.display = 'grid';
 
                 loadMilkTypeDetails();
-
             });
 
 
-        // =========================================
-        // LOAD MILK TYPE DETAILS
-        // =========================================
+        // ── MILK TYPE CHANGE ──
+        document.getElementById('milktype-select')
+            .addEventListener('change', loadMilkTypeDetails);
+
 
         async function loadMilkTypeDetails() {
-
-            const batchId =
-                document.getElementById('batch-select').value;
-
-            const milkTypeId =
-                document.getElementById('milktype-select').value;
-
-            const panel =
-                document.getElementById('milktype-panel');
+            const batchId    = document.getElementById('batch-select').value;
+            const milkTypeId = document.getElementById('milktype-select').value;
+            const panel      = document.getElementById('mt-stats');
+            const hint       = document.getElementById('qty-hint');
 
             if (!batchId || !milkTypeId) {
-
                 panel.style.display = 'none';
+                hint.style.display  = 'none';
                 return;
             }
 
             try {
+                const response = await fetch(
+                    `/Collectioncenter/GetMilkTypeDetails?batchId=${batchId}&milkTypeId=${milkTypeId}`
+                );
+                const data = await response.json();
 
-                const response =
-                    await fetch(`/Collectioncenter/GetMilkTypeDetails?batchId=${batchId}&milkTypeId=${milkTypeId}`);
+                const total = parseFloat(data.totalQty || 0).toFixed(2);
+                const avail = parseFloat(data.availableQty || 0).toFixed(2);
 
-                const data =
-                    await response.json();
+                document.getElementById('mt-total').textContent     = total + ' L';
+                document.getElementById('mt-available').textContent = avail + ' L';
+                document.getElementById('qty-max').textContent      = avail + ' L';
 
-                document.getElementById('mt-total').textContent =
-                    parseFloat(data.totalQty || 0).toFixed(2) + ' L';
+                const qtyInput = document.getElementById('dispatch-qty');
+                qtyInput.max   = data.availableQty;
+                qtyInput.value = avail;
 
-                document.getElementById('mt-available').textContent =
-                    parseFloat(data.availableQty || 0).toFixed(2) + ' L';
-
-                // Set max quantity
-                document.getElementById('dispatch-qty').max =
-                    data.availableQty;
-
-                // Auto-fill quantity
-                document.getElementById('dispatch-qty').value =
-                    parseFloat(data.availableQty || 0).toFixed(2);
-
-                panel.style.display = 'block';
-
+                panel.style.display = 'grid';
+                hint.style.display  = 'block';
             }
-            catch {
-
+            catch (e) {
                 panel.style.display = 'none';
+                hint.style.display  = 'none';
             }
-
         }
 
 
-        // =========================================
-        // MILK TYPE CHANGE
-        // =========================================
-
-        document
-            .getElementById('milktype-select')
-            .addEventListener('change', loadMilkTypeDetails);
-
-
-        // =========================================
-        // VEHICLE SELECTION
-        // =========================================
-
-        document
-            .getElementById('vehicle-select')
+        // ── VEHICLE CHANGE → auto-fill driver ──
+        document.getElementById('vehicle-select')
             .addEventListener('change', function () {
-
-                const opt =
-                    this.options[this.selectedIndex];
-
-                const panel =
-                    document.getElementById('driver-panel');
-
-                if (!opt.value) {
-
-                    panel.style.display = 'none';
-                    return;
-                }
-
-                document.getElementById('driver-name-display').textContent =
-                    opt.dataset.driver || 'No driver assigned';
-
-                panel.style.display = 'block';
-
+                const opt   = this.options[this.selectedIndex];
+                const input = document.getElementById('driver-name-display');
+                input.value = opt.value ? (opt.dataset.driver || '') : '';
             });
 
 
-        // =========================================
-        // PAGE LOAD
-        // =========================================
-
-        window.addEventListener('DOMContentLoaded', () => {
-
-            const vs =
-                document.getElementById('vehicle-select');
-
-            if (vs && vs.value) {
-
-                vs.dispatchEvent(new Event('change'));
+        // ── INIT: restore driver name if vehicle already selected (e.g. validation fail) ──
+        window.addEventListener('DOMContentLoaded', function () {
+            const vehicleSel = document.getElementById('vehicle-select');
+            if (vehicleSel && vehicleSel.value) {
+                vehicleSel.dispatchEvent(new Event('change'));
             }
-
         });
 
     </script>
