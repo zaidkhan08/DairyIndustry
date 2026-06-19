@@ -1,0 +1,307 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - DairyMS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --blue-900: #0a2540;
+            --blue-500: #1d6fce;
+            --blue-50: #f0f7ff;
+            --sidebar-w: 260px;
+            --header-h: 70px;
+            --transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        body {
+            background: #f8fafc;
+            font-family: 'DM Sans', sans-serif;
+            margin: 0;
+            color: #1e293b;
+        }
+
+        /* ── SIDEBAR ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--blue-900);
+            z-index: 1050;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+            #sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+        .sidebar-brand {
+            height: var(--header-h);
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar-brand-text {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.6rem;
+            color: white;
+        }
+
+            .sidebar-brand-text em {
+                color: #60a5fa;
+                font-style: italic;
+            }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin: 20px 10px 10px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            margin-bottom: 4px;
+        }
+
+            .sidebar-link i {
+                font-size: 1.2rem;
+            }
+
+            .sidebar-link:hover {
+                background: rgba(255,255,255,0.05);
+                color: white;
+            }
+
+            .sidebar-link.active {
+                background: var(--blue-500);
+                color: white;
+                box-shadow: 0 10px 15px -3px rgba(29, 111, 206, 0.3);
+            }
+
+        .sidebar-footer {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* ── CONTENT ── */
+        #content-wrapper {
+            margin-left: var(--sidebar-w);
+            transition: var(--transition);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+            #content-wrapper.full-width {
+                margin-left: 0;
+            }
+
+        .top-header {
+            height: var(--header-h);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .sidebar-toggle-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: var(--blue-900);
+            cursor: pointer;
+        }
+
+        .main-container {
+            padding: 30px;
+            flex: 1;
+        }
+
+        .user-avatar-circle {
+            width: 38px;
+            height: 38px;
+            background: var(--blue-500);
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        @@media (max-width: 991px) {
+            #sidebar
+
+        {
+            transform: translateX(-100%);
+        }
+
+        #sidebar.open {
+            transform: translateX(0);
+        }
+
+        #content-wrapper {
+            margin-left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1040;
+            display: none;
+        }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <a class="sidebar-brand" href="/">
+            <div class="sidebar-brand-text">Dairy<em>MS</em></div>
+        </a>
+
+        <div class="sidebar-nav">
+            <div class="sidebar-label">Farmer Portal</div>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="Dashboard">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="Profile">
+                <i class="bi bi-person-circle"></i> My Profile
+            </a>
+
+            <div class="sidebar-label">Milk & Payments</div>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="TodayMilk">
+                <i class="bi bi-droplet"></i> Today's Milk
+            </a>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="AllMilkEntriesFarmer">
+                <i class="bi bi-calendar-check"></i> Milk History
+            </a>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="RejectionHistory">
+                <i class="bi bi-exclamation-octagon"></i> Rejections
+            </a>
+            <a class="sidebar-link" asp-controller="Farmer" asp-action="PaymentHistory">
+                <i class="bi bi-wallet2"></i> Payment History
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar-circle text-uppercase">
+                    @(Context.Session.GetString("FarmerName")?[0] ?? 'F')
+                </div>
+                <div class="overflow-hidden">
+                    <p class="m-0 text-white small fw-bold text-truncate">@Context.Session.GetString("FarmerName")</p>
+                    <p class="m-0 text-muted small" style="font-size: 11px;">ID: @Context.Session.GetString("FarmerCode")</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="content-wrapper">
+        <header class="top-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="sidebar-toggle-btn" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h5 class="m-0 fw-bold d-none d-sm-block">@ViewData["Title"]</h5>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/Farmer/Logout" class="btn btn-outline-danger btn-sm fw-bold px-3">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </header>
+
+        <main class="main-container">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const wrapper = document.getElementById('content-wrapper');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('sidebarToggle');
+
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth >= 992) {
+                sidebar.classList.toggle('collapsed');
+                wrapper.classList.toggle('full-width');
+            } else {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+            }
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        });
+
+        // Improved Active Link Logic
+        const currentPath = window.location.pathname.toLowerCase();
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            const href = link.getAttribute('href')?.toLowerCase();
+            if (href && (currentPath === href || (currentPath.includes(href) && href !== "/"))) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

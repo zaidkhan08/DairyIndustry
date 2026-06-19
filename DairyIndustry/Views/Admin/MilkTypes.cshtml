@@ -5,16 +5,100 @@
     ViewData["Title"] = "Manage Milk Types";
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <!-- Page Title -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Manage Milk Types</h3>
-                <p class="text-muted mb-0">Add and view all milk types</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .stripe-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stripe-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Drop-indicator Pill Tags */
+    .pill-counter-badge {
+        background-color: #f0fdf4;
+        color: #166534;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Manage Milk Types</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-muted">Milk Classifications</span>
             </div>
-            <a href="/Admin/Index" class="btn btn-outline-secondary">
+        </div>
+        <div>
+            <a href="/Admin/Index" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
             </a>
         </div>
@@ -22,81 +106,73 @@
 
     <div class="row g-4">
 
-        <!-- Add Milk Type Form -->
+        <!-- LEFT BAR: CONFIGURATION FORM & SYSTEM INFO -->
         <div class="col-md-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">
-                    <i class="bi bi-plus-circle me-1"></i> Add New Milk Type
+
+            <!-- Add Milk Type Card Frame -->
+            <div class="card premium-data-card stripe-blue border-start-0 border-end-0 border-bottom-0 mb-4">
+                <div class="p-3 bg-white border-bottom">
+                    <span class="panel-header-text"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Milk Type</span>
                 </div>
                 <div class="card-body p-4">
                     <form method="post" action="/Admin/AddMilkType">
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Milk Type Name <span class="text-danger">*</span>
-                            </label>
-                            <input type="text"
-                                   name="milkTypeName"
-                                   class="form-control"
-                                   placeholder="e.g. Cow, Buffalo, Mixed"
-                                   required />
-                            <div class="form-text">Milk type name must be unique</div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-secondary">Milk Type Name <span class="text-danger">*</span></label>
+                            <input type="text" name="milkTypeName" class="form-control" style="border-radius: 6px; padding: 10px;" placeholder="e.g. Cow, Buffalo, Mixed" required />
+                            <div class="form-text mt-2 small text-muted">Milk categorization value strings must remain unique.</div>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle me-1"></i> Add Milk Type
-                            </button>
-                        </div>
-
+                        <button type="submit" class="btn btn-custom-blue w-100 py-2">
+                            <i class="bi bi-plus-lg me-1"></i> Add Milk Type
+                        </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Info Card -->
-            <div class="card shadow-sm border-0 mt-4">
-                <div class="card-header bg-white fw-semibold">
-                    <i class="bi bi-info-circle me-1 text-primary"></i> Why Milk Types?
+            <!-- Descriptive Context Node Card -->
+            @* <div class="card premium-data-card border-top-0 border-start-0 border-end-0 border-bottom-0 bg-white" style="border: 1px solid #e2e8f0 !important;">
+                <div class="p-3 border-bottom fw-bold text-dark" style="font-size: 0.85rem; background-color: #fafafa;">
+                    <i class="bi bi-info-circle text-primary me-2"></i>System Context Dependencies
                 </div>
-                <div class="card-body">
-                    <p class="text-muted small mb-2">
-                        Milk types are used across the system in:
+                <div class="card-body p-3">
+                    <p class="text-muted small mb-3">
+                        Configured milk types automatically propagate into these integrated structural matrices:
                     </p>
-                    <ul class="text-muted small mb-0">
-                        <li class="mb-1">Collection — recording milk entry</li>
-                        <li class="mb-1">Rate Chart — setting rates per type</li>
-                        <li class="mb-1">Production — raw milk inventory</li>
-                        <li>Reports — filtering by milk type</li>
+                    <ul class="text-muted small ps-3 mb-0" style="line-height: 1.7;">
+                        <li><strong>Collection Modules</strong> — Mapped during real-time raw weight storage.</li>
+                        <li><strong>Pricing Rate Charts</strong> — Defines fat base valuation limits.</li>
+                        <li><strong>Production Systems</strong> — Organizes silo storage assignments.</li>
+                        <li><strong>Analytics Reports</strong> — Populates metric classification breakdown metrics.</li>
                     </ul>
                 </div>
-            </div>
+            </div> *@
 
         </div>
 
-        <!-- Milk Types List -->
+        <!-- RIGHT BAR: REGISTERED DATA MATRICES -->
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-droplet-half me-1"></i> All Milk Types</span>
-                    <span class="badge bg-primary">Total : @Model.Count</span>
+            <div class="card premium-data-card stripe-green border-start-0 border-end-0 border-bottom-0">
+                <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <span class="panel-header-text"><i class="bi bi-droplet-half text-success me-2"></i>All Active Milk Classifications</span>
+                    <span class="pill-counter-badge">Total Count: @Model.Count</span>
                 </div>
+
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                        <table class="table table-clean align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Milk Type ID</th>
-                                    <th>Milk Type Name</th>
+                                    <th class="ps-4" style="width: 80px;">#</th>
+                                    <th>Milk Type Classification Name</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (Model.Count == 0)
                                 {
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted py-4">
-                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
-                                            No milk types found. Add one.
+                                        <td colspan="2" class="text-center text-muted py-5">
+                                            <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                            No explicit milk classifications defined within system master tables.
                                         </td>
                                     </tr>
                                 }
@@ -106,13 +182,8 @@
                                     @foreach (var milkType in Model)
                                     {
                                         <tr>
-                                            <td>@sr</td>
-                                            <td>
-                                                <span class="badge bg-secondary">
-                                                    @milkType.MilkTypeId
-                                                </span>
-                                            </td>
-                                            <td>
+                                            <td class="ps-4 text-muted small fw-medium">@sr</td>
+                                            <td class="fw-bold text-dark">
                                                 @{
                                                     string iconColor = milkType.MilkTypeName.ToLower() switch
                                                     {
@@ -122,7 +193,7 @@
                                                         _ => "text-primary"
                                                     };
                                                 }
-                                                <i class="bi bi-droplet-fill me-1 @iconColor"></i>
+                                                <i class="bi bi-droplet-fill me-2 @iconColor" style="font-size: 0.95rem;"></i>
                                                 @milkType.MilkTypeName
                                             </td>
                                         </tr>
@@ -133,8 +204,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small">
-                    @Model.Count milk type(s) available in the system
+
+                <div class="card-footer bg-white border-top text-muted small py-3 px-4">
+                    Showing @Model.Count system collection variables currently active.
                 </div>
             </div>
         </div>

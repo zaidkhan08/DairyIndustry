@@ -42,18 +42,121 @@ namespace DairyIndustry.Controllers
 
         public IActionResult Index()
         {
-            var payments = _financeRepo.GetAllFarmerPayments();
+            string role = HttpContext.Session.GetString("RoleName");
+            int? centerId = role == "Collection Agent"
+                ? HttpContext.Session.GetInt32("CenterId")
+                : null;  // Admin sees all
+
+            var payments = _financeRepo.GetAllFarmerPayments(centerId);
             return View(payments);
         }
 
+        [SessionAuthorize("Admin", "Collection Agent")]
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Farmers = _financeRepo.GetAllFarmers();
-            ViewBag.Centers = _financeRepo.GetAllCenters();
+            string role = HttpContext.Session.GetString("RoleName");
+
+            if (role == "Collection Agent")
+            {
+                ViewBag.IsAgent = true;
+                ViewBag.CenterId = HttpContext.Session.GetInt32("CenterId");
+                ViewBag.CenterName = HttpContext.Session.GetString("CenterName");
+            }
+            else
+            {
+                ViewBag.IsAgent = false;
+                ViewBag.Centers = _financeRepo.GetAllCenters();
+            }
+
             return View();
         }
 
+        [SessionAuthorize("Admin", "Collection Agent")]
+        [HttpPost]
+        public IActionResult Create(int farmerId, int centerId, DateTime fromDate, DateTime toDate, string paymentMode)
+        {
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            bool success = _financeRepo.CreateFarmerPayment(centerId, farmerId, fromDate, toDate, DateTime.Today, userId) > 0;
+
+            if (!success)
+            {
+                TempData["Error"] = "Payment creation failed. No unpaid collections found.";
+                return RedirectToAction("Create");
+            }
+
+            TempData["Success"] = "Farmer payment created successfully.";
+            return RedirectToAction("Index");
+        }
+
+
+        [HttpPost]
+        public IActionResult CancelFarmerPayment(int paymentId)
+        {
+            try
+            {
+                _financeRepo.CancelFarmerPayment(paymentId);
+                TempData["Success"] = $"Payment FP-{paymentId} has been cancelled.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+            return RedirectToAction("Index");
+        }
+
+
+
+        [HttpGet]
+        public IActionResult GetFarmersByCenter(int centerId)
+        {
+            var farmers = _financeRepo.GetFarmersByCenter(centerId);
+            return Json(farmers.Select(f => new
+            {
+                farmerId = f.FarmerId,
+                farmerName = f.FarmerName,
+                farmerCode = f.FarmerCode
+            }));
+        }
+
+        [HttpPost]
+        public IActionResult ReactivateFarmerPayment(int paymentId)
+        {
+            try
+            {
+                _financeRepo.ReactivateFarmerPayment(paymentId);
+                TempData["Success"] = $"Payment FP-{paymentId} reactivated to Pending.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public IActionResult GetFarmerByCode(string farmerCode, int centerId)
+        {
+            var farmer = _financeRepo.GetFarmerByCode(farmerCode);
+            if (farmer == null)
+                return Json(new { success = false, message = "No farmer found with this code." });
+
+            var farmers = _financeRepo.GetFarmersByCenter(centerId);
+            bool belongsToCenter = farmers.Any(f => f.FarmerId == farmer.FarmerId);
+            if (!belongsToCenter)
+                return Json(new { success = false, message = "This farmer has no collections at the selected center." });
+
+            return Json(new
+            {
+                success = true,
+                farmerId = farmer.FarmerId,
+                farmerName = farmer.FarmerName,
+                farmerCode = farmer.FarmerCode
+            });
+        }
+
+        [SessionAuthorize("Admin", "Collection Agent")]
         [HttpPost]
         public IActionResult Preview(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
         {
@@ -65,6 +168,10 @@ namespace DairyIndustry.Controllers
             if (preview == null || preview.TotalAmount == 0)
                 return Json(new { success = false, message = "No unpaid collections found for this farmer in the selected date range." });
 
+            string paidByName = HttpContext.Session.GetString("FullName")
+                             ?? HttpContext.Session.GetString("UserName")
+                             ?? "Unknown";
+
             return Json(new
             {
                 success = true,
@@ -72,25 +179,11 @@ namespace DairyIndustry.Controllers
                 centerName = preview.CenterName,
                 totalQty = preview.TotalQty,
                 totalAmount = preview.TotalAmount,
-                unpaidCollections = preview.UnpaidCollections
+                unpaidCollections = preview.UnpaidCollections,
+                paidBy = paidByName
             });
         }
 
-        [HttpPost]
-        public IActionResult Create(int farmerId, int centerId, DateTime fromDate, DateTime toDate)
-        {
-            try
-            {
-                int paymentId = _financeRepo.CreateFarmerPayment(centerId, farmerId, fromDate, toDate, DateTime.Today);
-                TempData["Success"] = "Payment record created. Proceed to pay via Stripe.";
-                return RedirectToAction("Detail", new { id = paymentId });
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = ex.Message;
-                return RedirectToAction("Create");
-            }
-        }
 
         [HttpGet]
         [Route("Finance/Detail/{id}")]
@@ -101,7 +194,7 @@ namespace DairyIndustry.Controllers
             ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
             return View(payment);
         }
-
+        
         [HttpPost]
         public IActionResult CreateCheckoutSession(int paymentId, decimal totalAmount, string farmerName)
         {
@@ -205,14 +298,12 @@ namespace DairyIndustry.Controllers
         // CENTER PAYMENTS
         // ════════════════════════════════════════════════════════
 
-        // INDEX — Admin sees all, Plant Manager sees their plant only
         public IActionResult CenterPayments()
         {
             var payments = _financeRepo.GetAllCenterPayments(GetSessionPlantId());
             return View(payments);
         }
 
-        // CREATE GET — dropdown filtered by plant for Plant Manager
         [SessionAuthorize("Plant Manager", "Admin")]
         [HttpGet]
         public IActionResult CreateCenterPayment()
@@ -222,7 +313,6 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        // AUTO-FILL AJAX — scoped to session plant so no cross-plant spoofing
         [HttpGet]
         public IActionResult GetTransferDetails(int transferId)
         {
@@ -235,7 +325,6 @@ namespace DairyIndustry.Controllers
             if (t.MilkTypeId.HasValue && t.TestedFat.HasValue && t.TestedCLR.HasValue)
                 baseRate = _financeRepo.GetActiveRate(t.MilkTypeId.Value, t.TestedFat.Value, t.TestedCLR.Value);
 
-            // +₹3/L center bonus applied on top of the base rate chart price
             decimal suggestedRate = baseRate > 0 ? baseRate + 3m : 0m;
             decimal total = t.ReceivedQty * suggestedRate;
 
@@ -257,7 +346,6 @@ namespace DairyIndustry.Controllers
             });
         }
 
-        // CREATE POST
         [HttpPost]
         public IActionResult CreateCenterPayment(int transferId, decimal ratePerLiter, bool hasCancelledPayment, int? cancelledPaymentId)
         {
@@ -266,13 +354,11 @@ namespace DairyIndustry.Controllers
                 int cpId;
                 if (hasCancelledPayment && cancelledPaymentId.HasValue)
                 {
-                    // Cancelled row already exists — UPDATE it back to Pending (no duplicate insert)
                     cpId = _financeRepo.ReactivateCenterPayment(cancelledPaymentId.Value, ratePerLiter, DateTime.Today);
                     TempData["Success"] = $"Payment CP-{cpId:D4} reactivated. Proceed to pay via Stripe.";
                 }
                 else
                 {
-                    // Brand new — INSERT
                     cpId = _financeRepo.CreateCenterPayment(transferId, ratePerLiter, DateTime.Today);
                     TempData["Success"] = "Center payment record created. Proceed to pay via Stripe.";
                 }
@@ -285,7 +371,6 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        // DETAIL
         [HttpGet]
         [Route("Finance/CenterPaymentDetail/{id}")]
         public IActionResult CenterPaymentDetail(int id)
@@ -296,7 +381,6 @@ namespace DairyIndustry.Controllers
             return View(payment);
         }
 
-        // STRIPE CHECKOUT for Center Payment
         [HttpPost]
         public IActionResult CreateCenterCheckoutSession(int centerPaymentId, decimal totalAmount, string centerName)
         {
@@ -338,7 +422,6 @@ namespace DairyIndustry.Controllers
             return Redirect(session.Url);
         }
 
-        // STRIPE SUCCESS for Center Payment
         [HttpGet]
         public IActionResult CenterPaymentSuccess(int centerPaymentId, string session_id)
         {
@@ -353,12 +436,96 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
         }
 
-        // STRIPE CANCELLED for Center Payment
         [HttpGet]
         public IActionResult CenterPaymentCancelled(int centerPaymentId)
         {
             TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
             return RedirectToAction("CenterPaymentDetail", new { id = centerPaymentId });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CENTER WALLET — full page
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Collection Agent")]
+        public IActionResult CenterWallet()
+        {
+            int? centerId = null;
+            string role = HttpContext.Session.GetString("RoleName");
+            if (role == "Collection Agent")
+                centerId = HttpContext.Session.GetInt32("CenterId");
+
+            var vm = _financeRepo.GetCenterWallet(centerId);
+            return View(vm);
+        }
+
+        [SessionAuthorize("Admin", "Collection Agent")]
+        [HttpGet]
+        public IActionResult CenterWalletPartial()
+        {
+            int? centerId = null;
+            string role = HttpContext.Session.GetString("RoleName");
+            if (role == "Collection Agent")
+                centerId = HttpContext.Session.GetInt32("CenterId");
+
+            var vm = _financeRepo.GetCenterWallet(centerId);
+            return PartialView("_CenterWalletPartial", vm);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // PLANT STAFF LIST
+        // Plant Manager → scoped to their own plant via session PlantId
+        // Admin         → null → sees all plants' staff
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager")]
+        public IActionResult StaffList()
+        {
+            int? plantId = GetSessionPlantId();   // null for Admin, PlantId for Plant Manager
+            var vm = _financeRepo.GetPlantStaff(plantId);
+
+            // Pass role info to view for conditional UI rendering
+            ViewBag.Role = HttpContext.Session.GetString("RoleName");
+            ViewBag.PlantName = plantId.HasValue
+                ? vm.Summary.PlantName
+                : "All Plants";
+
+            return View(vm);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CANCEL / REACTIVATE CENTER PAYMENT
+        // ════════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter)
+        {
+            try
+            {
+                int cpId = _financeRepo.ReactivateCenterPayment(centerPaymentId, ratePerLiter, DateTime.Today);
+                TempData["Success"] = $"Payment CP-{cpId:D4} reactivated. Proceed to pay via Stripe.";
+                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CenterPayments");
+            }
+        }
+
+        [HttpPost]
+        public IActionResult CancelCenterPayment(int centerPaymentId)   
+        {
+            try
+            {
+                _financeRepo.CancelCenterPayment(centerPaymentId);
+                TempData["Success"] = $"Payment CP-{centerPaymentId:D4} has been cancelled.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+            return RedirectToAction("CenterPayments");
         }
 
         // ════════════════════════════════════════════════════════
@@ -493,36 +660,254 @@ namespace DairyIndustry.Controllers
         }
 
 
-        // REACTIVATE — Re-pay a cancelled payment (updates existing row, no duplicate)
-        [HttpPost]
-        public IActionResult ReactivateCenterPayment(int centerPaymentId, decimal ratePerLiter)
+        // ════════════════════════════════════════════════════════
+        // ADD THESE ACTIONS TO FinanceController.cs
+        // inside the public class FinanceController block
+        // ════════════════════════════════════════════════════════
+
+        // ── HELPER: returns CenterId from session for Collection Agent ─
+        private int? GetSessionCenterId()
         {
+            string role = HttpContext.Session.GetString("RoleName");
+            return role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STAFF PAYMENTS — LIST
+        // Admin          → sees all
+        // Plant Manager  → sees only their plant's staff
+        // Collection Agent → sees only their center's staff
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        public IActionResult StaffPayments()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var vm = _financeRepo.GetAllStaffPayments(plantId, centerId);
+
+            ViewBag.Role = role;
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+
+            return View(vm);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CREATE STAFF PAYMENT — GET (slide-in drawer page)
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        [HttpGet]
+        public IActionResult CreateStaffPayment()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var staffList = _financeRepo.GetStaffForPayment(plantId, centerId);
+
+            ViewBag.Role = role;
+            ViewBag.StaffList = staffList;
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+
+            return View(staffList);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CREATE STAFF PAYMENT — POST
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        [HttpPost]
+        [HttpPost]
+        public IActionResult CreateStaffPayment(int staffId, int plantId, DateTime fromDate,
+                                        DateTime toDate, decimal totalAmount)
+        {
+            // ── 1. Bank account check ────────────────────────────────────────
+            bool hasBankAccount = _financeRepo.StaffHasBankAccount(staffId);
+            if (!hasBankAccount)
+            {
+                TempData["Error"] = "This staff member has no bank account linked. Please add bank details before processing payment.";
+                return RedirectToAction("CreateStaffPayment");
+            }
+
+            // ── 2. Duplicate payment check ───────────────────────────────────
+            bool alreadyPaid = _financeRepo.StaffPaymentExists(staffId, fromDate, toDate);
+            if (alreadyPaid)
+            {
+                // Get a human-readable month label for the error message
+                string period = fromDate.ToString("MMM yyyy");
+                TempData["Error"] = $"A payment already exists for this staff member covering {period}. Cancel the existing record first if you need to reprocess.";
+                return RedirectToAction("CreateStaffPayment");
+            }
+
+            // ── 3. Create payment ────────────────────────────────────────────
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
             try
             {
-                int cpId = _financeRepo.ReactivateCenterPayment(centerPaymentId, ratePerLiter, DateTime.Today);
-                TempData["Success"] = $"Payment CP-{cpId:D4} reactivated. Proceed to pay via Stripe.";
-                return RedirectToAction("CenterPaymentDetail", new { id = cpId });
+                int paymentId = _financeRepo.CreateStaffPayment(
+                    staffId, plantId, fromDate, toDate, totalAmount, DateTime.Today, userId);
+
+                if (paymentId == 0)
+                {
+                    TempData["Error"] = "Payment creation failed. Please verify staff details.";
+                    return RedirectToAction("CreateStaffPayment");
+                }
+
+                TempData["Success"] = $"Staff payment SP-{paymentId:D4} created. Proceed to pay via Stripe.";
+                return RedirectToAction("StaffPaymentDetail", new { id = paymentId });
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                return RedirectToAction("CenterPayments");
+                return RedirectToAction("CreateStaffPayment");
             }
         }
 
+        // ════════════════════════════════════════════════════════
+        // GET STAFF DETAILS (AJAX — auto-fill salary/bank in drawer)
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult GetStaffDetails(int staffId)
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var list = _financeRepo.GetStaffForPayment(plantId, centerId);
+            var staff = list.FirstOrDefault(s => s.StaffId == staffId);
+
+            if (staff == null)
+                return Json(new { success = false, message = "Staff member not found." });
+
+            if (!staff.HasBankAccount)
+                return Json(new { success = false, message = "No bank account linked to this staff member." });
+
+            // Calculate suggested amount = monthly salary (full month default)
+            decimal suggested = staff.Salary ?? 0m;
+
+            return Json(new
+            {
+                success = true,
+                staffId = staff.StaffId,
+                fullName = staff.FullName,
+                roleName = staff.RoleName,
+                centerName = staff.CenterName,
+                plantName = staff.PlantName,
+                plantId = staff.PlantId,
+                salary = staff.Salary,
+                suggestedAmount = suggested,
+                bankName = staff.BankName,
+                accountNumber = staff.AccountNumber,
+                ifscCode = staff.IFSCCode,
+                hasBank = staff.HasBankAccount
+            });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STAFF PAYMENT DETAIL
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        [Route("Finance/StaffPaymentDetail/{id}")]
+        public IActionResult StaffPaymentDetail(int id)
+        {
+            var payment = _financeRepo.GetStaffPaymentById(id);
+            if (payment == null) return NotFound();
+            ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
+            ViewBag.Role = HttpContext.Session.GetString("RoleName");
+            return View(payment);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STRIPE CHECKOUT — STAFF
+        // ════════════════════════════════════════════════════════
+
         [HttpPost]
-        public IActionResult CancelCenterPayment(int centerPaymentId)
+        public IActionResult CreateStaffCheckoutSession(int staffPaymentId, decimal totalAmount, string staffName)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var domain = $"{Request.Scheme}://{Request.Host}";
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+        {
+            new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency   = "inr",
+                    UnitAmount = (long)(totalAmount * 100),
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name        = $"Staff Salary Payment - {staffName}",
+                        Description = $"Staff Payment ID: {staffPaymentId}"
+                    }
+                },
+                Quantity = 1
+            }
+        },
+                Mode = "payment",
+                SuccessUrl = $"{domain}/Finance/StaffPaymentSuccess?staffPaymentId={staffPaymentId}&session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{domain}/Finance/StaffPaymentCancelled?staffPaymentId={staffPaymentId}",
+                Metadata = new Dictionary<string, string>
+        {
+            { "paymentId",   staffPaymentId.ToString() },
+            { "paymentType", "Staff" }
+        }
+            };
+
+            var service = new SessionService();
+            Session session = service.Create(options);
+            return Redirect(session.Url);
+        }
+
+        [HttpGet]
+        public IActionResult StaffPaymentSuccess(int staffPaymentId, string session_id)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var service = new SessionService();
+            Session session = service.Get(session_id);
+            string bankStatus = session.PaymentStatus == "paid" ? "Success" : "Failed";
+            _financeRepo.RecordPaymentTransaction("Staff", staffPaymentId, bankStatus, session_id);
+            TempData["Success"] = bankStatus == "Success"
+                ? $"Staff payment processed successfully! Transaction: {session_id}"
+                : $"Payment failed. Transaction: {session_id}";
+            return RedirectToAction("StaffPaymentDetail", new { id = staffPaymentId });
+        }
+
+        [HttpGet]
+        public IActionResult StaffPaymentCancelled(int staffPaymentId)
+        {
+            TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
+            return RedirectToAction("StaffPaymentDetail", new { id = staffPaymentId });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CANCEL STAFF PAYMENT
+        // ════════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult CancelStaffPayment(int paymentId)
         {
             try
             {
-                _financeRepo.CancelCenterPayment(centerPaymentId);
-                TempData["Success"] = $"Payment CP-{centerPaymentId:D4} has been cancelled.";
+                _financeRepo.CancelStaffPayment(paymentId);
+                TempData["Success"] = $"Staff payment SP-{paymentId:D4} has been cancelled.";
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
             }
-            return RedirectToAction("CenterPayments");
+            return RedirectToAction("StaffPayments");
         }
     }
 }

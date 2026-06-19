@@ -1,249 +1,316 @@
 ﻿@model List<DairyIndustry.Models.Logistics.DriversModel>
 @{
-    ViewData["Title"] = "All Drivers";
+    ViewBag.Title = "All Drivers";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="bg-primary text-white py-4 px-4 mb-4 shadow-sm">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Stripe */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    /* Custom Navigation Tabs Layout */
+    .nav-tabs-custom {
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 16px;
+            margin-bottom: -2px;
+        }
+
+            .nav-tabs-custom .nav-link.active {
+                background: transparent;
+                color: #111827;
+                border-bottom: 3px solid #3b82f6;
+            }
+
+    /* Clean Data Tables optimized to prevent horizontal scrolling */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 12px 16px;
+        background-color: #ffffff;
+    }
+
+    .table-clean td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.9rem;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Muted Status Badges */
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 3px 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe !important;
+    }
+
+    .pill-badge-green {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .pill-badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .pill-badge-red {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h4 class="mb-1 fw-bold">
-                <i class="bi bi-people me-2"></i>All Drivers
-            </h4>
-            <p class="mb-0 opacity-75 small">
-                Manage driver registrations — approve, suspend or deactivate accounts.
-            </p>
+            <h4 class="fw-bold mb-0 text-dark">Driver Registry</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Logistics</span> &gt; <span class="text-muted">Driver Profiles</span>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <span class="badge bg-light text-primary fw-semibold px-3 py-2">
-                <i class="bi bi-people me-1"></i>
-                Total: @Model.Count
+        <div>
+            <span class="badge bg-light text-dark border px-3 py-2" style="font-weight: 500; border-radius: 6px; font-size: 0.85rem;">
+                Total Registry: @Model.Count
             </span>
         </div>
     </div>
-</div>
-
-<div class="container-fluid px-4 pb-5">
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
-            <i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+    <!-- Modern Navigation Tab Strip -->
+    <ul class="nav nav-tabs nav-tabs-custom mb-4" id="driverTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" onclick="filterTable('All')">
+                All <span class="badge bg-light text-dark border ms-1">@Model.Count</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" onclick="filterTable('Pending')">
+                <i class="bi bi-hourglass-split text-warning me-1"></i> Pending
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 ms-1">@Model.Count(d => d.Status == "Pending")</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" onclick="filterTable('Active')">
+                <i class="bi bi-check-circle-fill text-success me-1"></i> Approved
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1">@Model.Count(d => d.Status == "Active")</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" onclick="filterTable('Rejected')">
+                <i class="bi bi-x-circle-fill text-danger me-1"></i> Rejected
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 ms-1">@Model.Count(d => d.Status == "Rejected")</span>
+            </button>
+        </li>
+    </ul>
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="bg-warning bg-opacity-10 rounded-3 d-flex align-items-center
-                                justify-content-center flex-shrink-0"
-                         style="width:48px; height:48px;">
-                        <i class="bi bi-hourglass-split text-warning fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">
-                            @Model.Count(d => d.Status == "Pending")
-                        </div>
-                        <small class="text-muted">Pending</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center
-                                justify-content-center flex-shrink-0"
-                         style="width:48px; height:48px;">
-                        <i class="bi bi-check-circle text-success fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">
-                            @Model.Count(d => d.Status == "Active")
-                        </div>
-                        <small class="text-muted">Active</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="bg-secondary bg-opacity-10 rounded-3 d-flex align-items-center
-                                justify-content-center flex-shrink-0"
-                         style="width:48px; height:48px;">
-                        <i class="bi bi-pause-circle text-secondary fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">
-                            @Model.Count(d => d.Status == "Inactive")
-                        </div>
-                        <small class="text-muted">Inactive</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <div class="bg-danger bg-opacity-10 rounded-3 d-flex align-items-center
-                                justify-content-center flex-shrink-0"
-                         style="width:48px; height:48px;">
-                        <i class="bi bi-slash-circle text-danger fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-4 lh-1">
-                            @Model.Count(d => d.Status == "Suspended")
-                        </div>
-                        <small class="text-muted">Suspended</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Drivers Table -->
-    <div class="card border-0 shadow-sm rounded-3">
-        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-            <i class="bi bi-table text-primary"></i>
-            <span class="fw-semibold">Driver Records</span>
-        </div>
-        <div class="card-body p-0">
-            @if (!Model.Any())
-            {
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-inbox display-4 d-block mb-3"></i>
-                    <h6 class="fw-semibold">No drivers registered yet</h6>
-                    <p class="small">Driver registrations will appear here.</p>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                                <th class="py-3 text-muted fw-semibold small">Driver</th>
-                                <th class="py-3 text-muted fw-semibold small">License No</th>
-                                <th class="py-3 text-muted fw-semibold small">Phone</th>
-                                <th class="py-3 text-muted fw-semibold small">Vehicle</th>
-                                <th class="py-3 text-muted fw-semibold small">Registered On</th>
-                                <th class="py-3 text-muted fw-semibold small">Status</th>
-                                <th class="py-3 text-muted fw-semibold small text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var driver in Model)
-                            {
-                                string badgeColor = driver.Status switch
+    <!-- Core Grid Data Matrix Container -->
+    <div class="card premium-data-card border-start-0 border-end-0 border-bottom-0">
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0" id="driversTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Driver Profile</th>
+                        <th>License identity</th>
+                        <th>Contact Channels</th>
+                        <th>Verification DL</th>
+                        <th>Assigned Vehicle</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions Matrix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                No active courier or driver assets located in data tables.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var d in Model)
+                    {
+                        <tr data-status="@d.Status">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-light text-secondary d-flex align-items-center justify-content-center fw-bold text-uppercase border font-monospace" style="width:36px; height:36px; font-size: 0.85rem; flex-shrink: 0;">
+                                        @d.DriverName.Substring(0, 1)
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0" style="font-size: 0.9rem; line-height: 1.2;">@d.DriverName</div>
+                                        <div class="text-muted tiny" style="font-size: 11px;">@@@d.Username</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><code class="text-dark bg-light px-2 py-0.5 rounded small border font-monospace">@d.LicenseNo</code></td>
+                            <td>
+                                <div class="text-dark fw-medium small mb-0.5"><i class="bi bi-telephone me-1 text-muted"></i>@(d.Phone ?? "—")</div>
+                                <div class="text-muted small" style="font-size: 11px;"><i class="bi bi-envelope me-1 text-muted"></i>@(d.Email ?? "—")</div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(d.DrivingLicensePath))
                                 {
-                                    "Active" => "success",
-                                    "Pending" => "warning",
-                                    "Inactive" => "secondary",
-                                    "Suspended" => "danger",
-                                    _ => "secondary"
-                                };
-
-                                <tr>
-                                    <td class="px-4 text-muted small">#@driver.DriverId</td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="bg-primary text-white rounded-circle d-flex
-                                                                align-items-center justify-content-center fw-bold flex-shrink-0"
-                                                 style="width:36px; height:36px; font-size:.85rem;">
-                                                @driver.DriverName[0].ToString().ToUpper()
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold small">@driver.DriverName</div>
-                                                <div class="text-muted" style="font-size:.75rem;">
-                                                    @@@driver.Username
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border fw-normal">
-                                            @driver.LicenseNo
+                                    <a href="@d.DrivingLicensePath" target="_blank" class="btn btn-sm btn-light border text-primary px-2 py-0.5" style="border-radius: 6px; font-weight: 500; font-size: 0.78rem;">
+                                        <i class="bi bi-file-earmark-text text-secondary me-0.5"></i>View DL
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic" style="font-size: 0.82rem;">Not Uploaded</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(d.VehicleNumber))
+                                {
+                                    <div>
+                                        <span class="badge bg-light text-dark border px-2 py-0.5 mb-1 font-monospace" style="font-size: 0.78rem; font-weight: 600; border-radius: 4px;">
+                                            @d.VehicleNumber
                                         </span>
-                                    </td>
-                                    <td class="small text-muted">
-                                        @(string.IsNullOrEmpty(driver.Phone) ? "—" : driver.Phone)
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(driver.VehicleNumber))
-                                        {
-                                            <span class="badge bg-success bg-opacity-10 text-success fw-semibold">
-                                                <i class="bi bi-truck me-1"></i>@driver.VehicleNumber
-                                            </span>
+                                        @{
+                                            string vehicleStyle = d.VehicleStatus == "Approved" ? "pill-badge-green" : d.VehicleStatus == "Pending" ? "pill-badge-warning" : "pill-badge-red";
                                         }
-                                        else
-                                        {
-                                            <span class="text-muted small">No vehicle</span>
-                                        }
-                                    </td>
-                                    <td class="small text-muted">
-                                        @driver.RegisteredOn.ToString("dd MMM yyyy")
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-@badgeColor">@driver.Status</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1 flex-wrap">
-
-                                            @if (driver.Status == "Pending" || driver.Status == "Inactive" || driver.Status == "Suspended")
-                                            {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
-                                                    <input type="hidden" name="driverId" value="@driver.DriverId" />
-                                                    <input type="hidden" name="status" value="Active" />
-                                                    <button type="submit" class="btn btn-success btn-sm fw-semibold">
-                                                        <i class="bi bi-check-circle me-1"></i>Approve
-                                                    </button>
-                                                </form>
-                                            }
-
-                                            @if (driver.Status == "Active")
-                                            {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
-                                                    <input type="hidden" name="driverId" value="@driver.DriverId" />
-                                                    <input type="hidden" name="status" value="Inactive" />
-                                                    <button type="submit" class="btn btn-secondary btn-sm fw-semibold">
-                                                        <i class="bi bi-pause-circle me-1"></i>Deactivate
-                                                    </button>
-                                                </form>
-                                            }
-
-                                            @if (driver.Status != "Suspended")
-                                            {
-                                                <form method="post" action="/Logistics/UpdateDriverStatus">
-                                                    <input type="hidden" name="driverId" value="@driver.DriverId" />
-                                                    <input type="hidden" name="status" value="Suspended" />
-                                                    <button type="submit" class="btn btn-danger btn-sm fw-semibold">
-                                                        <i class="bi bi-slash-circle me-1"></i>Suspend
-                                                    </button>
-                                                </form>
-                                            }
-
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+                                        <div style="line-height: 1;"><span class="pill-counter-badge @vehicleStyle" style="font-size: 0.68rem; padding: 1px 4px;">@d.VehicleStatus</span></div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic" style="font-size: 0.82rem;">No Vehicle Linked</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="text-dark small" style="font-size: 0.85rem;">@d.RegisteredOn.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted font-monospace" style="font-size:10px;">@d.RegisteredOn.ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                @{
+                                    string statusStyle = d.Status switch
+                                    {
+                                        "Active" => "pill-badge-green",
+                                        "Pending" => "pill-badge-warning",
+                                        _ => "pill-badge-red"
+                                    };
+                                    string displayLabel = d.Status == "Active" ? "Approved" : d.Status;
+                                }
+                                <span class="pill-counter-badge @statusStyle px-2 py-0.5">
+                                    @displayLabel
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end align-items-center gap-1">
+                                    @if (d.Status == "Pending")
+                                    {
+                                        <form asp-action="UpdateDriverStatus" method="post" class="m-0">
+                                            <input type="hidden" name="driverId" value="@d.DriverId" />
+                                            <input type="hidden" name="status" value="Active" />
+                                            <button type="submit" class="btn btn-sm btn-success px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Approve @d.DriverName as an active driver?')">
+                                                Approve
+                                            </button>
+                                        </form>
+                                        <form asp-action="UpdateDriverStatus" method="post" class="m-0">
+                                            <input type="hidden" name="driverId" value="@d.DriverId" />
+                                            <input type="hidden" name="status" value="Rejected" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Reject @d.DriverName?')">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (d.Status == "Active")
+                                    {
+                                        <form asp-action="UpdateDriverStatus" method="post" class="m-0">
+                                            <input type="hidden" name="driverId" value="@d.DriverId" />
+                                            <input type="hidden" name="status" value="Rejected" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-danger px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Revoke approval for @d.DriverName? They will lose login access.')">
+                                                Revoke
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (d.Status == "Rejected")
+                                    {
+                                        <form asp-action="UpdateDriverStatus" method="post" class="m-0">
+                                            <input type="hidden" name="driverId" value="@d.DriverId" />
+                                            <input type="hidden" name="status" value="Pending" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-secondary px-2 py-1" style="border-radius: 6px; font-weight: 500; font-size: 0.8rem;" onclick="return confirm('Reset to Pending for re-review?')">
+                                                Re-review
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        function filterTable(status) {
+            const rows = document.querySelectorAll('#driversTable tbody tr[data-status]');
+            rows.forEach(row => {
+                row.style.display = (status === 'All' || row.dataset.status === status) ? '' : 'none';
+            });
+
+            // Sync state highlight tabs
+            document.querySelectorAll('#driverTabs .nav-link').forEach(btn => {
+                const text = btn.textContent.trim();
+                const matches =
+                    status === 'All'      ? text.startsWith('All') :
+                    status === 'Active'   ? text.startsWith('Approved') :
+                    status === 'Pending'  ? text.startsWith('Pending') :
+                    status === 'Rejected' ? text.startsWith('Rejected') : false;
+                btn.classList.toggle('active', matches);
+            });
+        }
+    </script>
+}

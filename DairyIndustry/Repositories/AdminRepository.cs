@@ -1,6 +1,10 @@
 ﻿using DairyIndustry.Data;
 using DairyIndustry.Models.Admin;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
+using MimeKit;
 using System.Collections.Generic;
 using System.Data;
 
@@ -9,16 +13,62 @@ namespace DairyIndustry.Repositories
     public class AdminRepository : IAdminRepository
     {
         private readonly DbHelper _db;
+        private readonly EmailSettings _settings;
 
-        public AdminRepository(DbHelper db)
+        public AdminRepository(DbHelper db, IOptions<EmailSettings> settings)
         {
             _db = db;
+            _settings = settings.Value;
         }
 
         // ════════════════════════════════════════════════════════
         // ROLES
         // ════════════════════════════════════════════════════════
 
+        public UserProfileVM GetUserProfile(int userId)
+        {
+            UserProfileVM user = null;
+
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_GetUserProfile", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+
+                    con.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            user = new UserProfileVM
+                            {
+                                UserId = Convert.ToInt32(reader["UserId"]),
+                                Username = reader["Username"].ToString(),
+                                RoleName = reader["RoleName"].ToString(),
+
+                                FullName = reader["FullName"].ToString(),
+                                Email = reader["Email"]?.ToString(),
+                                Phone = reader["Phone"]?.ToString(),
+
+                                DOJ = reader["DOJ"] != DBNull.Value
+                                        ? Convert.ToDateTime(reader["DOJ"])
+                                        : (DateTime?)null,
+
+                                Salary = reader["Salary"] != DBNull.Value
+                                        ? Convert.ToDecimal(reader["Salary"])
+                                        : (decimal?)null,
+
+                                ProfilePhoto = reader["ProfilePhoto"]?.ToString()
+                            };
+                        }
+                    }
+                }
+            }
+
+            return user;
+        }
         public int CreateRole(string roleName)
         {
             using (SqlConnection con = _db.GetConnection())
@@ -87,20 +137,16 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
-
         public User GetUserByUsername(string username)
         {
             User user = null;
-
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_LoginUser", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@Username", username);
-
                     con.Open();
-
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -111,16 +157,35 @@ namespace DairyIndustry.Repositories
                                 Username = reader["Username"].ToString(),
                                 PasswordHash = reader["PasswordHash"].ToString(),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
-                                StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
                                 RoleId = Convert.ToInt32(reader["RoleId"]),
                                 RoleName = reader["RoleName"].ToString(),
-                                CreatedDate = DateTime.MinValue  // not returned by LoginUser SP
+                                CreatedDate = DateTime.MinValue,
+                                     
+                                // Staff
+                                StaffId = reader["StaffId"] == DBNull.Value ? null : Convert.ToInt32(reader["StaffId"]),
+                                FirstName = reader["FirstName"] == DBNull.Value ? null : reader["FirstName"].ToString(),
+                                LastName = reader["LastName"] == DBNull.Value ? null : reader["LastName"].ToString(),
+                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
+                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
+
+                                // Center / Plant
+                                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
+                                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
+                                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
+                                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString(),
+
+                                DriverId = reader["DriverId"] == DBNull.Value ? null : Convert.ToInt32(reader["DriverId"]),
+                                DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
+                                DriverStatus = reader["DriverStatus"] == DBNull.Value ? null : reader["DriverStatus"].ToString(),
+
+                                FullName = reader["FullName"] == DBNull.Value
+        ? (reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString())
+        : reader["FullName"].ToString(),
                             };
                         }
                     }
                 }
             }
-
             return user;
         }
 
@@ -214,7 +279,34 @@ namespace DairyIndustry.Repositories
                 }
             }
         }
+        public List<User> GetUsersByRole(string roleName)
+        {
+            var users = new List<User>();
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_GetUsersByRole", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@RoleName", roleName);
+                    con.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            users.Add(new User
+                            {
+                                UserId = (int)reader["UserId"],
+                                Username = reader["Username"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            return users;
+        }
 
+        public List<User> GetPlantManagers() => GetUsersByRole("Plant Manager");
+        public List<User> GetCollectionAgents() => GetUsersByRole("Collection Agent");
         // ════════════════════════════════════════════════════════
         // AUDIT LOG
         // ════════════════════════════════════════════════════════
@@ -660,13 +752,13 @@ namespace DairyIndustry.Repositories
         // STAFF
         // ════════════════════════════════════════════════════════
 
-        public int AddStaff(string firstName, string lastName, string phone, string email,
-     int roleId, DateTime? doj,
-     string bankName, string accountNumber, string ifscCode,
-     decimal salary,
-     string profilePhoto = null,
-     int? centerId = null,
-     int? plantId = null)
+        public async Task<int> AddStaffAsync(string firstName, string lastName, string phone, string email,
+    int roleId, DateTime? doj,
+    string bankName, string accountNumber, string ifscCode,
+    decimal salary,
+    string profilePhoto = null,
+    int? centerId = null,
+    int? plantId = null)
         {
             using (SqlConnection con = _db.GetConnection())
             {
@@ -684,15 +776,52 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Salary", salary);
-                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value); // NEW
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value); // NEW
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+
+                    await con.OpenAsync(); // Non-blocking open
+                    var result = await cmd.ExecuteScalarAsync(); // Non-blocking execution
                     return Convert.ToInt32(result);
                 }
             }
         }
+        public async Task<int> AddStaffWithUserAsync(string firstName, string lastName, string phone, string email,
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null,
+     string username = null,
+     string passwordHash = null)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            {
+                using (SqlCommand cmd = new SqlCommand("Admin.usp_Admin_AddStaffWithUser", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FirstName", firstName);
+                    cmd.Parameters.AddWithValue("@LastName", lastName);
+                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
+                    cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Salary", salary);
+                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Username", (object?)username ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PasswordHash", (object?)passwordHash ?? DBNull.Value);
 
+                    await con.OpenAsync();
+                    var result = await cmd.ExecuteScalarAsync();
+                    return Convert.ToInt32(result);
+                }
+            }
+        }
         public List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null)
         {
             var list = new List<StaffModel>();
@@ -769,6 +898,7 @@ namespace DairyIndustry.Repositories
               AND s.StaffId NOT IN (
                   SELECT StaffId FROM Admin.Users WHERE StaffId IS NOT NULL
               )
+              AND r.RoleName NOT IN ('Collection Staff', 'Plant Staff')
             ORDER BY s.LastName, s.FirstName", con))
                 {
                     con.Open();
@@ -793,142 +923,137 @@ namespace DairyIndustry.Repositories
         }
         public StaffModel GetStaffById(int staffId)
         {
-            StaffModel staff = null;
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaffById", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
 
-            using (SqlConnection con = _db.GetConnection())
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            if (!r.Read()) return null;
+
+            return new StaffModel
             {
-                using (SqlCommand cmd = new SqlCommand("HR.usp_HR_GetStaffById", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@StaffId", staffId);
-
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            staff = new StaffModel
-                            {
-                                StaffId = Convert.ToInt32(reader["StaffId"]),
-                                FirstName = reader["FirstName"].ToString(),
-                                LastName = reader["LastName"].ToString(),
-                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                                Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString(),
-                                RoleId = Convert.ToInt32(reader["RoleId"]),
-                                RoleName = reader["RoleName"].ToString(),
-                                DOJ = reader["DOJ"] == DBNull.Value ? null : Convert.ToDateTime(reader["DOJ"]),
-                                IsActive = Convert.ToBoolean(reader["IsActive"]),
-                                Salary = reader["Salary"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["Salary"]),
-                                ProfilePhoto = reader["ProfilePhoto"] == DBNull.Value ? null : reader["ProfilePhoto"].ToString(),
-                                BankName = reader["BankName"] == DBNull.Value ? null : reader["BankName"].ToString(),
-                                AccountNumber = reader["AccountNumber"] == DBNull.Value ? null : reader["AccountNumber"].ToString(),
-                                IFSCCode = reader["IFSCCode"] == DBNull.Value ? null : reader["IFSCCode"].ToString(),
-                                CenterId = reader["CenterId"] == DBNull.Value ? null : Convert.ToInt32(reader["CenterId"]),
-                                CenterName = reader["CenterName"] == DBNull.Value ? null : reader["CenterName"].ToString(),
-                                PlantId = reader["PlantId"] == DBNull.Value ? null : Convert.ToInt32(reader["PlantId"]),
-                                PlantName = reader["PlantName"] == DBNull.Value ? null : reader["PlantName"].ToString()
-                            };
-                        }
-                    }
-                }
-            }
-
-            return staff;
+                StaffId = (int)r["StaffId"],
+                FirstName = r["FirstName"].ToString(),
+                LastName = r["LastName"].ToString(),
+                Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                Salary = r["Salary"] == DBNull.Value ? 0 : Convert.ToDecimal(r["Salary"]),
+                RoleId = (int)r["RoleId"],
+                RoleName = r["RoleName"].ToString(),
+                DOJ = r["DOJ"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["DOJ"]),
+                IsActive = (bool)r["IsActive"],
+                ProfilePhoto = r["ProfilePhoto"] == DBNull.Value ? null : r["ProfilePhoto"].ToString(),
+                CenterId = r["CenterId"] == DBNull.Value ? null : (int?)Convert.ToInt32(r["CenterId"]),
+                CenterName = r["CenterName"] == DBNull.Value ? null : r["CenterName"].ToString(),
+                PlantId = r["PlantId"] == DBNull.Value ? null : (int?)Convert.ToInt32(r["PlantId"]),
+                PlantName = r["PlantName"] == DBNull.Value ? null : r["PlantName"].ToString(),
+                BankAccountId = r["BankAccountId"] == DBNull.Value ? null : (int?)Convert.ToInt32(r["BankAccountId"]),
+                BankName = r["BankName"] == DBNull.Value ? null : r["BankName"].ToString(),
+                AccountNumber = r["AccountNumber"] == DBNull.Value ? null : r["AccountNumber"].ToString(),
+                IFSCCode = r["IFSCCode"] == DBNull.Value ? null : r["IFSCCode"].ToString(),
+            };
         }
-        public void UpdateStaff(int staffId, string firstName, string lastName,
-                        string phone, string email, int roleId, DateTime? doj,
-                        string bankName, string accountNumber, string ifscCode,
-                        decimal salary, string profilePhoto,
-                        int? centerId, int? plantId)
+        public async Task UpdateStaffAsync(int staffId, string firstName, string lastName,
+            string phone, string email, int roleId, DateTime? doj,
+            string bankName, string accountNumber, string ifscCode,
+            decimal salary, string profilePhoto,
+            int? centerId, int? plantId)
         {
-            using (SqlConnection con = _db.GetConnection())
-            {
-                con.Open();
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new SqlCommand("HR.usp_HR_UpdateStaff", con);
+            cmd.CommandType = CommandType.StoredProcedure;
 
-                // ── Step 1: Get existing BankAccountId for this staff ──
-                int? bankAccountId = null;
-                using (SqlCommand getBank = new SqlCommand(
-                    "SELECT BankAccountId FROM HR.Staffs WHERE StaffId = @StaffId", con))
-                {
-                    getBank.Parameters.AddWithValue("@StaffId", staffId);
-                    var result = getBank.ExecuteScalar();
-                    if (result != null && result != DBNull.Value)
-                        bankAccountId = Convert.ToInt32(result);
-                }
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+            cmd.Parameters.AddWithValue("@FirstName", firstName);
+            cmd.Parameters.AddWithValue("@LastName", lastName);
+            cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+            cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Salary", salary);
+            cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@BankName", (object?)bankName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountNumber", (object?)accountNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IFSCCode", (object?)ifscCode ?? DBNull.Value);
 
-                // ── Step 2: Update or Insert bank account ──
-                if (!string.IsNullOrEmpty(bankName) &&
-                    !string.IsNullOrEmpty(accountNumber) &&
-                    !string.IsNullOrEmpty(ifscCode))
-                {
-                    if (bankAccountId.HasValue)
-                    {
-                        // Update existing bank account
-                        using (SqlCommand bankCmd = new SqlCommand(@"
-                    UPDATE Finance.BankAccounts
-                    SET BankName      = @BankName,
-                        AccountNumber = @AccountNumber,
-                        IFSCCode      = @IFSCCode
-                    WHERE BankAccountId = @BankAccountId", con))
-                        {
-                            bankCmd.Parameters.AddWithValue("@BankName", bankName);
-                            bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
-                            bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
-                            bankCmd.Parameters.AddWithValue("@BankAccountId", bankAccountId.Value);
-                            bankCmd.ExecuteNonQuery();
-                        }
-                    }
-                    else
-                    {
-                        // Insert new bank account and get new ID
-                        using (SqlCommand bankCmd = new SqlCommand(@"
-                    INSERT INTO Finance.BankAccounts (BankName, AccountNumber, IFSCCode)
-                    VALUES (@BankName, @AccountNumber, @IFSCCode);
-                    SELECT SCOPE_IDENTITY();", con))
-                        {
-                            bankCmd.Parameters.AddWithValue("@BankName", bankName);
-                            bankCmd.Parameters.AddWithValue("@AccountNumber", accountNumber);
-                            bankCmd.Parameters.AddWithValue("@IFSCCode", ifscCode);
-                            bankAccountId = Convert.ToInt32(bankCmd.ExecuteScalar());
-                        }
-                    }
-                }
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
+        }
+        public async Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash)
+        {
+            using SqlConnection con = _db.GetConnection();
 
-                // ── Step 3: Update HR.Staffs — all fields ──
-                using (SqlCommand cmd = new SqlCommand(@"
-            UPDATE HR.Staffs
-            SET FirstName    = @FirstName,
-                LastName     = @LastName,
-                Phone        = @Phone,
-                Email        = @Email,
-                RoleId       = @RoleId,
-                DOJ          = @DOJ,
-                Salary       = @Salary,
-                ProfilePhoto = CASE WHEN @ProfilePhoto IS NOT NULL
-                                    THEN @ProfilePhoto
-                                    ELSE ProfilePhoto END,
-                BankAccountId = CASE WHEN @BankAccountId IS NOT NULL
-                                     THEN @BankAccountId
-                                     ELSE BankAccountId END,
-                CenterId     = @CenterId,
-                PlantId      = @PlantId
-            WHERE StaffId = @StaffId", con))
-                {
-                    cmd.Parameters.AddWithValue("@StaffId", staffId);
-                    cmd.Parameters.AddWithValue("@FirstName", firstName);
-                    cmd.Parameters.AddWithValue("@LastName", lastName);
-                    cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Email", (object?)email ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@RoleId", roleId);
-                    cmd.Parameters.AddWithValue("@DOJ", (object?)doj ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Salary", salary);
-                    cmd.Parameters.AddWithValue("@ProfilePhoto", (object?)profilePhoto ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@BankAccountId", (object?)bankAccountId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@PlantId", (object?)plantId ?? DBNull.Value);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            using SqlCommand cmd = new SqlCommand(
+                "Admin.usp_Admin_UpdateStaffWithUser",
+                con);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            cmd.Parameters.AddWithValue("@FirstName", firstName);
+            cmd.Parameters.AddWithValue("@LastName", lastName);
+
+            cmd.Parameters.AddWithValue("@Phone",
+                (object?)phone ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Email",
+                (object?)email ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@RoleId", roleId);
+
+            cmd.Parameters.AddWithValue("@DOJ",
+                (object?)doj ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@BankName",
+                (object?)bankName ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@AccountNumber",
+                (object?)accountNumber ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@IFSCCode",
+                (object?)ifscCode ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Salary", salary);
+
+            cmd.Parameters.AddWithValue("@ProfilePhoto",
+                (object?)profilePhoto ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@CenterId",
+                (object?)centerId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PlantId",
+                (object?)plantId ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@Username",
+                (object?)username ?? DBNull.Value);
+
+            cmd.Parameters.AddWithValue("@PasswordHash",
+                (object?)passwordHash ?? DBNull.Value);
+
+            await con.OpenAsync();
+
+            await cmd.ExecuteNonQueryAsync();
         }
         // ════════════════════════════════════════════════════════
         // PLANT
@@ -1516,25 +1641,23 @@ namespace DairyIndustry.Repositories
                 return list;
             }
         }
-        public int AddDistributor(Distributor distributor)
+        public int RegisterDistributor(Distributor distributor, string username, string passwordHash)
         {
             using (SqlConnection con = _db.GetConnection())
             {
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddDistributor", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-
-                    con.Open();
-
                     cmd.Parameters.AddWithValue("@DistributorName", distributor.DistributorName);
                     cmd.Parameters.AddWithValue("@Location", (object?)distributor.Location ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ContactNumber", (object?)distributor.ContactNumber ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Email", (object?)distributor.Email ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Address", (object?)distributor.Address ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@GSTIN", (object?)distributor.GSTIN ?? DBNull.Value);
-
+                    cmd.Parameters.AddWithValue("@Username", username);
+                    cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    con.Open();
                     var result = cmd.ExecuteScalar();
-
                     return Convert.ToInt32(result);
                 }
             }
@@ -1698,22 +1821,29 @@ namespace DairyIndustry.Repositories
             using (SqlConnection con = _db.GetConnection())
             {
                 con.Open();
+
+                // Step 1: Create order header
                 using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_CreateOrder", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@DistributorId", model.DistributorId);
-                    cmd.Parameters.AddWithValue("@PlantId", model.PlantId);   // added
+                    cmd.Parameters.AddWithValue("@PlantId", model.PlantId);
                     cmd.Parameters.AddWithValue("@OrderDate", model.OrderDate.Date);
                     orderId = Convert.ToInt32(cmd.ExecuteScalar());
                 }
-                using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
+
+                // Step 2: Add each cart item
+                foreach (var item in model.CartItems)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@OrderId", orderId);
-                    cmd.Parameters.AddWithValue("@ProductId", model.ProductId);
-                    cmd.Parameters.AddWithValue("@Quantity", model.Quantity);
-                    cmd.Parameters.AddWithValue("@UnitPrice", model.UnitPrice);
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("Sales.usp_Sales_AddOrderDetail", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@OrderId", orderId);
+                        cmd.Parameters.AddWithValue("@ProductId", item.ProductId);
+                        cmd.Parameters.AddWithValue("@Quantity", item.Quantity);
+                        cmd.Parameters.AddWithValue("@UnitPrice", item.UnitPrice);
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
             return orderId;
@@ -1870,5 +2000,382 @@ namespace DairyIndustry.Repositories
             catch { return false; }
         }
 
+
+        //Added By Zaid On 24 Apr
+
+
+        public int? GetCenterIdByUser(int userId)
+        {
+            using (var con = _db.GetConnection())
+            using (var cmd = new SqlCommand(
+                "SELECT CenterId FROM Admin.UserCenters WHERE UserId = @UserId", con))
+            {
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                con.Open();
+
+                var result = cmd.ExecuteScalar();
+
+                return result == null || result == DBNull.Value
+                    ? null
+                    : Convert.ToInt32(result);
+            }
+        }
+
+        public void SendOtpEmail(string toEmail, string toName, string otp, string purpose)
+        {
+            var subject = purpose == "Login"
+                ? "Your DMS Login OTP"
+                : "Your DMS Password Change OTP";
+
+            var bodyHtml = $@"
+                <div style='font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px;
+                            border:1px solid #e0e0e0;border-radius:8px;'>
+                    <h2 style='color:#333;margin-bottom:4px;'>DMS Verification</h2>
+                    <p style='color:#666;font-size:14px;'>Hi {toName},</p>
+                    <p style='color:#666;font-size:14px;'>
+                        {(purpose == "Login"
+                            ? "Use the OTP below to complete your login."
+                            : "Use the OTP below to confirm your password change.")}
+                    </p>
+                    <div style='background:#f5f5f5;border-radius:8px;padding:20px;
+                                text-align:center;margin:20px 0;'>
+                        <span style='font-size:36px;font-weight:bold;
+                                     letter-spacing:12px;color:#222;'>{otp}</span>
+                    </div>
+                    <p style='color:#999;font-size:12px;'>
+                        This OTP expires in <strong>10 minutes</strong>. 
+                        Do not share it with anyone.
+                    </p>
+                    <p style='color:#999;font-size:12px;'>
+                        If you did not request this, contact your administrator immediately.
+                    </p>
+                </div>";
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("html") { Text = bodyHtml };
+
+            using var client = new SmtpClient();
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+            client.Connect(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls);
+            client.Authenticate(_settings.SenderEmail, _settings.AppPassword);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+        public void ChangePassword(int userId, string newPasswordHash)
+        {
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand("Admin.usp_Auth_ChangePassword", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@NewPasswordHash", newPasswordHash);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
+        }
+
+        //Index
+
+        public List<ChartPoint> GetMilkCollectedLast7Days()
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT
+                    FORMAT(CollectionDate, 'dd MMM') AS Label,
+                    ISNULL(SUM(Quantity), 0)          AS Value
+                FROM Collection.MilkCollection
+                WHERE CollectionDate >= CAST(DATEADD(DAY, -6, GETDATE()) AS DATE)
+                GROUP BY CollectionDate, FORMAT(CollectionDate, 'dd MMM')
+                ORDER BY CollectionDate";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
+
+        // ── Collection summary scalars ───────────────────────────────
+        public DashboardCollectionSummary GetCollectionSummary()
+        {
+            const string sql = @"
+                SELECT
+                    ISNULL((SELECT SUM(Quantity) FROM Collection.MilkCollection), 0)
+                        AS TotalMilkCollected,
+                    ISNULL((SELECT SUM(Quantity) FROM Collection.MilkCollection
+                             WHERE CollectionDate = CAST(GETDATE() AS DATE)), 0)
+                        AS TodayMilkCollected,
+                    (SELECT COUNT(*) FROM Farmer.Farmers)                        AS TotalFarmers,
+                    (SELECT COUNT(*) FROM Farmer.Farmers WHERE IsActive = 1)     AS ActiveFarmers,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Open')       AS OpenBatches,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Closed')     AS ClosedBatches,
+                    (SELECT COUNT(*) FROM Collection.CollectionBatches WHERE Status = 'Dispatched') AS DispatchedBatches";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+
+            if (!dr.Read()) return new DashboardCollectionSummary();
+
+            return new DashboardCollectionSummary
+            {
+                TotalMilkCollected = Convert.ToDecimal(dr["TotalMilkCollected"]),
+                TodayMilkCollected = Convert.ToDecimal(dr["TodayMilkCollected"]),
+                TotalFarmers = Convert.ToInt32(dr["TotalFarmers"]),
+                ActiveFarmers = Convert.ToInt32(dr["ActiveFarmers"]),
+                OpenBatches = Convert.ToInt32(dr["OpenBatches"]),
+                ClosedBatches = Convert.ToInt32(dr["ClosedBatches"]),
+                DispatchedBatches = Convert.ToInt32(dr["DispatchedBatches"])
+            };
+        }
+
+        // ── Finance summary ─────────────────────────────────────────
+        public DashboardFinanceSummary GetFinanceSummary()
+        {
+            const string sql = @"
+                SELECT
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.FarmerPayments WHERE PaymentStatus = 'Processed'), 0) AS FarmerPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.FarmerPayments WHERE PaymentStatus = 'Pending'),   0) AS FarmerPending,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.StaffPayments  WHERE PaymentStatus = 'Processed'), 0) AS StaffPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.StaffPayments  WHERE PaymentStatus = 'Pending'),   0) AS StaffPending,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.CenterPayments WHERE PaymentStatus = 'Processed'), 0) AS CenterPaid,
+                    ISNULL((SELECT SUM(TotalAmount) FROM Finance.CenterPayments WHERE PaymentStatus = 'Pending'),   0) AS CenterPending,
+                    ISNULL((SELECT SUM(sod.Quantity * sod.UnitPrice)
+                             FROM Sales.SalesOrderDetails sod
+                             INNER JOIN Sales.SalesOrders so ON so.OrderId = sod.OrderId
+                             WHERE so.OrderStatus IN ('Delivered','Dispatched')), 0) AS SalesRevenue";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+
+            if (!dr.Read()) return new DashboardFinanceSummary();
+
+            return new DashboardFinanceSummary
+            {
+                TotalFarmerPaid = Convert.ToDecimal(dr["FarmerPaid"]),
+                TotalFarmerPending = Convert.ToDecimal(dr["FarmerPending"]),
+                TotalStaffPaid = Convert.ToDecimal(dr["StaffPaid"]),
+                TotalStaffPending = Convert.ToDecimal(dr["StaffPending"]),
+                TotalCenterPaid = Convert.ToDecimal(dr["CenterPaid"]),
+                TotalCenterPending = Convert.ToDecimal(dr["CenterPending"]),
+                TotalSalesRevenue = Convert.ToDecimal(dr["SalesRevenue"])
+            };
+        }
+
+        // ── Top N products by milk used ──────────────────────────────
+        public List<ChartPoint> GetTopProductsByMilkUsed(int top = 5)
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT TOP (@top)
+                    p.ProductName                  AS Label,
+                    ISNULL(SUM(pb.MilkUsedQuantity), 0) AS Value
+                FROM Production.ProductionBatches pb
+                INNER JOIN Production.Products p ON p.ProductId = pb.ProductId
+                WHERE pb.BatchStatus = 'Completed'
+                GROUP BY p.ProductName
+                ORDER BY Value DESC";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@top", top);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
+
+        // ── Orders by status ────────────────────────────────────────
+        public List<ChartPoint> GetOrdersByStatus()
+        {
+            var list = new List<ChartPoint>();
+            const string sql = @"
+                SELECT OrderStatus AS Label, COUNT(*) AS Value
+                FROM Sales.SalesOrders
+                GROUP BY OrderStatus";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(sql, con);
+            con.Open();
+            using var dr = cmd.ExecuteReader();
+            while (dr.Read())
+                list.Add(new ChartPoint
+                {
+                    Label = dr["Label"].ToString(),
+                    Value = Convert.ToDecimal(dr["Value"])
+                });
+
+            return list;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // BATCH MANAGEMENT
+        // ════════════════════════════════════════════════════════
+
+        public List<BatchModel> GetAllBatches(int? centerId = null, string status = null,
+                                              DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var list = new List<BatchModel>();
+
+            string query = @"
+        SELECT
+            cb.BatchId,
+            cb.CenterId,
+            cc.CenterName,
+            cb.Shift,
+            cb.BatchDate,
+            cb.TotalQuantity,
+            cb.AvgFat,
+            cb.AvgCLR,
+            cb.Status
+        FROM Collection.CollectionBatches cb
+        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = cb.CenterId
+        WHERE (@CenterId IS NULL OR cb.CenterId   = @CenterId)
+          AND (@Status   IS NULL OR cb.Status     = @Status)
+          AND (@FromDate IS NULL OR cb.BatchDate >= @FromDate)
+          AND (@ToDate   IS NULL OR cb.BatchDate <= @ToDate)
+        ORDER BY cb.BatchDate DESC, cc.CenterName";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@CenterId", (object?)centerId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+                con.Open();
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    list.Add(MapBatch(reader));
+            }
+
+            return list;
+        }
+
+        public BatchModel GetBatchById(int batchId)
+        {
+            string query = @"
+        SELECT
+            cb.BatchId,
+            cb.CenterId,
+            cc.CenterName,
+            cb.Shift,
+            cb.BatchDate,
+            cb.TotalQuantity,
+            cb.AvgFat,
+            cb.AvgCLR,
+            cb.Status
+        FROM Collection.CollectionBatches cb
+        INNER JOIN Collection.CollectionCenters cc ON cc.CenterId = cb.CenterId
+        WHERE cb.BatchId = @BatchId";
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                con.Open();
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read()) return MapBatch(reader);
+            }
+
+            return null;
+        }
+
+        public int OpenBatch(int centerId, string shift, DateTime batchDate)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_OpenBatch", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@CenterId", centerId);
+                cmd.Parameters.AddWithValue("@Shift", shift);
+                cmd.Parameters.AddWithValue("@BatchDate", batchDate.Date);
+                con.Open();
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                    return Convert.ToInt32(reader["NewBatchId"]);
+            }
+            return 0;
+        }
+
+        public void CloseBatch(int batchId)
+        {
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_CloseBatch", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public List<BatchCollectionEntryModel> GetBatchCollections(int batchId)
+        {
+            var list = new List<BatchCollectionEntryModel>();
+
+            using (SqlConnection con = _db.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("Collection.usp_Collection_GetBatchCollections", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@BatchId", batchId);
+                con.Open();
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    list.Add(new BatchCollectionEntryModel
+                    {
+                        CollectionId = Convert.ToInt32(reader["CollectionId"]),
+                        CollectionDate = Convert.ToDateTime(reader["CollectionDate"]),
+                        Shift = reader["Shift"].ToString(),
+                        FarmerName = reader["FarmerName"].ToString(),
+                        MilkTypeName = reader["MilkTypeName"].ToString(),
+                        Quantity = Convert.ToDecimal(reader["Quantity"]),
+                        AppliedFat = reader["AppliedFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["AppliedFat"]),
+                        AppliedCLR = reader["AppliedCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["AppliedCLR"]),
+                        RatePerLiter = reader["RatePerLiter"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["RatePerLiter"]),
+                        Amount = reader["Amount"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["Amount"]),
+                        ReceiptNumber = reader["ReceiptNumber"] == DBNull.Value ? null : reader["ReceiptNumber"].ToString()
+                    });
+                }
+            }
+
+            return list;
+        }
+
+        // ── private mapper ─────────────────────────────────────────
+        private BatchModel MapBatch(SqlDataReader r) => new BatchModel
+        {
+            BatchId = Convert.ToInt32(r["BatchId"]),
+            CenterId = Convert.ToInt32(r["CenterId"]),
+            CenterName = r["CenterName"].ToString(),
+            Shift = r["Shift"].ToString(),
+            BatchDate = Convert.ToDateTime(r["BatchDate"]),
+            TotalQuantity = r["TotalQuantity"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["TotalQuantity"]),
+            AvgFat = r["AvgFat"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["AvgFat"]),
+            AvgCLR = r["AvgCLR"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(r["AvgCLR"]),
+            Status = r["Status"].ToString()
+        };
     }
 }

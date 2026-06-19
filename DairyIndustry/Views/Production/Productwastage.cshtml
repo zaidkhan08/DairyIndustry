@@ -2,7 +2,8 @@
 
 @{
     ViewData["Title"] = "Product Wastage";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var roleName = Context.Session.GetString("RoleName");
     var plantName = Context.Session.GetString("PlantName");
 }

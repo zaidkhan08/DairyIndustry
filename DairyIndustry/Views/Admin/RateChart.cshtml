@@ -5,16 +5,125 @@
     ViewData["Title"] = "Manage Rate Chart";
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <!-- Page Title -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Manage Rate Chart</h3>
-                <p class="text-muted mb-0">Set milk rates based on Fat and CLR ranges</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .stripe-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stripe-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 16px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Drop-indicator Custom Pill Badges */
+    .pill-counter-badge {
+        background-color: #eff6ff;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid #bfdbfe;
+    }
+
+    .pill-milk-type {
+        background-color: #f3f4f6;
+        color: #1f2937;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pill-rate-badge {
+        background-color: #dcfce7;
+        color: #166534;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 4px 12px;
+        border-radius: 6px;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Title Layout Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Manage Rate Chart</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-muted">Valuation Metrics</span>
             </div>
-            <a href="/Admin/Index" class="btn btn-outline-secondary">
+        </div>
+        <div>
+            <a href="/Admin/Index" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
             </a>
         </div>
@@ -22,23 +131,19 @@
 
     <div class="row g-4">
 
-        <!-- Add Rate Chart Form -->
+        <!-- LEFT SIDEBAR SECTION: NEW ENTRY PARAMETERS FORM -->
         <div class="col-md-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">
-                    <i class="bi bi-plus-circle me-1"></i> Add New Rate
+            <div class="card premium-data-card stripe-blue border-start-0 border-end-0 border-bottom-0">
+                <div class="p-3 bg-white border-bottom">
+                    <span class="panel-header-text"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Pricing Node</span>
                 </div>
                 <div class="card-body p-4">
                     <form method="post" action="/Admin/AddRateChart">
 
-                        <!-- Milk Type -->
+                        <!-- Selection Filter node -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Milk Type <span class="text-danger">*</span>
-                            </label>
-                            <select name="milkTypeId"
-                                    class="form-select"
-                                    required>
+                            <label class="form-label small fw-semibold text-secondary">Target Milk Type <span class="text-danger">*</span></label>
+                            <select name="milkTypeId" class="form-select" style="border-radius: 6px; padding: 10px;" required>
                                 <option value="">-- Select Milk Type --</option>
                                 @foreach (var milkType in ViewBag.MilkTypes as List<DairyIndustry.Models.Admin.MilkTypeModel>)
                                 {
@@ -47,123 +152,79 @@
                             </select>
                         </div>
 
-                        <!-- Fat Range -->
+                        <!-- Structural Ranges configuration metrics -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Fat Range <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label small fw-semibold text-secondary">Fat Range Percentage <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number"
-                                       name="fatFrom"
-                                       class="form-control"
-                                       placeholder="From"
-                                       step="0.01"
-                                       min="0"
-                                       required />
-                                <span class="input-group-text">to</span>
-                                <input type="number"
-                                       name="fatTo"
-                                       class="form-control"
-                                       placeholder="To"
-                                       step="0.01"
-                                       min="0"
-                                       required />
+                                <input type="number" name="fatFrom" class="form-control" style="padding: 10px;" placeholder="From" step="0.01" min="0" required />
+                                <span class="input-group-text bg-light border-start-0 border-end-0 text-muted small">to</span>
+                                <input type="number" name="fatTo" class="form-control" style="padding: 10px;" placeholder="To" step="0.01" min="0" required />
                             </div>
-                            <div class="form-text">Fat percentage range e.g. 3.50 to 4.50</div>
+                            <div class="form-text mt-1 text-muted small">e.g., 3.50 to 4.50 %</div>
                         </div>
 
-                        <!-- CLR Range -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                CLR Range <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label small fw-semibold text-secondary">CLR Matrix Limits <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number"
-                                       name="clrFrom"
-                                       class="form-control"
-                                       placeholder="From"
-                                       step="0.01"
-                                       min="0"
-                                       required />
-                                <span class="input-group-text">to</span>
-                                <input type="number"
-                                       name="clrTo"
-                                       class="form-control"
-                                       placeholder="To"
-                                       step="0.01"
-                                       min="0"
-                                       required />
+                                <input type="number" name="clrFrom" class="form-control" style="padding: 10px;" placeholder="From" step="0.01" min="0" required />
+                                <span class="input-group-text bg-light border-start-0 border-end-0 text-muted small">to</span>
+                                <input type="number" name="clrTo" class="form-control" style="padding: 10px;" placeholder="To" step="0.01" min="0" required />
                             </div>
-                            <div class="form-text">CLR range e.g. 26.00 to 28.00</div>
+                            <div class="form-text mt-1 text-muted small">e.g., 26.00 to 28.00</div>
                         </div>
 
-                        <!-- Rate Per Liter -->
+                        <!-- Direct Valuation entries parameters -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Rate Per Liter (₹) <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label small fw-semibold text-secondary">Rate Price Per Liter <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text">₹</span>
-                                <input type="number"
-                                       name="ratePerLiter"
-                                       class="form-control"
-                                       placeholder="e.g. 32.50"
-                                       step="0.01"
-                                       min="0"
-                                       required />
+                                <span class="input-group-text bg-light text-secondary border-end-0 fw-medium">₹</span>
+                                <input type="number" name="ratePerLiter" class="form-control border-start-0 ps-1" style="padding: 10px; border-radius: 0 6px 6px 0;" placeholder="e.g. 32.50" step="0.01" min="0" required />
                             </div>
                         </div>
 
-                        <!-- Effective From -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Effective From <span class="text-danger">*</span>
-                            </label>
-                            <input type="date"
-                                   name="effectiveFrom"
-                                   class="form-control"
-                                   required />
-                            <div class="form-text">Date from which this rate is applicable</div>
+                            <label class="form-label small fw-semibold text-secondary">Effective Timeline Commencement <span class="text-danger">*</span></label>
+                            <input type="date" name="effectiveFrom" class="form-control" style="padding: 10px; border-radius: 6px;" required />
+                            <div class="form-text mt-1 text-muted small">System transition trigger baseline date.</div>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle me-1"></i> Add Rate
-                            </button>
-                        </div>
+                        <button type="submit" class="btn btn-custom-blue w-100 py-2">
+                            <i class="bi bi-plus-lg me-1"></i> Register Base Rate
+                        </button>
 
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Rate Chart List -->
+        <!-- RIGHT SECTION: SYSTEM MASTER VALUATION CHART LIST -->
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-cash-stack me-1"></i> All Rate Charts</span>
-                    <span class="badge bg-primary">Total : @Model.Count</span>
+            <div class="card premium-data-card stripe-green border-start-0 border-end-0 border-bottom-0">
+                <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <span class="panel-header-text"><i class="bi bi-cash-stack text-success me-2"></i>Configured System Matrix Matrices</span>
+                    <span class="pill-counter-badge">Active Records: @Model.Count</span>
                 </div>
+
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                        <table class="table table-clean align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <th>#</th>
+                                    <th class="ps-4" style="width: 60px;">#</th>
                                     <th>Milk Type</th>
-                                    <th>Fat Range</th>
-                                    <th>CLR Range</th>
-                                    <th>Rate / Ltr</th>
-                                    <th>Effective From</th>
+                                    <th>Fat Range Block</th>
+                                    <th>CLR Range Block</th>
+                                    <th>Valuation Rate</th>
+                                    <th class="pe-4">Effective Start</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (Model.Count == 0)
                                 {
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
-                                            No rate charts found. Add one.
+                                        <td colspan="6" class="text-center text-muted py-5">
+                                            <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                            No explicit transactional evaluation records exist in the current configuration chart.
                                         </td>
                                     </tr>
                                 }
@@ -173,41 +234,36 @@
                                     @foreach (var rate in Model)
                                     {
                                         <tr>
-                                            <td>@sr</td>
+                                            <td class="ps-4 text-muted small fw-medium">@sr</td>
                                             <td>
-                                                <span class="badge bg-primary">
-                                                    @rate.MilkTypeName
+                                                <span class="pill-milk-type">
+                                                    @{
+                                                        string iconColor = rate.MilkTypeName?.ToLower() switch
+                                                        {
+                                                            "cow" => "text-warning",
+                                                            "buffalo" => "text-dark",
+                                                            "mixed" => "text-success",
+                                                            _ => "text-primary"
+                                                        };
+                                                    }
+                                                    <i class="bi bi-droplet-fill @iconColor small"></i><span>@rate.MilkTypeName</span>
                                                 </span>
                                             </td>
-                                            <td>
-                                                <span class="text-dark fw-semibold">
-                                                    @rate.FatFrom
-                                                </span>
-                                                <span class="text-muted mx-1">—</span>
-                                                <span class="text-dark fw-semibold">
-                                                    @rate.FatTo
-                                                </span>
-                                                <small class="text-muted ms-1">%</small>
+                                            <td class="text-dark fw-semibold">
+                                                @rate.FatFrom <span class="text-muted mx-1">→</span> @rate.FatTo<span class="text-secondary small ms-1">%</span>
+                                            </td>
+                                            <td class="text-dark fw-semibold">
+                                                @rate.CLRFrom <span class="text-muted mx-1">→</span> @rate.CLRTo
                                             </td>
                                             <td>
-                                                <span class="text-dark fw-semibold">
-                                                    @rate.CLRFrom
-                                                </span>
-                                                <span class="text-muted mx-1">—</span>
-                                                <span class="text-dark fw-semibold">
-                                                    @rate.CLRTo
+                                                <span class="pill-rate-badge">
+                                                    ₹ @rate.RatePerLiter.ToString("0.00")
                                                 </span>
                                             </td>
-                                            <td>
-                                                <span class="badge bg-success fs-6 px-3">
-                                                    ₹ @rate.RatePerLiter
+                                            <td class="pe-4">
+                                                <span class="text-secondary small font-monospace">
+                                                    <i class="bi bi-calendar3 me-1 text-muted"></i>@rate.EffectiveFrom.ToString("dd MMM yyyy")
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <small>
-                                                    <i class="bi bi-calendar3 me-1 text-muted"></i>
-                                                    @rate.EffectiveFrom.ToString("dd MMM yyyy")
-                                                </small>
                                             </td>
                                         </tr>
                                         sr++;
@@ -217,9 +273,10 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>@Model.Count rate(s) configured in the system</span>
-                    <span>Sorted by most recent effective date</span>
+
+                <div class="card-footer bg-white border-top text-muted small py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Active pricing structure limits: <strong>@Model.Count</strong> entries mapped.</span>
+                    <span class="italic"><i class="bi bi-info-circle me-1"></i>Chronologically sorted by effective baseline target parameters.</span>
                 </div>
             </div>
         </div>

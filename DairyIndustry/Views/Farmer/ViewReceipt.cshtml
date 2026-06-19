@@ -1,0 +1,370 @@
+﻿@model DairyIndustry.Models.Collection.FarmerMilkReceiptModel
+
+@{
+    ViewData["Title"] = "Milk Receipt";
+    Layout = "_FarmerLayout";
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .mr-page {
+        padding: 24px;
+        background: #fff;
+        min-height: 100vh;
+    }
+
+    .mr-wrap {
+        max-width: 740px;
+        margin: auto;
+    }
+
+    .mr-topbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .mr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #333;
+        text-decoration: none;
+        transition: .2s;
+    }
+
+        .mr-btn:hover {
+            background: #f3f4f6;
+            color: #333;
+        }
+
+    .mr-btn-dark {
+        background: #111827;
+        color: #fff;
+        border: none;
+    }
+
+        .mr-btn-dark:hover {
+            background: #0b1220;
+            color: #fff;
+        }
+
+    .mr-rc {
+        background: #fff;
+        border: 1px solid #d8dce3;
+        box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    .mr-rh {
+        padding: 16px 22px 12px;
+        border-bottom: 2px solid #1a3a5c;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .mr-brand {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a3a5c;
+    }
+
+    .mr-rh-sub {
+        font-size: 11px;
+        color: #777;
+        margin-top: 3px;
+        line-height: 1.6;
+    }
+
+    .mr-badge {
+        border: 2px solid #1a3a5c;
+        color: #1a3a5c;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 5px 10px;
+        display: inline-block;
+    }
+
+    .mr-rh-meta {
+        font-size: 11px;
+        color: #666;
+        margin-top: 5px;
+        text-align: right;
+        line-height: 1.7;
+    }
+
+    .mr-status {
+        background: #e8f5e9;
+        border-bottom: 1px solid #b2dfdb;
+        padding: 8px;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .7px;
+        color: #2e7d32;
+    }
+
+    .mr-cards {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+        flex-wrap: wrap;
+    }
+
+    .mr-card {
+        flex: 1;
+        min-width: 220px;
+        border-right: 1px solid #e5e7eb;
+        padding: 12px 14px;
+    }
+
+        .mr-card:last-child {
+            border-right: none;
+        }
+
+    .mr-c-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #aaa;
+        margin-bottom: 5px;
+    }
+
+    .mr-c-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 3px;
+    }
+
+    .mr-c-row {
+        font-size: 11px;
+        color: #555;
+        line-height: 1.8;
+    }
+
+        .mr-c-row b {
+            color: #111;
+        }
+
+    .mr-green {
+        color: #2e7d32;
+        font-weight: 700;
+    }
+
+    table.mr-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        table.mr-tbl thead tr {
+            background: #1a3a5c;
+        }
+
+        table.mr-tbl th {
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        table.mr-tbl td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #222;
+        }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .mr-tot {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 12px 14px;
+    }
+
+    .mr-tot-inner {
+        width: 260px;
+        margin-top: 4px;
+    }
+
+    .mr-tot-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #555;
+        padding: 2px 0;
+    }
+
+    .mr-tot-grand {
+        display: flex;
+        justify-content: space-between;
+        background: #1a3a5c;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 10px;
+        margin-top: 5px;
+    }
+
+    .mr-rfooter {
+        border-top: 1px solid #eee;
+        padding: 9px 22px;
+        text-align: center;
+        font-size: 10px;
+        color: #aaa;
+        line-height: 1.7;
+    }
+</style>
+
+<div class="mr-page">
+    <div class="mr-wrap">
+
+        <div class="mr-topbar">
+            <a href="/Farmer/AllMilkEntriesFarmer" class="mr-btn">
+                ← Back
+            </a>
+
+            <a href="/Farmer/DownloadReceipt/@Model.CollectionId"
+               class="mr-btn mr-btn-dark">
+                ⬇ Download PDF
+            </a>
+        </div>
+
+        <div class="mr-rc">
+
+            <div class="mr-rh">
+                <div>
+                    <div class="mr-brand">Dairy Management System</div>
+                    <div class="mr-rh-sub">
+                        Farmer Milk Collection Receipt<br />
+                        Collection Type: Single Shift Entry
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mr-badge">MILK RECEIPT</div>
+
+                    <div class="mr-rh-meta">
+                        Receipt No: #@Model.ReceiptNumber<br />
+                        Date: @Model.CollectionDate.ToString("dd MMM yyyy")
+                    </div>
+                </div>
+            </div>
+
+            <div class="mr-status">
+                COLLECTION STATUS: ACCEPTED
+            </div>
+
+            <div class="mr-cards">
+
+                <div class="mr-card">
+                    <div class="mr-c-label">Farmer Details</div>
+                    <div class="mr-c-name">@Model.FarmerName</div>
+
+                    <div class="mr-c-row">
+                        Code: <b>#@Model.FarmerCode</b>
+                    </div>
+                </div>
+
+                <div class="mr-card">
+                    <div class="mr-c-label">Collection Center</div>
+                    <div class="mr-c-name">@Model.CenterName</div>
+
+                    <div class="mr-c-row">
+                        Shift: <b>@Model.Shift</b>
+                    </div>
+
+                    <div class="mr-c-row">
+                        Date: <b>@Model.CollectionDate.ToString("dd MMM yyyy")</b>
+                    </div>
+                </div>
+
+                <div class="mr-card">
+                    <div class="mr-c-label">Quality Info</div>
+                    <div class="mr-c-name">@Model.MilkTypeName</div>
+
+                    <div class="mr-c-row">
+                        FAT:
+                        <b>@(Model.AppliedFat?.ToString("F2") ?? "-")</b>
+                        &nbsp;/&nbsp;
+                        CLR:
+                        <b>@(Model.AppliedCLR?.ToString("F2") ?? "-")</b>
+                    </div>
+
+                    <div class="mr-c-row">
+                        Rate:
+                        <b>₹@(Model.RatePerLiter?.ToString("F2") ?? "0.00") / L</b>
+                    </div>
+
+                    <div class="mr-c-row">
+                        Status:
+                        <span class="mr-green">Accepted</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <table class="mr-tbl">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Description</th>
+                        <th>Milk Type</th>
+                        <th class="text-right">Qty (L)</th>
+                        <th class="text-right">Amount (₹)</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Milk Collection Entry</td>
+                        <td>@Model.MilkTypeName</td>
+                        <td class="text-right">@Model.Quantity.ToString("F2")</td>
+                        <td class="text-right">
+                            ₹@(Model.Amount?.ToString("F2") ?? "0.00")
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="mr-tot">
+                <div class="mr-tot-inner">
+
+                    <div class="mr-tot-line">
+                        <span>Total Quantity</span>
+                        <strong>@Model.Quantity.ToString("F2") L</strong>
+                    </div>
+
+                    <div class="mr-tot-grand">
+                        <span>Amount Payable</span>
+                        <span>₹@(Model.Amount?.ToString("F2") ?? "0.00")</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="mr-rfooter">
+                Computer-generated receipt · No physical signature required |
+                Generated: @DateTime.Now.ToString("dd MMM yyyy, hh:mm tt") |
+                Dairy Management System
+            </div>
+
+        </div>
+
+    </div>
+</div>

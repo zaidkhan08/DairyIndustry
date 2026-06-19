@@ -5,231 +5,305 @@
     ViewData["Title"] = "Collection Centers";
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Collection Centers</h3>
-                <p class="text-muted mb-0">View and manage all milk collection centers</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 20px;
+    }
+
+    .stat-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stat-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stat-purple {
+        border-top: 4px solid #a855f7;
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+
+    .badge-green {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge-purple {
+        background-color: #faf5ff;
+        color: #6b21a8;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Muted Status Badges */
+    .pill-location-badge {
+        background-color: #fff2f0;
+        color: #b91c1c;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-capacity-badge {
+        background-color: #eff6ff;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-status-active {
+        background-color: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-status-inactive {
+        background-color: #fef2f2;
+        color: #991b1b;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Title Layout Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Collection Centers</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-muted">Collection Centers</span>
             </div>
-            <a asp-controller="Admin" asp-action="AddCollection" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i> Add New Collection Center
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Admin" asp-action="DownloadCollectionsPdf" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-file-earmark-pdf text-danger me-1"></i> Export PDF
+            </a>
+            <a asp-controller="Admin" asp-action="AddCollection" class="btn btn-custom-blue shadow-sm px-3 py-2" style="border-radius: 6px; font-size: 0.9rem;">
+                <i class="bi bi-plus-lg me-1"></i> Add New Center
             </a>
         </div>
     </div>
 
+    <!-- Metric Panels matching row hierarchy in image_3f9839.png -->
     <div class="row mb-4 g-3">
-
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Total Centers</p>
-                            <h4 class="fw-bold mb-0">@Model.Count</h4>
-                        </div>
-                        <i class="bi bi-house-door-fill fs-2 opacity-75"></i>
-                    </div>
+            <div class="premium-stat-card stat-blue d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Centers</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count</h3>
                 </div>
+                <span class="metric-badge badge-blue">Registered</span>
             </div>
         </div>
-
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Active Centers</p>
-                            <h4 class="fw-bold mb-0">@Model.Count(c => c.IsActive)</h4>
-                        </div>
-                        <i class="bi bi-check-circle-fill fs-2 opacity-75"></i>
-                    </div>
+            <div class="premium-stat-card stat-green d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Active Centers</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(c => c.IsActive)</h3>
                 </div>
+                <span class="metric-badge badge-green">Operational</span>
             </div>
         </div>
-
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 small">Total Capacity (L)</p>
-                            <h4 class="fw-bold mb-0">@Model.Sum(c => c.Capacity).ToString("N0")</h4>
-                        </div>
-                        <i class="bi bi-droplet-fill fs-2 opacity-75"></i>
-                    </div>
+            <div class="premium-stat-card stat-purple d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Capacity</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Sum(c => c.Capacity).ToString("N0")<span class="fs-6 fw-normal text-muted ms-1">L</span></h3>
                 </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <div class="card shadow-sm border-0">
-
-                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-house-door me-1"></i> All Collection Centers</span>
-                    <span class="badge bg-primary">Total: @Model.Count</span>
-                </div>
-
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-3">#</th>
-                                    <th>Center ID</th>
-                                    <th>Center Name</th>
-                                    <th>Location</th>
-                                    <th class="text-center">Capacity (L)</th>
-                                    <th class="text-center">Status</th>
-                                    <th class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-
-                                @if (!Model.Any())
-                                {
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                                            <span class="fw-semibold">No collection centers found.</span><br />
-                                            <small>Click "Add New Collection Center" to register one.</small>
-                                        </td>
-                                    </tr>
-                                }
-                                else
-                                {
-                                    int sr = 1;
-                                    foreach (var center in Model)
-                                    {
-                                        <!-- FIX: apostrophe-safe confirm message via data attribute, handled in JS below -->
-                                        <tr class="@(!center.IsActive ? "table-secondary" : "")">
-
-                                            <td class="ps-3 text-muted small">@sr</td>
-
-                                            <td>
-                                                <span class="badge bg-secondary">#@center.CenterId</span>
-                                            </td>
-
-                                            <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div style="width:36px;height:36px;border-radius:8px;
-                                                                        background:#ecfdf5;display:flex;
-                                                                        align-items:center;justify-content:center;
-                                                                        flex-shrink:0;">
-                                                        <i class="bi bi-house-door-fill text-success"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-semibold small">@center.CenterName</div>
-                                                        <div class="text-muted" style="font-size:11px;">Collection Center</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td>
-                                                <span class="badge rounded-pill bg-light text-dark border">
-                                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>
-                                                    @(string.IsNullOrEmpty(center.Location) ? "—" : center.Location)
-                                                </span>
-                                            </td>
-
-                                            <td class="text-center">
-                                                <span class="badge rounded-pill bg-light text-dark border">
-                                                    <i class="bi bi-droplet-fill text-primary me-1"></i>
-                                                    @center.Capacity.ToString("N0") L
-                                                </span>
-                                            </td>
-
-                                            <td class="text-center">
-                                                @if (center.IsActive)
-                                                {
-                                                    <span class="badge bg-success">Active</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">Inactive</span>
-                                                }
-                                            </td>
-
-                                            <td class="text-center">
-                                                <div class="d-flex justify-content-center gap-2">
-
-                                                    <a asp-controller="Admin"
-                                                       asp-action="EditCollection"
-                                                       asp-route-id="@center.CenterId"
-                                                       class="btn btn-sm btn-outline-warning"
-                                                       title="Edit">
-                                                        <i class="bi bi-pencil-square me-1"></i> Edit
-                                                    </a>
-
-                                                    @if (center.IsActive)
-                                                    {
-                                                        <!-- FIX: data-name avoids apostrophe breaking JS string -->
-                                                        <form asp-controller="Admin"
-                                                              asp-action="ToggleCollection"
-                                                              method="post"
-                                                              class="d-inline toggle-form"
-                                                              data-name="@center.CenterName"
-                                                              data-action="deactivate">
-                                                            <input type="hidden" name="id" value="@center.CenterId" />
-                                                            <input type="hidden" name="isActive" value="false" />
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                <i class="bi bi-x-circle me-1"></i> Deactivate
-                                                            </button>
-                                                        </form>
-                                                    }
-                                                    else
-                                                    {
-                                                        <form asp-controller="Admin"
-                                                              asp-action="ToggleCollection"
-                                                              method="post"
-                                                              class="d-inline toggle-form"
-                                                              data-name="@center.CenterName"
-                                                              data-action="restore">
-                                                            <input type="hidden" name="id" value="@center.CenterId" />
-                                                            <input type="hidden" name="isActive" value="true" />
-                                                            <button type="submit" class="btn btn-sm btn-outline-success">
-                                                                <i class="bi bi-check-circle me-1"></i> Restore
-                                                            </button>
-                                                        </form>
-                                                    }
-
-                                                </div>
-                                            </td>
-
-                                        </tr>
-                                        sr++;
-                                    }
-                                }
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="bi bi-info-circle me-1"></i>
-                        @Model.Count center(s) registered in the system
-                    </span>
-                    <a asp-controller="Admin" asp-action="AddCollection"
-                       class="text-primary text-decoration-none small">
-                        <i class="bi bi-plus-circle me-1"></i> Add New Collection Center
-                    </a>
-                </div>
-
+                <span class="metric-badge badge-purple">Volume Limit</span>
             </div>
         </div>
     </div>
 
+    <!-- Main Grid Box Data Container -->
+    <div class="card premium-stat-card stat-blue p-0 border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark" style="font-size: 0.95rem;"><i class="bi bi-house-door text-primary me-2"></i>All Active Collection Infrastructure Nodes</span>
+            <span class="badge bg-light text-dark border px-2 py-1" style="font-weight: 500; border-radius: 6px;">Total Units: @Model.Count</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">#</th>
+                        <th>Center Identity Details</th>
+                        <th>Location Hub</th>
+                        <th class="text-center">Storage Capacity</th>
+                        <th class="text-center">Operational Access</th>
+                        <th class="text-end pe-4">Actions Matrix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                No active central milk collection center records exist inside current database tables.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int sr = 1;
+                        foreach (var center in Model)
+                        {
+                            <tr class="@(!center.IsActive ? "opacity-75" : "")">
+                                <td class="ps-4 text-muted small fw-medium">@sr</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div style="width:36px; height:36px; border-radius:6px; background:#f0fdf4; display:flex; align-items:center; justify-content-center; flex-shrink:0;">
+                                            <i class="bi bi-house-door-fill text-success" style="font-size: 0.95rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">@center.CenterName</div>
+                                            @* <div class="text-muted tiny" style="font-size: 11px;">System Node ID: #@center.CenterId</div> *@
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="pill-location-badge text-dark border bg-light">
+                                        <i class="bi bi-geo-alt-fill me-1 small text-danger"></i>@(string.IsNullOrEmpty(center.Location) ? "—" : center.Location)
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="pill-capacity-badge">
+                                        <i class="bi bi-droplet-fill text-primary me-1 small"></i><strong>@center.Capacity.ToString("N0")</strong> L
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="@(center.IsActive ? "pill-status-active" : "pill-status-inactive")">
+                                        @(center.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <a asp-controller="Admin" asp-action="EditCollection" asp-route-id="@center.CenterId" class="btn btn-sm btn-light border px-2 text-primary" style="border-radius:6px;" title="Modify Parameters">
+                                            <i class="bi bi-pencil me-1"></i> Edit
+                                        </a>
+
+                                        @if (center.IsActive)
+                                        {
+                                            <form asp-controller="Admin" asp-action="ToggleCollection" method="post" class="d-inline toggle-form" data-name="@center.CenterName" data-action="deactivate">
+                                                <input type="hidden" name="id" value="@center.CenterId" />
+                                                <input type="hidden" name="isActive" value="false" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2" style="border-radius:6px;" title="Suspend Access">
+                                                    <i class="bi bi-x-circle me-1"></i> Suspend
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-controller="Admin" asp-action="ToggleCollection" method="post" class="d-inline toggle-form" data-name="@center.CenterName" data-action="restore">
+                                                <input type="hidden" name="id" value="@center.CenterId" />
+                                                <input type="hidden" name="isActive" value="true" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success px-2" style="border-radius:6px;" title="Restore Node">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Activate
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            sr++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-white border-top text-muted small py-3 px-4 d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-info-circle me-1 text-secondary"></i> Central distribution tracks <strong>@Model.Count</strong> physical procurement stations.
+            </span>
+            <a asp-controller="Admin" asp-action="AddCollection" class="text-primary text-decoration-none small fw-medium">
+                <i class="bi bi-plus-circle me-1"></i> Register Alternate Collection Node
+            </a>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
-        // FIX: safe confirm using data attributes — no apostrophe issue
         document.querySelectorAll('.toggle-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
                 var name   = form.getAttribute('data-name');

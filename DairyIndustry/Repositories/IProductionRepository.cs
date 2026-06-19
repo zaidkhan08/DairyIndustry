@@ -14,8 +14,14 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // MILK TRANSFERS
         // ════════════════════════════════════════════════════════
-        int DispatchMilkTransfer(int batchId, int vehicleId, int plantId,
+
+        /// <summary>
+        /// Dispatches milk. MilkTypeId is now a required parameter so the
+        /// correct milk type is stored on MilkTransfers and used on receipt.
+        /// </summary>
+        int DispatchMilkTransfer(int batchId, int milkTypeId, int vehicleId, int plantId,
                                   decimal dispatchQty, DateTime dispatchDate);
+
         void ReceiveMilkTransfer(int transferId, decimal receivedQty, DateTime receivedDate);
         List<MilkTransferModel> GetAllTransfers(int? plantId = null);
         MilkTransferModel GetTransferById(int transferId);
@@ -38,12 +44,18 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // PRODUCTION BATCHES
         // ════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// MilkTypeId is stored on ProductionBatches so wastage logging
+        /// never has to guess or fall back to a default.
+        /// </summary>
         int StartProductionBatch(int plantId, int productId,
                                   decimal milkUsedQuantity, DateTime productionDate, int milkTypeId);
 
         /// <summary>
         /// Updates batch status. If newStatus == "QCFailed", automatically logs the
-        /// full MilkUsedQuantity into Production.MilkProcessWastage with WastageType = 'QCFailed'.
+        /// full MilkUsedQuantity into Production.MilkProcessWastage (WastageType = 'QCFailed').
+        /// MilkTypeId is read directly from ProductionBatches — no fallback guessing.
         /// </summary>
         void UpdateBatchStatus(int productionBatchId, string batchStatus);
 
@@ -61,18 +73,8 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // MILK PROCESS WASTAGE  (raw-milk lost during production)
         // ════════════════════════════════════════════════════════
-
-        /// <summary>
-        /// Manually records a partial raw-milk process wastage for an InProgress batch.
-        /// WastageType is always stored as 'ProcessWastage'.
-        /// </summary>
         int AddMilkProcessWastage(int productionBatchId, int plantId, int milkTypeId,
                                    decimal wastageQuantity, string reason);
-
-        /// <summary>
-        /// Returns all milk process wastage records, optionally scoped to a plant.
-        /// Includes both QCFailed (auto) and ProcessWastage (manual) entries.
-        /// </summary>
         List<MilkProcessWastageModel> GetAllMilkProcessWastage(int? plantId = null);
 
         // ════════════════════════════════════════════════════════

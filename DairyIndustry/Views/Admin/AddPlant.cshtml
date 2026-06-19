@@ -3,84 +3,145 @@
     ViewData["Title"] = "Add Processing Plant";
 }
 
-<div class="container mt-4">
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Add Processing Plant</h3>
-                <p class="text-muted mb-0">Register a new milk processing plant</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Add Processing Plant</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Infrastructure</span> &gt; <span class="text-muted">Register New Plant</span>
             </div>
-            <a asp-controller="Admin" asp-action="GetAllPlants" class="btn btn-outline-secondary">
+        </div>
+        <div>
+            <a asp-controller="Admin" asp-action="GetAllPlants" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Plants
             </a>
         </div>
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-12 col-md-8 col-lg-6">
 
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-semibold">
-                    <i class="bi bi-building me-1 text-primary"></i> Plant Details
+            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
+                <div class="pb-3 mb-4 border-bottom">
+                    <span class="panel-header-text"><i class="bi bi-building text-primary me-2"></i>Plant Facility Parameters</span>
                 </div>
-                <div class="card-body p-4">
 
-                    <form method="post" asp-controller="Admin" asp-action="AddPlant">
+                <form method="post" asp-controller="Admin" asp-action="AddPlant">
+                    @Html.AntiForgeryToken()
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Plant Name <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-building"></i>
-                                </span>
-                                <input type="text"
-                                       name="PlantName"
-                                       class="form-control"
-                                       placeholder="e.g. Surat Processing Plant"
-                                       required />
-                            </div>
-                            <div class="form-text">Enter a unique name for this plant</div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Plant Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-building small"></i></span>
+                            <input type="text" name="PlantName" class="form-control border-start-0 ps-1" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. Surat Processing Plant" required />
                         </div>
+                    </div>
 
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Location <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-geo-alt"></i>
-                                </span>
-                                <input type="text"
-                                       name="Location"
-                                       class="form-control"
-                                       placeholder="e.g. GIDC, Sachin, Surat"
-                                       required />
-                            </div>
-                            <div class="form-text">Enter the physical address or area of the plant</div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Landmark Street Address <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-geo-alt small"></i></span>
+                            <input type="text" name="Location" class="form-control border-start-0 ps-1" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. GIDC, Sachin" required />
                         </div>
+                    </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-plus-circle me-1"></i> Add Plant
-                            </button>
-                            <a asp-controller="Admin"
-                               asp-action="GetAllPlants"
-                               class="btn btn-outline-secondary px-4">
-                                Cancel
-                            </a>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">State Region <span class="text-danger">*</span></label>
+                        <select name="State" id="StateId" class="form-select text-dark" style="border-radius: 6px; padding: 10px;" required>
+                            <option value="">-- Select State --</option>
+                            @foreach (var state in ViewBag.States)
+                            {
+                                <option value="@state.StateName" data-id="@state.StateId">@state.StateName</option>
+                            }
+                        </select>
+                    </div>
 
-                    </form>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-secondary mb-1">City Headquarter Zone <span class="text-danger">*</span></label>
+                        <select name="City" id="CityId" class="form-select text-dark" style="border-radius: 6px; padding: 10px;" required disabled>
+                            <option value="">-- Select State First --</option>
+                        </select>
+                    </div>
 
-                </div>
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-custom-blue px-4 py-2" style="border-radius: 6px;">
+                            <i class="bi bi-plus-lg me-1"></i> Register Plant Node
+                        </button>
+                        <a asp-controller="Admin" asp-action="GetAllPlants" class="btn btn-light border text-secondary px-4 py-2" style="border-radius: 6px; font-weight: 500;">Cancel</a>
+                    </div>
+
+                </form>
             </div>
-
-            
 
         </div>
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        // Dynamic Cascade Sync Mapping Logic
+        document.getElementById('StateId').addEventListener('change', function () {
+            const stateId = this.options[this.selectedIndex].dataset.id;
+            const cityDropdown = document.getElementById('CityId');
+
+            cityDropdown.innerHTML = '<option value="">-- Loading Associated Cities... --</option>';
+            cityDropdown.disabled = true;
+
+            if (!stateId) {
+                cityDropdown.innerHTML = '<option value="">-- Select State First --</option>';
+                return;
+            }
+
+            fetch(`/Admin/GetCitiesByState?stateId=${stateId}`)
+                .then(r => r.json())
+                .then(data => {
+                    cityDropdown.innerHTML = '<option value="">-- Select City --</option>';
+                    data.forEach(c => {
+                        cityDropdown.innerHTML += `<option value="${c.cityName}">${c.cityName}</option>`;
+                    });
+                    cityDropdown.disabled = false;
+                });
+        });
+    </script>
+}

@@ -1,0 +1,198 @@
+﻿@model DairyIndustry.Models.Admin.UserProfileVM
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "My Profile";
+}
+
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+    /* Premium Top Accent Line Card from image_3f9839.png */
+    .premium-profile-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Clean Row Properties */
+    .detail-item-row {
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .detail-item-row:last-child {
+            border-bottom: none;
+        }
+
+    .detail-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        width: 30%;
+        padding: 14px 0;
+    }
+
+    .detail-value {
+        font-size: 0.95rem;
+        color: #111827;
+        padding: 14px 0;
+    }
+
+    /* Muted Premium Badges */
+    .pill-role-badge {
+        background-color: #eff6ff;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid #bfdbfe !important;
+    }
+
+    .pill-status-active {
+        background-color: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Page Title Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">My Profile</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Account</span> &gt; <span class="text-muted">Personal Overview</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Profile Card Container -->
+    <div class="card premium-profile-card border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom">
+            <span class="panel-header-text"><i class="bi bi-person-workspace me-2 text-primary"></i>Personal Account Identity</span>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-4">
+
+                <!-- LEFT SIDE PANEL: PROFILE BRANDING FRAME -->
+                <div class="col-md-4 text-center border-end pe-md-4">
+                    <div class="my-3">
+                        @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                        {
+                            <img src="@Url.Content("~/" + Model.ProfilePhoto.TrimStart('/'))"
+                                 class="rounded-circle border p-1 bg-white shadow-sm"
+                                 width="130" height="130"
+                                 style="object-fit:cover;" alt="User Avatar" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle bg-light border text-secondary d-flex align-items-center justify-content-center mx-auto shadow-sm"
+                                 style="width:130px; height:130px;">
+                                <span class="fs-1 fw-bold text-uppercase">
+                                    @(string.IsNullOrEmpty(Model.FullName) ? "U" : Model.FullName[0].ToString())
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <h4 class="fw-bold text-dark mb-1 mt-3" style="font-size: 1.25rem;">@Model.FullName</h4>
+                    <div class="d-flex flex-column align-items-center gap-2 mt-2">
+                        <div>
+                            <span class="pill-role-badge">@Model.RoleName</span>
+                        </div>
+                        <div class="mt-1">
+                            <span class="pill-status-active">
+                                <i class="bi bi-shield-check"></i> Active Account
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE PANEL: SYSTEM SPECIFIC ATTRIBUTES -->
+                <div class="col-md-8 ps-md-4">
+                    <h5 class="fw-bold text-dark mb-3" style="font-size: 1rem;"><i class="bi bi-card-text me-2 text-secondary"></i>Profile Parameters</h5>
+
+                    <div class="px-1">
+                        <div class="detail-item-row">
+                            <div class="detail-label">Username</div>
+                            <div class="detail-value fw-bold text-dark">@Model.Username</div>
+                        </div>
+
+                        <div class="detail-item-row">
+                            <div class="detail-label">Email Address</div>
+                            <div class="detail-value">
+                                <i class="bi bi-envelope me-1 text-muted"></i>
+                                @(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)
+                            </div>
+                        </div>
+
+                        <div class="detail-item-row">
+                            <div class="detail-label">Phone Channel</div>
+                            <div class="detail-value">
+                                <i class="bi bi-telephone me-1 text-muted"></i>
+                                @(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)
+                            </div>
+                        </div>
+
+                        <div class="detail-item-row">
+                            <div class="detail-label">Joining Date</div>
+                            <div class="detail-value text-secondary">
+                                <i class="bi bi-calendar3 me-1 text-muted"></i>
+                                @(Model.DOJ != null ? Model.DOJ.Value.ToString("dd MMM yyyy") : "—")
+                            </div>
+                        </div>
+
+                        <div class="detail-item-row">
+                            <div class="detail-label">Base Salary</div>
+                            <div class="detail-value fw-bold text-success">
+                                @(Model.Salary != null ? "₹ " + Model.Salary.Value.ToString("N0") : "—")
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Optional Actions Placement Mapped to Sub-panel Grid Pattern *@
+                    @* <div class="mt-4 pt-2 d-flex gap-2">
+                        <a href="#" class="btn btn-primary px-3" style="border-radius: 6px; font-weight: 500; font-size: 0.9rem;">
+                            <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary px-3" style="border-radius: 6px; font-weight: 500; font-size: 0.9rem;">
+                            <i class="bi bi-key me-1"></i> Change Password
+                        </a>
+                    </div> *@
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

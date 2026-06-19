@@ -1,0 +1,466 @@
+﻿@model DairyIndustry.Models.Admin.BatchModel
+@using DairyIndustry.Models.Admin
+
+@{
+    ViewData["Title"] = $"Batch #{Model.BatchId} Detail";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var entries = (List<BatchCollectionEntryModel>)ViewBag.Entries;
+    bool canClose = Model.Status == "Open";
+
+    // Establish Contextual Accent Theme Colors Based on Status
+    string accentClass = "stripe-danger";
+    string badgeClass = "badge-red";
+    string statusIcon = "bi-x-circle-fill";
+
+    if (Model.Status == "Open")
+    {
+        accentClass = "stripe-green";
+        badgeClass = "badge-green";
+        statusIcon = "bi-circle-fill";
+    }
+    else if (Model.Status == "Closed")
+    {
+        accentClass = "stripe-warning";
+        badgeClass = "badge-warning";
+        statusIcon = "bi-lock-fill";
+    }
+    else if (Model.Status == "Dispatched")
+    {
+        accentClass = "stripe-blue";
+        badgeClass = "badge-blue";
+        statusIcon = "bi-truck";
+    }
+}
+
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .stripe-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stripe-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stripe-warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    .stripe-danger {
+        border-top: 4px solid #ef4444;
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Custom Badges */
+    .metric-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+
+    .badge-green {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .badge-red {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    .pill-milk-badge {
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .milk-cow {
+        background-color: #fffbeb;
+        color: #b45309;
+        border: 1px solid #fef3c7;
+    }
+
+    .milk-buffalo {
+        background-color: #f8fafc;
+        color: #1f2937;
+        border: 1px solid #e2e8f0;
+    }
+
+    .milk-mixed {
+        background-color: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tfoot td {
+        padding: 16px 20px;
+        font-size: 0.95rem;
+        color: #111827;
+        background-color: #fafafa;
+        border-top: 2px solid #e2e8f0;
+    }
+
+    .btn-custom-warning {
+        background-color: #f59e0b;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-warning:hover {
+            background-color: #d97706;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- ── PAGE WORKSPACE HEADER ───────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-3 shadow-sm" style="width: 48px; height: 43px; background-color: #ffffff; border: 1px solid #e2e8f0;">
+                    <i class="bi @statusIcon text-dark fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0 text-dark">Batch #@Model.BatchId Details</h4>
+                    <div class="breadcrumb-custom mt-1">
+                        <span>Admin</span> &gt; <span class="text-muted">Operations</span> &gt; <span class="text-muted">Batch Mappings</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Batches", "Admin")" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            @if (canClose)
+            {
+                <button class="btn btn-custom-warning shadow-sm px-3 py-2" style="font-size: 0.9rem;" type="button" data-bs-toggle="modal" data-bs-target="#closeBatchModal">
+                    <i class="bi bi-lock-fill me-1"></i> Close Batch Mappings
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- ── CONTEXT STATUS NOTIFICATIONS ───────────────────── -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+        </div>
+    }
+
+    <!-- ── CORE SUMMARY MATRIX PANEL CARDS ────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card premium-data-card @accentClass p-3 border-start-0 border-end-0 border-bottom-0 d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Batch Node Status</p>
+                    <h4 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">@Model.Status</h4>
+                </div>
+                <span class="metric-badge @badgeClass">System State</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card premium-data-card stripe-blue p-3 border-start-0 border-end-0 border-bottom-0 d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Entries</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size: 1.35rem;">@ViewBag.TotalEntries</h3>
+                </div>
+                <span class="metric-badge badge-blue">Records Mapped</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card premium-data-card stripe-green p-3 border-start-0 border-end-0 border-bottom-0 d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">@(Model.TotalQuantity.HasValue ? "Total Qty (Calculated)" : "Total Qty (Live)")</p>
+                    <h3 class="fw-bold mb-0 text-dark" style="font-size: 1.35rem;">
+                        @((Model.TotalQuantity ?? (decimal)ViewBag.TotalQty).ToString("N2"))<span class="fs-6 fw-normal text-muted ms-1">L</span>
+                    </h3>
+                </div>
+                <span class="metric-badge badge-green">Net Volume</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card premium-data-card stripe-warning p-3 border-start-0 border-end-0 border-bottom-0 d-flex flex-row justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Valuation</p>
+                    <h3 class="fw-bold mb-0 text-success" style="font-size: 1.35rem;">
+                        ₹@(((decimal)ViewBag.TotalAmount).ToString("N2"))
+                    </h3>
+                </div>
+                <span class="metric-badge badge-warning">Gross Amount</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── QUALITY CONTROL AVERAGES BLOCK ─────────────────── -->
+    @if (Model.AvgFat.HasValue || Model.AvgCLR.HasValue)
+    {
+        <div class="card premium-data-card stripe-green p-3 border-start-0 border-end-0 border-bottom-0 mb-4 bg-white">
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="card-title-text">Batch Base Fat Average:</span>
+                    <span class="fw-bold text-dark fs-5">@Model.AvgFat?.ToString("F2")<span class="fs-6 text-muted font-normal">%</span></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="card-title-text">Batch Base CLR Average:</span>
+                    <span class="fw-bold text-dark fs-5">@Model.AvgCLR?.ToString("F2")</span>
+                </div>
+                <div class="ms-md-auto d-flex align-items-center text-muted small italic">
+                    <i class="bi bi-info-circle me-1 text-success"></i> Quality metrics compiled at operational lock completion timestamp parameters.
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── LIVE OPEN RUN ALERT BANNER ────────────────────── -->
+    @if (canClose && !entries.Any())
+    {
+        <div class="alert alert-info border-0 shadow-sm d-flex gap-2 align-items-start mb-4" style="border-radius: 8px;">
+            <i class="bi bi-info-circle-fill flex-shrink-0 mt-0.5"></i>
+            <div>
+                <strong class="text-dark">Active Live Batch Sequence Open</strong> — Alternate operational collection terminals have not yet recorded child logs. Entries pass automatically via assigned endpoint terminals.
+            </div>
+        </div>
+    }
+
+    <!-- ── CONTAINER DATA LIST MATRICES ───────────────────── -->
+    <div class="card premium-data-card stripe-blue border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="panel-header-text">
+                <i class="bi bi-list-ul text-primary me-2"></i>Itemized Volume Logs
+                <span class="badge bg-light text-dark border ms-1" style="border-radius: 6px;">@entries.Count entries</span>
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small"><i class="bi bi-building me-1"></i>@Model.CenterName</span>
+                <span class="text-muted small font-monospace"><i class="bi bi-calendar3 me-1"></i>@Model.BatchDate.ToString("dd MMM yyyy")</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Log Token ID</th>
+                        <th>Farmer / Producer Name</th>
+                        <th>Classification</th>
+                        <th class="text-end">Quantity (L)</th>
+                        <th class="text-center">Fat Base</th>
+                        <th class="text-center">CLR Base</th>
+                        <th class="text-end">Rate / L</th>
+                        <th class="text-end">Net Yield Price</th>
+                        <th class="text-center pe-4">Receipt Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!entries.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                No production collection transaction entities exist for this batch timeline context.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var entry in entries)
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted small fw-medium">#@entry.CollectionId</td>
+                                <td class="fw-bold text-dark">@entry.FarmerName</td>
+                                <td>
+                                    @{
+                                        string typeStyle = entry.MilkTypeName?.ToLower() switch
+                                        {
+                                            "cow" => "milk-cow",
+                                            "buffalo" => "milk-buffalo",
+                                            _ => "milk-mixed"
+                                        };
+                                    }
+                                    <span class="pill-milk-badge @typeStyle">@entry.MilkTypeName</span>
+                                </td>
+                                <td class="text-end fw-bold text-dark">@entry.Quantity.ToString("N2")</td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    @(entry.AppliedFat?.ToString("F2") ?? "—")<span class="small text-muted ms-0.5">%</span>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    @(entry.AppliedCLR?.ToString("F2") ?? "—")
+                                </td>
+                                <td class="text-end text-secondary fw-medium">
+                                    @(entry.RatePerLiter.HasValue ? "₹" + entry.RatePerLiter.Value.ToString("N2") : "—")
+                                </td>
+                                <td class="text-end fw-bold text-dark">
+                                    @(entry.Amount.HasValue ? "₹" + entry.Amount.Value.ToString("N2") : "—")
+                                </td>
+                                <td class="text-center pe-4">
+                                    @if (!string.IsNullOrEmpty(entry.ReceiptNumber))
+                                    {
+                                        <span class="badge bg-light text-dark border font-monospace px-2 py-1" style="font-size:0.8rem; border-radius: 4px;">
+                                            @entry.ReceiptNumber
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+                @if (entries.Any())
+                {
+                    <tfoot>
+                        <tr class="fw-bold text-dark">
+                            <td class="ps-4" colspan="3">Aggregated Totals</td>
+                            <td class="text-end">@entries.Sum(e => e.Quantity).ToString("N2")</td>
+                            <td class="text-center text-secondary small">
+                                @{
+                                    var fatEntries = entries.Where(e => e.AppliedFat.HasValue);
+                                    @(fatEntries.Any() ? fatEntries.Average(e => e.AppliedFat.Value).ToString("F2") + "%" : "—")
+                                }
+                            </td>
+                            <td class="text-center text-secondary small">
+                                @{
+                                    var clrEntries = entries.Where(e => e.AppliedCLR.HasValue);
+                                    @(clrEntries.Any() ? clrEntries.Average(e => e.AppliedCLR.Value).ToString("F2") : "—")
+                                }
+                            </td>
+                            <td></td>
+                            <td class="text-end text-success" style="font-size:1.05rem;">
+                                ₹@entries.Sum(e => e.Amount ?? 0).ToString("N2")
+                            </td>
+                            <td class="pe-4"></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── OVERLAID CLOSE CONFIRMATION DIALOG MODAL ──────── -->
+@if (canClose)
+{
+    <div class="modal fade" id="closeBatchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                <form method="post" action="@Url.Action("CloseBatch", "Admin")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="batchId" value="@Model.BatchId" />
+
+                    <div class="modal-body text-center pt-4 pb-2 px-4">
+                        <div class="mb-3">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10" style="width: 56px; height: 56px;">
+                                <i class="bi bi-lock-fill text-warning fs-3"></i>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1" style="font-size: 1.15rem;">Lock Operational Batch #@Model.BatchId?</h5>
+                        <p class="text-muted small">@Model.CenterName &nbsp;·&nbsp; @Model.Shift &nbsp;·&nbsp; @Model.BatchDate.ToString("dd MMM yyyy")</p>
+
+                        <div class="p-3 rounded-3 bg-warning bg-opacity-10 text-start d-flex gap-2 mt-3 text-warning-emphasis" style="font-size: 0.85rem; border: 1px solid rgba(245,158,11,0.2);">
+                            <i class="bi bi-exclamation-triangle-fill mt-0.5 flex-shrink-0"></i>
+                            <span>
+                                Committing closure changes system state parameters to write-locked. Average fat components, volume matrices, and values calculate dynamically. <strong>No append modifications can execute downstream.</strong>
+                            </span>
+                        </div>
+
+                        @if (!entries.Any())
+                        {
+                            <div class="p-3 rounded-3 bg-danger bg-opacity-10 text-start d-flex gap-2 mt-2 text-danger" style="font-size: 0.85rem; border: 1px solid rgba(239,68,68,0.2);">
+                                <i class="bi bi-info-circle-fill mt-0.5 flex-shrink-0"></i>
+                                <span>This structure currently holds 0 logs. Confirm closure execution?</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modal-footer border-0 justify-content-center pb-4 gap-2">
+                        <button type="button" class="btn btn-light border px-4" style="border-radius:6px; font-weight:500;" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-custom-warning px-4">Yes, Lock Batch</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

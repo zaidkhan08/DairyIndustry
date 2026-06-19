@@ -1,0 +1,706 @@
+@model DairyIndustry.Models.FarmerModel.FarmerStatusViewModel
+
+@{
+    ViewData["Title"] = "Check Registration Status";
+    Layout = "_DairyLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+
+<style>
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0
+    }
+
+    :root {
+        --navy: #1B3A6B;
+        --navy-dark: #122850;
+        --navy-mid: #2E5496;
+        --navy-light: #E8EEF8;
+        --navy-border: #C2D0E8;
+        --accent: #2563EB;
+        --red: #DC2626;
+        --red-light: #FEF2F2;
+        --green-ok: #16A34A;
+        --yellow: #D97706;
+        --yellow-light: #FFFBEB;
+        --yellow-border: #FDE68A;
+        --gray-bg: #F5F7FA;
+        --gray-border: #D1D5DB;
+        --gray-text: #6B7280;
+        --gray-hint: #9CA3AF;
+        --white: #FFFFFF;
+        --radius: 12px;
+        --radius-sm: 8px;
+    }
+
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--gray-bg);
+        color: #111827
+    }
+
+    .page-wrap {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+        text-align: center;
+        margin-bottom: 1.75rem
+    }
+
+    .brand-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--navy-light);
+        color: var(--navy);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+        border: 1px solid var(--navy-border);
+        letter-spacing: 0.3px
+    }
+
+        .brand-chip i {
+            font-size: 15px
+        }
+
+    .page-header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--navy-dark);
+        margin-bottom: 5px;
+        letter-spacing: -0.3px
+    }
+
+    .page-header p {
+        font-size: 13.5px;
+        color: var(--gray-text)
+    }
+
+    /* ── CARD ── */
+    .card {
+        background: var(--white);
+        border: 1px solid var(--gray-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        margin-bottom: 1.25rem
+    }
+
+    .card-head {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--gray-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--navy-light)
+    }
+
+    .card-head-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--navy);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+        flex-shrink: 0
+    }
+
+    .card-head-text h2 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--navy-dark)
+    }
+
+    .card-head-text p {
+        font-size: 12px;
+        color: var(--gray-text);
+        margin-top: 2px
+    }
+
+    .card-body {
+        padding: 1.5rem
+    }
+
+    /* ── FIELD ── */
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 1rem
+    }
+
+        .field label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 4px
+        }
+
+            .field label .req {
+                color: var(--navy);
+                font-size: 13px
+            }
+
+        .field input {
+            width: 100%;
+            height: 42px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #111827;
+            background: var(--white);
+            border: 1.5px solid var(--gray-border);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border .15s, box-shadow .15s;
+            font-family: inherit
+        }
+
+            .field input:focus {
+                border-color: var(--navy);
+                box-shadow: 0 0 0 3px rgba(27,58,107,0.12)
+            }
+
+    /* ── BUTTON ── */
+    .btn {
+        height: 44px;
+        width: 100%;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background .15s, border-color .15s, transform .1s;
+        text-decoration: none
+    }
+
+        .btn:active {
+            transform: scale(0.98)
+        }
+
+    .btn-primary {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff
+    }
+
+        .btn-primary:hover {
+            background: var(--navy-dark);
+            border-color: var(--navy-dark)
+        }
+
+    .btn-outline {
+        background: var(--white);
+        border-color: var(--gray-border);
+        color: #374151
+    }
+
+        .btn-outline:hover {
+            background: var(--gray-bg)
+        }
+
+    .btn-success-action {
+        background: var(--green-ok);
+        border-color: var(--green-ok);
+        color: #fff
+    }
+
+        .btn-success-action:hover {
+            background: #15803D;
+            border-color: #15803D
+        }
+
+    .btn-danger-action {
+        background: var(--white);
+        border-color: var(--red);
+        color: var(--red)
+    }
+
+        .btn-danger-action:hover {
+            background: var(--red-light)
+        }
+
+    /* ── STATUS BADGE ── */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600
+    }
+
+    .badge-pending {
+        background: var(--yellow-light);
+        color: var(--yellow);
+        border: 1px solid var(--yellow-border)
+    }
+
+    .badge-approved {
+        background: #F0FDF4;
+        color: var(--green-ok);
+        border: 1px solid #BBF7D0
+    }
+
+    .badge-rejected {
+        background: var(--red-light);
+        color: var(--red);
+        border: 1px solid #FECACA
+    }
+
+    /* ── RESULT CARD HEADER ── */
+    .result-head {
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px
+    }
+
+    .result-head-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0
+    }
+
+        .result-head-icon.pending {
+            background: var(--yellow-light);
+            color: var(--yellow)
+        }
+
+        .result-head-icon.approved {
+            background: #F0FDF4;
+            color: var(--green-ok)
+        }
+
+        .result-head-icon.rejected {
+            background: var(--red-light);
+            color: var(--red)
+        }
+
+    .result-head-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #111827
+    }
+
+    .result-head-sub {
+        font-size: 12px;
+        color: var(--gray-text);
+        margin-top: 2px
+    }
+
+    /* ── INFO ROWS ── */
+    .info-rows {
+        border-top: 1px solid var(--gray-border)
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        padding: 11px 1.5rem;
+        border-bottom: 1px solid var(--gray-border);
+        gap: 12px
+    }
+
+    .info-rows {
+        border-top: none /* ← remove border-top */
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        padding: 11px 1.5rem;
+        border-bottom: none; /* ← remove border-bottom */
+        gap: 12px
+    }
+        .info-row:last-child {
+            border-bottom: none
+        }
+
+    .info-row-key {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--gray-hint);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        width: 110px;
+        flex-shrink: 0
+    }
+
+    .info-row-val {
+        font-size: 13.5px;
+        color: #111827;
+        font-weight: 500;
+        flex: 1
+    }
+
+    /* ── FARMER CODE ── */
+    .farmer-code-box {
+        margin: 1rem 1.5rem;
+        padding: 14px 16px;
+        background: var(--navy-light);
+        border: 1px solid var(--navy-border);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        gap: 12px
+    }
+
+    .farmer-code-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--gray-text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px
+    }
+
+    .farmer-code-value {
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--navy-dark);
+        letter-spacing: 2px
+    }
+
+    /* ── NOTICE BOX ── */
+    .notice-box {
+        margin: 0 1.5rem 1.25rem;
+        padding: 11px 14px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 12.5px;
+        line-height: 1.6
+    }
+
+        .notice-box.warning {
+            background: var(--yellow-light);
+            border: 1px solid var(--yellow-border);
+            color: #92400E
+        }
+
+        .notice-box.success {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: #14532D
+        }
+
+        .notice-box.danger {
+            background: var(--red-light);
+            border: 1px solid #FECACA;
+            color: #991B1B
+        }
+
+        .notice-box i {
+            font-size: 15px;
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+    /* ── ACTION AREA ── */
+    .action-area {
+        padding: 1rem 1.5rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+    }
+
+    /* ── NOT FOUND ── */
+    .not-found-box {
+        text-align: center;
+        padding: 2.5rem 1.5rem
+    }
+
+    .not-found-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--yellow-light);
+        border: 1px solid var(--yellow-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 24px;
+        color: var(--yellow)
+    }
+
+    .not-found-box h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 6px
+    }
+
+    .not-found-box p {
+        font-size: 13px;
+        color: var(--gray-text);
+        margin-bottom: 1.25rem;
+        line-height: 1.6
+    }
+
+    /* ── BOTTOM LINKS ── */
+    .bottom-links {
+        text-align: center;
+        margin-top: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px
+    }
+
+        .bottom-links a {
+            font-size: 13px;
+            color: var(--navy);
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px
+        }
+
+            .bottom-links a:hover {
+                text-decoration: underline
+            }
+
+        .bottom-links .sep {
+            width: 1px;
+            height: 14px;
+            background: var(--gray-border)
+        }
+
+    @@media(max-width: 480px) {
+        .page-wrap {
+            padding: 1.25rem 0.75rem 2rem
+        }
+
+        .card-body, .action-area {
+            padding: 1.25rem
+        }
+
+        .info-row {
+            padding: 10px 1.25rem
+        }
+
+        .farmer-code-box, .notice-box {
+            margin-left: 1.25rem;
+            margin-right: 1.25rem
+        }
+
+        .result-head {
+            padding: 1rem 1.25rem
+        }
+    }
+</style>
+
+<div class="page-wrap">
+
+    <!-- Header -->
+    <div class="page-header">
+        <h1>Registration status</h1>
+        <p>Enter your mobile number to check your application status</p>
+    </div>
+
+    <!-- Search form -->
+    <div class="card">
+        <div class="card-head">
+            <div class="card-head-icon"><i class="ti ti-device-mobile-search"></i></div>
+            <div class="card-head-text">
+                <h2>Check your status</h2>
+                <p>Enter your registered 10-digit mobile number</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-controller="Farmer" asp-action="CheckStatus">
+                @Html.AntiForgeryToken()
+                <div class="field">
+                    <label>Mobile number <span class="req">*</span></label>
+                    <input type="text" name="Phone" value="@Model.Phone" maxlength="10"
+                           placeholder="Enter your 10-digit mobile number"
+                           inputmode="numeric" />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-search" style="font-size:16px"></i> Check status
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    @if (Model.Searched)
+    {
+        @if (Model.FarmerId == null)
+        {
+            <!-- Not found -->
+            <div class="card">
+                <div class="not-found-box">
+                    <div class="not-found-icon"><i class="ti ti-user-search"></i></div>
+                    <h3>No record found</h3>
+                    <p>No registration was found for this mobile number. Please check the number or register as a new farmer.</p>
+                    <a asp-controller="Farmer" asp-action="Register" class="btn btn-outline" style="width:auto;padding:0 24px">
+                        <i class="ti ti-user-plus" style="font-size:16px"></i> Register now
+                    </a>
+                </div>
+            </div>
+        }
+        else if (Model.ApprovalStatus == "Pending")
+        {
+            <!-- Pending -->
+            <div class="card">
+                <div class="result-head">
+                    <div class="result-head-icon pending"><i class="ti ti-clock"></i></div>
+                    <div>
+                        <div class="result-head-title">Application under review</div>
+                        <div class="result-head-sub">Your request is being reviewed by center staff</div>
+                    </div>
+                    <div style="margin-left:auto">
+                        <span class="badge badge-pending"><i class="ti ti-clock" style="font-size:11px"></i> Pending</span>
+                    </div>
+                </div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <div class="info-row-key">Name</div>
+                        <div class="info-row-val">@Model.FarmerName</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-key">Center</div>
+                        <div class="info-row-val">@Model.CenterName</div>
+                    </div>
+                </div>
+                <div class="notice-box warning">
+                    <i class="ti ti-info-circle"></i>
+                    <span>Your request is under review. Please visit the center or wait for staff to contact you. This usually takes <strong>1–2 working days</strong>.</span>
+                </div>
+            </div>
+        }
+        else if (Model.ApprovalStatus == "Approved")
+        {
+            <!-- Approved -->
+            <div class="card">
+                <div class="result-head">
+                    <div class="result-head-icon approved"><i class="ti ti-circle-check"></i></div>
+                    <div>
+                        <div class="result-head-title">Application approved!</div>
+                        <div class="result-head-sub">Your farmer account is active and ready</div>
+                    </div>
+                    
+                </div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <div class="info-row-key">Name</div>
+                        <div class="info-row-val">@Model.FarmerName</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-key">Center</div>
+                        <div class="info-row-val">@Model.CenterName</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-key">Password</div>
+                        <div class="info-row-val" style="color:var(--gray-text);font-style:italic">Last 4 digits of your mobile number</div>
+                    </div>
+                </div>
+
+                <!-- Farmer code highlight -->
+                <div class="farmer-code-box">
+                    <div>
+                        <div class="farmer-code-label">Your farmer code</div>
+                        <div class="farmer-code-value" style="font-size:16px;letter-spacing:1px">@Model.FarmerCode</div>
+                    </div>
+                </div>
+
+                <div class="notice-box success">
+                    <i class="ti ti-circle-check"></i>
+                    <span>Your account is active! Use your farmer code and password to log in and start recording milk collection.</span>
+                </div>
+
+                <div class="action-area">
+                    <a asp-controller="Farmer" asp-action="Login" class="btn btn-success-action">
+                         Go to login
+                    </a>
+                </div>
+            </div>
+        }
+        else if (Model.ApprovalStatus == "Rejected")
+        {
+            <!-- Rejected -->
+            <div class="card">
+                <div class="result-head">
+                    <div class="result-head-icon rejected"><i class="ti ti-circle-x"></i></div>
+                    <div>
+                        <div class="result-head-title">Application rejected</div>
+                        <div class="result-head-sub">Your registration could not be approved</div>
+                    </div>
+                    <div style="margin-left:auto">
+                        <span class="badge badge-rejected"><i class="ti ti-circle-x" style="font-size:11px"></i> Rejected</span>
+                    </div>
+                </div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <div class="info-row-key">Name</div>
+                        <div class="info-row-val">@Model.FarmerName</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-row-key">Center</div>
+                        <div class="info-row-val">@Model.CenterName</div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ApprovalRemark))
+                    {
+                        <div class="info-row">
+                            <div class="info-row-key">Reason</div>
+                            <div class="info-row-val" style="color:var(--red)">@Model.ApprovalRemark</div>
+                        </div>
+                    }
+                </div>
+
+                <div class="notice-box danger">
+                    <i class="ti ti-alert-circle"></i>
+                    <span>Your registration was rejected. Please correct the issue and re-apply. Contact the center for more information.</span>
+                </div>
+
+                <div class="action-area">
+                    <a asp-controller="Farmer" asp-action="Register" class="btn btn-danger-action">
+                        <i class="ti ti-refresh" style="font-size:16px"></i> Re-apply
+                    </a>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Bottom links -->
+    <div class="bottom-links">
+        <a asp-controller="Farmer" asp-action="Login">
+            <i class="ti ti-arrow-left" style="font-size:13px"></i> Back to login
+        </a>
+        <div class="sep"></div>
+        <a asp-controller="Farmer" asp-action="Register">
+            <i class="ti ti-user-plus" style="font-size:13px"></i> New registration
+        </a>
+    </div>
+
+</div>

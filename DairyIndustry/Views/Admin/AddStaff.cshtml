@@ -4,144 +4,191 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Add Staff";
 
-    // var roles = ViewBag.Roles as List<(int RoleId, string RoleName)> ?? new List<(int, string)>();
+    // ONLY these 4 roles are staff AND need login
+    var loginRoles = new[] { "Administrator", "Plant Manager", "Collection Agent", "HR Manager" };
+    var loginRolesJson = System.Text.Json.JsonSerializer.Serialize(loginRoles);
+
+    // Roles that MUST be assigned to a Plant
+    var plantRoles = new[] { "Plant Manager" };
+    var plantRolesJson = System.Text.Json.JsonSerializer.Serialize(plantRoles);
+
+    // Roles that MUST be assigned to a Center
+    var centerRoles = new[] { "Collection Agent" };
+    var centerRolesJson = System.Text.Json.JsonSerializer.Serialize(centerRoles);
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <!-- Page Title -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Add New Staff</h3>
-                <p class="text-muted mb-0">Fill in the details to register a new staff member</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .accent-green {
+        border-top-color: #10b981 !important;
+    }
+
+    .accent-warning {
+        border-top-color: #f59e0b !important;
+    }
+
+    .accent-purple {
+        border-top-color: #a855f7 !important;
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+
+    .pill-counter-badge {
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .pill-badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .pill-badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+        border: 1px solid #fef3c7;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Onboard New Staff</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Staff Management</span> &gt; <span class="text-muted">Add New Profile</span>
             </div>
-            <a asp-controller="Admin" asp-action="Staff" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Back to Staff
+        </div>
+        <div>
+            <a asp-controller="Admin" asp-action="Staff" class="btn btn-light bg-white border text-secondary px-3 py-2" style="border-radius: 6px; font-size: 0.9rem; font-weight: 500;">
+                <i class="bi bi-arrow-left me-1"></i> Back to Directory
             </a>
         </div>
     </div>
 
     @if (ViewBag.Error != null)
     {
-        <div class="alert alert-danger mb-4">
-            <i class="bi bi-exclamation-circle me-1"></i> @ViewBag.Error
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i> @ViewBag.Error
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
 
     <form method="post" asp-controller="Admin" asp-action="AddStaff" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
 
         <div class="row g-4">
 
-            <!-- Personal Details -->
+            <!-- ── LEFT PANEL: PERSONAL DETAILS ────────────────── -->
             <div class="col-md-6">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-person me-1 text-primary"></i> Personal Details
+                <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 h-100">
+                    <div class="p-3 bg-white border-bottom">
+                        <span class="panel-header-text"><i class="bi bi-person text-primary me-2"></i>Personal Profile Details</span>
                     </div>
                     <div class="card-body p-4">
 
-                        <!-- Photo Preview -->
+                        <!-- Photo Profile Configuration Upload Center -->
                         <div class="mb-4 text-center">
-                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2 overflow-hidden"
-                                 style="width:100px; height:100px;">
-                                <img id="photoPreview" src="#" alt="Preview"
-                                     class="w-100 h-100" style="object-fit:cover; display:none;" />
-                                <i id="photoPlaceholder" class="bi bi-person-fill text-secondary fs-1"></i>
+                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2 overflow-hidden" style="width:96px; height:96px; border: 1px solid #e2e8f0 !important;">
+                                <img id="photoPreview" src="#" alt="Preview" class="w-100 h-100" style="object-fit:cover; display:none;" />
+                                <i id="photoPlaceholder" class="bi bi-person-fill text-secondary fs-2"></i>
                             </div>
-                            <label class="form-label fw-semibold d-block">
-                                Profile Photo <span class="text-muted fw-normal small">(Optional)</span>
+                            <label class="form-label small fw-semibold text-secondary mb-1 d-block">Profile Photo <span class="text-muted fw-normal small">(Optional)</span></label>
+                            <input type="file" name="profilePhoto" id="profilePhotoInput" class="form-control form-control-sm mx-auto" style="max-width: 250px; border-radius: 6px;" accept=".jpg,.jpeg,.png" onchange="previewPhoto(this)" />
+                            <div class="form-text tiny text-muted mt-1">Accepts JPG, JPEG, PNG formats &middot; Max file allocation size 2 MB</div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="firstName" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. Rajesh" required />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" name="lastName" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. Patel" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-1">Primary Phone Number</label>
+                            <input type="text" name="phone" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. 9876543210" maxlength="15" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-1">
+                                Email Address
+                                <span id="emailRequiredBadge" class="text-danger" style="display:none;">*</span>
+                                <span id="emailOptionalBadge" class="text-muted fw-normal small">(Optional)</span>
                             </label>
-                            <input type="file" name="profilePhoto" id="profilePhotoInput"
-                                   class="form-control" accept=".jpg,.jpeg,.png"
-                                   onchange="previewPhoto(this)" />
-                            <div class="form-text">JPG or PNG — Max 2MB</div>
+                            <input type="email" name="email" id="emailInput" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. name@company.com" />
+                            <div id="emailHint" class="form-text text-primary small mt-1" style="display:none;">
+                                <i class="bi bi-info-circle-fill me-1"></i> Two-Factor authentication OTP security hashes stream straight to this target destination node.
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" name="firstName" class="form-control"
-                                   placeholder="Enter first name" required />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" name="lastName" class="form-control"
-                                   placeholder="Enter last name" required />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Phone</label>
-                            <input type="text" name="phone" class="form-control"
-                                   placeholder="Enter phone number" maxlength="15" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Email</label>
-                            <input type="email" name="email" class="form-control"
-                                   placeholder="Enter email address" />
-                        </div>
-
-                        <!-- Role dropdown — loaded from Admin.Roles, no hardcoded values -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                            <select name="roleId" class="form-select" required>
-                                <option value="">-- Select Role --</option>
-                                @foreach (var role in Model)
-                                {
-                                    <option value="@role.RoleId">@role.RoleName</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Date of Joining</label>
-                            <input type="date" name="doj" class="form-control" />
-                            <div class="form-text">Leave blank if not confirmed yet</div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bank Details -->
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-bank me-1 text-success"></i> Bank Details
-                        <span class="text-muted fw-normal small ms-1">(Optional)</span>
-                    </div>
-                    <div class="card-body p-4">
-
-                        <div class="alert alert-info small mb-4">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Bank details are required for salary payments. You can add them later.
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Bank Name</label>
-                            <input type="text" name="bankName" class="form-control"
-                                   placeholder="e.g. SBI, HDFC, ICICI" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Account Number</label>
-                            <input type="text" name="accountNumber" class="form-control"
-                                   placeholder="Enter account number" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">IFSC Code</label>
-                            <input type="text" name="ifscCode" class="form-control"
-                                   placeholder="e.g. SBIN0001001" maxlength="20" />
-                            <div class="form-text">11 character code found on your cheque book</div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">Salary (₹)</label>
-                                <input type="number" name="Salary" class="form-control"
-                                       step="0.01" min="0" required />
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Assigned Operational Role <span class="text-danger">*</span></label>
+                                <select name="roleId" id="roleSelect" class="form-select form-select-sm" style="border-radius: 6px; padding: 8px;" required onchange="onRoleChange()">
+                                    <option value="">-- Select Role --</option>
+                                    @foreach (var role in Model)
+                                    {
+                                        <option value="@role.RoleId" data-name="@role.RoleName">@role.RoleName</option>
+                                    }
+                                </select>
+                                <div id="roleHintBox" class="mt-2" style="display:none;">
+                                    <span id="roleHintText" class="pill-counter-badge" style="font-size: 0.72rem;"></span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Date of Joining</label>
+                                <input type="date" name="doj" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" />
                             </div>
                         </div>
 
@@ -149,63 +196,102 @@
                 </div>
             </div>
 
-        </div>
-        <div class="row g-4 mt-0">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-geo-alt me-1 text-warning"></i> Work Assignment
-                        <span class="text-muted fw-normal small ms-1">(Optional — assign to a center or plant)</span>
+            <!-- ── RIGHT PANEL: BANK & SALARY CONFIGURATION ────── -->
+            <div class="col-md-6">
+                <div class="card premium-form-card accent-green border-start-0 border-end-0 border-bottom-0 h-100">
+                    <div class="p-3 bg-white border-bottom">
+                        <span class="panel-header-text"><i class="bi bi-bank text-success me-2"></i>Financial & Compensation Matrix</span>
                     </div>
                     <div class="card-body p-4">
 
-                        <!-- Radio: type selection -->
+                        <div class="alert alert-info border-0 small mb-4 flex-row gap-2 align-items-start" style="border-radius: 8px;">
+                            <i class="bi bi-info-circle-fill text-info me-1"></i> Staging bank nodes parameters maps automated salary disbursement sequences. Variables remain modifiable post-onboarding.
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Assign To</label>
+                            <label class="form-label small fw-semibold text-secondary mb-1">Clearing Institution Bank Name</label>
+                            <input type="text" name="bankName" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. State Bank of India, HDFC" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-1">Recipient Account Number</label>
+                            <input type="text" name="accountNumber" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="Enter clearing account number" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-1">IFSC Code Identifier</label>
+                            <input type="text" name="ifscCode" class="form-control form-control-sm font-monospace" style="border-radius: 6px; padding: 8px;" placeholder="e.g. SBIN0001001" maxlength="20" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-1">Base Salary Remittance (₹) <span class="text-danger">*</span></label>
+                            <input type="number" name="Salary" class="form-control form-control-sm fw-bold font-monospace" style="border-radius: 6px; padding: 8px;" step="0.01" min="0" required placeholder="0.00" />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── LOWER PANEL 1: WORK ASSIGNMENT BOUNDARY ──────── -->
+            <div class="col-12 mt-2">
+                <div class="card premium-form-card accent-warning border-start-0 border-end-0 border-bottom-0" id="assignmentCard">
+                    <div class="p-3 bg-white border-bottom">
+                        <span class="panel-header-text"><i class="bi bi-geo-alt text-warning me-2"></i>Regional Work Center Mappings</span>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div id="forcedAssignmentNote" class="alert alert-warning border-0 small mb-3 text-warning-emphasis" style="display:none; border-radius: 6px; background-color: #fffbeb; border: 1px solid rgba(245,158,11,0.2) !important;">
+                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i><span id="forcedAssignmentText"></span>
+                        </div>
+
+                        <div id="assignRadioGroup" class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary mb-2">Assign Fleet/Facility Node Connection</label>
                             <div class="d-flex gap-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="assignType"
-                                           id="assignNone" value="none" checked
-                                           onchange="toggleAssignment(this.value)" />
-                                    <label class="form-check-label" for="assignNone">Not Assigned</label>
+                                    <input class="form-check-input" type="radio" name="assignType" id="assignNone" value="none" checked onchange="toggleAssignment(this.value)" />
+                                    <label class="form-check-label small fw-medium text-dark" for="assignNone">Unassigned HQ Master Staff</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="assignType"
-                                           id="assignCenter" value="center"
-                                           onchange="toggleAssignment(this.value)" />
-                                    <label class="form-check-label" for="assignCenter">Collection Center</label>
+                                    <input class="form-check-input" type="radio" name="assignType" id="assignCenter" value="center" onchange="toggleAssignment(this.value)" />
+                                    <label class="form-check-label small fw-medium text-dark" for="assignCenter">Collection Terminal Point</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="assignType"
-                                           id="assignPlant" value="plant"
-                                           onchange="toggleAssignment(this.value)" />
-                                    <label class="form-check-label" for="assignPlant">Plant</label>
+                                    <input class="form-check-input" type="radio" name="assignType" id="assignPlant" value="plant" onchange="toggleAssignment(this.value)" />
+                                    <label class="form-check-label small fw-medium text-dark" for="assignPlant">Processing Plant Refinery</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Center dropdown — shown when Center selected -->
-                        <div id="centerSection" style="display:none;">
-                            <label class="form-label fw-semibold">Select Collection Center</label>
-                            <select name="centerId" id="centerSelect" class="form-select">
+                        <!-- Center Mapping select field -->
+                        <div id="centerSection" style="display:none;" class="mb-1">
+                            <label class="form-label small fw-semibold text-secondary mb-1">
+                                Select Collection Center Unit <span id="centerRequired" class="text-danger" style="display:none;">*</span>
+                            </label>
+                            <select name="centerId" id="centerSelect" class="form-select form-select-sm" style="border-radius: 6px; max-width: 400px;">
                                 <option value="">-- Select Center --</option>
-                                @foreach (var c in (ViewBag.Centers as List<DairyIndustry.Models.Admin.CollectionCenterModel>)!)
+                                @if (ViewBag.Centers != null)
                                 {
-                                    <option value="@c.CenterId">@c.CenterName</option>
+                                    foreach (var c in (ViewBag.Centers as List<DairyIndustry.Models.Admin.CollectionCenterModel>)!)
+                                    {
+                                        <option value="@c.CenterId">@c.CenterName</option>
+                                    }
                                 }
-
-                                
                             </select>
                         </div>
 
-                        <!-- Plant dropdown — shown when Plant selected -->
-                        <div id="plantSection" style="display:none;">
-                            <label class="form-label fw-semibold">Select Plant</label>
-                            <select name="plantId" id="plantSelect" class="form-select">
+                        <!-- Plant Mapping select field -->
+                        <div id="plantSection" style="display:none;" class="mb-1">
+                            <label class="form-label small fw-semibold text-secondary mb-1">
+                                Select Refinery Plant Unit <span id="plantRequired" class="text-danger" style="display:none;">*</span>
+                            </label>
+                            <select name="plantId" id="plantSelect" class="form-select form-select-sm" style="border-radius: 6px; max-width: 400px;">
                                 <option value="">-- Select Plant --</option>
-                                @foreach (var p in (ViewBag.Plants as List<DairyIndustry.Models.Admin.PlantModel>)!)
+                                @if (ViewBag.Plants != null)
                                 {
-                                    <option value="@p.PlantId">@p.PlantName</option>
+                                    foreach (var p in (ViewBag.Plants as List<DairyIndustry.Models.Admin.PlantModel>)!)
+                                    {
+                                        <option value="@p.PlantId">@p.PlantName</option>
+                                    }
                                 }
                             </select>
                         </div>
@@ -213,29 +299,174 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- Submit -->
-        <div class="row mt-4">
-            <div class="col">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-person-plus me-1"></i> Add Staff Member
-                        </button>
-                        <a asp-controller="Admin" asp-action="Staff" class="btn btn-outline-secondary px-4">
-                            Cancel
-                        </a>
+
+            <!-- ── LOWER PANEL 2: LOGIN ACCOUNT ACCESS ─────────── -->
+            <div class="col-12 mt-2">
+                <div id="userAccountSection" style="display:none;">
+                    <div class="card premium-form-card accent-purple border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom">
+                            <span class="panel-header-text"><i class="bi bi-shield-lock text-purple me-2"></i>Portal Identity Access Controls</span>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <div class="alert alert-warning border-0 small mb-4 text-warning-emphasis d-flex gap-2" style="border-radius: 8px; background-color: #fffbeb; border: 1px solid rgba(245,158,11,0.15) !important;">
+                                <i class="bi bi-info-circle-fill text-warning flex-shrink-0 mt-0.5"></i>
+                                <span id="loginAccountHint"></span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Gateway Username Identity <span class="text-danger">*</span></label>
+                                    <input type="text" name="username" id="usernameInput" class="form-control form-control-sm" style="border-radius: 6px; padding: 8px;" placeholder="e.g. rajesh.patel" autocomplete="off" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Gateway Entry Passphrase <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" name="password" id="passwordInput" class="form-control" style="border-radius: 6px 0 0 6px; padding: 8px;" placeholder="Minimum 3 characters required" autocomplete="new-password" minlength="3" />
+                                        <button class="btn btn-outline-secondary px-3" style="border-radius: 0 6px 6px 0;" type="button" onclick="togglePasswordVisibility()">
+                                            <i class="bi bi-eye" id="eyeIcon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Execution Trigger Action Buttons Bar Row -->
+            <div class="col-12 mt-2 mb-5">
+                <div class="card premium-form-card border-top-0 border-start-0 border-end-0 border-bottom-0 p-3 bg-light" style="border: 1px solid #e2e8f0 !important;">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-custom-blue px-4 py-2" style="border-radius: 6px; font-size: 0.9rem;">
+                            <i class="bi bi-person-plus-fill me-1"></i> Register Staff Member
+                        </button>
+                        <a asp-controller="Admin" asp-action="Staff" class="btn btn-light border text-secondary px-4 py-2" style="border-radius: 6px; font-weight: 500; font-size: 0.9rem;">Cancel Operation</a>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
     </form>
-
 </div>
 
 @section Scripts {
     <script>
+        const LOGIN_ROLES  = @Html.Raw(loginRolesJson);
+        const PLANT_ROLES  = @Html.Raw(plantRolesJson);
+        const CENTER_ROLES = @Html.Raw(centerRolesJson);
+
+        const ROLE_HINTS = {
+            'Administrator':    'Administrative privileges allow global override configurations across standard catalog lines, security ledgers, and inventory controls.',
+            'Plant Manager':    'Plant Management credentials target localized processing workflows, raw storage balances, and manufacturing validation runs.',
+            'Collection Agent': 'Collection Terminal tokens control live reception weigh-bridge meters, farmer accounts, and local batch sealing logs.',
+            'HR Manager':       'Human Resources privileges authorize base configuration updates across company salaries, staff onboarding, and payroll clearing metrics.'
+        };
+
+        function onRoleChange() {
+            const select      = document.getElementById('roleSelect');
+            const selectedOpt = select.options[select.selectedIndex];
+            const roleName    = selectedOpt ? (selectedOpt.dataset.name || '').trim() : '';
+
+            const needsLogin  = LOGIN_ROLES.includes(roleName);
+            const forcePlant  = PLANT_ROLES.includes(roleName);
+            const forceCenter = CENTER_ROLES.includes(roleName);
+
+            // Access identity variables processing
+            const loginSection  = document.getElementById('userAccountSection');
+            const usernameInput = document.getElementById('usernameInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const hintEl        = document.getElementById('loginAccountHint');
+
+            loginSection.style.display  = needsLogin ? 'block' : 'none';
+            usernameInput.required       = needsLogin;
+            passwordInput.required       = needsLogin;
+
+            if (!needsLogin) {
+                usernameInput.value = '';
+                passwordInput.value = '';
+            }
+
+            hintEl.textContent = ROLE_HINTS[roleName] || '';
+
+            // Two-factor secure layout hooks sync
+            const emailHint          = document.getElementById('emailHint');
+            const emailRequiredBadge = document.getElementById('emailRequiredBadge');
+            const emailOptionalBadge = document.getElementById('emailOptionalBadge');
+
+            emailHint.style.display          = needsLogin ? 'block' : 'none';
+            emailRequiredBadge.style.display  = needsLogin ? 'inline' : 'none';
+            emailOptionalBadge.style.display  = needsLogin ? 'none'   : 'inline';
+
+            // Regional boundary selection validation mapping logic
+            const radioGroup      = document.getElementById('assignRadioGroup');
+            const forcedNote      = document.getElementById('forcedAssignmentNote');
+            const forcedText      = document.getElementById('forcedAssignmentText');
+            const centerRequired  = document.getElementById('centerRequired');
+            const plantRequired   = document.getElementById('plantRequired');
+
+            if (forcePlant) {
+                radioGroup.style.display = 'none';
+                forcedNote.style.display = 'block';
+                forcedText.textContent   = 'Plant Managers must be assigned to an active Processing Plant refinery module.';
+                showSection('plant');
+                plantRequired.style.display  = 'inline';
+                centerRequired.style.display = 'none';
+                document.getElementById('plantSelect').required  = true;
+                document.getElementById('centerSelect').required = false;
+
+            } else if (forceCenter) {
+                radioGroup.style.display = 'none';
+                forcedNote.style.display = 'block';
+                forcedText.textContent   = 'Collection Agents must be mapped directly to a local reception center base terminal.';
+                showSection('center');
+                centerRequired.style.display = 'inline';
+                plantRequired.style.display  = 'none';
+                document.getElementById('centerSelect').required = true;
+                document.getElementById('plantSelect').required  = false;
+
+            } else {
+                radioGroup.style.display = 'block';
+                forcedNote.style.display = 'none';
+                centerRequired.style.display = 'none';
+                plantRequired.style.display  = 'none';
+                document.getElementById('centerSelect').required = false;
+                document.getElementById('plantSelect').required  = false;
+
+                document.getElementById('assignNone').checked = true;
+                toggleAssignment('none');
+            }
+
+            // Role indicator badge style sync rendering
+            const roleHintBox  = document.getElementById('roleHintBox');
+            const roleHintText = document.getElementById('roleHintText');
+
+            if (roleName === '') {
+                roleHintBox.style.display = 'none';
+            } else if (needsLogin) {
+                roleHintBox.style.display   = 'block';
+                roleHintText.className      = 'pill-counter-badge pill-badge-blue';
+                roleHintText.innerHTML      = '<i class="bi bi-shield-check me-1"></i> Authorized Portal Login Required';
+            } else {
+                roleHintBox.style.display   = 'block';
+                roleHintText.className      = 'pill-counter-badge bg-light text-secondary border';
+                roleHintText.innerHTML      = '<i class="bi bi-person-badge me-1"></i> Standalone Staff Profile Only';
+            }
+        }
+
+        function showSection(type) {
+            document.getElementById('centerSection').style.display = type === 'center' ? 'block' : 'none';
+            document.getElementById('plantSection').style.display  = type === 'plant'  ? 'block' : 'none';
+
+            if (type !== 'center') document.getElementById('centerSelect').value = '';
+            if (type !== 'plant')  document.getElementById('plantSelect').value  = '';
+        }
+
+        function toggleAssignment(value) {
+            showSection(value === 'center' ? 'center' : value === 'plant' ? 'plant' : 'none');
+        }
+
         function previewPhoto(input) {
             const preview     = document.getElementById('photoPreview');
             const placeholder = document.getElementById('photoPlaceholder');
@@ -244,6 +475,8 @@
                 reader.onload = e => {
                     preview.src               = e.target.result;
                     preview.style.display     = 'block';
+                    preview.style.width       = '100%';
+                    preview.style.height      = '100%';
                     placeholder.style.display = 'none';
                 };
                 reader.readAsDataURL(input.files[0]);
@@ -252,22 +485,12 @@
                 placeholder.style.display = 'block';
             }
         }
-        function toggleAssignment(value) {
-            const centerSection = document.getElementById('centerSection');
-            const plantSection  = document.getElementById('plantSection');
-            const centerSelect  = document.getElementById('centerSelect');
-            const plantSelect   = document.getElementById('plantSelect');
 
-            centerSection.style.display = 'none';
-            plantSection.style.display  = 'none';
-
-            // Clear values so nothing is submitted when hidden
-            centerSelect.value = '';
-            plantSelect.value  = '';
-
-            if (value === 'center') centerSection.style.display = 'block';
-            if (value === 'plant')  plantSection.style.display  = 'block';
+        function togglePasswordVisibility() {
+            const input   = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            input.type        = input.type === 'password' ? 'text' : 'password';
+            eyeIcon.className = input.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
         }
     </script>
-
 }

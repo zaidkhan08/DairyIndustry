@@ -30,5 +30,9 @@
                                       : PlantId.HasValue ? "Plant"
                                       : "Unassigned";
         public string AssignedToName => CenterName ?? PlantName ?? "—";
+
+        public string Username { get; set; }
+        public bool HasLogin { get; set; }
+        public int? UserId { get; set; }
     }
 }

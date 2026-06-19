@@ -1,0 +1,950 @@
+@model DairyIndustry.Models.Collection.MilkCollectionModel
+
+@{
+    ViewData["Title"] = "Milk Entry";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+    bool isShiftActive = Model.Shift == "Morning" || Model.Shift == "Evening";
+}
+
+<style>
+    /* ── Reset & base ── */
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    .me-root {
+        padding: 1.75rem 2rem;
+        max-width: 1180px;
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ── Page header ── */
+    .me-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        gap: 12px;
+    }
+
+    .me-page-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #111;
+        margin: 0 0 3px;
+        letter-spacing: -0.2px;
+    }
+
+    .me-page-sub {
+        font-size: 13px;
+        color: #888;
+        margin: 0;
+    }
+
+    .me-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #555;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 7px 14px;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background .15s, border-color .15s;
+    }
+
+        .me-back-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            color: #333;
+        }
+
+    /* ── Alerts ── */
+    .me-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        border-radius: 9px;
+        font-size: 13.5px;
+        margin-bottom: 1.25rem;
+    }
+
+    .me-alert-success {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .me-alert-danger {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .me-alert-warning {
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+
+    .me-alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        color: inherit;
+        opacity: .6;
+        padding: 0 0 0 12px;
+        flex-shrink: 0;
+    }
+
+        .me-alert-close:hover {
+            opacity: 1;
+        }
+
+    /* ── Context row ── */
+    .me-ctx-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .me-ctx-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 13px 16px;
+    }
+
+    .me-ctx-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: #9ca3af;
+        margin-bottom: 6px;
+    }
+
+    .me-ctx-val {
+        font-size: 14px;
+        font-weight: 500;
+        color: #111;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .me-shift-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+        .me-shift-dot.active {
+            background: #16a34a;
+        }
+
+        .me-shift-dot.closed {
+            background: #dc2626;
+        }
+
+    /* ── Main layout ── */
+    .me-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 400px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    /* ── Card ── */
+    .me-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* ── Section ── */
+    .me-section {
+        padding: 14px 24px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+        .me-section:last-of-type {
+            border-bottom: none;
+        }
+
+    .me-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .09em;
+        color: #9ca3af;
+        margin: 0 0 10px;
+    }
+
+    /* ── Fields ── */
+    .me-field {
+        margin-bottom: 10px;
+    }
+
+        .me-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .me-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .me-field .form-control,
+        .me-field .form-select {
+            font-size: 14px !important;
+            color: #111;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 7px 12px;
+            height: auto;
+            transition: border-color .15s, box-shadow .15s;
+            width: 100%;
+        }
+
+            .me-field .form-control:focus,
+            .me-field .form-select:focus {
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+                background: #fff;
+                outline: none;
+            }
+
+            .me-field .form-control[readonly] {
+                background: #f3f4f6;
+                color: #9ca3af;
+                cursor: default;
+            }
+
+        .me-field textarea.form-control {
+            resize: vertical;
+            font-size: 13px !important;
+        }
+
+    .me-req {
+        color: #ef4444;
+        margin-left: 2px;
+    }
+
+    .me-g2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    /* ── Rate chip ── */
+    .me-rate-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 9px 14px;
+        margin-top: 4px;
+        transition: background .2s, border-color .2s;
+    }
+
+        .me-rate-chip.me-rate-found {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .me-rate-chip.me-rate-missing {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .me-rate-chip .rc-label {
+            font-size: 12.5px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .me-rate-chip.me-rate-found .rc-label {
+            color: #166534;
+        }
+
+        .me-rate-chip.me-rate-missing .rc-label {
+            color: #991b1b;
+        }
+
+        .me-rate-chip .rc-val {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111;
+            letter-spacing: -0.3px;
+        }
+
+        .me-rate-chip.me-rate-found .rc-val {
+            color: #15803d;
+        }
+
+        .me-rate-chip.me-rate-missing .rc-val {
+            color: #dc2626;
+        }
+
+    /* ── Rejection box ── */
+    .me-rej-inner {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 12px;
+    }
+
+    .me-rej-hint {
+        font-size: 12.5px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    /* ── Footer ── */
+    .me-footer {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #f3f4f6;
+        background: #fafafa;
+    }
+
+    .me-btn {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 0;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        transition: opacity .15s, transform .1s;
+        font-family: inherit;
+    }
+
+        .me-btn:active {
+            transform: scale(.98);
+        }
+
+        .me-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+    .me-btn-accept {
+        background: #16a34a;
+        color: #fff;
+    }
+
+        .me-btn-accept:hover:not(:disabled) {
+            background: #15803d;
+        }
+
+    .me-btn-reject {
+        background: #fff;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+        .me-btn-reject:hover:not(:disabled) {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+
+    /* ── Rate chart panel ── */
+    .me-rc-panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        position: sticky;
+        top: 1rem;
+    }
+
+    .me-rc-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 18px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .me-rc-head-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #111;
+    }
+
+    .me-slab-badge {
+        font-size: 11px;
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-weight: 500;
+    }
+
+    .me-rc-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .me-rc-stat {
+        padding: 13px 16px;
+    }
+
+        .me-rc-stat:first-child {
+            border-right: 1px solid #f3f4f6;
+        }
+
+    .me-rc-stat-l {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: #9ca3af;
+        margin-bottom: 4px;
+    }
+
+    .me-rc-stat-v {
+        font-size: 17px;
+        font-weight: 600;
+        color: #111;
+        letter-spacing: -0.3px;
+    }
+
+    .me-mono {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .me-rc-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+        .me-rc-table thead th {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #9ca3af;
+            padding: 9px 14px;
+            text-align: left;
+            background: #fafafa;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .me-rc-table tbody td {
+            font-size: 13px;
+            padding: 9px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            vertical-align: middle;
+        }
+
+        .me-rc-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .me-rc-table tbody tr.me-rc-active td {
+            background: #f0fdf4;
+        }
+
+        .me-rc-table tbody tr:hover td {
+            background: #f9fafb;
+        }
+
+        .me-rc-table tbody tr.me-rc-active:hover td {
+            background: #dcfce7;
+        }
+
+    .me-rc-foot {
+        padding: 10px 14px;
+        border-top: 1px solid #f3f4f6;
+        font-size: 12px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #fafafa;
+    }
+
+    .me-green-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #16a34a;
+        flex-shrink: 0;
+    }
+
+    /* ── Shift warning ── */
+    .me-shift-warn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: #92400e;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 900px) {
+        .me-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .me-rc-panel {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .me-root {
+            padding: 1rem;
+        }
+
+        .me-g2 {
+            grid-template-columns: 1fr;
+        }
+
+        .me-footer {
+            grid-template-columns: 1fr;
+        }
+
+        .me-ctx-row {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+<div class="me-root">
+
+    @* ── Alerts ── *@
+    @foreach (var key in new[] { "Success", "Error", "RejectionSuccess" })
+    {
+        if (TempData[key] != null)
+        {
+            var cls = key == "Success" ? "me-alert-success" : key == "Error" ? "me-alert-danger" : "me-alert-warning";
+            var icon = key == "Success" ? "bi-check-circle" : key == "Error" ? "bi-x-circle" : "bi-exclamation-triangle";
+            <div class="me-alert @cls" role="alert" id="alert-@key">
+                <i class="bi @icon"></i>
+                @TempData[key]
+                <button type="button" class="me-alert-close" onclick="this.closest('.me-alert').remove()" aria-label="Close">&#x2715;</button>
+            </div>
+        }
+    }
+
+    @* ── Page header ── *@
+    <div class="me-page-header">
+        <div>
+            <h3 class="me-page-title">New milk entry</h3>
+            <p class="me-page-sub">Record farmer milk collection for this shift</p>
+        </div>
+        <a asp-action="BatchStatus" class="me-back-btn">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    @* ── Context row ── *@
+    <div class="me-ctx-row">
+        <div class="me-ctx-card">
+            <div class="me-ctx-label">Collection center</div>
+            <div class="me-ctx-val">
+                <i class="bi bi-building" style="font-size:15px;color:#9ca3af;"></i>
+                @Model.CenterName
+            </div>
+        </div>
+        <div class="me-ctx-card">
+            <div class="me-ctx-label">Current shift</div>
+            <div class="me-ctx-val">
+                <span class="me-shift-dot @(isShiftActive ? "active" : "closed")"></span>
+                @Model.Shift
+                <span style="font-size:12px;color:@(isShiftActive ? "#16a34a" : "#dc2626");">
+                    — @(isShiftActive ? "Active" : "Closed")
+                </span>
+            </div>
+        </div>
+        <div class="me-ctx-card">
+            <div class="me-ctx-label">Date</div>
+            <div class="me-ctx-val">
+                <i class="bi bi-calendar3" style="font-size:15px;color:#9ca3af;"></i>
+                @Model.CollectionDate.ToString("dd MMM yyyy")
+            </div>
+        </div>
+    </div>
+
+    @* ── Shift warning ── *@
+    @if (!isShiftActive)
+    {
+        <div class="alert alert-warning shadow-sm">
+             Morning: 10:00–12:00 | Evening: 15:00–16:00
+        </div>
+    }
+
+    @* ── Main layout ── *@
+    <div class="me-layout">
+
+        @* ── LEFT: Form ── *@
+        <div>
+            <div class="me-card">
+
+                <form asp-action="AddMilkCollection" method="post">
+                    @Html.AntiForgeryToken()
+
+                    @* ── Farmer section ── *@
+                    <div class="me-section">
+                        <p class="me-section-label">Farmer</p>
+                        <div class="me-g2">
+                            <div class="me-field">
+                                <label>Farmer code <span class="me-req">*</span></label>
+                                <input type="text"
+                                       asp-for="FarmerCode"
+                                       id="farmerCodeInput"
+                                       class="form-control"
+                                       placeholder="e.g. FARM001"
+                                       autocomplete="off" />
+                                <input type="hidden" asp-for="FarmerId" id="farmerIdHidden" />
+                            </div>
+                            <div class="me-field">
+                                <label>Farmer name</label>
+                                <input type="text" asp-for="FarmerName" id="farmerName" class="form-control" readonly placeholder="Auto-filled" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ── Collection section ── *@
+                    <div class="me-section">
+                        <p class="me-section-label">Collection</p>
+                        <div class="me-g2">
+                            <div class="me-field">
+                                <label>Milk type <span class="me-req">*</span></label>
+                                <select asp-for="MilkTypeId" class="form-select" id="milkTypeSelect">
+                                    <option value="">Select type</option>
+                                    @foreach (var mt in ViewBag.MilkTypes)
+                                    {
+                                        <option value="@mt.MilkTypeId">@mt.MilkTypeName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="me-field">
+                                <label>Quantity (liters) <span class="me-req">*</span></label>
+                                <input asp-for="Quantity" type="number" step="0.01" class="form-control" placeholder="0.00" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ── Quality section ── *@
+                    <div class="me-section">
+                        <p class="me-section-label">Quality parameters</p>
+                        <div class="me-g2">
+                            <div class="me-field">
+                                <label>Fat %</label>
+                                <input asp-for="AppliedFat" type="number" step="0.01" class="form-control" placeholder="0.00" id="fatInput" />
+                            </div>
+                            <div class="me-field">
+                                <label>CLR</label>
+                                <input asp-for="AppliedCLR" type="number" step="0.01" class="form-control" placeholder="0.00" id="clrInput" />
+                            </div>
+                        </div>
+                        <div id="rateBox" class="me-rate-chip" style="display:none;">
+                            <span class="rc-label">
+                                <i class="bi bi-tag"></i>
+                                Rate per liter
+                            </span>
+                            <span class="rc-val" id="rateValue">—</span>
+                        </div>
+                    </div>
+
+                    @* ── Rejection section ── *@
+                    <div class="me-section">
+                        <p class="me-section-label">Rejection</p>
+                        <div class="me-rej-inner">
+                            <p class="me-rej-hint">
+                                <i class="bi bi-info-circle"></i>
+                                Fill only if rejecting this milk entry
+                            </p>
+                            <div class="me-field">
+                                <label>Reason</label>
+                                <select name="RejectionReason" class="form-select">
+                                    <option value="">Select reason</option>
+                                    <option>Adulterated</option>
+                                    <option>Low Quality</option>
+                                    <option>Wrong Temperature</option>
+                                    <option>Smell / Spoiled</option>
+                                    <option>Farmer Refused Rate</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="me-field">
+                                <label>Remarks</label>
+                                <textarea name="Remarks" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" asp-for="Shift" />
+                    <input type="hidden" asp-for="CollectionDate" />
+                    <input type="hidden" asp-for="CenterName" />
+
+                    <div class="me-footer">
+                        <button type="submit" name="submitAction" value="Accept"
+                                class="me-btn me-btn-accept"
+                                @(isShiftActive ? "" : "disabled")>
+                            <i class="bi bi-check-lg"></i> Accept entry
+                        </button>
+                        <button type="submit" name="submitAction" value="Reject"
+                                class="me-btn me-btn-reject"
+                                @(isShiftActive ? "" : "disabled")>
+                            <i class="bi bi-x-lg"></i> Reject entry
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        @* ── RIGHT: Rate chart panel ── *@
+        <div>
+            <div class="me-rc-panel">
+                @{
+                    var charts = ViewBag.RateCharts as List<DairyIndustry.Models.Admin.RateChartModel>
+                    ?? new List<DairyIndustry.Models.Admin.RateChartModel>();
+                    var totalSlabs = charts.Count;
+                    var minRate = charts.Any() ? charts.Min(x => x.RatePerLiter) : 0m;
+                    var maxRate = charts.Any() ? charts.Max(x => x.RatePerLiter) : 0m;
+                }
+
+                <div class="me-rc-head">
+                    <div class="me-rc-head-left">
+                        <i class="bi bi-currency-rupee" style="font-size:16px;color:#6366f1;"></i>
+                        Rate chart
+                    </div>
+                    <span class="me-slab-badge">@totalSlabs slabs</span>
+                </div>
+
+                <div class="me-rc-stats">
+                    <div class="me-rc-stat">
+                        <div class="me-rc-stat-l">Min rate</div>
+                        <div class="me-rc-stat-v">@(charts.Any() ? "₹" + minRate.ToString("F2") : "—")</div>
+                    </div>
+                    <div class="me-rc-stat">
+                        <div class="me-rc-stat-l">Max rate</div>
+                        <div class="me-rc-stat-v">@(charts.Any() ? "₹" + maxRate.ToString("F2") : "—")</div>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="me-rc-table" id="rcTable">
+                        <thead>
+                            <tr>
+                                <th style="width:96px;">Type</th>
+                                <th>Fat</th>
+                                <th>CLR</th>
+                                <th>Rate/L</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!charts.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" style="text-align:center;padding:24px;color:#9ca3af;font-size:13px;">
+                                        No rate slabs found
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var item in charts)
+                                {
+                                    <tr data-type="@item.MilkTypeName"
+                                        data-fat-from="@item.FatFrom"
+                                        data-fat-to="@item.FatTo"
+                                        data-clr-from="@item.CLRFrom"
+                                        data-clr-to="@item.CLRTo"
+                                        data-milk-type-id="@item.MilkTypeId">
+                                        <td style="font-size:13px;font-weight:500;color:#374151;">@item.MilkTypeName</td>
+                                        <td><span class="me-mono">@item.FatFrom.ToString("F1")–@item.FatTo.ToString("F1")</span></td>
+                                        <td><span class="me-mono">@item.CLRFrom–@item.CLRTo</span></td>
+                                        <td style="font-weight:600;color:#111;">₹@item.RatePerLiter.ToString("F2")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="me-rc-foot">
+                    <span class="me-green-dot"></span>
+                    Matched slab highlighted in green
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Farmer lookup (original logic, untouched) ──────────────────────
+        var farmerMap = {};
+        @foreach (var f in ViewBag.Farmers)
+        {
+                <text>
+                farmerMap["@f.FarmerCode.ToString().ToLower()"] = { id: "@f.FarmerId", name: "@f.FarmerName" };
+                </text>
+        }
+
+        var codeInput = document.getElementById('farmerCodeInput');
+        var nameInput = document.getElementById('farmerName');
+        var idHidden  = document.getElementById('farmerIdHidden');
+
+        codeInput.addEventListener('input', function () {
+            var typed = this.value.trim().toLowerCase();
+            if (typed === '') {
+                nameInput.value = ''; idHidden.value = '';
+                return;
+            }
+            if (farmerMap[typed]) {
+                var f = farmerMap[typed];
+                nameInput.value = f.name;
+                idHidden.value  = f.id;
+                document.querySelector('[name="FarmerCode"]').value = this.value;
+                document.querySelector('[name="FarmerName"]').value = f.name;
+            } else {
+                nameInput.value = ''; idHidden.value = '';
+            }
+        });
+
+        // ── Rate chart data (original logic, untouched) ────────────────────
+        var rateCharts = [
+            @foreach (var r in ViewBag.RateCharts)
+            {
+                    <text>
+                    {
+                        milkTypeId:   @r.MilkTypeId,
+                        fatFrom:      @r.FatFrom,
+                        fatTo:        @r.FatTo,
+                        clrFrom:      @r.CLRFrom,
+                        clrTo:        @r.CLRTo,
+                        ratePerLiter: @r.RatePerLiter
+                    },
+                    </text>
+            }
+        ];
+
+        var fatInput       = document.getElementById('fatInput');
+        var clrInput       = document.getElementById('clrInput');
+        var milkTypeSelect = document.getElementById('milkTypeSelect');
+        var rateBox        = document.getElementById('rateBox');
+        var rateValue      = document.getElementById('rateValue');
+
+        function lookupRate() {
+            var milkTypeId = parseInt(milkTypeSelect.value);
+            var fat        = parseFloat(fatInput.value);
+            var clr        = parseFloat(clrInput.value);
+
+            clearRcHighlight();
+
+            if (!milkTypeId || isNaN(fat) || isNaN(clr)) {
+                rateBox.style.display = 'none';
+                return;
+            }
+
+            var match = rateCharts.find(function(r) {
+                return r.milkTypeId === milkTypeId
+                    && fat >= r.fatFrom && fat <= r.fatTo
+                    && clr >= r.clrFrom && clr <= r.clrTo;
+            });
+
+            rateBox.style.display = 'flex';
+            rateBox.classList.remove('me-rate-found', 'me-rate-missing');
+
+            if (match) {
+                rateValue.textContent = '₹ ' + match.ratePerLiter.toFixed(2);
+                rateBox.classList.add('me-rate-found');
+                highlightRcRow(milkTypeId, fat, clr);
+            } else {
+                rateValue.textContent = 'No rate found';
+                rateBox.classList.add('me-rate-missing');
+            }
+        }
+
+        // ── Rate chart row highlighting ────────────────────────────────────
+        function clearRcHighlight() {
+            document.querySelectorAll('#rcTable tbody tr').forEach(function(r) {
+                r.classList.remove('me-rc-active');
+            });
+        }
+
+        function highlightRcRow(milkTypeId, fat, clr) {
+            document.querySelectorAll('#rcTable tbody tr[data-type]').forEach(function(row) {
+                var id      = parseInt(row.dataset.milkTypeId);
+                var fatFrom = parseFloat(row.dataset.fatFrom);
+                var fatTo   = parseFloat(row.dataset.fatTo);
+                var clrFrom = parseFloat(row.dataset.clrFrom);
+                var clrTo   = parseFloat(row.dataset.clrTo);
+                if (id === milkTypeId && fat >= fatFrom && fat <= fatTo && clr >= clrFrom && clr <= clrTo) {
+                    row.classList.add('me-rc-active');
+                    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            });
+        }
+
+        fatInput.addEventListener('input', lookupRate);
+        clrInput.addEventListener('input', lookupRate);
+        milkTypeSelect.addEventListener('change', lookupRate);
+
+        // ── Rate chart filter ──────────────────────────────────────────────
+        function applyRcFilter() {
+            var type   = document.getElementById('rcTypeFilter').value.toLowerCase();
+            var minFat = parseFloat(document.getElementById('rcFatFilter').value) || 0;
+
+            document.querySelectorAll('#rcTable tbody tr[data-type]').forEach(function(row) {
+                var rowType = row.dataset.type.toLowerCase();
+                var rowFat  = parseFloat(row.dataset.fatFrom);
+                var show    = (!type || rowType === type) && rowFat >= minFat;
+                row.style.display = show ? '' : 'none';
+            });
+        }
+    </script>
+}

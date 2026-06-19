@@ -1,0 +1,764 @@
+﻿@using DairyIndustry.Models.FarmerModel
+@model List<FarmerViewModel>
+
+@{
+    ViewData["Title"] = "Farmers Management";
+    Layout = "_AdminLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+<style>
+    .fm-wrap {
+        padding: 1.5rem;
+    }
+
+    /* page header */
+    .fm-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 1rem;
+    }
+
+    .btn-export {
+        height: 38px;
+        padding: 0 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 99px;
+        background: #fff;
+        color: #343a40;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-export:hover {
+            background: #f8f9fa;
+        }
+
+    .btn-register {
+        height: 38px;
+        padding: 0 20px;
+        border: none;
+        border-radius: 99px;
+        background: #D85A30;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background .15s;
+    }
+
+        .btn-register:hover {
+            background: #bf4f28;
+            color: #fff;
+        }
+
+    /* toolbar */
+    .fm-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .pill-ctrl {
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 14px;
+        border: 1px solid #dee2e6;
+        border-radius: 99px;
+        background: #fff;
+        font-size: 13px;
+        color: #343a40;
+        white-space: nowrap;
+    }
+
+        .pill-ctrl input,
+        .pill-ctrl select {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            color: #343a40;
+            outline: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .pill-ctrl input {
+            width: 180px;
+        }
+
+            .pill-ctrl input::placeholder {
+                color: #adb5bd;
+            }
+
+        .pill-ctrl select {
+            width: 110px;
+        }
+
+    .toolbar-divider {
+        width: 1px;
+        height: 22px;
+        background: #dee2e6;
+        margin: 0 2px;
+    }
+
+    .icon-ctrl {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #dee2e6;
+        border-radius: 99px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: #6c757d;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .icon-ctrl:hover {
+            background: #f8f9fa;
+        }
+
+    .btn-reset-pill {
+        height: 36px;
+        padding: 0 16px;
+        border: 1px solid #f1a68e;
+        border-radius: 99px;
+        background: #fff;
+        color: #A32D2D;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-reset-pill:hover {
+            background: #fff5f3;
+        }
+
+    /* table card */
+    .tbl-card {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .fm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+
+        .fm-table thead tr {
+            background: #f8f9fa;
+        }
+
+        .fm-table th {
+            padding: 11px 14px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6c757d;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e9ecef;
+            white-space: nowrap;
+        }
+
+            .fm-table th .sort-icon {
+                font-size: 10px;
+                opacity: .4;
+                margin-left: 3px;
+            }
+
+        .fm-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f3f5;
+            color: #212529;
+            vertical-align: middle;
+        }
+
+        .fm-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .fm-table tbody tr:hover {
+            background: #fafbfc;
+        }
+
+    /* avatar */
+    .fm-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .av-blue {
+        background: #E6F1FB;
+        color: #0C447C;
+    }
+
+    .av-teal {
+        background: #E1F5EE;
+        color: #085041;
+    }
+
+    .av-amber {
+        background: #FAEEDA;
+        color: #633806;
+    }
+
+    .av-purple {
+        background: #EEEDFE;
+        color: #3C3489;
+    }
+
+    .av-coral {
+        background: #FAECE7;
+        color: #712B13;
+    }
+
+    .farmer-name {
+        font-weight: normal;
+        font-size: 13.5px;
+    }
+
+    .farmer-id {
+        font-size: 11px;
+        color: #185FA5;
+        margin-top: 2px;
+    }
+
+    .loc-main {
+        font-weight: normal;
+    }
+
+    .loc-sub {
+        font-size: 11px;
+        color: #6c757d;
+        margin-top: 2px;
+    }
+
+    /* gender badge */
+    .gender-male {
+        background: #E6F1FB;
+        color: #0C447C;
+    }
+
+    .gender-female {
+        background: #FBEAF0;
+        color: #72243E;
+    }
+
+    .gender-other {
+        background: #F1EFE8;
+        color: #444441;
+    }
+
+    /* badges */
+    .fm-badge {
+        display: inline-block;
+        padding: 3px 11px;
+        border-radius: 99px;
+        font-size: 11.5px;
+        font-weight: 500;
+    }
+
+    .b-green {
+        background: #EAF3DE;
+        color: #27500A;
+    }
+
+    .b-red {
+        background: #FCEBEB;
+        color: #791F1F;
+    }
+
+    /* action buttons */
+    .toggle-btn {
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .t-deact {
+        border-color: #E24B4A;
+        color: #A32D2D;
+        background: transparent;
+    }
+
+        .t-deact:hover {
+            background: #fff5f5;
+            color: #A32D2D;
+        }
+
+    .t-act {
+        border-color: #3B6D11;
+        color: #27500A;
+        background: transparent;
+    }
+
+        .t-act:hover {
+            background: #f3fae8;
+            color: #27500A;
+        }
+
+    .ico-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        background: transparent;
+        color: #6c757d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .12s;
+    }
+
+        .ico-btn:hover {
+            background: #f8f9fa;
+            color: #343a40;
+        }
+
+    /* pagination */
+    .fm-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #e9ecef;
+        font-size: 12.5px;
+        color: #6c757d;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        font-size: 12.5px;
+        color: #495057;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .pg-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .pg-btn.active {
+            background: #185FA5;
+            color: #fff;
+            border-color: #185FA5;
+        }
+
+        .pg-btn.disabled {
+            opacity: .4;
+            pointer-events: none;
+            cursor: default;
+        }
+
+    /* alert */
+    .fm-alert {
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13.5px;
+    }
+
+    .fm-alert-success {
+        background: #EAF3DE;
+        color: #27500A;
+        border: 1px solid #C0DD97;
+    }
+
+    /* no-results */
+    .no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #adb5bd;
+        font-size: 14px;
+    }
+</style>
+
+@if (TempData["Success"] != null)
+{
+    <div class="fm-wrap" style="padding-bottom:0">
+        <div class="fm-alert fm-alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            @TempData["Success"]
+        </div>
+    </div>
+}
+
+<div class="fm-wrap">
+
+    <!-- PAGE HEADER -->
+    <div class="fm-page-header">
+        <button class="btn-export" onclick="exportTable()">
+            <i class="bi bi-download me-1"></i> Export all data
+        </button>
+        <a asp-controller="Farmer" asp-action="FarmerRegistrationByCenter" class="btn-register">
+            <i class="bi bi-person-plus-fill"></i> Register new farmer
+        </a>
+    </div>
+
+    <!-- TOOLBAR — all filters are purely client-side -->
+    <div class="fm-toolbar">
+
+        <!-- Search -->
+        <div class="pill-ctrl">
+            <i class="bi bi-search" style="color:#adb5bd;font-size:13px"></i>
+            <input type="text" id="farmerSearch" placeholder="Search Name / Phone / Farmer Code…" />
+        </div>
+
+        <!-- Location -->
+        <div class="pill-ctrl">
+            <i class="bi bi-geo-alt" style="color:#adb5bd;font-size:13px"></i>
+            <input type="text" id="locationFilter" placeholder="Village / city…" style="width:130px" />
+        </div>
+
+        <!-- Gender -->
+        <div class="pill-ctrl">
+            <i class="bi bi-person" style="color:#adb5bd;font-size:13px"></i>
+            <select id="genderFilter">
+                <option value="">Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <!-- Status -->
+        <div class="pill-ctrl">
+            <select id="activeFilter">
+                <option value="">Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+
+        <button class="btn-reset-pill" onclick="resetFilters()">Reset</button>
+
+
+
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="tbl-card">
+        <div class="table-responsive">
+            <table class="fm-table" id="farmerTable">
+                <thead>
+                    <tr>
+                        <th style="width:46px">#</th>
+                        <th style="width:220px">Farmer Name</th>
+                        <th style="width:120px">Farmer Code</th>
+                        <th style="width:80px;text-align:center">Gender</th>
+                        <th style="width:115px">Phone</th>
+                        <th style="width:145px">Location</th>
+                        <th style="width:90px;text-align:center">Status</th>
+                        <th style="width:110px;text-align:center">Action</th>
+                        <th style="width:85px;text-align:right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    @{
+                        string[] avClasses = { "av-blue", "av-teal", "av-amber", "av-purple", "av-coral" };
+                        int idx = 0;
+                    }
+                    @foreach (var item in Model)
+                    {
+                        string avClass = avClasses[idx % avClasses.Length];
+                        string initials = string.Join("", item.FarmerName.Split(' ')
+                        .Take(2).Select(w => w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+                        string activeStatus = item.IsActive ? "active" : "inactive";
+                        string location = $"{item.VillageName} {item.CityName}";
+                        string genderRaw = (item.Gender ?? "").Trim().ToLower();
+                        string genderDisplay = genderRaw == "male" ? "Male"
+                        : genderRaw == "female" ? "Female"
+                        : string.IsNullOrEmpty(genderRaw) ? "—" : item.Gender;
+                        string genderBadge = genderRaw == "male" ? "gender-male"
+                        : genderRaw == "female" ? "gender-female"
+                        : "gender-other";
+
+                        <tr class="data-row"
+                            data-active="@activeStatus"
+                            data-gender="@genderRaw"
+                            data-location="@location.ToLower()"
+                            data-search="@($"{item.FarmerName} {item.Phone} {item.FarmerCode}".ToLower())">
+
+                            <td style="color:#adb5bd;font-weight:500">@(idx + 1)</td>
+
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div class="fm-avatar @avClass">@initials</div>
+                                    <div class="farmer-name">@item.FarmerName</div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="farmer-id">@item.FarmerCode</span>
+                            </td>
+
+                            <td style="text-align:center">
+                                <span class="fm-badge @genderBadge">@genderDisplay</span>
+                            </td>
+
+                            <td>@item.Phone</td>
+
+                            <td>
+                                <div class="loc-main">@item.VillageName, @item.CityName</div>
+                            </td>
+
+                            <td style="text-align:center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="fm-badge b-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="fm-badge b-red">Inactive</span>
+                                }
+                            </td>
+
+                            <td style="text-align:center">
+                                @if (item.IsActive)
+                                {
+                                    <a asp-action="ToggleStatus"
+                                       asp-route-id="@item.FarmerId"
+                                       asp-route-isActive="false"
+                                       class="toggle-btn t-deact">Deactivate</a>
+                                }
+                                else
+                                {
+                                    <a asp-action="ToggleStatus"
+                                       asp-route-id="@item.FarmerId"
+                                       asp-route-isActive="true"
+                                       class="toggle-btn t-act">Activate</a>
+                                }
+                            </td>
+
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:6px;justify-content:flex-end">
+                                    <a asp-action="CenterFarmerDetails"
+                                       asp-route-id="@item.FarmerId"
+                                       class="ico-btn" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.FarmerId"
+                                       class="ico-btn" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                        idx++;
+                    }
+                </tbody>
+            </table>
+
+            <div id="noResults" class="no-results" style="display:none">
+                <i class="bi bi-search" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
+                No farmers match your filters.
+            </div>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="fm-pagination" id="paginationBar">
+            <span id="paginationInfo">Showing 1–10 of @Model.Count farmers</span>
+            <div class="page-btns" id="paginationBtns"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    let filteredRows = [];
+
+    const searchBox      = document.getElementById("farmerSearch");
+    const locationFilter = document.getElementById("locationFilter");
+    const genderFilter   = document.getElementById("genderFilter");
+    const activeFilter   = document.getElementById("activeFilter");
+    const allRows        = Array.from(document.querySelectorAll(".data-row"));
+    const noResults      = document.getElementById("noResults");
+    const paginationInfo = document.getElementById("paginationInfo");
+    const paginationBtns = document.getElementById("paginationBtns");
+
+    function filterTable() {
+        const search   = searchBox.value.toLowerCase().trim();
+        const location = locationFilter.value.toLowerCase().trim();
+        const gender   = genderFilter.value;
+        const active   = activeFilter.value;
+
+        filteredRows = allRows.filter(row => {
+            const matchSearch   = !search   || row.dataset.search.includes(search);
+            const matchLocation = !location || row.dataset.location.includes(location);
+            const matchGender   = !gender   || row.dataset.gender === gender;
+            const matchActive   = !active   || row.dataset.active === active;
+            return matchSearch && matchLocation && matchGender && matchActive;
+        });
+
+        currentPage = 1;
+        renderPage();
+    }
+
+    function renderPage() {
+        allRows.forEach(r => r.style.display = "none");
+
+        const total      = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        currentPage      = Math.min(currentPage, totalPages);
+
+        const start    = (currentPage - 1) * PAGE_SIZE;
+        const end      = Math.min(start + PAGE_SIZE, total);
+        const pageRows = filteredRows.slice(start, end);
+
+        pageRows.forEach(r => r.style.display = "");
+        noResults.style.display = total === 0 ? "" : "none";
+
+        const from = total === 0 ? 0 : start + 1;
+        paginationInfo.textContent =
+            `Showing ${from}–${end} of ${total} farmer${total !== 1 ? "s" : ""}`;
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        paginationBtns.innerHTML = "";
+
+        function addBtn(label, page, cls) {
+            const el = document.createElement("button");
+            el.className = "pg-btn" + (cls ? " " + cls : "");
+            el.innerHTML = label;
+            if (cls !== "disabled") {
+                el.onclick = () => { currentPage = page; renderPage(); };
+            }
+            paginationBtns.appendChild(el);
+        }
+
+        addBtn('<i class="bi bi-chevron-left" style="font-size:11px"></i>',
+            currentPage - 1, currentPage === 1 ? "disabled" : "");
+
+        buildPageList(currentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "pg-btn disabled";
+                el.textContent = "…";
+                paginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === currentPage ? "active" : "");
+            }
+        });
+
+        addBtn('<i class="bi bi-chevron-right" style="font-size:11px"></i>',
+            currentPage + 1, currentPage === totalPages ? "disabled" : "");
+    }
+
+    function buildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    function resetFilters() {
+        searchBox.value      = "";
+        locationFilter.value = "";
+        genderFilter.value   = "";
+        activeFilter.value   = "";
+        filterTable();
+    }
+
+    function exportTable() {
+        const headers = ["#", "Name", "Farmer Code", "Gender", "Phone", "Village", "City", "Status"];
+        const rows = filteredRows.map(row => {
+            const cells = row.querySelectorAll("td");
+                return [
+                    cells[0].innerText.trim(), // #
+                    row.querySelector(".farmer-name")?.innerText.trim() ?? "", // Name
+                    cells[2].innerText.trim(), // Farmer Code
+                    cells[3].innerText.trim(), // Gender
+                    cells[4].innerText.trim(), // Phone
+                    row.querySelector(".loc-main")?.innerText.trim() ?? "",
+                    row.querySelector(".loc-sub")?.innerText.trim() ?? "",
+                    cells[6].innerText.trim() // Status
+                ].join(",");
+        });
+        const csv = [headers.join(","), ...rows].join("\n");
+        const a   = document.createElement("a");
+        a.href    = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+        a.download = "farmers.csv";
+        a.click();
+    }
+
+    searchBox.addEventListener("input", filterTable);
+    locationFilter.addEventListener("input", filterTable);
+    genderFilter.addEventListener("change", filterTable);
+    activeFilter.addEventListener("change", filterTable);
+
+    filteredRows = [...allRows];
+    renderPage();
+</script>

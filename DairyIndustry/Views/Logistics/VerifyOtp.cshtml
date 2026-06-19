@@ -1,0 +1,225 @@
+﻿@{
+    ViewBag.Title = "Verify OTP";
+}
+
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #3b82f6; /* Blue Accent Line */
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .panel-header-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Step Sequence Indicators */
+    .pill-step-active {
+        background-color: #eff6ff;
+        color: #2563eb;
+        font-weight: 700;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #3b82f6;
+    }
+
+    .pill-step-done {
+        background-color: #dcfce7;
+        color: #15803d;
+        font-weight: 700;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #10b981;
+    }
+
+    .pill-step-disabled {
+        background-color: #ffffff;
+        color: #9ca3af;
+        font-weight: 600;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #cbd5e1;
+    }
+
+    /* Branded Helper Badges */
+    .pill-badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.82rem;
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid #bfdbfe;
+        display: inline-block;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0 text-dark">Driver Registration</h4>
+        <div class="breadcrumb-custom mt-1">
+            <span>Logistics Portal</span> &gt; <span class="text-muted">Onboarding</span> &gt; <span class="text-muted">Step 2 of 3 (OTP Validation)</span>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-5">
+
+            <!-- Progress Step Indicator Nodes -->
+            <div class="d-flex align-items-center mb-4 px-2">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="pill-step-done">
+                        <i class="bi bi-check-lg"></i>
+                    </div>
+                    <small class="text-success fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Email</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-success mx-2 mb-3"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="pill-step-active">2</div>
+                    <small class="text-primary fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Verify OTP</small>
+                </div>
+                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="pill-step-disabled">3</div>
+                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Details</small>
+                </div>
+            </div>
+
+            <!-- Alerts System Wrapper Box -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i> @TempData["Info"]
+                </div>
+            }
+
+            <!-- Master Verification Card Frame -->
+            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
+                <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-4">
+                    <div class="d-flex align-items-center justify-content-center" style="width:36px; height:36px; border-radius:6px; background:#eff6ff;">
+                        <i class="bi bi-shield-check text-primary" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <div>
+                        <div class="panel-header-text">Verify Verification Key</div>
+                        <div class="text-muted tiny" style="font-size: 11px;">Input the token code sent to your mail profile.</div>
+                    </div>
+                </div>
+
+                <!-- Masked Identity Badge Frame -->
+                <div class="text-center mb-4">
+                    <div class="pill-badge-blue font-monospace">
+                        <i class="bi bi-envelope-open me-1.5 small"></i>@ViewBag.Email
+                    </div>
+                </div>
+
+                <p class="text-muted small text-center mb-4">
+                    Provide the 6-digit numeric entry block listed in your message context headers. Security parameters expire this code tracking line in 10 minutes.
+                </p>
+
+                <!-- Core Form Fields Grid -->
+                <form asp-action="VerifyOtp" asp-controller="Logistics" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-secondary mb-2 d-block text-center">6-Digit Verification Token</label>
+                        <input type="text" name="otpCode" class="form-control form-control-lg text-center fw-bold text-primary border-primary mx-auto font-monospace"
+                               style="letter-spacing:10px; font-size:1.6rem; max-width: 280px; border-radius: 8px;"
+                               maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="------" autocomplete="one-time-code" required />
+                        <div class="form-text text-muted tiny text-center mt-1.5">Numerical entries only &middot; 6 characters limits</div>
+                    </div>
+
+                    <!-- Submission Trigger -->
+                    <button type="submit" class="btn btn-custom-blue w-100 py-2.5">
+                        <i class="bi bi-shield-check-fill me-1.5"></i> Verify Secure OTP
+                    </button>
+                </form>
+
+                <!-- Footer Operations Options Navigation Link Bar -->
+                <div class="text-center mt-4 pt-3 border-top" style="font-size: 0.85rem;">
+                    <span class="text-muted">Missing code payload?</span>
+                    <a asp-action="RegisterDriver" asp-controller="Logistics" class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
+                        ← Go back and resend
+                    </a>
+                </div>
+            </div>
+
+            <!-- Global Countdown Expiration Status Wrapper Row -->
+            <div class="text-center mt-3 small text-secondary">
+                Token link remains operational for: <span id="countdown" class="fw-bold text-primary">10:00</span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 10-Minute Security Token Lifecycle Countdown Engine
+        let seconds = 600;
+        const el = document.getElementById('countdown');
+        const timer = setInterval(() => {
+            seconds--;
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            el.textContent = m + ':' + s;
+            if (seconds <= 60) {
+                el.style.color = '#ef4444';
+            }
+            if (seconds <= 0) {
+                clearInterval(timer);
+                el.textContent = 'Expired';
+                el.style.color = '#ef4444';
+            }
+        }, 1000);
+    </script>
+}

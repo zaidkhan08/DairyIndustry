@@ -1,0 +1,605 @@
+﻿@model List<DairyIndustry.Models.Finance.StaffForPaymentModel>
+@{
+    ViewData["Title"] = "Process Staff Payment";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    string role = ViewBag.Role as string ?? "";
+    bool isAgent = role == "Collection Agent";
+    bool isPMgr = role == "Plant Manager";
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+    :root {
+        --blue: #2563eb;
+        --blue-bg: #eff6ff;
+        --green: #059669;
+        --green-bg: #ecfdf5;
+        --amber: #d97706;
+        --amber-bg: #fffbeb;
+        --red: #e11d48;
+        --red-bg: #fff1f2;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --border: rgba(226,232,240,.8);
+        --shadow: 0 10px 40px rgba(15,23,42,.07);
+        --radius: 24px;
+        --pill: 999px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: radial-gradient(circle at top left,rgba(37,99,235,.07),transparent 30%), linear-gradient(to bottom,#f8f9ff,#f5f7fc);
+    }
+
+    .csp-root {
+        font-family: 'Figtree',sans-serif;
+        color: var(--ink);
+        padding: 32px;
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    .csp-header {
+        background: rgba(255,255,255,.75);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,.7);
+        border-radius: 28px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .csp-header-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--ink);
+    }
+
+    .csp-header-sub {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+    .csp-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px 16px;
+        background: #fff;
+        transition: all .15s;
+    }
+
+        .csp-back:hover {
+            color: var(--blue);
+            border-color: var(--blue);
+        }
+
+    /* ── CARD ── */
+    .csp-card {
+        background: rgba(255,255,255,.88);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 32px;
+        box-shadow: var(--shadow);
+        margin-bottom: 20px;
+    }
+
+    .csp-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: var(--muted);
+        margin-bottom: 18px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* ── FORM FIELDS ── */
+    .csp-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+        .csp-row.full {
+            grid-template-columns: 1fr;
+        }
+
+    .csp-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .csp-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .csp-input, .csp-select {
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: 'Figtree',sans-serif;
+        color: var(--ink);
+        background: #fff;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .csp-input:focus, .csp-select:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+
+        .csp-input[readonly] {
+            background: #f8fafc;
+            color: var(--muted);
+            cursor: default;
+        }
+
+    /* ── BANK INFO BOX ── */
+    .csp-bank-box {
+        background: var(--blue-bg);
+        border: 1px solid rgba(37,99,235,.2);
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin-top: 6px;
+        display: none;
+    }
+
+        .csp-bank-box.show {
+            display: block;
+        }
+
+    .csp-bank-grid {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        gap: 12px;
+    }
+
+    .csp-bank-item-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #3b82f6;
+        margin-bottom: 4px;
+    }
+
+    .csp-bank-item-val {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        font-family: 'DM Mono',monospace;
+    }
+
+    /* No-bank warning */
+    .csp-no-bank {
+        background: var(--amber-bg);
+        border: 1px solid rgba(217,119,6,.25);
+        border-radius: 12px;
+        padding: 14px 18px;
+        font-size: 13px;
+        color: var(--amber);
+        font-weight: 600;
+        display: none;
+        margin-top: 8px;
+    }
+
+        .csp-no-bank.show {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    /* ── PREVIEW BLOCK ── */
+    .csp-preview {
+        background: linear-gradient(135deg,#f0f7ff,#faf5ff);
+        border: 1.5px solid rgba(37,99,235,.18);
+        border-radius: 18px;
+        padding: 22px 24px;
+        margin-top: 6px;
+        display: none;
+    }
+
+        .csp-preview.show {
+            display: block;
+        }
+
+    .csp-preview-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--muted);
+        margin-bottom: 14px;
+    }
+
+    .csp-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2,1fr);
+        gap: 14px;
+    }
+
+    .csp-preview-item-label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .csp-preview-item-val {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--ink);
+        margin-top: 3px;
+    }
+
+        .csp-preview-item-val.big {
+            font-size: 26px;
+            color: var(--green);
+        }
+
+    /* ── SUBMIT ── */
+    .csp-submit-wrap {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .csp-btn-submit {
+        flex: 1;
+        background: linear-gradient(135deg,#2563eb,#7c3aed);
+        color: #fff;
+        border: none;
+        border-radius: 14px;
+        padding: 15px 24px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 20px rgba(37,99,235,.35);
+        transition: transform .15s, box-shadow .15s;
+    }
+
+        .csp-btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(37,99,235,.45);
+        }
+
+        .csp-btn-submit:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    /* ── AMOUNT HINT ── */
+    .csp-hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+        .csp-hint.warn {
+            color: var(--amber);
+        }
+
+    @@media(max-width:600px) {
+        .csp-root {
+            padding: 16px;
+        }
+
+        .csp-row {
+            grid-template-columns: 1fr;
+        }
+
+        .csp-bank-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .csp-preview-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="csp-root">
+
+    <!-- HEADER -->
+    <div class="csp-header">
+        <div>
+            <div class="csp-header-title">
+                <i class="bi bi-person-badge" style="color:var(--blue);margin-right:8px;"></i>
+                Process Staff Payment
+            </div>
+            <div class="csp-header-sub">
+                @if (isAgent)
+                {
+                    <span>Paying staff at your center</span>
+                }
+                else if (isPMgr)
+                {
+
+                    <span>Paying staff at your plant</span>
+                }
+                else
+                {
+
+                    <span>Admin — paying any staff member</span>
+                }
+            </div>
+        </div>
+        <a href="@Url.Action("StaffPayments", "Finance")" class="csp-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- FORM -->
+    <form method="post" action="@Url.Action("CreateStaffPayment","Finance")" id="payForm">
+        @Html.AntiForgeryToken()
+
+        <!-- Hidden fields filled by JS -->
+        <input type="hidden" name="plantId" id="hPlantId" value="0" />
+
+        <div class="csp-card">
+            <div class="csp-section-title">
+                <i class="bi bi-person-fill"></i> Select Staff Member
+            </div>
+
+            <div class="csp-row full">
+                <div class="csp-field">
+                    <label class="csp-label">Staff Member</label>
+                    <select class="csp-select" id="staffSelect" name="staffId"
+                            onchange="onStaffChange(this.value)" required>
+                        <option value="">— Choose staff member —</option>
+                        @foreach (var s in Model)
+                        {
+                            <option value="@s.StaffId"
+                                    data-plant="@s.PlantId"
+                                    data-center="@s.CenterId"
+                                    data-salary="@s.Salary"
+                                    data-name="@s.FullName"
+                                    data-role="@s.RoleName"
+                                    data-center-name="@s.CenterName"
+                                    data-plant-name="@s.PlantName"
+                                    data-bank="@s.HasBankAccount.ToString().ToLower()"
+                                    data-bankname="@s.BankName"
+                                    data-acc="@s.AccountNumber"
+                                    data-ifsc="@s.IFSCCode">
+                                @s.FullName — @s.RoleName (@s.CenterName)
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Staff info read-only row -->
+            <div class="csp-row" id="staffInfoRow" style="display:none;">
+                <div class="csp-field">
+                    <label class="csp-label">Role</label>
+                    <input type="text" class="csp-input" id="staffRole" readonly />
+                </div>
+                <div class="csp-field">
+                    <label class="csp-label">Center</label>
+                    <input type="text" class="csp-input" id="staffCenter" readonly />
+                </div>
+            </div>
+
+            <!-- No bank warning -->
+            <div class="csp-no-bank" id="noBankWarn">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                This staff member has no bank account linked. Please add bank details first.
+            </div>
+
+            <!-- Bank info box -->
+            <div class="csp-bank-box" id="bankBox">
+                <div class="csp-preview-title" style="margin-bottom:10px;">
+                    <i class="bi bi-bank2" style="margin-right:6px;color:var(--blue);"></i>
+                    Bank Account Details
+                </div>
+                <div class="csp-bank-grid">
+                    <div>
+                        <div class="csp-bank-item-label">Bank Name</div>
+                        <div class="csp-bank-item-val" id="bankName">—</div>
+                    </div>
+                    <div>
+                        <div class="csp-bank-item-label">Account No.</div>
+                        <div class="csp-bank-item-val" id="bankAcc">—</div>
+                    </div>
+                    <div>
+                        <div class="csp-bank-item-label">IFSC Code</div>
+                        <div class="csp-bank-item-val" id="bankIfsc">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="csp-card" id="payDetailsCard" style="display:none;">
+            <div class="csp-section-title">
+                <i class="bi bi-calendar-range"></i> Payment Period &amp; Amount
+            </div>
+
+            <div class="csp-row">
+                <div class="csp-field">
+                    <label class="csp-label">From Date</label>
+                    <input type="date" class="csp-input" name="fromDate" id="fromDate"
+                           onchange="calcAmount()" required />
+                </div>
+                <div class="csp-field">
+                    <label class="csp-label">To Date</label>
+                    <input type="date" class="csp-input" name="toDate" id="toDate"
+                           onchange="calcAmount()" required />
+                </div>
+            </div>
+
+            <div class="csp-row full">
+                <div class="csp-field">
+                    <label class="csp-label">Total Amount (₹)</label>
+                    <input type="number" class="csp-input" name="totalAmount" id="totalAmount"
+                           step="0.01" min="1" placeholder="e.g. 12000.00" required />
+                    <div class="csp-hint" id="amountHint"></div>
+                </div>
+            </div>
+
+            <!-- Live preview -->
+            <div class="csp-preview show" id="previewBox">
+                <div class="csp-preview-title">Payment Summary Preview</div>
+                <div class="csp-preview-grid">
+                    <div>
+                        <div class="csp-preview-item-label">Staff Member</div>
+                        <div class="csp-preview-item-val" id="prv-name" style="font-size:16px;">—</div>
+                    </div>
+                    <div>
+                        <div class="csp-preview-item-label">Monthly Salary</div>
+                        <div class="csp-preview-item-val" id="prv-salary">—</div>
+                    </div>
+                    <div>
+                        <div class="csp-preview-item-label">Period Days</div>
+                        <div class="csp-preview-item-val" id="prv-days">—</div>
+                    </div>
+                    <div>
+                        <div class="csp-preview-item-label">Total Amount</div>
+                        <div class="csp-preview-item-val big" id="prv-amount">₹0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="csp-submit-wrap">
+                <button type="submit" class="csp-btn-submit" id="submitBtn">
+                    <i class="bi bi-credit-card-fill"></i>
+                    Create Payment &amp; Pay via Stripe
+                </button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+<script>
+    let selectedSalary = 0;
+
+    function onStaffChange(staffId) {
+        const sel = document.getElementById('staffSelect');
+        const opt = sel.options[sel.selectedIndex];
+
+        document.getElementById('noBankWarn').classList.remove('show');
+        document.getElementById('bankBox').classList.remove('show');
+        document.getElementById('staffInfoRow').style.display = 'none';
+        document.getElementById('payDetailsCard').style.display = 'none';
+
+        if (!staffId) return;
+
+        const hasBank   = opt.dataset.bank === 'true';
+        const salary    = parseFloat(opt.dataset.salary) || 0;
+        selectedSalary  = salary;
+
+        document.getElementById('staffRole').value   = opt.dataset.role       || '—';
+        document.getElementById('staffCenter').value = opt.dataset.centerName || '—';
+        document.getElementById('staffInfoRow').style.display = '';
+
+        document.getElementById('hPlantId').value = opt.dataset.plant || '0';
+
+        if (!hasBank) {
+            document.getElementById('noBankWarn').classList.add('show');
+            document.getElementById('submitBtn') && (document.getElementById('submitBtn').disabled = true);
+            return;
+        }
+
+        // Show bank details
+        document.getElementById('bankName').textContent  = opt.dataset.bankname || '—';
+        document.getElementById('bankAcc').textContent   = opt.dataset.acc      || '—';
+        document.getElementById('bankIfsc').textContent  = opt.dataset.ifsc     || '—';
+        document.getElementById('bankBox').classList.add('show');
+
+        // Prefill amount and preview
+        document.getElementById('totalAmount').value = salary > 0 ? salary.toFixed(2) : '';
+        document.getElementById('prv-name').textContent   = opt.dataset.name || '—';
+        document.getElementById('prv-salary').textContent = salary > 0 ? '₹' + salary.toLocaleString('en-IN') : '—';
+        document.getElementById('prv-amount').textContent = salary > 0 ? '₹' + salary.toFixed(2) : '—';
+
+        // Set default dates: first and last of current month
+        const now   = new Date();
+        const first = new Date(now.getFullYear(), now.getMonth(), 1);
+        const last  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        document.getElementById('fromDate').value = fmtDate(first);
+        document.getElementById('toDate').value   = fmtDate(last);
+        calcAmount();
+
+        document.getElementById('payDetailsCard').style.display = '';
+        document.getElementById('submitBtn').disabled = false;
+    }
+
+    function calcAmount() {
+        const from = document.getElementById('fromDate').value;
+        const to   = document.getElementById('toDate').value;
+        const hint = document.getElementById('amountHint');
+        const prvDays = document.getElementById('prv-days');
+        const prvAmt  = document.getElementById('prv-amount');
+
+        if (!from || !to) return;
+
+        const d1 = new Date(from), d2 = new Date(to);
+        if (d2 < d1) { hint.textContent = '⚠ To Date must be after From Date'; hint.className = 'csp-hint warn'; return; }
+
+        const days = Math.round((d2 - d1) / 86400000) + 1;
+        prvDays.textContent = days + ' day' + (days === 1 ? '' : 's');
+
+        if (selectedSalary > 0) {
+            const prorated = (selectedSalary / 30) * days;
+            document.getElementById('totalAmount').value = prorated.toFixed(2);
+            prvAmt.textContent = '₹' + prorated.toFixed(2);
+            hint.textContent   = 'Auto-calculated: ₹' + selectedSalary.toLocaleString('en-IN') + ' ÷ 30 × ' + days + ' days';
+            hint.className     = 'csp-hint';
+        }
+    }
+
+    function fmtDate(d) {
+        const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+    }
+
+    // Keep preview total in sync if user edits the amount manually
+    document.addEventListener('DOMContentLoaded', () => {
+        const amtEl = document.getElementById('totalAmount');
+        if (amtEl) amtEl.addEventListener('input', () => {
+            const v = parseFloat(amtEl.value) || 0;
+            document.getElementById('prv-amount').textContent = '₹' + v.toFixed(2);
+        });
+    });
+</script>

@@ -1,0 +1,293 @@
+@* In pending Approvals, when we click on reject button it opens this form to enter reason for rejecting farmer *@
+@model DairyIndustry.Models.FarmerModel.RejectFarmerViewModel
+@{
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Reject Farmer Registration";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
+<style>
+    .rj-wrap {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .rj-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 4px 24px rgba(0,0,0,.06);
+        overflow: hidden;
+    }
+
+    
+
+    .rj-body {
+        padding: 32px 28px;
+    }
+
+    /* Icon circle */
+    .rj-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        font-size: 24px;
+        color: #dc2626;
+    }
+
+    .rj-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 4px;
+    }
+
+    .rj-subtitle {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 24px;
+    }
+
+    /* Farmer summary box */
+    .rj-farmer-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rj-farmer-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #dc2626;
+        flex-shrink: 0;
+    }
+
+    .rj-farmer-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 2px;
+    }
+
+    .rj-farmer-phone {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    /* Textarea */
+    .rj-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .rj-label-hint {
+        font-size: 11px;
+        font-weight: 400;
+        color: #9ca3af;
+        margin-left: 4px;
+    }
+
+    .rj-textarea {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: #111827;
+        resize: vertical;
+        min-height: 100px;
+        font-family: system-ui;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        box-sizing: border-box;
+    }
+
+        .rj-textarea:focus {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, .1);
+        }
+
+        .rj-textarea::placeholder {
+            color: #9ca3af;
+        }
+
+    /* Quick reason chips */
+    .rj-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0 20px;
+    }
+
+    .rj-chip {
+        padding: 4px 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 99px;
+        font-size: 11px;
+        color: #374151;
+        background: #f9fafb;
+        cursor: pointer;
+        transition: all .12s;
+        font-weight: 500;
+    }
+
+        .rj-chip:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #dc2626;
+        }
+
+    /* Buttons */
+    .rj-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .btn-confirm-reject {
+        flex: 1;
+        padding: 11px 20px;
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        transition: background .12s;
+    }
+
+        .btn-confirm-reject:hover {
+            background: #b91c1c;
+        }
+
+    .btn-cancel-reject {
+        padding: 11px 20px;
+        background: #fff;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: background .12s;
+        white-space: nowrap;
+    }
+
+        .btn-cancel-reject:hover {
+            background: #f3f4f6;
+            color: #111827;
+        }
+</style>
+
+<div class="rj-wrap">
+    <div class="rj-card">
+
+
+        <div class="rj-body">
+
+            <div class="rj-icon-wrap">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+
+            <h1 class="rj-title">Reject Registration</h1>
+            <p class="rj-subtitle">Provide a clear reason — this will be shown to the farmer.</p>
+
+            <!-- Farmer Summary -->
+            <div class="rj-farmer-box">
+                <div class="rj-farmer-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                    <p class="rj-farmer-name">@Model.FarmerName</p>
+                    <p class="rj-farmer-phone"><i class="bi bi-telephone me-1"></i>@Model.Phone</p>
+                </div>
+            </div>
+
+            <form method="post"
+                  asp-controller="CollectionCenter"
+                  asp-action="RejectFarmer">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="FarmerId" value="@Model.FarmerId" />
+                <input type="hidden" name="FarmerName" value="@Model.FarmerName" />
+                <input type="hidden" name="Phone" value="@Model.Phone" />
+
+                <label class="rj-label">
+                    Rejection Reason
+                    <span class="rj-label-hint">(required)</span>
+                </label>
+
+                <!-- Quick Pick Chips -->
+                <div class="rj-chips">
+                    <span class="rj-chip" onclick="setReason('Aadhaar card details are not matching')">Aadhaar mismatch</span>
+                    <span class="rj-chip" onclick="setReason('Documents are not matching')">Documents mismatch</span>
+                    <span class="rj-chip" onclick="setReason('Duplicate registration detected')">Duplicate registration</span>
+                    <span class="rj-chip" onclick="setReason('Invalid or incorrect phone number')">Invalid phone</span>
+                    <span class="rj-chip" onclick="setReason('Bank account details could not be verified')">Bank unverified</span>
+                </div>
+
+                <textarea name="ApprovalRemark"
+                          id="remarkArea"
+                          class="rj-textarea"
+                          rows="4"
+                          placeholder="e.g. Aadhaar number does not match the submitted document..."
+                          required>@Model.ApprovalRemark</textarea>
+
+                <div class="rj-actions">
+                    <button type="submit" class="btn-confirm-reject">
+                        <i class="bi bi-x-circle-fill"></i> Confirm Rejection
+                    </button>
+                    <a asp-controller="CollectionCenter"
+                       asp-action="PendingApprovals"
+                       class="btn-cancel-reject">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function setReason(text) {
+            document.getElementById('remarkArea').value = text;
+            document.getElementById('remarkArea').focus();
+        }
+    </script>
+}

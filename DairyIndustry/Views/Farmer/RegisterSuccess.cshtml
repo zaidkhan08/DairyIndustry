@@ -1,0 +1,342 @@
+@{
+    ViewData["Title"] = "Registration Submitted";
+    Layout = "_DairyLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+
+<style>
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0
+    }
+
+    :root {
+        --navy: #1B3A6B;
+        --navy-dark: #122850;
+        --navy-mid: #2E5496;
+        --navy-light: #E8EEF8;
+        --navy-border: #C2D0E8;
+        --accent: #2563EB;
+        --green-ok: #16A34A;
+        --gray-bg: #F5F7FA;
+        --gray-border: #D1D5DB;
+        --gray-text: #6B7280;
+        --white: #FFFFFF;
+        --radius: 12px;
+    }
+
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--gray-bg);
+        color: #111827;
+        min-height: 100vh
+    }
+
+    .success-wrap {
+        max-width: 580px;
+        margin: 0 auto;
+        padding: 2.5rem 1rem 3rem
+    }
+
+    /* ── TOP ICON ── */
+    .success-icon-ring {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem;
+        box-shadow: 0 0 0 8px var(--navy-light), 0 8px 24px rgba(27,58,107,0.25);
+        font-size: 36px;
+        color: #fff;
+        animation: popIn .4s cubic-bezier(.175,.885,.32,1.275) both;
+    }
+
+    @@keyframes popIn {
+        from {
+            transform: scale(0.5);
+            opacity: 0
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1
+        }
+    }
+
+    /* ── MAIN CARD ── */
+    .main-card {
+        background: var(--white);
+        border: 1px solid var(--gray-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    .main-card-head {
+        padding: 1.75rem 1.5rem 1.5rem;
+        text-align: center;
+        border-bottom: 1px solid var(--gray-border);
+        background: linear-gradient(160deg, var(--navy-light) 0%, #fff 100%);
+    }
+
+        .main-card-head h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--navy-dark);
+            margin-bottom: 6px;
+            letter-spacing: -0.3px
+        }
+
+        .main-card-head p {
+            font-size: 13.5px;
+            color: var(--gray-text);
+            line-height: 1.65;
+            max-width: 400px;
+            margin: 0 auto
+        }
+
+    /* ── STEPS ── */
+    .steps-wrap {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .steps-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--navy);
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px
+    }
+
+    .step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+    }
+
+    .step-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px
+    }
+
+    .step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--navy-light);
+        border: 1.5px solid var(--navy-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--navy);
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .step-row-text {
+        flex: 1
+    }
+
+    .step-row-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #111827;
+        line-height: 1.4
+    }
+
+    .step-row-desc {
+        font-size: 11.5px;
+        color: var(--gray-text);
+        margin-top: 2px;
+        line-height: 1.5
+    }
+
+    /* ── INFO BOX ── */
+    .info-box {
+        margin: 0 1.5rem 1.25rem;
+        padding: 11px 14px;
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        border-radius: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 12px;
+        color: #92400E;
+        line-height: 1.6;
+    }
+
+        .info-box i {
+            font-size: 15px;
+            color: #D97706;
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+    /* ── ACTIONS ── */
+    .actions-wrap {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+    }
+
+    .btn-action {
+        height: 44px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background .15s, border-color .15s, transform .1s;
+        text-decoration: none;
+        width: 100%;
+    }
+
+        .btn-action:active {
+            transform: scale(0.98)
+        }
+
+    .btn-primary-action {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff
+    }
+
+        .btn-primary-action:hover {
+            background: var(--navy-dark);
+            border-color: var(--navy-dark)
+        }
+
+    .btn-outline-action {
+        background: var(--white);
+        border-color: var(--gray-border);
+        color: #374151
+    }
+
+        .btn-outline-action:hover {
+            background: var(--gray-bg);
+            border-color: #9CA3AF
+        }
+
+    /* ── BRAND CHIP ── */
+    .brand-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--navy-light);
+        color: var(--navy);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--navy-border);
+        letter-spacing: 0.3px
+    }
+
+        .brand-chip i {
+            font-size: 15px
+        }
+
+    @@media(max-width: 480px) {
+        .success-wrap {
+            padding: 1.5rem 0.75rem 2rem
+        }
+
+        .main-card-head {
+            padding: 1.5rem 1.25rem 1.25rem
+        }
+
+        .steps-wrap, .actions-wrap {
+            padding: 1.1rem 1.25rem
+        }
+
+        .info-box {
+            margin: 0 1.25rem 1.1rem
+        }
+    }
+</style>
+
+<div class="success-wrap">
+
+
+    <!-- Main card -->
+    <div class="main-card">
+
+        <!-- Head -->
+        <div class="main-card-head">
+            <h1>Registration submitted!</h1>
+            <p>Your registration request has been sent to the collection center. Staff will review your details and approve your account shortly.</p>
+        </div>
+
+        <!-- What happens next -->
+        <div class="steps-wrap">
+            <div class="steps-label"><i class="ti ti-list-check" style="font-size:13px"></i>What happens next</div>
+            <div class="step-list">
+                <div class="step-row">
+                    <div class="step-num">1</div>
+                    <div class="step-row-text">
+                        <div class="step-row-title">Staff reviews your request</div>
+                        <div class="step-row-desc">Collection center staff will verify your submitted details and documents.</div>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">2</div>
+                    <div class="step-row-text">
+                        <div class="step-row-title">Farmer code is generated</div>
+                        <div class="step-row-desc">On approval, a unique farmer code will be assigned to your account.</div>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">3</div>
+                    <div class="step-row-text">
+                        <div class="step-row-title">Your password is set</div>
+                        <div class="step-row-desc">Your default password will be the last 4 digits of your registered mobile number.</div>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">4</div>
+                    <div class="step-row-text">
+                        <div class="step-row-title">Login to your account</div>
+                        <div class="step-row-desc">Use your farmer code and password to log in and start recording milk collection.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info note -->
+        <div class="info-box">
+            <i class="ti ti-clock"></i>
+            <span>Approval typically takes <strong>1–2 working days</strong>. You will be notified at your registered email and mobile number.</span>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="actions-wrap">
+            <a asp-controller="Farmer" asp-action="CheckStatus" class="btn-action btn-primary-action">
+                <i class="ti ti-search" style="font-size:16px"></i> Check registration status
+            </a>
+            <a asp-controller="Farmer" asp-action="Login" class="btn-action btn-outline-action">
+                <i class="ti ti-login" style="font-size:16px"></i> Go to login
+            </a>
+        </div>
+
+    </div>
+</div>

@@ -10,7 +10,7 @@ namespace DairyIndustry.Repositories
         // ── ROLES ──────────────────────────────────────────────
         int CreateRole(string roleName);
         List<RoleModel> GetAllRoles();
-
+        UserProfileVM GetUserProfile(int userId);
         // ── USERS ──────────────────────────────────────────────
         int RegisterUser(string username, string passwordHash, int roleId, int? staffId);
         User GetUserByUsername(string username);
@@ -23,8 +23,10 @@ namespace DairyIndustry.Repositories
 
         //Added By Zaid
         int? GetPlantIdByUser(int userId);
+
+        int? GetCenterIdByUser(int userId);
         // ── AUDIT LOG ──────────────────────────────────────────
-       
+
 
         // ════════════════════════════════════════════════════════
         // LOCATION — STATE
@@ -38,6 +40,7 @@ namespace DairyIndustry.Repositories
         int AddCity(string cityName, int stateId);
         List<CityModel> GetAllCities();
         List<CityModel> GetCitiesByState(int stateId);
+    
 
         // ════════════════════════════════════════════════════════
         // LOCATION — VILLAGE
@@ -62,18 +65,44 @@ namespace DairyIndustry.Repositories
         // ════════════════════════════════════════════════════════
         // STAFF
         // ════════════════════════════════════════════════════════
-        int AddStaff(string firstName, string lastName, string phone, string email,
-             int roleId, DateTime? doj,
-             string bankName, string accountNumber, string ifscCode,
-             decimal salary,
-             string profilePhoto = null,
-             int? centerId = null,
-             int? plantId = null);
-        void UpdateStaff(int staffId, string firstName, string lastName,
+        Task<int> AddStaffAsync(string firstName, string lastName, string phone, string email,
+        int roleId, DateTime? doj,
+        string bankName, string accountNumber, string ifscCode,
+        decimal salary,
+        string profilePhoto = null,
+        int? centerId = null,
+        int? plantId = null);
+        Task<int> AddStaffWithUserAsync(string firstName, string lastName, string phone, string email,
+     int roleId, DateTime? doj,
+     string bankName, string accountNumber, string ifscCode,
+     decimal salary,
+     string profilePhoto = null,
+     int? centerId = null,
+     int? plantId = null,
+     string username = null,
+     string passwordHash = null);
+        Task UpdateStaffAsync(int staffId, string firstName, string lastName,
                         string phone, string email, int roleId, DateTime? doj,
                         string bankName, string accountNumber, string ifscCode,
                         decimal salary, string profilePhoto,
                         int? centerId, int? plantId);
+        Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash);
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
@@ -82,6 +111,9 @@ namespace DairyIndustry.Repositories
         void AssignUserToPlant(int userId, int plantId);
 
         void AssignUserToCenter(int userId, int centerId);
+        List<User> GetUsersByRole(string roleName);
+        List<User> GetPlantManagers();
+        List<User> GetCollectionAgents();
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
@@ -135,9 +167,20 @@ namespace DairyIndustry.Repositories
         //collection center
         List<CollectionCenterModel> GetAllCenters();
 
+        List<BatchModel> GetAllBatches(int? centerId = null, string status = null,
+                               DateTime? fromDate = null, DateTime? toDate = null);
+
+        BatchModel GetBatchById(int batchId);
+
+        int OpenBatch(int centerId, string shift, DateTime batchDate);
+
+        void CloseBatch(int batchId);
+
+        List<BatchCollectionEntryModel> GetBatchCollections(int batchId);
+
         //Distributers
         List<Distributor> GetDistributors();
-        int AddDistributor(Distributor distributor);
+        int RegisterDistributor(Distributor distributor, string username, string passwordHash);
         bool UpdateDistributorStatus(int distributorId, string status);
         Distributor? GetDistributorById(int distributorId);
         List<Distributor> GetPendingDistributors();
@@ -151,6 +194,7 @@ namespace DairyIndustry.Repositories
         bool UpdateOrderStatus(int orderId, string status);
         List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
 
+
         List<PlantModel> GetActivePlants();
         //Notification
         List<NotificationModel> GetNotifications();
@@ -158,6 +202,36 @@ namespace DairyIndustry.Repositories
         bool MarkNotificationRead(int notificationId);
         bool MarkAllNotificationsRead();
 
+        //Email
+
+        void SendOtpEmail(string toEmail, string toName, string otp, string purpose);
+        void ChangePassword(int userId, string newPasswordHash);
+
+        //Index
+
+        List<ChartPoint> GetMilkCollectedLast7Days();
+
+        /// <summary>
+        /// Returns (TotalMilkCollected, TodayMilkCollected, TotalFarmers,
+        ///          ActiveFarmers, OpenBatches, ClosedBatches, DispatchedBatches)
+        /// </summary>
+        DashboardCollectionSummary GetCollectionSummary();
+
+        /// <summary>
+        /// Returns aggregated finance totals for farmer / staff / center payments
+        /// and total sales revenue.
+        /// </summary>
+        DashboardFinanceSummary GetFinanceSummary();
+
+        /// <summary>
+        /// Returns top 5 products ranked by total milk used in production.
+        /// </summary>
+        List<ChartPoint> GetTopProductsByMilkUsed(int top = 5);
+
+        /// <summary>
+        /// Returns count of sales orders grouped by status.
+        /// </summary>
+        List<ChartPoint> GetOrdersByStatus();
     }
 
 }

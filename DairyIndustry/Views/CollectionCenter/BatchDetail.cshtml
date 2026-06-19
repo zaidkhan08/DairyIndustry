@@ -1,0 +1,596 @@
+﻿@model DairyIndustry.Models.Collection.BatchDetailModel
+
+@{
+    ViewData["Title"] = "Batch Detail";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<style>
+
+    body, .table, .form-control, .form-select, .btn, input, select, button {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        background: #f5f6f8;
+    }
+
+    /* ── BATCH HEADER ── */
+    .batch-header-card {
+        background: #fff;
+        border: 0.5px solid #eaeaea;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .batch-title {
+        font-size: 18px;
+        font-weight: normal;
+        color: #111;
+    }
+
+    .batch-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    .meta-pill {
+        font-size: 12px;
+        color: #666;
+        background: #f5f5f5;
+        border: 0.5px solid #eee;
+        border-radius: 20px;
+        padding: 3px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .status-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 14px;
+        border-radius: 20px;
+    }
+
+        .status-badge.dispatched {
+            background: #EAF3DE;
+            color: #3B6D11;
+        }
+
+        .status-badge.open {
+            background: #E6F1FB;
+            color: #185FA5;
+        }
+
+        .status-badge.closed {
+            background: #FCEBEB;
+            color: #A32D2D;
+        }
+
+        .status-badge.cancelled {
+            background: #f5f5f5;
+            color: #888;
+        }
+
+    /* ── KPI CARDS ── */
+    .kpi-card {
+        background: #fff;
+        border: 0.5px solid #eaeaea;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .kpi-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+        .kpi-icon.blue {
+            background: #E6F1FB;
+            color: #185FA5;
+        }
+
+        .kpi-icon.green {
+            background: #EAF3DE;
+            color: #3B6D11;
+        }
+
+        .kpi-icon.amber {
+            background: #FAEEDA;
+            color: #854F0B;
+        }
+
+        .kpi-icon.red {
+            background: #FCEBEB;
+            color: #A32D2D;
+        }
+
+        .kpi-icon.gray {
+            background: #f5f5f5;
+            color: #555;
+        }
+
+    .kpi-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111;
+    }
+
+        .kpi-value.blue {
+            color: #185FA5;
+        }
+
+        .kpi-value.green {
+            color: #3B6D11;
+        }
+
+        .kpi-value.amber {
+            color: #854F0B;
+        }
+
+        .kpi-value.red {
+            color: #A32D2D;
+        }
+
+    /* ── TABLE ── */
+    .table thead th {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: #fafafa;
+        color: #999;
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px 16px;
+        position: sticky;
+        top: 0;
+    }
+
+    .table tbody td {
+        font-size: 13.5px;
+        color: #333;
+        vertical-align: middle;
+        border-bottom: 1px solid #f5f5f5;
+        padding: 14px 16px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #fafbfc;
+    }
+
+    .cell-sr {
+        color: #aaa;
+        font-size: 12px;
+    }
+
+    .cell-farmer {
+        color: #222;
+    }
+
+    .text-qty {
+        color: #3B6D11;
+    }
+
+    .text-amt {
+        color: #854F0B;
+    }
+
+    .cell-code {
+        color: #999;
+        font-size: 12px;
+    }
+
+    
+
+    /* ── PILLS (milk type / entry status) ── */
+    .pill {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 11px;
+        border-radius: 20px;
+        display: inline-block;
+        line-height: 1.4;
+    }
+
+        .pill.type-cow {
+            background: #E6F1FB;
+            color: #185FA5;
+        }
+
+        .pill.type-buffalo {
+            background: #FAEEDA;
+            color: #854F0B;
+        }
+
+        .pill.type-mixed {
+            background: #E6F7F1;
+            color: #0F766E;
+        }
+
+        .pill.type-default {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .pill.entry-accepted {
+            background: #EAF3DE;
+            color: #3B6D11;
+        }
+
+        .pill.entry-rejected {
+            background: #FCEBEB;
+            color: #A32D2D;
+        }
+
+    /* ── PAGINATION ── */
+    .pagination-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #f0f0f0;
+        background: #fff;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #888;
+    }
+
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pg-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e5e5e5;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        transition: all 0.15s;
+    }
+
+        .pg-btn:hover:not(:disabled) {
+            border-color: #185FA5;
+            color: #185FA5;
+        }
+
+        .pg-btn.active {
+            background: #185FA5;
+            color: #fff;
+            border-color: #185FA5;
+            font-weight: 600;
+        }
+
+        .pg-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+</style>
+
+<div class="container-fluid py-3">
+
+    <!-- ── BACK BUTTON ── -->
+    <div class="mb-3">
+        <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
+            <i class="ti ti-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- ── BATCH HEADER ── -->
+    <div class="batch-header-card mb-3">
+        <div>
+            <div class="batch-title">
+                <i class="ti ti-package"></i> Batch ID #@Model.BatchId
+            </div>
+            <div class="batch-meta">
+                <span class="meta-pill">
+                    <i class="ti ti-building"></i> @Model.CenterName
+                </span>
+                <span class="meta-pill">
+                    <i class="ti ti-calendar"></i> @Model.BatchDate.ToString("dd-MM-yyyy")
+                </span>
+                <span class="meta-pill">
+                    <i class="ti ti-@(Model.Shift == "Morning" ? "sun" : "moon")"></i> @Model.Shift Shift
+                </span>
+            </div>
+        </div>
+        @{
+            var statusClass = Model.Status?.ToLower() switch
+            {
+                "dispatched" => "dispatched",
+                "open" => "open",
+                "closed" => "closed",
+                "cancelled" => "cancelled",
+                _ => "cancelled"
+            };
+        }
+        <span class="status-badge @statusClass">@Model.Status</span>
+    </div>
+
+    <!-- ── KPI CARDS ── -->
+    <div class="row g-2 mb-3">
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon blue"><i class="ti ti-droplet"></i></div>
+                <div class="kpi-label">Total Milk</div>
+                <div class="kpi-value blue">@Model.TotalQuantity.ToString("F2") L</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon amber"><i class="ti ti-currency-rupee"></i></div>
+                <div class="kpi-label">Total Amount</div>
+                <div class="kpi-value amber"><i class="ti ti-currency-rupee"></i>@Model.TotalAmount.ToString("F2")</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon green"><i class="ti ti-check"></i></div>
+                <div class="kpi-label">Accepted</div>
+                <div class="kpi-value green">@Model.AcceptedCount</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon red"><i class="ti ti-x"></i></div>
+                <div class="kpi-label">Rejected</div>
+                <div class="kpi-value red">@Model.RejectedCount</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon gray"><i class="ti ti-test-pipe"></i></div>
+                <div class="kpi-label">Avg FAT</div>
+                <div class="kpi-value">@(Model.AvgFat?.ToString("F2") ?? "-")</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="kpi-card">
+                <div class="kpi-icon gray"><i class="ti ti-flask"></i></div>
+                <div class="kpi-label">Avg CLR</div>
+                <div class="kpi-value">@(Model.AvgCLR?.ToString("F2") ?? "-")</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── ENTRIES TABLE ── -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+            <span style="font-size:16px; color:#111;">Batch Entries</span>
+            <div class="d-flex gap-2">
+                <input type="text" id="searchBox" class="form-control form-control-sm"
+                       placeholder="Search Farmer / Code" style="width:200px;">
+                <select id="statusFilter" class="form-select form-select-sm" style="width:140px;">
+                    <option value="">All Status</option>
+                    <option>Accepted</option>
+                    <option>Rejected</option>
+                </select>
+                <select id="milkTypeFilter" class="form-select form-select-sm" style="width:140px;">
+                    <option value="">All Milk Types</option>
+                    @foreach (var mt in Model.Entries.Select(x => x.MilkType).Distinct())
+                    {
+                        <option>@mt</option>
+                    }
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="max-height:620px; overflow:auto;">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Farmer</th>
+                        <th>Code</th>
+                        <th>Milk Type</th>
+                        <th>Qty (L)</th>
+                        <th>FAT</th>
+                        <th>CLR</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Reason</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    @{
+                        int sr = 1;
+                    }
+                    @foreach (var item in Model.Entries)
+                    {
+                        var milkTypeLower = item.MilkType?.ToLower() ?? "";
+                        var typeClass = milkTypeLower.Contains("buffalo") ? "type-buffalo"
+                        : milkTypeLower.Contains("cow") ? "type-cow"
+                        : milkTypeLower.Contains("mixed") ? "type-mixed"
+                        : "type-default";
+                        var entryStatusClass = item.Status == "Accepted" ? "entry-accepted" : "entry-rejected";
+                        <tr class="entry-row"
+                            data-search="@item.FarmerName @item.FarmerCode"
+                            data-status="@item.Status"
+                            data-milktype="@item.MilkType">
+                            <td class="cell-sr">@sr</td>
+                            <td class="cell-farmer">@item.FarmerName</td>
+                            <td class="cell-code">@item.FarmerCode</td>
+                            <td>
+                                <span class="pill @typeClass">@item.MilkType</span>
+                            </td>
+                            <td class="text-qty">@(item.Quantity?.ToString("F2") ?? "-")</td>
+                            <td>@(item.Fat?.ToString("F2") ?? "-")</td>
+                            <td>@(item.CLR?.ToString("F2") ?? "-")</td>
+                            <td>
+                                @if (item.Rate != null)
+                                {
+                                    <i class="ti ti-currency-rupee"></i>
+                                    @item.Rate.Value.ToString("F2")
+                                }
+                                else
+                                {
+
+                                    <text>-</text>
+                                }
+                            </td>
+                            <td class="text-amt">
+                                @if (item.Amount != null)
+                                {
+                                    <i class="ti ti-currency-rupee"></i>
+                                    @item.Amount.Value.ToString("F2")
+                                }
+                                else
+                                {
+
+                                    <text>-</text>
+                                }
+                            </td>
+                            <td>
+                                <span class="pill @entryStatusClass">@item.Status</span>
+                            </td>
+                            <td class="text-muted" style="font-size:12.5px;">@(string.IsNullOrEmpty(item.RejectionReason) ? "-" : item.RejectionReason)</td>
+                            <td class="text-muted" style="font-size:12.5px;">@(string.IsNullOrEmpty(item.Remarks) ? "-" : item.Remarks)</td>
+                        </tr>
+                        sr++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-bar">
+            <span class="pagination-info" id="paginationInfo"></span>
+            <div class="pagination-controls" id="pagination"></div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    const rows = Array.from(document.querySelectorAll(".entry-row"));
+    const searchBox = document.getElementById("searchBox");
+    const statusFilter = document.getElementById("statusFilter");
+    const milkTypeFilter = document.getElementById("milkTypeFilter");
+
+    const pageSize = 10;
+    let currentPage = 1;
+    let filteredRows = [...rows];
+
+    function applyFilters() {
+        const search = searchBox.value.toLowerCase();
+        const status = statusFilter.value;
+        const milkType = milkTypeFilter.value;
+
+        filteredRows = rows.filter(r => {
+            const matchSearch   = r.dataset.search.toLowerCase().includes(search);
+            const matchStatus   = !status   || r.dataset.status   === status;
+            const matchMilkType = !milkType || r.dataset.milktype === milkType;
+            return matchSearch && matchStatus && matchMilkType;
+        });
+
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    }
+
+    function renderTable() {
+        rows.forEach(r => r.style.display = "none");
+        const start = (currentPage - 1) * pageSize;
+        filteredRows.slice(start, start + pageSize).forEach(r => r.style.display = "");
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredRows.length / pageSize);
+        const pagination = document.getElementById("pagination");
+        const info = document.getElementById("paginationInfo");
+
+        const start = filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        const end = Math.min(currentPage * pageSize, filteredRows.length);
+        info.textContent = `Showing ${start}–${end} of ${filteredRows.length} entries`;
+
+        pagination.innerHTML = "";
+
+        const prev = document.createElement("button");
+        prev.className = "pg-btn";
+        prev.innerHTML = `<i class="ti ti-chevron-left"></i>`;
+        prev.disabled = currentPage === 1;
+        prev.onclick = () => { currentPage--; renderTable(); renderPagination(); };
+        pagination.appendChild(prev);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.textContent = i;
+            btn.className = "pg-btn" + (i === currentPage ? " active" : "");
+            btn.onclick = () => { currentPage = i; renderTable(); renderPagination(); };
+            pagination.appendChild(btn);
+        }
+
+        const next = document.createElement("button");
+        next.className = "pg-btn";
+        next.innerHTML = `<i class="ti ti-chevron-right"></i>`;
+        next.disabled = currentPage === totalPages || totalPages === 0;
+        next.onclick = () => { currentPage++; renderTable(); renderPagination(); };
+        pagination.appendChild(next);
+    }
+
+    searchBox.addEventListener("input", applyFilters);
+    statusFilter.addEventListener("change", applyFilters);
+    milkTypeFilter.addEventListener("change", applyFilters);
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+        searchBox.value = "";
+        statusFilter.value = "";
+        milkTypeFilter.value = "";
+        applyFilters();
+    });
+
+    applyFilters();
+
+</script>

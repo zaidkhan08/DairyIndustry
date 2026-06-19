@@ -1,0 +1,766 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.AllMilkHistoryModel>
+
+@{
+    ViewData["Title"] = "Milk History";
+    Layout = "_FarmerLayout";
+
+    int srNo = 1;
+    decimal totalQty = Model?.Sum(x => x.Quantity) ?? 0;
+    decimal totalAmount = Model?.Sum(x => x.Amount) ?? 0;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    .mh-wrap {
+        padding: 1.75rem 1.5rem;
+    }
+
+    .mh-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .mh-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    .mh-subtitle {
+        font-size: 0.8rem;
+        color: #888;
+        margin: 2px 0 0;
+    }
+
+    .mh-count-badge {
+        font-size: 0.78rem;
+        background: #f5f5f3;
+        border: 1px solid #e5e5e2;
+        color: #555;
+        border-radius: 20px;
+        padding: 5px 14px;
+    }
+
+    .mh-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+        background: #fff;
+        border: 1px solid #e8eef6;
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .kpi-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+        .kpi-icon.blue {
+            background: #eef6ff;
+            color: #1d6fce;
+        }
+
+        .kpi-icon.green {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .kpi-icon.amber {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .kpi-icon.gray {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+    .kpi-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 2px;
+    }
+
+    .kpi-value {
+        font-size: 1.05rem;
+        font-weight: normal;
+        color: #0a2540;
+        line-height: 1.2;
+    }
+
+    .kpi-sub {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        margin-top: 1px;
+    }
+
+        .mh-card-icon.blue {
+            background: #e8f0fb;
+            color: #3a6cc4;
+        }
+
+        .mh-card-icon.green {
+            background: #e8f6ee;
+            color: #2a9a5a;
+        }
+
+        .mh-card-icon.amber {
+            background: #fef3e0;
+            color: #c47d10;
+        }
+
+        .mh-card-icon.gray {
+            background: #f2f2f0;
+            color: #666;
+        }
+
+    .mh-filter-bar {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 1.25rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+        .mh-filter-bar .mh-fg {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 130px;
+        }
+
+            .mh-filter-bar .mh-fg label {
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #999;
+            }
+
+        .mh-filter-bar input, .mh-filter-bar select {
+            font-size: 0.82rem;
+            border: 1px solid #e0e0dd;
+            border-radius: 7px;
+            padding: 6px 10px;
+            color: #333;
+            background: #fafaf8;
+            outline: none;
+        }
+
+            .mh-filter-bar input:focus, .mh-filter-bar select:focus {
+                border-color: #b0b0aa;
+                background: #fff;
+            }
+
+    .mh-btn-reset {
+        font-size: 0.8rem;
+        background: #1a1a1a;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: 7px 18px;
+        cursor: pointer;
+        white-space: nowrap;
+        align-self: flex-end;
+    }
+
+        .mh-btn-reset:hover {
+            background: #333;
+        }
+
+    .mh-table-card {
+        background: #fff;
+        border: 1px solid #ebebeb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+        .mh-table-card table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+
+        .mh-table-card thead tr {
+            border-bottom: 1px solid #efefed;
+        }
+
+        .mh-table-card thead th {
+            padding: 11px 14px;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-weight: 600;
+            color: #aaa;
+            white-space: nowrap;
+        }
+
+        .mh-table-card tbody tr {
+            border-bottom: 1px solid #f5f5f3;
+            transition: background 0.1s;
+        }
+
+            .mh-table-card tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .mh-table-card tbody tr:hover {
+                background: #fafaf8;
+            }
+
+        .mh-table-card tbody td {
+            padding: 13px 14px;
+            color: #333;
+            vertical-align: middle;
+        }
+
+    .mh-date-main {
+        font-weight: 600;
+        color: #1a1a1a;
+        display: block;
+    }
+
+    .mh-date-day {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #bbb;
+    }
+
+    .shift-morning {
+        background: #fef3de;
+        color: #b36b00;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .shift-evening {
+        background: #e6eefa;
+        color: #2d5faa;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .milk-badge {
+        background: #f4f4f2;
+        color: #666;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.75rem;
+        border: 1px solid #e8e8e5;
+        display: inline-block;
+    }
+
+    
+
+    .status-accepted {
+        background: #e7f5ee;
+        color: #1d7a45;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .btn-view {
+        font-size: 0.75rem;
+        border: 1px solid #d5d5d2;
+        border-radius: 6px;
+        padding: 4px 12px;
+        color: #444;
+        background: #fafaf8;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-view:hover {
+            background: #f0f0ee;
+            color: #222;
+        }
+
+    .mh-empty {
+        text-align: center;
+        padding: 3.5rem 1rem;
+    }
+
+    .mh-empty-icon {
+        width: 52px;
+        height: 52px;
+        background: #f4f4f2;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: #bbb;
+        margin-bottom: 1rem;
+    }
+
+    .mh-empty h5 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .mh-empty p {
+        font-size: 0.82rem;
+        color: #aaa;
+        margin: 0;
+    }
+
+    /* PAGINATION */
+    .mh-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #efefed;
+        font-size: 0.78rem;
+        color: #999;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .mh-page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 7px;
+        border-radius: 6px;
+        border: 1px solid #e5e5e2;
+        background: #fff;
+        font-size: 0.78rem;
+        color: #555;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.12s;
+        line-height: 1;
+    }
+
+        .pg-btn:hover {
+            background: #f5f5f3;
+        }
+
+        .pg-btn.active {
+            background: #185FA5;
+            color: #fff;
+            border-color: #185FA5;
+            font-weight: 600;
+        }
+
+        .pg-btn.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            cursor: default;
+        }
+
+    /* NO RESULTS */
+    .mh-no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #bbb;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="mh-wrap">
+
+    <!-- PAGE HEADER -->
+    <div class="mh-header">
+        <div>
+            <h4 class="mh-title">Milk History</h4>
+            <p class="mh-subtitle">View all accepted milk collection entries and quality metrics.</p>
+        </div>
+        <span class="mh-count-badge">Total Records: @(Model?.Count ?? 0)</span>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon blue">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Total Quantity</div>
+                    <div class="kpi-value">@totalQty.ToString("N2") <span style="font-size:.78rem;color:#64748b;font-weight:500;">L</span></div>
+                    <div class="kpi-sub">Litres collected</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon green">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Total Earnings</div>
+                    <div class="kpi-value"><i class="bi bi-currency-rupee" style="font-size:.9rem;"></i>@totalAmount.ToString("N2")</div>
+                    <div class="kpi-sub">Estimated payout</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon amber">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Average Fat</div>
+                    <div class="kpi-value">
+                        @(Model != null && Model.Any(x => x.AppliedFat != null)
+                                                ? Model.Average(x => x.AppliedFat ?? 0).ToString("0.0")
+                                                : "0.0")<span style="font-size:.78rem;color:#64748b;font-weight:500;">%</span>
+                    </div>
+                    <div class="kpi-sub">Across all entries</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon gray">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Receipts</div>
+                    <div class="kpi-value">@Model?.Count(x => !string.IsNullOrEmpty(x.ReceiptNumber))</div>
+                    <div class="kpi-sub">Generated</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="mh-filter-bar">
+
+        <div class="mh-fg" style="flex:2; min-width:180px;">
+            <label>Search</label>
+            <input type="text" id="searchBox" placeholder="Center / Milk Type / Receipt..." />
+        </div>
+
+        <div class="mh-fg">
+            <label>Shift</label>
+            <select id="shiftFilter">
+                <option value="">All Shifts</option>
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+            </select>
+        </div>
+
+        <div class="mh-fg">
+            <label>From</label>
+            <input type="date" id="fromDate" />
+        </div>
+
+        <div class="mh-fg">
+            <label>To</label>
+            <input type="date" id="toDate" />
+        </div>
+
+        <button class="mh-btn-reset" type="button" onclick="resetFilters()">Reset</button>
+
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="mh-table-card">
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="mh-empty">
+                <div class="mh-empty-icon"><i class="bi bi-droplet"></i></div>
+                <h5>No Collection History</h5>
+                <p>Accepted collection records will populate here dynamically.</p>
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px;">#</th>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Center</th>
+                            <th>Milk Type</th>
+                            <th style="text-align:right;">Qty</th>
+                            <th style="text-align:right;">Fat %</th>
+                            <th style="text-align:right;">CLR</th>
+                            <th style="text-align:right;">Rate / L</th>
+                            <th style="text-align:right;">Amount</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:center; padding-right:20px;">Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mhTableBody">
+                        @foreach (var item in Model)
+                        {
+                            string dateText = item.CollectionDate.ToString("dd-MM-yyyy");
+                            string shiftText = item.Shift ?? "";
+                            string centerText = item.CenterName ?? "";
+                            string milkTypeText = item.MilkTypeName ?? "";
+
+                            <tr class="mh-data-row"
+                                data-date="@item.CollectionDate.ToString("yyyy-MM-dd")"
+                                data-shift="@shiftText"
+                                data-center="@centerText.ToLower()"
+                                data-milktype="@milkTypeText.ToLower()">
+
+                                <td style="padding-left:20px; color:#bbb; font-size:0.8rem;" class="mh-sr">@srNo</td>
+
+                                <td>
+                                    <span class="mh-date-main">@dateText</span>
+                                    <span class="mh-date-day">@item.CollectionDate.ToString("dddd")</span>
+                                </td>
+
+                                <td>
+                                    @if (item.Shift == "Morning")
+                                    {
+                                        <span class="shift-morning">
+                                            Morning
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="shift-evening">
+                                            Evening
+                                        </span>
+                                    }
+                                </td>
+
+                                <td style="font-weight:500; color:#222;">@item.CenterName</td>
+
+                                <td><span class="milk-badge">@item.MilkTypeName</span></td>
+
+                                <td style="text-align:right;">
+                                    @item.Quantity.ToString("0.00") L
+                                </td>
+
+                                <td style="text-align:right; color:#1e293b;">
+                                    @(item.AppliedFat?.ToString("0.0") ?? "—")
+                                </td>
+
+                                <td style="text-align:right; color:#1e293b;">
+                                    @(item.AppliedCLR?.ToString("0.0") ?? "—")
+                                </td>
+
+                                <td style="text-align:right; color:#1e293b;">
+                                    <i class="bi bi-currency-rupee" style="font-size:.78rem;"></i>@item.RatePerLiter.ToString("0.00")
+                                </td>
+
+                                <td style="text-align:right; color:#1e293b;">
+                                    <i class="bi bi-currency-rupee" style="font-size:.78rem;"></i>@item.Amount.ToString("0.00")
+                                </td>
+
+                                <td style="text-align:center;">
+                                    <span class="status-accepted">Accepted</span>
+                                </td>
+
+                                <td style="text-align:center; padding-right:20px;">
+                                    @if (!string.IsNullOrEmpty(item.ReceiptNumber))
+                                    {
+                                        <a href="/Farmer/ViewReceipt/@item.CollectionId" class="btn-view">
+                                            <i class="bi bi-file-earmark-text me-1"></i>View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#ddd;">—</span>
+                                    }
+                                </td>
+                            </tr>
+                            srNo++;
+                        }
+                    </tbody>
+                </table>
+
+                <div id="mhNoResults" class="mh-no-results" style="display:none;">
+                    <i class="bi bi-search" style="font-size:1.8rem; display:block; margin-bottom:0.5rem;"></i>
+                    No records match your filters.
+                </div>
+            </div>
+
+            <!-- PAGINATION BAR -->
+            <div class="mh-pagination" id="mhPaginationBar">
+                <span id="mhPaginationInfo">Showing 1–10 of @Model.Count records</span>
+                <div class="mh-page-btns" id="mhPaginationBtns"></div>
+            </div>
+        }
+
+    </div>
+</div>
+
+<script>
+    const MH_PAGE_SIZE = 10;
+    let mhCurrentPage = 1;
+    let mhFilteredRows = [];
+
+    const searchBox   = document.getElementById("searchBox");
+    const shiftFilter = document.getElementById("shiftFilter");
+    const fromDate    = document.getElementById("fromDate");
+    const toDate      = document.getElementById("toDate");
+
+    const allRows        = Array.from(document.querySelectorAll(".mh-data-row"));
+    const noResults      = document.getElementById("mhNoResults");
+    const paginationInfo = document.getElementById("mhPaginationInfo");
+    const paginationBtns = document.getElementById("mhPaginationBtns");
+
+    function filterTable() {
+        const search = searchBox.value.toLowerCase().trim();
+        const shift  = shiftFilter.value;
+        const from   = fromDate.value ? new Date(fromDate.value) : null;
+        const to     = toDate.value   ? new Date(toDate.value)   : null;
+
+        mhFilteredRows = allRows.filter(row => {
+            const rowDate    = new Date(row.dataset.date);
+            const matchSearch = !search || row.dataset.center.includes(search) || row.dataset.milktype.includes(search);
+            const matchShift  = !shift  || row.dataset.shift === shift;
+            const matchFrom   = !from   || rowDate >= from;
+            const matchTo     = !to     || rowDate <= to;
+            return matchSearch && matchShift && matchFrom && matchTo;
+        });
+
+        mhCurrentPage = 1;
+        renderPage();
+    }
+
+    function renderPage() {
+        allRows.forEach(r => r.style.display = "none");
+
+        const total      = mhFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / MH_PAGE_SIZE));
+        mhCurrentPage    = Math.min(mhCurrentPage, totalPages);
+
+        const start    = (mhCurrentPage - 1) * MH_PAGE_SIZE;
+        const end      = Math.min(start + MH_PAGE_SIZE, total);
+        const pageRows = mhFilteredRows.slice(start, end);
+
+        // Update serial numbers for visible rows
+        pageRows.forEach((r, i) => {
+            r.style.display = "";
+            const srCell = r.querySelector(".mh-sr");
+            if (srCell) srCell.textContent = start + i + 1;
+        });
+
+        if (noResults) noResults.style.display = total === 0 ? "" : "none";
+
+        const from = total === 0 ? 0 : start + 1;
+        if (paginationInfo) {
+            paginationInfo.textContent =
+                `Showing ${from}–${end} of ${total} record${total !== 1 ? "s" : ""}`;
+        }
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        if (!paginationBtns) return;
+        paginationBtns.innerHTML = "";
+
+        function addBtn(html, page, extraClass) {
+            const btn = document.createElement("button");
+            btn.className = "pg-btn" + (extraClass ? " " + extraClass : "");
+            btn.innerHTML = html;
+            if (extraClass !== "disabled") {
+                btn.onclick = () => { mhCurrentPage = page; renderPage(); };
+            }
+            paginationBtns.appendChild(btn);
+        }
+
+        // Prev
+        addBtn('<i class="bi bi-chevron-left" style="font-size:10px;"></i>',
+            mhCurrentPage - 1, mhCurrentPage === 1 ? "disabled" : "");
+
+        // Page numbers
+        buildPageList(mhCurrentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "pg-btn disabled";
+                el.textContent = "…";
+                paginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === mhCurrentPage ? "active" : "");
+            }
+        });
+
+        // Next
+        addBtn('<i class="bi bi-chevron-right" style="font-size:10px;"></i>',
+            mhCurrentPage + 1, mhCurrentPage === totalPages ? "disabled" : "");
+    }
+
+    function buildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    function resetFilters() {
+        searchBox.value   = "";
+        shiftFilter.value = "";
+        fromDate.value    = "";
+        toDate.value      = "";
+        filterTable();
+    }
+
+    searchBox.addEventListener("keyup", filterTable);
+    shiftFilter.addEventListener("change", filterTable);
+    fromDate.addEventListener("change", filterTable);
+    toDate.addEventListener("change", filterTable);
+
+    // Init
+    mhFilteredRows = [...allRows];
+    renderPage();
+</script>

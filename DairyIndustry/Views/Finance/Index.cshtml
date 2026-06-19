@@ -1,36 +1,36 @@
 ﻿@model List<DairyIndustry.Models.Finance.FarmerPaymentModel>
 @{
     ViewData["Title"] = "Farmer Payments";
-    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
     :root {
-        --ink: #0d1117;
-        --ink-2: #3d4451;
-        --ink-3: #6e7787;
-        --ink-4: #a8b3c0;
-        --surface-0: #ffffff;
-        --surface-1: #f6f8fa;
-        --surface-2: #edf0f4;
-        --border: #dde1e8;
-        --border-strong: #c8cdd7;
-        --accent: #1e6feb;
-        --accent-bg: #dbeafe;
-        --accent-dark: #1558c9;
-        --green: #1a7f4e;
-        --green-bg: #d1fae5;
-        --amber: #9a5c0a;
-        --amber-bg: #fef3c7;
-        --red: #b91c1c;
-        --red-bg: #fee2e2;
-        --font: 'DM Sans', sans-serif;
-        --mono: 'DM Mono', monospace;
+        --bg: #f6f9fc;
+        --surface: #ffffff;
+        --border: #e3e8ef;
+        --border-s: #c8d0dc;
+        --ink: #1a1f36;
+        --ink-2: #3c4257;
+        --ink-3: #697386;
+        --ink-4: #a3acb9;
+        --green: #09825d;
+        --green-bg: #d7f7ee;
+        --green-text: #0e6245;
+        --amber: #9e6c00;
+        --amber-bg: #fff8e1;
+        --red: #a41c4e;
+        --red-bg: #ffe4ed;
+        --blue: #1a56db;
+        --blue-bg: #e8f0fe;
+        --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+        --shadow-lg: 0 8px 28px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
     }
 
     *, *::before, *::after {
@@ -39,436 +39,486 @@
         padding: 0;
     }
 
-    .fp-wrap {
+    /* ════ MAIN ════ */
+    .sp-main {
+        padding: 24px 28px 60px;
         font-family: var(--font);
-        background: var(--surface-1);
-        min-height: 100vh;
-        padding: 2rem 2.5rem 4rem;
+        font-size: 14px;
         color: var(--ink);
+        -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Page Header ── */
-    .fp-topbar {
+    .sp-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        gap: 1rem;
-        flex-wrap: wrap;
+        margin-bottom: 18px;
     }
 
-    .fp-title-block {
-    }
-
-    .fp-breadcrumb {
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--ink-4);
-        margin-bottom: 0.4rem;
-    }
-
-        .fp-breadcrumb span {
-            color: var(--ink-3);
-        }
-
-    .fp-title {
-        font-size: 1.6rem;
-        font-weight: 600;
-        letter-spacing: -0.02em;
+    .sp-page-title {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
         color: var(--ink);
-        line-height: 1.2;
     }
 
-    .fp-subtitle {
-        font-size: 0.82rem;
-        color: var(--ink-3);
-        margin-top: 0.3rem;
-    }
-
-    .fp-actions {
+    .sp-header-actions {
         display: flex;
-        gap: 0.6rem;
-        align-items: center;
-        flex-shrink: 0;
-        padding-top: 0.25rem;
+        gap: 8px;
     }
 
-    .btn-ghost {
+    .btn-export {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.5rem 1rem;
-        background: var(--surface-0);
-        border: 1px solid var(--border-strong);
-        border-radius: 6px;
-        font-family: var(--font);
-        font-size: 0.8rem;
-        font-weight: 500;
+        gap: 6px;
+        padding: 7px 13px;
+        border-radius: 5px;
+        border: 1px solid var(--border-s);
+        background: var(--surface);
         color: var(--ink-2);
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 500;
         cursor: pointer;
         text-decoration: none;
-        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        box-shadow: var(--shadow-sm);
+        transition: background .12s;
     }
 
-        .btn-ghost:hover {
-            background: var(--surface-2);
-            border-color: var(--border-strong);
-            color: var(--ink);
+        .btn-export:hover {
+            background: #f8fafc;
         }
 
-    .btn-primary {
+    .btn-create {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.5rem 1.1rem;
-        background: var(--accent);
-        border: 1px solid var(--accent-dark);
-        border-radius: 6px;
-        font-family: var(--font);
-        font-size: 0.8rem;
-        font-weight: 600;
+        gap: 6px;
+        padding: 7px 13px;
+        border-radius: 5px;
+        border: 1px solid #1447c0;
+        background: var(--blue);
         color: #fff;
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
         text-decoration: none;
-        transition: background 0.15s;
+        transition: background .12s;
     }
 
-        .btn-primary:hover {
-            background: var(--accent-dark);
+        .btn-create:hover {
+            background: #1447c0;
             color: #fff;
         }
 
     /* ── Alert ── */
-    .fp-alert {
+    .sp-alert {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        font-size: 0.82rem;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 6px;
+        font-size: 13px;
         font-weight: 500;
-        margin-bottom: 1.5rem;
+        margin-bottom: 14px;
         border: 1px solid transparent;
     }
 
-        .fp-alert.success {
+        .sp-alert.success {
             background: var(--green-bg);
-            color: var(--green);
+            color: var(--green-text);
             border-color: #a7f3d0;
         }
 
-        .fp-alert.error {
+        .sp-alert.error {
             background: var(--red-bg);
             color: var(--red);
             border-color: #fca5a5;
         }
 
-    .fp-alert-close {
+    .sp-alert-close {
         margin-left: auto;
         background: none;
         border: none;
         cursor: pointer;
         color: inherit;
-        opacity: 0.6;
-        font-size: 1rem;
+        opacity: .6;
+        font-size: 16px;
         padding: 0;
-        line-height: 1;
     }
 
-    /* ── KPI Cards ── */
-    .fp-kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.75rem;
-    }
-
-    .kpi-card {
-        background: var(--surface-0);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 1.2rem 1.4rem;
-        position: relative;
-        overflow: hidden;
-    }
-
-        .kpi-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            border-radius: 10px 10px 0 0;
-        }
-
-        .kpi-card.blue::after {
-            background: var(--accent);
-        }
-
-        .kpi-card.green::after {
-            background: #22c55e;
-        }
-
-        .kpi-card.amber::after {
-            background: #f59e0b;
-        }
-
-        .kpi-card.dark::after {
-            background: var(--ink);
-        }
-
-    .kpi-label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--ink-3);
-        margin-bottom: 0.6rem;
-    }
-
-    .kpi-value {
-        font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        color: var(--ink);
-        line-height: 1;
-    }
-
-    .kpi-card.dark .kpi-label {
-        color: var(--ink-3);
-    }
-
-    .kpi-card.dark .kpi-value {
-        color: var(--ink);
-    }
-
-    .kpi-meta {
-        font-size: 0.72rem;
-        color: var(--ink-4);
-        margin-top: 0.4rem;
-    }
-
-    /* ── Main Panel ── */
-    .fp-panel {
-        background: var(--surface-0);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    /* ── Toolbar ── */
-    .fp-toolbar {
+    /* ── Tabs ── */
+    .sp-tabs {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.9rem 1.25rem;
         border-bottom: 1px solid var(--border);
-        gap: 0.75rem;
-        flex-wrap: wrap;
+        margin-bottom: 14px;
     }
 
-    .fp-search {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--surface-1);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 0.42rem 0.75rem;
-        min-width: 220px;
-    }
-
-        .fp-search i {
-            color: var(--ink-4);
-            font-size: 0.85rem;
-        }
-
-        .fp-search input {
-            border: none;
-            background: transparent;
-            font-family: var(--font);
-            font-size: 0.82rem;
-            color: var(--ink);
-            outline: none;
-            width: 100%;
-        }
-
-            .fp-search input::placeholder {
-                color: var(--ink-4);
-            }
-
-    .fp-filters {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .fp-select {
+    .sp-tab {
+        padding: 9px 16px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--ink-3);
+        cursor: pointer;
+        border: none;
+        background: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color .12s;
+        white-space: nowrap;
         font-family: var(--font);
-        font-size: 0.78rem;
+    }
+
+        .sp-tab:hover {
+            color: var(--ink-2);
+        }
+
+        .sp-tab.active {
+            color: var(--ink);
+            font-weight: 600;
+            border-bottom-color: var(--ink);
+        }
+
+    /* ── Filter bar ── */
+    .sp-filterbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+        min-height: 30px;
+    }
+
+    .f-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 26px;
+        padding: 0 10px;
+        border-radius: 100px;
+        border: 1px solid var(--border-s);
+        background: var(--surface);
+        font-size: 12px;
         font-weight: 500;
         color: var(--ink-2);
-        background: var(--surface-1);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 0.42rem 0.7rem;
+        box-shadow: var(--shadow-sm);
+        white-space: nowrap;
+    }
+
+    .f-chip-x {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: rgba(0,0,0,.08);
+        font-size: 9px;
         cursor: pointer;
-        outline: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e7787' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.5rem center;
-        padding-right: 1.6rem;
+        margin-left: 2px;
+        border: none;
+        color: inherit;
+        font-family: var(--font);
+        transition: background .1s;
     }
 
-    /* ── Table ── */
-    .fp-table-wrap {
-        overflow-x: auto;
+        .f-chip-x:hover {
+            background: rgba(0,0,0,.18);
+        }
+
+    .f-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 26px;
+        padding: 0 10px;
+        border-radius: 100px;
+        border: 1px dashed var(--border-s);
+        background: transparent;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-3);
+        cursor: pointer;
+        font-family: var(--font);
+        transition: color .12s, border-color .12s;
     }
 
-    .fp-table {
+        .f-add:hover {
+            color: var(--ink-2);
+            border-color: var(--ink-3);
+        }
+
+    .f-clear {
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-family: var(--font);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-3);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: color .12s, background .12s;
+    }
+
+        .f-clear:hover {
+            color: var(--ink-2);
+            background: var(--border);
+        }
+
+    /* ── Dropdown ── */
+    .f-drop-wrap {
+        position: relative;
+    }
+
+    .f-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        min-width: 210px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        z-index: 300;
+        overflow: hidden;
+        animation: dropIn .15s ease;
+    }
+
+    @@keyframes dropIn {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .f-dropdown.open {
+        display: block;
+    }
+
+    .fd-head {
+        padding: 10px 14px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--ink-4);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .fd-list {
+        padding: 4px 0;
+    }
+
+    .fd-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 14px;
+        font-size: 13px;
+        color: var(--ink-2);
+        cursor: pointer;
+        transition: background .1s;
+        user-select: none;
+    }
+
+        .fd-item:hover {
+            background: #f5f7fa;
+        }
+
+        .fd-item input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--blue);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+    .fd-apply {
+        display: block;
+        width: calc(100% - 16px);
+        margin: 8px;
+        padding: 8px;
+        background: #0a2540;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: background .12s;
+    }
+
+        .fd-apply:hover {
+            background: #0d3066;
+        }
+
+    /* ── Panel ── */
+    .sp-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    /* ════ TABLE ════ */
+    .sp-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.83rem;
+        font-size: 13px;
     }
 
-        .fp-table thead tr {
-            background: var(--surface-1);
+        .sp-table thead tr {
             border-bottom: 1px solid var(--border);
         }
 
-        .fp-table thead th {
-            padding: 0.7rem 1rem;
-            font-size: 0.68rem;
-            font-weight: 700;
-            letter-spacing: 0.07em;
+        .sp-table thead th {
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .06em;
             text-transform: uppercase;
-            color: var(--ink-3);
-            white-space: nowrap;
+            color: var(--ink-4);
             text-align: left;
+            white-space: nowrap;
+            background: #fafbfc;
         }
 
-            .fp-table thead th:first-child {
-                padding-left: 1.5rem;
-            }
-
-            .fp-table thead th:last-child {
+            .sp-table thead th.col-right {
                 text-align: right;
-                padding-right: 1.5rem;
             }
 
-        .fp-table tbody tr {
-            border-bottom: 1px solid var(--surface-2);
-            transition: background 0.1s;
+            .sp-table thead th:last-child {
+                text-align: right;
+            }
+
+        .sp-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .1s;
         }
 
-            .fp-table tbody tr:last-child {
+            .sp-table tbody tr:last-child {
                 border-bottom: none;
             }
 
-            .fp-table tbody tr:hover {
-                background: var(--surface-1);
+            .sp-table tbody tr:hover {
+                background: #f9fafc;
             }
 
-        .fp-table tbody td {
-            padding: 0.85rem 1rem;
+            .sp-table tbody tr.row-cancelled {
+                opacity: .5;
+            }
+
+        .sp-table tbody td {
+            padding: 14px 16px;
             vertical-align: middle;
             color: var(--ink-2);
         }
 
-            .fp-table tbody td:first-child {
-                padding-left: 1.5rem;
-            }
-
-            .fp-table tbody td:last-child {
+            .sp-table tbody td.col-right {
                 text-align: right;
-                padding-right: 1.5rem;
             }
 
-    /* ── Cell Types ── */
-    .ref-id {
-        font-family: var(--mono);
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--ink-3);
-        background: var(--surface-2);
-        padding: 0.2rem 0.55rem;
-        border-radius: 4px;
-        letter-spacing: 0.03em;
-        white-space: nowrap;
-    }
+            .sp-table tbody td:last-child {
+                text-align: right;
+            }
 
-    .farmer-name {
+    .td-main {
         font-weight: 600;
         color: var(--ink);
-        font-size: 0.84rem;
+        font-size: 13.5px;
     }
 
-    .center-label {
-        font-size: 0.72rem;
-        color: var(--ink-4);
-        margin-top: 0.1rem;
+    .td-sub {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
+        gap: 5px;
+        margin-top: 3px;
+        font-size: 11.5px;
+        color: var(--ink-4);
     }
 
-    .period-range {
-        font-size: 0.8rem;
+    .ref-tag {
+        font-family: 'SF Mono', Consolas, monospace;
+        font-size: 11px;
+        font-weight: 500;
+        background: #f3f4f6;
+        color: var(--ink-3);
+        padding: 1px 6px;
+        border-radius: 3px;
+    }
+
+    .td-center-name {
+        font-weight: 500;
         color: var(--ink-2);
-        white-space: nowrap;
+        font-size: 13px;
     }
 
-        .period-range .sep {
-            color: var(--ink-4);
-            margin: 0 0.3rem;
-            font-size: 0.7rem;
-        }
+    .td-date {
+        font-size: 12px;
+        color: var(--ink-4);
+        margin-top: 3px;
+    }
 
-    .qty-val {
+    .td-num {
+        font-variant-numeric: tabular-nums;
         font-weight: 600;
         color: var(--ink);
-        font-variant-numeric: tabular-nums;
+        font-size: 13.5px;
     }
 
-    .qty-unit {
-        font-size: 0.7rem;
+    .td-unit {
+        font-size: 11.5px;
         color: var(--ink-4);
         font-weight: 400;
+        margin-left: 2px;
     }
 
-    .amount-val {
+    .td-dash {
+        color: var(--ink-4);
+    }
+
+    .td-amount {
+        font-variant-numeric: tabular-nums;
         font-weight: 700;
         color: var(--ink);
-        font-size: 0.9rem;
-        font-variant-numeric: tabular-nums;
+        font-size: 13.5px;
     }
 
-    .amount-date {
-        font-size: 0.7rem;
+    .td-inr {
+        font-size: 11.5px;
         color: var(--ink-4);
-        margin-top: 0.1rem;
+        font-weight: 400;
+        margin-left: 2px;
     }
 
-    /* ── Badges ── */
-    .fp-badge {
+    /* ── Status badge ── */
+    .sp-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.25em 0.7em;
-        border-radius: 20px;
-        font-size: 0.72rem;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 100px;
+        font-size: 12px;
         font-weight: 600;
-        letter-spacing: 0.02em;
         white-space: nowrap;
     }
 
-        .fp-badge::before {
+        .sp-badge::before {
             content: '';
-            display: inline-block;
             width: 6px;
             height: 6px;
             border-radius: 50%;
@@ -477,11 +527,11 @@
 
     .badge-processed {
         background: var(--green-bg);
-        color: var(--green);
+        color: var(--green-text);
     }
 
         .badge-processed::before {
-            background: #22c55e;
+            background: #1fad79;
         }
 
     .badge-pending {
@@ -499,108 +549,155 @@
     }
 
         .badge-failed::before {
-            background: #ef4444;
+            background: #e5344a;
         }
 
-    /* ── Row Actions ── */
-    .row-actions {
+    .badge-cancelled {
+        background: #f3f4f6;
+        color: var(--ink-3);
+    }
+
+        .badge-cancelled::before {
+            background: #9ca3af;
+        }
+
+    /* ── 3-dot menu ── */
+    .row-action-wrap {
+        position: relative;
         display: flex;
         justify-content: flex-end;
-        gap: 0.35rem;
-        flex-wrap: nowrap;
     }
 
-    .action-btn {
+    .act-more {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.3rem 0.65rem;
+        justify-content: center;
+        width: 28px;
         height: 28px;
         border-radius: 5px;
-        border: 1px solid var(--border);
-        background: var(--surface-0);
-        color: var(--ink-2);
+        border: 1px solid var(--border-s);
+        background: var(--surface);
+        color: var(--ink-3);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 700;
         font-family: var(--font);
-        font-size: 0.73rem;
+        letter-spacing: 1px;
+        transition: background .1s, border-color .1s;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .act-more:hover {
+            background: #f3f4f6;
+            color: var(--ink);
+        }
+
+    .act-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 5px);
+        right: 0;
+        min-width: 148px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        box-shadow: var(--shadow-lg);
+        z-index: 400;
+        overflow: hidden;
+        animation: dropIn .14s ease;
+    }
+
+        .act-dropdown.open {
+            display: block;
+        }
+
+    .act-dd-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 13px;
+        font-size: 13px;
         font-weight: 500;
+        color: var(--ink-2);
         cursor: pointer;
         text-decoration: none;
-        white-space: nowrap;
-        transition: background 0.12s, color 0.12s, border-color 0.12s;
+        font-family: var(--font);
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        transition: background .1s;
     }
 
-        .action-btn svg {
-            flex-shrink: 0;
-        }
-
-        .action-btn:hover {
-            background: var(--surface-2);
+        .act-dd-item:hover {
+            background: #f5f7fa;
             color: var(--ink);
-            border-color: var(--border-strong);
         }
 
-        .action-btn.danger {
+        .act-dd-item.danger {
             color: var(--red);
-            border-color: #fca5a5;
-            background: var(--red-bg);
         }
 
-            .action-btn.danger:hover {
-                background: #fecaca;
-                border-color: #f87171;
+            .act-dd-item.danger:hover {
+                background: var(--red-bg);
             }
 
-    /* ── Empty State ── */
-    .fp-empty {
-        padding: 4rem 2rem;
-        text-align: center;
+    .act-dd-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 3px 0;
     }
 
-    .fp-empty-icon {
-        width: 52px;
-        height: 52px;
-        background: var(--surface-2);
-        border-radius: 12px;
+    /* ── Empty ── */
+    .sp-empty {
+        padding: 56px 20px;
+        text-align: center;
+        color: var(--ink-3);
+    }
+
+    .sp-empty-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: #f3f4f6;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 1rem;
-        font-size: 1.4rem;
+        margin: 0 auto 12px;
+        font-size: 18px;
         color: var(--ink-4);
     }
 
-    .fp-empty p {
-        font-size: 0.85rem;
-        color: var(--ink-3);
-        max-width: 280px;
+    .sp-empty strong {
+        display: block;
+        font-size: 14px;
+        color: var(--ink-2);
+        margin-bottom: 4px;
+    }
+
+    .sp-empty p {
+        font-size: 12.5px;
+        max-width: 240px;
         margin: 0 auto;
     }
 
-    .fp-empty strong {
-        display: block;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--ink-2);
-        margin-bottom: 0.3rem;
-    }
-
-    /* ── Footer ── */
-    .fp-footer {
+    /* ── Table footer + pagination ── */
+    .sp-tf {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0.8rem 1.5rem;
+        padding: 10px 16px;
         border-top: 1px solid var(--border);
-        background: var(--surface-1);
-        font-size: 0.78rem;
-        color: var(--ink-4);
+        background: #fafbfc;
+        font-size: 12.5px;
+        color: var(--ink-3);
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 8px;
     }
 
-    .fp-pagination {
+    .sp-pager {
         display: flex;
-        gap: 0.25rem;
+        gap: 4px;
         align-items: center;
     }
 
@@ -608,23 +705,25 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 28px;
         height: 28px;
-        padding: 0 0.4rem;
+        min-width: 28px;
+        padding: 0 9px;
         border-radius: 5px;
         border: 1px solid var(--border);
-        background: var(--surface-0);
+        background: var(--surface);
         font-family: var(--font);
-        font-size: 0.75rem;
+        font-size: 12px;
         font-weight: 500;
         color: var(--ink-3);
         cursor: pointer;
         text-decoration: none;
-        transition: all 0.1s;
+        transition: all .1s;
+        box-shadow: var(--shadow-sm);
+        user-select: none;
     }
 
-        .pg-btn:hover {
-            background: var(--surface-2);
+        .pg-btn:hover:not(.disabled):not(.active) {
+            background: #f3f4f6;
             color: var(--ink);
         }
 
@@ -636,235 +735,635 @@
         }
 
         .pg-btn.disabled {
-            opacity: 0.4;
+            opacity: .35;
             cursor: not-allowed;
             pointer-events: none;
         }
 
-    @@media (max-width: 1024px) {
-        .fp-kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
+    .pg-ellipsis {
+        padding: 0 4px;
+        color: var(--ink-4);
+        font-size: 12px;
+        line-height: 28px;
+    }
+
+    /* ── Wallet loader ── */
+    .cw-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px 20px;
+        gap: 14px;
+        color: var(--ink-3);
+    }
+
+    .cw-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--border);
+        border-top-color: var(--blue);
+        border-radius: 50%;
+        animation: spin .7s linear infinite;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
         }
     }
 
-    @@media (max-width: 640px) {
-        .fp-wrap {
-            padding: 1rem 1rem 3rem;
+    /* ── Modals ── */
+    .sp-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(26,31,54,.4);
+        backdrop-filter: blur(3px);
+        z-index: 500;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sp-overlay.open {
+            display: flex;
         }
 
-        .fp-kpi-grid {
-            grid-template-columns: 1fr 1fr;
+    .sp-modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 22px;
+        width: 100%;
+        max-width: 370px;
+        box-shadow: var(--shadow-lg);
+        animation: modalIn .18s ease;
+    }
+
+    @@keyframes modalIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px) scale(.98);
         }
 
-        .fp-title {
-            font-size: 1.25rem;
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .sp-modal-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+        .sp-modal-icon.danger {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+    .sp-modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 6px;
+    }
+
+    .sp-modal-body {
+        font-size: 13px;
+        color: var(--ink-3);
+        line-height: 1.55;
+        margin-bottom: 14px;
+    }
+
+        .sp-modal-body strong {
+            color: var(--ink-2);
+        }
+
+    .sp-modal-warn {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 9px 12px;
+        background: var(--amber-bg);
+        border: 1px solid #fde68a;
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--amber);
+        font-weight: 500;
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .sp-modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .sp-modal-cancel {
+        padding: 7px 13px;
+        background: var(--surface);
+        border: 1px solid var(--border-s);
+        border-radius: 5px;
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-2);
+        cursor: pointer;
+        transition: background .1s;
+    }
+
+        .sp-modal-cancel:hover {
+            background: #f3f4f6;
+        }
+
+    .sp-modal-danger {
+        padding: 7px 13px;
+        background: #e5344a;
+        border: 1px solid #c8263b;
+        border-radius: 5px;
+        font-family: var(--font);
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        cursor: pointer;
+        transition: background .1s;
+    }
+
+        .sp-modal-danger:hover {
+            background: #c8263b;
+        }
+
+    @@media (max-width: 860px) {
+        .sp-main {
+            padding: 16px 14px 40px;
         }
     }
 </style>
 
-<div class="fp-wrap">
+@{
+    var totalCount = Model.Count;
+    var processedCount = Model.Count(x => x.PaymentStatus == "Processed");
+    var pendingCount = Model.Count(x => x.PaymentStatus == "Pending");
+    var failedCount = Model.Count(x => x.PaymentStatus == "Failed");
+    var cancelledCount = Model.Count(x => x.PaymentStatus == "Cancelled");
+}
 
-    <!-- Top Bar -->
-    <div class="fp-topbar">
-        <div class="fp-title-block">
-            <div class="fp-breadcrumb">Finance <span>/ Farmer Disbursements</span></div>
-            <h1 class="fp-title">Payment History</h1>
-            <p class="fp-subtitle">Milk procurement disbursements and transaction records</p>
-        </div>
-        <div class="fp-actions">
-            <a asp-action="Create" class="btn-primary">
-                <i class="bi bi-plus-lg"></i> New payment
-            </a>
-        </div>
-    </div>
+<div class="sp-main">
 
-    <!-- Alert -->
-    @if (TempData["Success"] != null || TempData["Error"] != null)
-    {
-        var isSuccess = TempData["Success"] != null;
-        <div class="fp-alert @(isSuccess ? "success" : "error")">
-            <i class="bi @(isSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill")"></i>
-            @((TempData["Success"] ?? TempData["Error"]).ToString())
-            <button class="fp-alert-close" onclick="this.closest('.fp-alert').remove()">&#x2715;</button>
-        </div>
-    }
+    <!-- ── FARMER PAYMENTS SECTION ── -->
+    <div id="section-farmer">
 
-    <!-- KPI Cards -->
-    <div class="fp-kpi-grid">
-        <div class="kpi-card blue">
-            <div class="kpi-label">Total Records</div>
-            <div class="kpi-value">@Model.Count</div>
-            <div class="kpi-meta">All payment entries</div>
-        </div>
-        <div class="kpi-card green">
-            <div class="kpi-label">Processed</div>
-            <div class="kpi-value">@Model.Count(x => x.PaymentStatus == "Processed")</div>
-            <div class="kpi-meta">Successfully cleared</div>
-        </div>
-        <div class="kpi-card amber">
-            <div class="kpi-label">Pending</div>
-            <div class="kpi-value">@Model.Count(x => x.PaymentStatus == "Pending")</div>
-            <div class="kpi-meta">Awaiting clearance</div>
-        </div>
-        <div class="kpi-card dark">
-            <div class="kpi-label">Total Disbursed</div>
-            <div class="kpi-value">₹@((Model.Sum(x => x.TotalAmount) / 1000).ToString("N1"))K</div>
-            <div class="kpi-meta">₹@Model.Sum(x => x.TotalAmount).ToString("N2") total</div>
-        </div>
-    </div>
-
-    <!-- Main Panel -->
-    <div class="fp-panel">
-
-        <!-- Toolbar -->
-        <div class="fp-toolbar">
-            <div class="fp-search">
-                <i class="bi bi-search"></i>
-                <input type="text" id="searchInput" placeholder="Search by farmer, center, or reference…" oninput="filterTable()">
-            </div>
-            <div class="fp-filters">
-                <select class="fp-select" id="centerFilter" onchange="filterTable()">
-                    <option value="">All Centers</option>
-                    @foreach (var center in Model.Select(x => x.CenterName).Distinct().OrderBy(x => x))
-                    {
-                        <option value="@center">@center</option>
-                    }
-                </select>
-                <select class="fp-select" id="statusFilter" onchange="filterTable()">
-                    <option value="">All Statuses</option>
-                    <option value="Processed">Processed</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Failed">Failed</option>
-                </select>
+        <div class="sp-header">
+            <h1 class="sp-page-title">Farmer Payments</h1>
+            <div class="sp-header-actions">
+                <button class="btn-export">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Export
+                </button>
+                <a asp-action="Create" class="btn-create">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Create Payment
+                </a>
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="fp-table-wrap">
-            <table class="fp-table" id="paymentTable">
-                <thead>
-                    <tr>
-                        <th>Reference</th>
-                        <th>Farmer</th>
-                        <th>Period</th>
-                        <th>Quantity</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    @if (!Model.Any())
-                    {
-                        <tr>
-                            <td colspan="7">
-                                <div class="fp-empty">
-                                    <div class="fp-empty-icon"><i class="bi bi-inbox"></i></div>
-                                    <p><strong>No records found</strong>No payment records match your current filters.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                    @foreach (var p in Model)
-                    {
-                        var badgeClass = p.PaymentStatus?.ToLower() switch
+        @if (TempData["Success"] != null || TempData["Error"] != null)
+        {
+            var isSuccess = TempData["Success"] != null;
+            <div class="sp-alert @(isSuccess ? "success" : "error")">
+                <i class="bi @(isSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill")"></i>
+                @((TempData["Success"] ?? TempData["Error"]).ToString())
+                <button class="sp-alert-close" onclick="this.closest('.sp-alert').remove()">&#x2715;</button>
+            </div>
+        }
+
+        <!-- Tabs -->
+        <div class="sp-tabs">
+            <button class="sp-tab active" onclick="setTab('', this)">
+                All <span style="font-size:11px;color:var(--ink-4);margin-left:4px;">@totalCount</span>
+            </button>
+            <button class="sp-tab" onclick="setTab('Processed', this)">
+                Succeeded <span style="font-size:11px;color:var(--ink-4);margin-left:4px;">@processedCount</span>
+            </button>
+            <button class="sp-tab" onclick="setTab('Pending', this)">
+                Pending <span style="font-size:11px;color:var(--ink-4);margin-left:4px;">@pendingCount</span>
+            </button>
+            <button class="sp-tab" onclick="setTab('Failed', this)">
+                Failed <span style="font-size:11px;color:var(--ink-4);margin-left:4px;">@failedCount</span>
+            </button>
+            <button class="sp-tab" onclick="setTab('Cancelled', this)">
+                Cancelled <span style="font-size:11px;color:var(--ink-4);margin-left:4px;">@cancelledCount</span>
+            </button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="sp-filterbar" id="filterBar">
+            <div class="f-drop-wrap">
+                <button class="f-add" onclick="toggleDrop('statusDrop')">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Status
+                </button>
+                <div class="f-dropdown" id="statusDrop">
+                    <div class="fd-head">Filter by status</div>
+                    <div class="fd-list">
+                        @foreach (var s in new[] { "Processed", "Pending", "Failed", "Cancelled" })
                         {
-                            "processed" => "badge-processed",
-                            "pending" => "badge-pending",
-                            _ => "badge-failed"
-                        };
-                        <tr data-farmer="@p.FarmerName?.ToLower()" data-center="@p.CenterName" data-status="@p.PaymentStatus">
-                            <td>
-                                <span class="ref-id">FP-@p.PaymentId</span>
-                            </td>
-                            <td>
-                                <div class="farmer-name">@p.FarmerName</div>
-                                <div class="center-label">
-                                    <i class="bi bi-geo-alt" style="font-size:0.65rem;"></i>
-                                    @p.CenterName
-                                </div>
-                            </td>
-                            <td>
-                                <div class="period-range">
-                                    @p.FromDate.ToString("dd MMM")
-                                    <span class="sep">→</span>
-                                    @p.ToDate.ToString("dd MMM yyyy")
-                                </div>
-                            </td>
-                            <td>
-                                <span class="qty-val">@p.TotalQty.ToString("N2")</span>
-                                <span class="qty-unit"> L</span>
-                            </td>
-                            <td>
-                                <div class="amount-val">₹@p.TotalAmount.ToString("N2")</div>
-                                <div class="amount-date">@p.PaymentDate.ToString("dd MMM yyyy")</div>
-                            </td>
-                            <td>
-                                <span class="fp-badge @badgeClass">@p.PaymentStatus</span>
-                            </td>
-                            <td>
-                                <div class="row-actions">
-                                    <a class="action-btn" asp-action="Detail" asp-route-id="@p.PaymentId">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                                        View
-                                    </a>
-                                    <button class="action-btn">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
-                                        Print
-                                    </button>
-                                    <button class="action-btn danger">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" /></svg>
-                                        Archive
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            <label class="fd-item"><input type="checkbox" class="fd-s-cb" value="@s"> @s</label>
+                        }
+                    </div>
+                    <button class="fd-apply" onclick="applyStatus()">Apply</button>
+                </div>
+            </div>
+            <button class="f-clear" id="clearBtn" style="display:none;" onclick="clearAll()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                Clear filter
+            </button>
         </div>
 
-        <!-- Footer -->
-        <div class="fp-footer">
-            <span id="recordCount">Showing @Model.Count of @Model.Count records</span>
-            <div class="fp-pagination">
-                <a class="pg-btn disabled" href="#">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
-                <a class="pg-btn active" href="#">1</a>
-                <a class="pg-btn disabled" href="#">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
+        <!-- Panel -->
+        <div class="sp-panel">
+            <div style="overflow-x:auto;">
+                <table class="sp-table">
+                    <thead>
+                        <tr>
+                            <th>Farmer / Ref</th>
+                            <th>Center &amp; Period</th>
+                            <th class="col-right">Qty (L)</th>
+                            <th class="col-right">Amount</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6">
+                                    <div class="sp-empty">
+                                        <div class="sp-empty-icon"><i class="bi bi-inbox"></i></div>
+                                        <strong>No records found</strong>
+                                        <p>No payment records match your current filters.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var p in Model)
+                        {
+                            var badgeClass = p.PaymentStatus?.ToLower() switch
+                            {
+                                "processed" => "badge-processed",
+                                "pending" => "badge-pending",
+                                "failed" => "badge-failed",
+                                "cancelled" => "badge-cancelled",
+                                _ => "badge-failed"
+                            };
+
+                            bool canCancel = p.PaymentStatus == "Pending" || p.PaymentStatus == "Failed";
+                            bool canPrint = p.PaymentStatus == "Processed";
+
+                            <tr class="@(p.PaymentStatus == "Cancelled" ? "row-cancelled" : "")"
+                                data-status="@p.PaymentStatus">
+
+                                <!-- Farmer / Ref -->
+                                <td>
+                                    <div class="td-main">@p.FarmerName</div>
+                                    <div class="td-sub">
+                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                            <path d="M3 9h18" />
+                                        </svg>
+                                        <span class="ref-tag">FP-@p.PaymentId</span>
+                                        @if (!string.IsNullOrEmpty(p.TransactionReference))
+                                        {
+                                            <span>·</span>
+                                            <span class="ref-tag">@p.TransactionReference</span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <!-- Center & Period -->
+                                <td>
+                                    <div class="td-center-name">
+                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:middle;">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        @p.CenterName
+                                    </div>
+                                    <div class="td-date">
+                                        @p.FromDate.ToString("dd MMM yyyy") → @p.ToDate.ToString("dd MMM yyyy")
+                                    </div>
+                                </td>
+
+                                <!-- Qty -->
+                                <td class="col-right">
+                                    <span class="td-num">@p.TotalQty.ToString("N1")</span>
+                                    <span class="td-unit">L</span>
+                                </td>
+
+                                <!-- Amount -->
+                                <td class="col-right">
+                                    <span class="td-amount">₹@p.TotalAmount.ToString("N2")</span>
+                                </td>
+
+                                <!-- Status -->
+                                <td>
+                                    <span class="sp-badge @badgeClass">@p.PaymentStatus</span>
+                                    @if (!string.IsNullOrEmpty(p.BankStatus) && p.BankStatus != p.PaymentStatus)
+                                    {
+                                        <div style="font-size:11px;color:var(--ink-4);margin-top:3px;">Bank: @p.BankStatus</div>
+                                    }
+                                </td>
+
+                                <!-- Actions -->
+                                <td>
+                                    <div class="row-action-wrap">
+                                        <button class="act-more" onclick="toggleActDrop(event, this)">···</button>
+                                        <div class="act-dropdown">
+                                            <a class="act-dd-item" asp-action="Detail" asp-route-id="@p.PaymentId">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                                View
+                                            </a>
+
+                                            @if (canPrint)
+                                            {
+                                                <a class="act-dd-item" asp-action="ViewReceipt" asp-route-id="@p.PaymentId" target="_blank" rel="noopener">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="6 9 6 2 18 2 18 9" />
+                                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                                        <rect x="6" y="14" width="12" height="8" />
+                                                    </svg>
+                                                    Print receipt
+                                                </a>
+                                            }
+
+                                            @if (canCancel)
+                                            {
+                                                <div class="act-dd-divider"></div>
+                                                <button class="act-dd-item danger"
+                                                        onclick="openCancel(@p.PaymentId,'FP-@p.PaymentId','@Html.Raw(p.FarmerName?.Replace("'", "\\'"))')">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <line x1="15" y1="9" x2="9" y2="15" />
+                                                        <line x1="9" y1="9" x2="15" y2="15" />
+                                                    </svg>
+                                                    Cancel
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
+
+            <!-- Table footer with pagination -->
+            <div class="sp-tf">
+                <span id="recordCount">@Model.Count result@(Model.Count != 1 ? "s" : "")</span>
+                <div class="sp-pager" id="pagerContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CENTER WALLET SECTION ── -->
+    <div id="section-center" style="display:none;">
+        <div id="cw-container"></div>
+    </div>
+
+</div>
+
+<!-- CANCEL MODAL -->
+<div class="sp-overlay" id="cancelOverlay">
+    <div class="sp-modal">
+        <div class="sp-modal-icon danger">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        </div>
+        <div class="sp-modal-title">Cancel Payment</div>
+        <div class="sp-modal-body">
+            You are about to cancel <strong id="cancelRef"></strong> for <strong id="cancelFarmer"></strong>.
+        </div>
+        <div class="sp-modal-warn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Cancelled payments cannot be reactivated. A new payment can be created for the same farmer.
+        </div>
+        <div class="sp-modal-actions">
+            <button class="sp-modal-cancel" onclick="closeModals()">Keep Payment</button>
+            <form id="cancelForm" asp-action="CancelFarmerPayment" method="post" style="margin:0;">
+                <input type="hidden" name="paymentId" id="cancelId" />
+                <button type="submit" class="sp-modal-danger">Yes, Cancel It</button>
+            </form>
         </div>
     </div>
 </div>
 
-<script>
-    function filterTable() {
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        const center = document.getElementById('centerFilter').value;
-        const status = document.getElementById('statusFilter').value;
-        const rows = document.querySelectorAll('#tableBody tr[data-farmer]');
-        let visible = 0;
+@section Scripts {
+    <script>
+        // ── State ─────────────────────────────────────────────────
+        const PAGE_SIZE     = 15;
+        let activeTabStatus = '';
+        let chipStatuses    = [];
+        let currentPage     = 1;
+        let cwLoaded        = false;
+        let visibleRows     = [];
 
-        rows.forEach(row => {
-            const farmerMatch = !search ||
-                row.dataset.farmer.includes(search) ||
-                row.querySelector('.ref-id')?.textContent.toLowerCase().includes(search);
-            const centerMatch = !center || row.dataset.center === center;
-            const statusMatch = !status || row.dataset.status === status;
+        // ── Collect all rows once ─────────────────────────────────
+        function getAllRows() {
+            return [...document.querySelectorAll('#tableBody tr[data-status]')];
+        }
 
-            if (farmerMatch && centerMatch && statusMatch) {
-                row.style.display = '';
-                visible++;
-            } else {
-                row.style.display = 'none';
-            }
+        // ── Tabs ──────────────────────────────────────────────────
+        function setTab(status, el) {
+            activeTabStatus = status;
+            chipStatuses    = [];
+            currentPage     = 1;
+            document.querySelectorAll('.fd-s-cb').forEach(c => c.checked = false);
+            document.querySelectorAll('.sp-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderChips();
+            run();
+        }
+
+        // ── Filter dropdowns ──────────────────────────────────────
+        function toggleDrop(id) {
+            const dd  = document.getElementById(id);
+            const was = dd.classList.contains('open');
+            document.querySelectorAll('.f-dropdown').forEach(d => d.classList.remove('open'));
+            if (!was) dd.classList.add('open');
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.f-drop-wrap'))
+                document.querySelectorAll('.f-dropdown').forEach(d => d.classList.remove('open'));
         });
 
-        const total = rows.length;
-        document.getElementById('recordCount').textContent =
-            `Showing ${visible} of ${total} record${total !== 1 ? 's' : ''}`;
-    }
-</script>
+        function applyStatus() {
+            chipStatuses = [...document.querySelectorAll('.fd-s-cb:checked')].map(c => c.value);
+            currentPage  = 1;
+            document.getElementById('statusDrop').classList.remove('open');
+            renderChips();
+            run();
+        }
+
+        function clearAll() {
+            chipStatuses = [];
+            document.querySelectorAll('.fd-s-cb').forEach(c => c.checked = false);
+            currentPage = 1;
+            renderChips();
+            run();
+        }
+
+        // ── Chips ─────────────────────────────────────────────────
+        function renderChips() {
+            const bar    = document.getElementById('filterBar');
+            const anchor = bar.querySelector('.f-drop-wrap');
+            bar.querySelectorAll('.f-chip').forEach(c => c.remove());
+            chipStatuses.forEach(s => bar.insertBefore(makeChip('Status: ' + s, () => {
+                chipStatuses = chipStatuses.filter(x => x !== s);
+                document.querySelectorAll('.fd-s-cb').forEach(cb => { if (cb.value === s) cb.checked = false; });
+                currentPage = 1;
+                renderChips(); run();
+            }), anchor));
+            document.getElementById('clearBtn').style.display = chipStatuses.length ? '' : 'none';
+        }
+
+        function makeChip(label, removeFn) {
+            const c = document.createElement('span');
+            c.className = 'f-chip';
+            c.innerHTML = `${label}<button class="f-chip-x">✕</button>`;
+            c.querySelector('.f-chip-x').addEventListener('click', removeFn);
+            return c;
+        }
+
+        // ── Core filter + paginate ────────────────────────────────
+        function run() {
+            const rows = getAllRows();
+
+            visibleRows = rows.filter(row => {
+                const matchTab  = !activeTabStatus || row.dataset.status === activeTabStatus;
+                const matchChip = !chipStatuses.length || chipStatuses.includes(row.dataset.status);
+                return matchTab && matchChip;
+            });
+
+            rows.forEach(r => r.style.display = 'none');
+
+            const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = start + PAGE_SIZE;
+            visibleRows.slice(start, end).forEach(r => r.style.display = '');
+
+            document.getElementById('recordCount').textContent =
+                `${visibleRows.length} result${visibleRows.length !== 1 ? 's' : ''}`;
+
+            renderPager(totalPages);
+        }
+
+        // ── Pagination renderer ───────────────────────────────────
+        function renderPager(totalPages) {
+            const container = document.getElementById('pagerContainer');
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            function mkBtn(label, page, cls) {
+                const b = document.createElement('button');
+                b.className = 'pg-btn' + (cls ? ' ' + cls : '');
+                b.innerHTML = label;
+                if (!cls || (!cls.includes('disabled') && !cls.includes('active'))) {
+                    b.addEventListener('click', () => { currentPage = page; run(); });
+                }
+                return b;
+            }
+
+            container.appendChild(mkBtn('← Prev', currentPage - 1,
+                currentPage === 1 ? 'disabled' : ''));
+
+            const pages = getPageRange(currentPage, totalPages);
+            let prevP = null;
+            pages.forEach(p => {
+                if (prevP !== null && p - prevP > 1) {
+                    const el = document.createElement('span');
+                    el.className = 'pg-ellipsis'; el.textContent = '…';
+                    container.appendChild(el);
+                }
+                container.appendChild(mkBtn(p, p, p === currentPage ? 'active' : ''));
+                prevP = p;
+            });
+
+            container.appendChild(mkBtn('Next →', currentPage + 1,
+                currentPage === totalPages ? 'disabled' : ''));
+        }
+
+        function getPageRange(current, total) {
+            if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+            const pages = new Set([1, total, current]);
+            if (current > 1) pages.add(current - 1);
+            if (current < total) pages.add(current + 1);
+            return [...pages].sort((a, b) => a - b);
+        }
+
+        // ── 3-dot action dropdown ─────────────────────────────────
+        function toggleActDrop(e, btn) {
+            e.stopPropagation();
+            const dd  = btn.nextElementSibling;
+            const was = dd.classList.contains('open');
+            closeAllActDrops();
+            if (!was) dd.classList.add('open');
+        }
+        function closeAllActDrops() {
+            document.querySelectorAll('.act-dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+        document.addEventListener('click', () => closeAllActDrops());
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModals(); closeAllActDrops(); } });
+
+        // ── Modals ────────────────────────────────────────────────
+        function openCancel(id, ref, name) {
+            closeAllActDrops();
+            document.getElementById('cancelId').value           = id;
+            document.getElementById('cancelRef').textContent    = ref;
+            document.getElementById('cancelFarmer').textContent = name;
+            document.getElementById('cancelOverlay').classList.add('open');
+        }
+        function closeModals() {
+            document.querySelectorAll('.sp-overlay').forEach(o => o.classList.remove('open'));
+        }
+        document.querySelectorAll('.sp-overlay').forEach(o => {
+            o.addEventListener('click', e => { if (e.target === o) closeModals(); });
+        });
+
+        // ── Init ──────────────────────────────────────────────────
+        run();
+    </script>
+}

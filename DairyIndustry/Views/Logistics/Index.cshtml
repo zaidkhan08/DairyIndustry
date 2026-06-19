@@ -1,288 +1,797 @@
-﻿@model DairyIndustry.Models.Logistics.DriversModel
+﻿@model DairyIndustry.Models.Logistics.DriverDashboardViewModel
 @{
     ViewData["Title"] = "Driver Dashboard";
-    Layout = "~/Views/Shared/_LogisticsLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    
-    var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
-    var vehicle = vehicles?.FirstOrDefault();
+    var driver = Model.Driver;
+    var transfers = Model.Transfers;
+    var vehicles = Model.Vehicles;
+    var loss = Model.LossSummary;
+    var notifs = Model.Notifications;
 
-    string DriverStatusBadge(string s) => s switch
+    // ── Summary stats ────────────────────────────────────────────────────
+    int totalVehicles = vehicles.Count;
+    int activeVehicles = vehicles.Count(v => v.Status == "Active" || v.Status == "Approved");
+    int pendingVehicles = vehicles.Count(v => v.Status == "Pending");
+    int totalTrips = transfers.Count;
+    int completedTrips = transfers.Count(t => t.TransferStatus == "Received");
+    int pendingTrips = transfers.Count(t => t.TransferStatus != "Received");
+    decimal totalDispatched = transfers.Sum(t => t.DispatchQty);
+    decimal totalReceived = transfers.Where(t => t.ReceivedQty.HasValue).Sum(t => t.ReceivedQty ?? 0);
+    decimal lossVariance = totalDispatched > 0 ? Math.Round((loss.TotalLossLitres / totalDispatched) * 100, 2) : 0;
+    int unreadCount = notifs.Count(n => !n.IsRead);
+
+    // ── Chart: last 10 transfers (dispatch vs received) ──────────────────
+    var chart10 = transfers.OrderByDescending(t => t.DispatchDate).Take(10)
+                           .OrderBy(t => t.DispatchDate).ToList();
+    string cLabels = string.Join(",", chart10.Select(t => $"'T-{t.TransferId}'"));
+    string cDispatch = string.Join(",", chart10.Select(t => t.DispatchQty.ToString("F1")));
+    string cReceived = string.Join(",", chart10.Select(t => (t.ReceivedQty ?? 0).ToString("F1")));
+    string cLoss = string.Join(",", chart10.Select(t => (t.LossQty ?? 0).ToString("F2")));
+
+    // ── Chart: monthly trip count ─────────────────────────────────────────
+    var monthly = transfers
+        .GroupBy(t => new { t.DispatchDate.Year, t.DispatchDate.Month })
+        .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+        .TakeLast(6)
+        .ToList();
+    string mLabels = string.Join(",", monthly.Select(g => $"'{new DateTime(g.Key.Year, g.Key.Month, 1):MMM yy}'"));
+    string mCounts = string.Join(",", monthly.Select(g => g.Count()));
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    string BadgeClass(string s) => s switch
     {
-        "Active" => "success",
-        "Pending" => "warning",
-        "Inactive" => "secondary",
-        "Suspended" => "danger",
-        _ => "secondary"
+        "Active" or "Approved" or "Received" => "badge-approved",
+        "Pending" => "badge-pending",
+        _ => "badge-rejected"
     };
-
-    string VehicleStatusBadge(string s) => s switch
+    string SeverityBadge(string s) => s switch
     {
-        "Approved" => "success",
-        "Pending" => "warning",
-        "Rejected" => "danger",
-        _ => "secondary"
+        "danger" => "badge-rejected",
+        "warning" => "badge-pending",
+        _ => "badge-info"
+    };
+    string SeverityIcon(string s) => s switch
+    {
+        "danger" => "bi-exclamation-octagon-fill text-danger",
+        "warning" => "bi-exclamation-triangle-fill text-warning",
+        _ => "bi-info-circle-fill text-primary"
     };
 }
 
-<!-- ── Page Header ── -->
-<div class="bg-primary text-white py-4 px-4 mb-4 shadow-sm">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-            <h4 class="mb-1 fw-bold">
-                <i class="bi bi-speedometer2 me-2"></i>Driver Dashboard
-            </h4>
-            <p class="mb-0 opacity-75 small">
-                Welcome back, <strong>@Model?.DriverName</strong> &mdash;
-                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
-            </p>
-        </div>
-        <a asp-action="RegisterVehicle" asp-controller="Logistics"
-           class="btn btn-light btn-sm fw-semibold">
-            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
-        </a>
-    </div>
-</div>
+<style>
+    .db-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
 
-<div class="container-fluid px-4 pb-5">
+    .db-card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-    <!-- Alerts -->
+        .db-card-header span {
+            font-weight: 700;
+            font-size: .9rem;
+            color: #1e293b;
+        }
+
+    .db-card-body {
+        padding: 20px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 18px 20px;
+        height: 100%;
+    }
+
+        .stat-card.border-blue {
+            border-top: 4px solid #3b82f6;
+        }
+
+        .stat-card.border-green {
+            border-top: 4px solid #10b981;
+        }
+
+        .stat-card.border-sky {
+            border-top: 4px solid #0ea5e9;
+        }
+
+        .stat-card.border-red {
+            border-top: 4px solid #ef4444;
+        }
+
+    .stat-label {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-weight: 700;
+        color: #6b7280;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #111827;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stat-sub {
+        font-size: .72rem;
+        color: #9ca3af;
+        margin-top: 6px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 6px;
+    }
+
+    .badge-approved {
+        background: #dcfce7;
+        color: #15803d;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-pending {
+        background: #fffbeb;
+        color: #b45309;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-rejected {
+        background: #fef2f2;
+        color: #991b1b;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-info {
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .tbl th {
+        font-size: .74rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 10px 16px;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .tbl td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #f8fafc;
+        font-size: .88rem;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+
+    .tbl tbody tr:hover {
+        background: #fafbfc;
+    }
+
+    .notif-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .notif-row:last-child {
+            border-bottom: none;
+        }
+
+    .notif-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 15px;
+    }
+
+        .notif-icon.danger {
+            background: #fef2f2;
+        }
+
+        .notif-icon.warning {
+            background: #fffbeb;
+        }
+
+        .notif-icon.info {
+            background: #eff6ff;
+        }
+
+    .notif-title {
+        font-size: .85rem;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 2px;
+    }
+
+    .notif-msg {
+        font-size: .78rem;
+        color: #6b7280;
+        line-height: 1.4;
+    }
+
+    .notif-time {
+        font-size: .7rem;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
+    .vehicle-chip {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+        .vehicle-chip .vnum {
+            font-weight: 700;
+            font-size: .9rem;
+            color: #1e293b;
+        }
+
+        .vehicle-chip .vcap {
+            font-size: .75rem;
+            color: #6b7280;
+        }
+
+    .avatar-circle {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .shift-badge {
+        font-size: .7rem;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 mb-3" style="border-radius:8px">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
         </div>
     }
 
-    <div class="row g-4">
+    <!-- ══════════════════════════════════════════════════════
+         WELCOME BANNER
+    ══════════════════════════════════════════════════════ -->
+    <div class="stat-card border-blue mb-4 p-4">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="avatar-circle">@(driver?.DriverName?[0].ToString().ToUpper() ?? "D")</div>
+            <div class="flex-grow-1">
+                <h4 class="fw-bold mb-1 text-dark">Welcome back, @(driver?.DriverName ?? "Driver")!</h4>
+                <div class="text-muted small d-flex flex-wrap gap-3">
+                    <span><i class="bi bi-card-text me-1"></i>Licence: <strong class="font-monospace">@driver?.LicenseNo</strong></span>
+                    <span><i class="bi bi-telephone me-1"></i>@(driver?.Phone ?? "No phone")</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>Since @driver?.RegisteredOn.ToString("MMM yyyy")</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                @if (unreadCount > 0)
+                {
+                    <span class="badge-pending">
+                        <i class="bi bi-bell-fill me-1"></i>@unreadCount new alert@(unreadCount > 1 ? "s" : "")
+                    </span>
+                }
+                <span class="badge-@(driver?.Status == "Active" ? "approved" : "pending")">@driver?.Status</span>
+                <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3" style="border-radius:6px">
+                    <i class="bi bi-plus-lg me-1"></i>Add Vehicle
+                </a>
+            </div>
+        </div>
+    </div>
 
-        <!-- ══════════════════════════════
-             LEFT — Driver Profile Card
-        ══════════════════════════════ -->
-        <div class="col-lg-5 col-xl-4">
-            <div class="card border-0 shadow-sm h-100">
+    <!-- ══════════════════════════════════════════════════════
+         ROW 1 — 4 KPI CARDS
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+            <div class="stat-card border-blue">
+                <div class="stat-label">Fleet Size</div>
+                <div class="stat-value">@totalVehicles</div>
+                <div class="stat-sub">
+                    <span class="text-success fw-bold">@activeVehicles Active</span>
+                    &nbsp;·&nbsp;@pendingVehicles Pending
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card border-green">
+                <div class="stat-label">Total Trips</div>
+                <div class="stat-value">@totalTrips</div>
+                <div class="stat-sub">
+                    <span class="text-success fw-bold">@completedTrips Completed</span>
+                    &nbsp;·&nbsp;@pendingTrips In Transit
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card border-sky">
+                <div class="stat-label">Total Dispatched</div>
+                <div class="stat-value">@totalDispatched.ToString("N0") <small class="fs-6 text-muted fw-normal">L</small></div>
+                <div class="stat-sub">Received: <span class="text-info fw-bold">@totalReceived.ToString("N0") L</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card border-red">
+                <div class="stat-label">Transit Loss</div>
+                <div class="stat-value">@loss.TotalLossLitres.ToString("N1") <small class="fs-6 text-muted fw-normal">L</small></div>
+                <div class="stat-sub">
+                    Loss rate:
+                    <span class="fw-bold @(lossVariance > 2 ? "text-danger" : "text-success")">@lossVariance%</span>
+                    &nbsp;·&nbsp;@loss.TotalLossEvents events
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Blue top accent -->
-                <div class="bg-primary rounded-top" style="height:4px;"></div>
+    <!-- ══════════════════════════════════════════════════════
+         ROW 2 — DISPATCH/RECEIVED BAR CHART + NOTIFICATIONS
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
 
-                <div class="card-body p-4">
-
-                    @if (Model == null)
+        <!-- Bar chart: last 10 transfers -->
+        <div class="col-xl-8">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-bar-chart-line text-primary me-2"></i>Dispatch vs Received — Last 10 Trips</span>
+                    <a asp-action="MyTransfers" class="btn btn-light border btn-sm" style="font-size:.8rem">Full Log →</a>
+                </div>
+                <div class="db-card-body">
+                    @if (!transfers.Any())
                     {
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-person-x display-4 d-block mb-3"></i>
-                            <p>Driver profile not found.</p>
+                        <div class="text-center py-5 text-muted small">
+                            <i class="bi bi-bar-chart display-6 d-block mb-2 opacity-25"></i>No transfer data yet.
                         </div>
                     }
                     else
                     {
-                        <!-- Avatar + Name -->
-                        <div class="d-flex align-items-center gap-3 mb-4">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center
-                                            justify-content-center fw-bold fs-3 flex-shrink-0"
-                                 style="width:68px; height:68px;">
-                                @Model.DriverName.Substring(0, 1).ToUpper()
-                            </div>
-                            <div>
-                                <h5 class="mb-0 fw-bold">@Model.DriverName</h5>
-                                <small class="text-muted">@@@Model.Username</small>
-                                <div class="mt-1">
-                                    <span class="badge bg-@DriverStatusBadge(Model.Status)">
-                                        @Model.Status
-                                    </span>
-                                    <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") ms-1">
-                                        @(Model.IsActive ? "Account Active" : "Inactive")
-                                    </span>
-                                </div>
-                            </div>
+                        <div style="position:relative; height:260px">
+                            <canvas id="barChart"></canvas>
                         </div>
-
-                        <hr class="my-3">
-
-                        <!-- Section Title -->
-                        <p class="text-uppercase text-muted fw-semibold small mb-3"
-                           style="letter-spacing:.6px; font-size:.72rem;">
-                            <i class="bi bi-person-lines-fill me-1"></i> Personal Details
-                        </p>
-
-                        <!-- Details List -->
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-hash me-2 text-primary"></i>Driver ID
-                                </span>
-                                <span class="fw-bold">#@Model.DriverId</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-file-earmark-text me-2 text-primary"></i>License No
-                                </span>
-                                <span class="fw-bold">@Model.LicenseNo</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-telephone me-2 text-primary"></i>Phone
-                                </span>
-                                <span class="fw-bold">
-                                    @(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)
-                                </span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-person me-2 text-primary"></i>Username
-                                </span>
-                                <span class="fw-bold">@Model.Username</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="bi bi-calendar3 me-2 text-primary"></i>Registered On
-                                </span>
-                                <span class="fw-bold">@Model.RegisteredOn.ToString("dd MMM yyyy")</span>
-                            </li>
-                        </ul>
-
-                        <!-- Status Alerts -->
-                        @if (Model.Status == "Pending")
-                        {
-                            <div class="alert alert-warning mt-3 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-hourglass-split me-1"></i>
-                                Your account is <strong>pending</strong> admin approval.
-                            </div>
-                        }
-                        else if (Model.Status == "Suspended")
-                        {
-                            <div class="alert alert-danger mt-3 mb-0 py-2 px-3 small rounded-3">
-                                <i class="bi bi-slash-circle me-1"></i>
-                                Your account has been <strong>suspended</strong>. Contact admin.
-                            </div>
-                        }
                     }
-
                 </div>
             </div>
         </div>
 
-        
-        <div class="col-lg-7 col-xl-8">
-            <div class="card border-0 shadow-sm h-100">
-
-                <div class="bg-success rounded-top" style="height:4px;"></div>
-
-                <div class="card-body p-4">
-
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <p class="text-uppercase text-muted fw-semibold small mb-0"
-                           style="letter-spacing:.6px; font-size:.72rem;">
-                            <i class="bi bi-truck me-1"></i> My Vehicles
-                        </p>
-                        <a asp-action="RegisterVehicle" asp-controller="Logistics"
-                           class="btn btn-success btn-sm fw-semibold">
-                            <i class="bi bi-plus-circle me-1"></i> Add Vehicle
-                        </a>
-                    </div>
-
-                    @if (vehicles == null || !vehicles.Any())
+      @*   <!-- Notifications panel -->
+        <div class="col-xl-4">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span>
+                        <i class="bi bi-bell text-warning me-2"></i>Alerts
+                        @if (unreadCount > 0)
+                        {
+                            <span class="badge-pending ms-1">@unreadCount</span>
+                        }
+                    </span>
+                </div>
+                <div class="db-card-body" style="max-height:320px; overflow-y:auto">
+                    @if (!notifs.Any())
                     {
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-truck display-3 d-block mb-3 text-secondary"></i>
-                            <h6 class="fw-semibold">No Vehicle Registered</h6>
-                            <p class="small mb-3">
-                                You haven't registered a vehicle yet.<br />
-                                Click the button above to get started.
-                            </p>
-                            <a asp-action="RegisterVehicle" asp-controller="Logistics"
-                               class="btn btn-outline-success btn-sm fw-semibold">
-                                <i class="bi bi-plus-circle me-1"></i> Register Now
-                            </a>
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-bell-slash display-6 d-block mb-2 opacity-25"></i>No new alerts.
                         </div>
+                    }
+                    else
+                    {
+                        @foreach (var n in notifs)
+                        {
+                            <div class="notif-row" id="notif-@n.NotificationId">
+                                <div class="notif-icon @n.Severity">
+                                    <i class="bi @SeverityIcon(n.Severity)"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="notif-title">@n.Title</div>
+                                    <div class="notif-msg">@n.Message</div>
+                                    <div class="notif-time"><i class="bi bi-clock me-1"></i>@n.CreatedAt.ToString("dd MMM, hh:mm tt")</div>
+                                </div>
+                                @if (!n.IsRead)
+                                {
+                                    <button class="btn btn-sm btn-light border p-1" style="font-size:.7rem; height:24px; align-self:center"
+                                            onclick="markRead(@n.NotificationId)" title="Mark as read">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div> *@
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         ROW 3 — MONTHLY TRIP TREND + LOSS BREAKDOWN PIE
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+        <!-- Monthly trip count line chart -->
+        <div class="col-xl-7">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-graph-up text-success me-2"></i>Monthly Trip Trend (last 6 months)</span>
+                </div>
+                <div class="db-card-body">
+                    @if (!transfers.Any())
+                    {
+                        <div class="text-center py-4 text-muted small opacity-50">No data.</div>
+                    }
+                    else
+                    {
+                        <div style="position:relative; height:220px">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Loss breakdown donut -->
+        <div class="col-xl-5">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-pie-chart text-danger me-2"></i>Loss Category Breakdown</span>
+                </div>
+                <div class="db-card-body d-flex align-items-center justify-content-center gap-4 flex-wrap">
+                    @if (loss.TotalLossEvents == 0)
+                    {
+                        <div class="text-center text-muted small">
+                            <i class="bi bi-check-circle-fill text-success display-6 d-block mb-2"></i>
+                            No loss events recorded — great work!
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="width:160px; height:160px; position:relative">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#ef4444;display:inline-block"></span>
+                                <span class="small">Severe <strong>(@loss.SevereCount)</strong></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+                                <span class="small">Moderate <strong>(@loss.ModerateCount)</strong></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#3b82f6;display:inline-block"></span>
+                                <span class="small">Minor <strong>(@loss.MinorCount)</strong></span>
+                            </div>
+                            <hr class="my-1">
+                            <div class="small text-muted">Avg loss: <strong>@loss.AvgLossPct.ToString("N2")%</strong></div>
+                            <div class="small text-muted">Worst: <strong>@loss.MaxSingleLoss.ToString("N1") L</strong></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         ROW 4 — VEHICLES + RECENT TRANSFERS TABLE
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+        <!-- Vehicles -->
+        <div class="col-xl-4">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-truck text-primary me-2"></i>My Vehicles (@totalVehicles)</span>
+                    <a asp-action="VehicleStatus" class="btn btn-light border btn-sm" style="font-size:.8rem">Manage</a>
+                </div>
+                <div class="db-card-body d-flex flex-column gap-2">
+                    @if (!vehicles.Any())
+                    {
+                        <div class="text-center text-muted small py-3 opacity-50">No vehicles registered.</div>
                     }
                     else
                     {
                         @foreach (var v in vehicles)
                         {
-                            string badgeColor = v.Status switch
-                            {
-                                "Approved" => "success",
-                                "Pending" => "warning",
-                                "Rejected" => "danger",
-                                _ => "secondary"
-                            };
-
-                            <div class="card border-0 bg-light mb-3">
-                                <div class="card-body p-3">
-
-                                    <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="bg-success text-white rounded-3 d-flex align-items-center
-                                                    justify-content-center flex-shrink-0"
-                                             style="width:48px; height:48px; font-size:1.4rem;">
-                                            <i class="bi bi-truck"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 fw-bold">@v.VehicleNumber</h6>
-                                            <small class="text-muted">Vehicle ID: #@v.VehicleId</small>
-                                        </div>
-                                        <span class="badge bg-@badgeColor ms-auto">@v.Status</span>
-                                    </div>
-
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item px-0 bg-transparent
-                                                   d-flex justify-content-between align-items-center">
-                                            <span class="text-muted small fw-semibold">
-                                                <i class="bi bi-box-seam me-2 text-success"></i>Capacity
-                                            </span>
-                                            <span class="fw-bold">
-                                                @(v.Capacity > 0 ? v.Capacity.ToString("F2") + " Ltr" : "—")
-                                            </span>
-                                        </li>
-                                        <li class="list-group-item px-0 bg-transparent
-                                                   d-flex justify-content-between align-items-center">
-                                            <span class="text-muted small fw-semibold">
-                                                <i class="bi bi-calendar3 me-2 text-success"></i>Registered On
-                                            </span>
-                                            <span class="fw-bold">
-                                                @v.RegisteredOn.ToString("dd MMM yyyy")
-                                            </span>
-                                        </li>
-                                    </ul>
-
-                                    @if (v.Status == "Pending")
-                                    {
-                                        <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-hourglass-split me-1"></i>
-                                            Waiting for <strong>admin approval</strong>.
-                                        </div>
-                                    }
-                                    else if (v.Status == "Rejected")
-                                    {
-                                        <div class="alert alert-danger mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-x-circle me-1"></i>
-                                            Registration <strong>rejected</strong>. Contact admin.
-                                        </div>
-                                    }
-                                    else if (v.Status == "Approved")
-                                    {
-                                        <div class="alert alert-success mt-2 mb-0 py-2 px-3 small rounded-3">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            Vehicle <strong>approved</strong> and ready for assignments.
-                                        </div>
-                                    }
-
+                            <div class="vehicle-chip">
+                                <div>
+                                    <div class="vnum"><i class="bi bi-truck me-1 text-primary"></i>@v.VehicleNumber</div>
+                                    <div class="vcap">Capacity: @v.Capacity L &nbsp;·&nbsp; Since @v.RegisteredOn.ToString("MMM yyyy")</div>
                                 </div>
+                                <span class="badge-@BadgeClass(v.Status)">@v.Status</span>
                             </div>
                         }
                     }
-
                 </div>
             </div>
         </div>
 
-    </div><!-- /row -->
-</div><!-- /container-fluid -->
+        <!-- Recent 7 transfers table -->
+        <div class="col-xl-8">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-clock-history text-primary me-2"></i>Recent Transfers</span>
+                    <a asp-action="MyTransfers" class="btn btn-light border btn-sm" style="font-size:.8rem">All Trips →</a>
+                </div>
+                <div class="table-responsive">
+                    @if (!transfers.Any())
+                    {
+                        <div class="text-center py-5 text-muted small opacity-50">No transfers logged yet.</div>
+                    }
+                    else
+                    {
+                        <table class="table tbl mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Transfer</th>
+                                    <th>Route</th>
+                                    <th>Dispatch</th>
+                                    <th>Received</th>
+                                    <th>Loss</th>
+                                    <th class="text-center pe-3">QC Fat</th>
+                                    <th class="text-center pe-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in transfers.Take(7))
+                                {
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="fw-bold">#@t.TransferId</div>
+                                            <div style="font-size:.72rem; color:#9ca3af">@t.DispatchDate.ToString("dd MMM")</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold" style="font-size:.82rem">@t.CenterName</div>
+                                            <div style="font-size:.71rem; color:#9ca3af">→ @t.PlantName</div>
+                                        </td>
+                                        <td><span class="font-monospace fw-bold">@t.DispatchQty.ToString("N0")</span><span class="text-muted" style="font-size:.75rem"> L</span></td>
+                                        <td>
+                                            @if (t.ReceivedQty.HasValue)
+                                            {
+                                                <span class="font-monospace fw-bold">@t.ReceivedQty.Value.ToString("N0")</span>
+                                    
+                                                <span class="text-muted" style="font-size:.75rem"> L</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (t.LossQty.HasValue && t.LossQty > 0)
+                                            {
+                                                <span class="@(t.LossPercent > 5 ? "text-danger" : t.LossPercent > 2 ? "text-warning" : "text-success") fw-bold font-monospace">@t.LossPercent.ToString("N1")%</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-success">0%</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (t.TestedFat.HasValue)
+                                            {
+                                                <span class="font-monospace">@t.TestedFat.Value.ToString("N1")</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-muted" style="font-size:.75rem">—</span>
+                                            }
+                                        </td>
+                                        <td class="text-center pe-3">
+                                            <span class="badge-@BadgeClass(t.TransferStatus)">
+                                                @(t.TransferStatus == "Received" ? "Done" : "Transit")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @if (transfers.Any())
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+
+                // ── Shared defaults ───────────────────────────────────────
+                Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+                Chart.defaults.font.size   = 11;
+                Chart.defaults.color       = "#6b7280";
+
+                // ── 1. Bar chart: dispatch vs received ───────────────────
+                new Chart(document.getElementById("barChart").getContext("2d"), {
+                    type: "bar",
+                    data: {
+                        labels: [@Html.Raw(cLabels)],
+                        datasets: [
+                            {
+                                label: "Dispatched (L)",
+                                data: [@Html.Raw(cDispatch)],
+                                backgroundColor: "rgba(59,130,246,0.15)",
+                                borderColor: "#3b82f6",
+                                borderWidth: 1.5,
+                                borderRadius: 4
+                            },
+                            {
+                                label: "Received (L)",
+                                data: [@Html.Raw(cReceived)],
+                                backgroundColor: "rgba(16,185,129,0.15)",
+                                borderColor: "#10b981",
+                                borderWidth: 1.5,
+                                borderRadius: 4
+                            },
+                            {
+                                label: "Loss (L)",
+                                data: [@Html.Raw(cLoss)],
+                                backgroundColor: "rgba(239,68,68,0.15)",
+                                borderColor: "#ef4444",
+                                borderWidth: 1.5,
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6 } },
+                            tooltip: { mode: "index", intersect: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: "rgba(0,0,0,0.04)" },
+                                ticks: { callback: v => v + " L" }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // ── 2. Line chart: monthly trips ─────────────────────────
+                @if (monthly.Any())
+                {
+                    <text>
+                    new Chart(document.getElementById("lineChart").getContext("2d"), {
+                        type: "line",
+                        data: {
+                            labels: [@Html.Raw(mLabels)],
+                            datasets: [{
+                                label: "Trips",
+                                data: [@Html.Raw(mCounts)],
+                                borderColor: "#10b981",
+                                backgroundColor: "rgba(16,185,129,0.08)",
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: "#10b981",
+                                pointRadius: 4,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 },
+                                    grid: { color: "rgba(0,0,0,0.04)" }
+                                },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                    </text>
+                }
+
+                // ── 3. Doughnut: loss breakdown ──────────────────────────
+                @if (loss.TotalLossEvents > 0)
+                {
+                    <text>
+                    new Chart(document.getElementById("pieChart").getContext("2d"), {
+                        type: "doughnut",
+                        data: {
+                            labels: ["Severe", "Moderate", "Minor"],
+                            datasets: [{
+                                data: [@loss.SevereCount, @loss.ModerateCount, @loss.MinorCount],
+                                backgroundColor: ["#ef4444", "#f59e0b", "#3b82f6"],
+                                borderWidth: 0,
+                                hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: "68%",
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => " " + ctx.label + ": " + ctx.parsed + " events"
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    </text>
+                }
+            });
+        </script>
+    }
+
+    <script>
+        function markRead(id) {
+            fetch('/Logistics/MarkNotificationRead', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' },
+                body: JSON.stringify({ notificationId: id })
+            }).then(() => {
+                const el = document.getElementById('notif-' + id);
+                if (el) el.style.opacity = '0.45';
+            });
+        }
+    </script>
+}

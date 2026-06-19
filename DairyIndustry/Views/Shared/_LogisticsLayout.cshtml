@@ -4,154 +4,208 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — Dairy Logistics</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- Admin Layout CSS (same as admin) -->
+    <link rel="stylesheet" href="~/css/admin-layout.css" />
+
 </head>
-<body class="bg-light">
+<body>
 
-    <div class="d-flex min-vh-100">
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SIDEBAR                                    -->
+    <!-- ══════════════════════════════════════════ -->
 
-        <!-- ═══════════════════════════════════
-             SIDEBAR
-        ═══════════════════════════════════ -->
-        <div class="d-flex flex-column bg-dark text-white shadow"
-             style="width:260px; min-width:260px;">
+    <div id="sidebar">
 
-            <!-- Brand -->
-            <div class="px-4 py-4 border-bottom border-secondary">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="bg-success rounded-3 d-flex align-items-center justify-content-center"
-                         style="width:40px; height:40px;">
-                        <i class="bi bi-truck text-white fs-5"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold text-white lh-1">Dairy</div>
-                        <div class="text-success fw-semibold lh-1" style="font-size:.8rem;">
-                            Logistics Panel
-                        </div>
-                    </div>
-                </div>
+        <!-- Brand -->
+        <a class="sidebar-brand" asp-controller="Logistics" asp-action="Index">
+            <div class="brand-icon">
+                <i class="bi bi-truck-front-fill"></i>
             </div>
-
-            <!-- Driver Info -->
-            <div class="px-4 py-3 border-bottom border-secondary">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-success text-white rounded-circle d-flex align-items-center
-                             justify-content-center fw-bold flex-shrink-0"
-                         style="width:42px; height:42px;">
-                        @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "D")
-                    </div>
-                    <div class="overflow-hidden">
-                        <div class="text-white fw-semibold text-truncate small">
-                            @Context.Session.GetString("Username")
-                        </div>
-                        <span class="badge bg-success bg-opacity-75 mt-1" style="font-size:.68rem;">
-                            Driver
-                        </span>
-                    </div>
-                </div>
+            <div class="brand-text">
+                <span>DairyManage</span>
+                <small>Logistics Panel</small>
             </div>
+        </a>
 
-            <!-- Navigation -->
-            <nav class="flex-grow-1 px-3 py-3">
+        <!-- Nav -->
+        <div class="sidebar-nav">
 
-                <div class="text-uppercase text-secondary fw-semibold mb-2 px-2"
-                     style="font-size:.65rem; letter-spacing:.8px;">
-                    Main Menu
-                </div>
+            @{
+                var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+                var act = ViewContext.RouteData.Values["action"]?.ToString();
+            }
 
-                <a asp-controller="Logistics" asp-action="Index"
-                   class="d-flex align-items-center gap-3 px-3 py-2 rounded-3 mb-1 text-decoration-none
-                      @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "bg-success text-white" : "text-secondary")">
-                    <i class="bi bi-speedometer2 fs-5"></i>
-                    <span class="fw-medium">Dashboard</span>
-                </a>
+            <!-- ── Main ────────────────────────── -->
+            <div class="nav-label">Main</div>
 
-                <a asp-controller="Logistics" asp-action="RegisterVehicle"
-                   class="d-flex align-items-center gap-3 px-3 py-2 rounded-3 mb-1 text-decoration-none
-                      @(ViewContext.RouteData.Values["action"]?.ToString() == "RegisterVehicle" ? "bg-success text-white" : "text-secondary")">
-                    <i class="bi bi-truck fs-5"></i>
-                    <span class="fw-medium">Register Vehicle</span>
-                </a>
-                <a asp-controller="Logistics" asp-action="MyTransfers"
-                   class="d-flex align-items-center gap-3 px-3 py-2 rounded-3 mb-1 text-decoration-none
-                      @(ViewContext.RouteData.Values["action"]?.ToString() == "MyTransfers" ? "bg-success text-white" : "text-secondary")">
-                    <i class="bi bi-truck fs-5"></i>
-                    <span class="fw-medium">Transfers</span>
-                </a>
-                <div class="text-uppercase text-secondary fw-semibold mt-4 mb-2 px-2"
-                     style="font-size:.65rem; letter-spacing:.8px;">
-                    Account
-                </div>
+            <a asp-controller="Logistics" asp-action="Index"
+               class="nav-item-link @(ctrl == "Logistics" && act == "Index" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
 
-                <a asp-controller="Admin" asp-action="Logout"
-                   class="d-flex align-items-center gap-3 px-3 py-2 rounded-3 mb-1
-                      text-decoration-none text-secondary">
-                    <i class="bi bi-box-arrow-left fs-5"></i>
-                    <span class="fw-medium">Logout</span>
-                </a>
+            <!-- ── My Account ─────────────────── -->
+            <div class="nav-label">My Account</div>
 
-            </nav>
+            <a asp-controller="Logistics" asp-action="RegisterVehicle"
+               class="nav-item-link @(ctrl == "Logistics" && act == "RegisterVehicle" ? "active" : "")">
+                <i class="bi bi-truck"></i>
+                <span>Register Vehicle</span>
+            </a>
 
-            <!-- Footer -->
-            <div class="px-4 py-3 border-top border-secondary">
-                <small class="text-secondary" style="font-size:.7rem;">
-                    <i class="bi bi-c-circle me-1"></i>2024 Dairy Management
-                </small>
-            </div>
+            <a asp-controller="Logistics" asp-action="MyTransfers"
+               class="nav-item-link @(ctrl == "Logistics" && act == "MyTransfers" ? "active" : "")">
+                <i class="bi bi-arrow-left-right"></i>
+                <span>My Transfers</span>
+            </a>
+
+            <a asp-controller="Logistics" asp-action="MyVehicles"
+               class="nav-item-link @(ctrl == "Logistics" && act == "MyVehicles" ? "active" : "")">
+                <i class="bi bi-car-front-fill"></i>
+                <span>My Vehicles</span>
+            </a>
+
+            <!-- ── System ──────────────────────── -->
+            <div class="nav-label">System</div>
+
+            <a asp-controller="Admin" asp-action="Logout"
+               class="nav-item-link text-danger-subtle">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
+            </a>
 
         </div>
 
-        <!-- ═══════════════════════════════════
-             MAIN CONTENT
-        ═══════════════════════════════════ -->
-        <div class="flex-grow-1 d-flex flex-column overflow-auto">
-
-            <!-- Top Navbar -->
-            <nav class="navbar bg-white border-bottom shadow-sm px-4 py-2">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-chevron-right text-muted small"></i>
-                    <span class="text-muted small">@ViewData["Title"]</span>
-                </div>
-                <div class="ms-auto d-flex align-items-center gap-3">
-                    <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-3 py-2">
-                        <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Active Session
-                    </span>
-                    <div class="vr text-muted"></div>
-                    <span class="text-muted small">
-                        <i class="bi bi-calendar3 me-1"></i>
-                        @DateTime.Now.ToString("dd MMM yyyy")
-                    </span>
-                    <div class="vr text-muted"></div>
-                    <a asp-controller="Admin" asp-action="Logout"
-                       class="btn btn-outline-danger btn-sm fw-semibold">
-                        <i class="bi bi-box-arrow-left me-1"></i>Logout
-                    </a>
-                </div>
-            </nav>
-
-            <!-- Page Content -->
-            <main class="flex-grow-1 p-0">
-                @RenderBody()
-            </main>
-
-            <!-- Footer -->
-            <footer class="bg-white border-top px-4 py-2">
-                <div class="d-flex align-items-center justify-content-between">
-                    <small class="text-muted">
-                        <i class="bi bi-truck me-1 text-success"></i>
-                        Dairy Management System — Logistics Module
-                    </small>
-                    <small class="text-muted">
-                        Version 1.0
-                    </small>
-                </div>
-            </footer>
-
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer d-flex align-items-center gap-2">
+            <div class="user-avatar">
+                @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "D")
+            </div>
+            <div class="user-info">
+                <span>Driver</span>
+                <small>@Context.Session.GetString("Username")</small>
+            </div>
         </div>
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TOPBAR                                     -->
+    <!-- ══════════════════════════════════════════ -->
+
+    <div id="topbar">
+
+        <!-- Toggle Button -->
+        <button class="topbar-icon-btn me-3"
+                onclick="toggleSidebar()"
+                title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <!-- Page Title -->
+        <div>
+            <p class="topbar-title mb-0">@ViewData["Title"]</p>
+            <p class="page-breadcrumb mb-0">
+                Logistics &rsaquo; @ViewData["Title"]
+            </p>
+        </div>
+
+        <!-- Right Side -->
+        <div class="topbar-right">
+
+            <!-- Full Screen -->
+            <a class="topbar-icon-btn"
+               onclick="toggleFullScreen()"
+               title="Full Screen">
+                <i class="bi bi-fullscreen"></i>
+            </a>
+
+            <!-- Date Badge -->
+            <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-3 py-2 d-none d-md-inline-flex align-items-center gap-1">
+                <i class="bi bi-circle-fill" style="font-size:8px;"></i>
+                Active Session
+            </span>
+
+            <!-- User Dropdown -->
+            <div class="dropdown">
+                <div class="topbar-avatar dropdown-toggle"
+                     data-bs-toggle="dropdown"
+                     aria-expanded="false"
+                     title="Account">
+                    @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "D")
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                    <li>
+                        <div class="px-3 py-2 border-bottom">
+                            <p class="mb-0 fw-semibold text-dark small">Driver</p>
+                            <p class="mb-0 text-muted" style="font-size:11px;">
+                                @Context.Session.GetString("Username")
+                            </p>
+                        </div>
+                    </li>
+                    
+                    <li><hr class="dropdown-divider my-1" /></li>
+                    <li>
+                        <a class="dropdown-item small py-2 text-danger"
+                           asp-controller="Admin" asp-action="Logout">
+                            <i class="bi bi-box-arrow-right me-2"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- MAIN CONTENT                               -->
+    <!-- ══════════════════════════════════════════ -->
+
+    <div id="main-content">
+        @RenderBody()
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- FOOTER                                     -->
+    <!-- ══════════════════════════════════════════ -->
+
+    <footer id="main-footer">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+            <small class="text-muted">
+                &copy; @DateTime.Now.Year
+                <strong class="text-primary">Dairy Management System</strong>
+                &mdash; Logistics Module
+            </small>
+            <small class="text-muted">
+                Version 1.0 &nbsp;|&nbsp;
+                <span class="text-success fw-semibold">
+                    <i class="bi bi-circle-fill" style="font-size:8px;"></i>
+                    System Online
+                </span>
+            </small>
+        </div>
+    </footer>
+
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Admin Layout JS (same toggleSidebar / toggleFullScreen functions) -->
+    <script src="~/js/admin-layout.js"></script>
+
+    @RenderSection("Scripts", required: false)
+
 </body>
 </html>

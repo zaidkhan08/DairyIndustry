@@ -2,25 +2,51 @@
 
 @{
     ViewData["Title"] = "Production Batches";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
     var roleName = Context.Session.GetString("RoleName");
     var plantName = Context.Session.GetString("PlantName");
     var sessionPlantId = Context.Session.GetInt32("PlantId");
     var sessionPlantName = Context.Session.GetString("PlantName");
+
+    int totalBatches = Model.Count;
+    int processingCount = Model.Count(b => b.BatchStatus == "Processing" || b.BatchStatus == "InProgress");
+    int completedCount = Model.Count(b => b.BatchStatus == "Completed");
+    int pendingCount = Model.Count(b => b.BatchStatus == "Pending");
+    int cancelledCount = Model.Count(b => b.BatchStatus == "Cancelled");
 }
 
-@* ─────────────────────────────────────────────
-   PAGE STYLES
-───────────────────────────────────────────── *@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 <style>
-    /* ── Layout ── */
-    .pb-page {
-        padding: 24px;
-        font-family: inherit;
+    .pb {
+        --c-surface: #fff;
+        --c-border: #e2e5ea;
+        --c-text: #111827;
+        --c-text-2: #374151;
+        --c-text-3: #6b7280;
+        --c-text-4: #9ca3af;
+        --c-accent: #2563eb;
+        --c-green: #16a34a;
+        --c-green-bg: #f0fdf4;
+        --c-green-border: #86efac;
+        --c-red: #dc2626;
+        --c-red-bg: #fef2f2;
+        --c-red-border: #fca5a5;
+        --c-amber: #d97706;
+        --c-amber-bg: #fffbeb;
+        --c-amber-border: #fcd34d;
+        --c-blue: #185FA5;
+        --c-blue-bg: #eff6ff;
+        --c-blue-border: #bfdbfe;
+        --r: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--c-text);
     }
 
-    /* ── Top bar ── */
-    .pb-topbar {
+    /* ── Page Header ── */
+    .pb-page-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -29,296 +55,186 @@
         flex-wrap: wrap;
     }
 
-    .pb-page-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #111;
-        margin: 0;
-    }
-
     .pb-breadcrumb {
         font-size: 12px;
-        color: #888;
-        margin-top: 3px;
+        color: var(--c-text-3);
+        margin-bottom: 4px;
     }
 
-        .pb-breadcrumb span {
-            color: #bbb;
-            margin: 0 4px;
-        }
+    .pb-page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--c-text);
+        margin: 0 0 12px;
+        letter-spacing: -0.5px;
+    }
 
-    /* ── New batch button ── */
-    .btn-new-batch {
+    /* ── Start Batch Button ── */
+    .btn-start-batch {
         display: inline-flex;
         align-items: center;
         gap: 7px;
         padding: 9px 18px;
         font-size: 13px;
         font-weight: 500;
-        background: #185FA5;
+        background: var(--c-blue);
         color: #fff;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--r);
         cursor: pointer;
+        text-decoration: none;
         transition: background 0.15s;
         white-space: nowrap;
+        flex-shrink: 0;
+        align-self: flex-start;
+        margin-top: 4px;
     }
 
-        .btn-new-batch:hover {
+        .btn-start-batch:hover {
             background: #0C447C;
+            color: #fff;
+            text-decoration: none;
         }
 
-        .btn-new-batch .icon-plus {
-            font-size: 17px;
-            line-height: 1;
+    /* ── Filter Tabs ── */
+    .pb-tabs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .pb-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 400;
+        cursor: pointer;
+        border: 1px solid var(--c-border);
+        background: transparent;
+        color: var(--c-text-3);
+        transition: all .15s;
+    }
+
+        .pb-tab:hover {
+            background: #f3f4f6;
+            color: var(--c-text-2);
         }
 
-    /* ── Stats row ── */
+        .pb-tab.active {
+            background: #f3f4f6;
+            color: var(--c-text);
+            font-weight: 500;
+            border-color: #d1d5db;
+        }
+
+    .pb-tab-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 10px;
+    }
+
+    .badge-all {
+        background: #e5e7eb;
+        color: var(--c-text-3);
+    }
+
+    .badge-processing {
+        background: var(--c-blue-bg);
+        color: var(--c-blue);
+    }
+
+    .badge-completed {
+        background: var(--c-green-bg);
+        color: var(--c-green);
+    }
+
+    .badge-pending {
+        background: var(--c-amber-bg);
+        color: var(--c-amber);
+    }
+
+    .badge-cancelled {
+        background: var(--c-red-bg);
+        color: var(--c-red);
+    }
+
+    /* ── Stats Row ── */
     .pb-stats {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-bottom: 18px;
+        gap: 0;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
+        margin-bottom: 20px;
     }
 
     .pb-stat {
-        background: #fff;
-        border: 1px solid #ebebeb;
-        border-radius: 10px;
-        padding: 14px 16px;
+        padding: 16px 20px;
+        border-right: 1px solid var(--c-border);
     }
+
+        .pb-stat:last-child {
+            border-right: none;
+        }
 
     .pb-stat-label {
         font-size: 11px;
-        color: #999;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-    }
-
-    .pb-stat-val {
-        font-size: 22px;
-        font-weight: 600;
-        color: #111;
-    }
-
-        .pb-stat-val.blue {
-            color: #185FA5;
-        }
-
-        .pb-stat-val.green {
-            color: #3B6D11;
-        }
-
-        .pb-stat-val.amber {
-            color: #854F0B;
-        }
-
-        .pb-stat-val.red {
-            color: #A32D2D;
-        }
-
-    /* ── Card ── */
-    .pb-card {
-        background: #fff;
-        border: 1px solid #ebebeb;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .pb-card-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 18px;
-        border-bottom: 1px solid #f0f0f0;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .pb-card-title {
-        font-size: 13px;
-        font-weight: 600;
-        color: #333;
-    }
-
-    .pb-filters {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
-        .pb-filters select, .pb-filters input {
-            padding: 7px 11px;
-            font-size: 12px;
-            border: 1px solid #e8e8e8;
-            border-radius: 7px;
-            background: #fafafa;
-            color: #333;
-            outline: none;
-            transition: border-color .15s;
-        }
-
-            .pb-filters select:focus, .pb-filters input:focus {
-                border-color: #185FA5;
-                background: #fff;
-            }
-
-        .pb-filters input {
-            width: 200px;
-        }
-
-    /* ── Table ── */
-    .pb-table-wrap {
-        overflow-x: auto;
-    }
-
-    .pb-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-    }
-
-        .pb-table thead th {
-            padding: 10px 16px;
-            text-align: left;
-            font-size: 11px;
-            font-weight: 600;
-            color: #999;
-            background: #fafafa;
-            border-bottom: 1px solid #f0f0f0;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            white-space: nowrap;
-        }
-
-        .pb-table tbody tr {
-            border-bottom: 1px solid #f5f5f5;
-            transition: background .1s;
-        }
-
-            .pb-table tbody tr:last-child {
-                border-bottom: none;
-            }
-
-            .pb-table tbody tr:hover {
-                background: #f9fbff;
-            }
-
-        .pb-table tbody td {
-            padding: 11px 16px;
-            color: #222;
-            vertical-align: middle;
-        }
-
-    .pb-batch-id {
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        color: #666;
-        font-weight: 600;
-    }
-
-    .pb-product-name {
-        font-weight: 600;
-        font-size: 13px;
-        color: #111;
-    }
-
-    .pb-product-type {
-        font-size: 10px;
-        color: #aaa;
-        margin-top: 2px;
-    }
-
-    .pb-qty {
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-    }
-
-    /* ── Status pills ── */
-    .pb-pill {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .pb-pill-pending {
-        background: #FAEEDA;
-        color: #854F0B;
-    }
-
-    .pb-pill-processing {
-        background: #E6F1FB;
-        color: #185FA5;
-    }
-
-    .pb-pill-completed {
-        background: #EAF3DE;
-        color: #3B6D11;
-    }
-
-    .pb-pill-cancelled {
-        background: #FCEBEB;
-        color: #A32D2D;
-    }
-
-    /* ── View detail button ── */
-    .btn-view-detail {
-        padding: 5px 12px;
-        font-size: 11px;
         font-weight: 500;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        background: #fff;
-        color: #555;
-        text-decoration: none;
-        transition: all .15s;
-        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-text-3);
+        margin-bottom: 6px;
     }
 
-        .btn-view-detail:hover {
-            background: #f5f5f5;
-            border-color: #ccc;
-            color: #111;
+    .pb-stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--c-text);
+        letter-spacing: -0.5px;
+        font-variant-numeric: tabular-nums;
+    }
+
+        .pb-stat-value.blue {
+            color: var(--c-blue);
         }
 
-    /* ── Card footer ── */
-    .pb-card-foot {
-        padding: 10px 18px;
-        border-top: 1px solid #f0f0f0;
-        font-size: 11px;
-        color: #bbb;
-    }
+        .pb-stat-value.green {
+            color: var(--c-green);
+        }
 
-    /* ── Empty state ── */
-    .pb-empty {
-        padding: 48px 20px;
-        text-align: center;
-        color: #ccc;
-        font-size: 13px;
-    }
+        .pb-stat-value.amber {
+            color: var(--c-amber);
+        }
 
-    .pb-empty-icon {
-        font-size: 32px;
-        margin-bottom: 8px;
-        opacity: .35;
-    }
+        .pb-stat-value.red {
+            color: var(--c-red);
+        }
 
-    /* ── Alert ── */
+    /* ── Alerts ── */
     .pb-alert {
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 12px 16px;
-        background: #EAF3DE;
-        border: 1px solid #C0DD97;
-        border-radius: 8px;
+        background: var(--c-green-bg);
+        border: 1px solid var(--c-green-border);
+        border-radius: var(--r);
         font-size: 13px;
-        color: #3B6D11;
+        color: var(--c-green);
         margin-bottom: 16px;
+    }
+
+    .pb-alert-error {
+        background: var(--c-red-bg);
+        border-color: var(--c-red-border);
+        color: var(--c-red);
     }
 
     .pb-alert-close {
@@ -326,602 +242,697 @@
         background: none;
         border: none;
         cursor: pointer;
-        color: #3B6D11;
+        color: inherit;
         font-size: 16px;
+        line-height: 1;
     }
 
-    .pb-alert-error {
-        background: #FCEBEB;
-        border-color: #F7C1C1;
-        color: #A32D2D;
+    /* ── Table Card ── */
+    .pb-card {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: var(--r);
+        overflow: hidden;
     }
 
-        .pb-alert-error .pb-alert-close {
-            color: #A32D2D;
-        }
-
-    /* ════════════════════════════════════════
-           DRAWER
-        ════════════════════════════════════════ */
-    .pb-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.25);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity .28s ease;
-        z-index: 1040;
-    }
-
-        .pb-overlay.open {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-    .pb-drawer {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 400px;
-        max-width: 100vw;
-        height: 100vh;
-        background: #fff;
-        border-left: 1px solid #e8e8e8;
-        display: flex;
-        flex-direction: column;
-        transform: translateX(100%);
-        transition: transform .32s cubic-bezier(.4,0,.2,1);
-        z-index: 1050;
-    }
-
-        .pb-drawer.open {
-            transform: translateX(0);
-        }
-
-    .pb-drawer-head {
+    .pb-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 22px;
-        border-bottom: 1px solid #f0f0f0;
-        flex-shrink: 0;
+        padding: 10px 16px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--c-border);
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
-    .pb-drawer-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: #111;
-        margin: 0;
+    .pb-toolbar-left {
+        font-size: 13px;
+        color: var(--c-text-3);
     }
 
-    .pb-drawer-sub {
-        font-size: 12px;
-        color: #aaa;
-        margin-top: 3px;
-    }
-
-    .pb-drawer-close {
-        width: 30px;
-        height: 30px;
-        border-radius: 7px;
-        border: 1px solid #ebebeb;
-        background: #fafafa;
-        cursor: pointer;
-        font-size: 15px;
-        color: #888;
+    .pb-toolbar-right {
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: background .12s;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
-        .pb-drawer-close:hover {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-    .pb-drawer-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
+    .pb-select {
+        height: 30px;
+        padding: 0 28px 0 10px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-surface);
+        font-size: 12px;
+        color: var(--c-text-2);
+        outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        transition: border-color .15s;
+        cursor: pointer;
     }
 
-    /* ── Form fields inside drawer ── */
-    .pb-field {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+        .pb-select:focus {
+            border-color: var(--c-accent);
+        }
+
+    .pb-search-wrap {
+        position: relative;
     }
 
-        .pb-field label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #555;
+    .pb-search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        color: var(--c-text-4);
+        pointer-events: none;
+    }
+
+    .pb-search {
+        height: 30px;
+        padding: 0 10px 0 30px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-surface);
+        font-size: 13px;
+        color: var(--c-text);
+        outline: none;
+        width: 200px;
+        transition: border-color .15s, box-shadow .15s;
+        font-family: inherit;
+    }
+
+        .pb-search:focus {
+            border-color: var(--c-accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.08);
         }
 
-        .pb-field input, .pb-field select, .pb-field textarea {
-            width: 100%;
-            padding: 9px 12px;
-            font-size: 13px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fafafa;
-            color: #222;
-            outline: none;
-            transition: border-color .15s, background .15s;
+    /* ── Table ── */
+    .pb-scroll {
+        overflow-x: auto;
+    }
+
+    .pb-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 780px;
+    }
+
+        .pb-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--c-text-3);
+            padding: 9px 16px;
+            text-align: left;
+            background: #fafbfc;
+            border-bottom: 1px solid var(--c-border);
+            white-space: nowrap;
         }
 
-            .pb-field input:focus, .pb-field select:focus, .pb-field textarea:focus {
-                border-color: #185FA5;
-                background: #fff;
-                box-shadow: 0 0 0 3px rgba(24,95,165,.1);
+            .pb-table thead th.c {
+                text-align: center;
             }
 
-            .pb-field input.is-invalid, .pb-field select.is-invalid {
-                border-color: #E24B4A !important;
+            .pb-table thead th.r {
+                text-align: right;
             }
 
-        .pb-field textarea {
-            resize: none;
+        .pb-table tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            color: var(--c-text-2);
         }
 
-    .pb-field-hint {
+        .pb-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pb-table tbody tr:hover td {
+            background: #f8faff;
+        }
+
+        .pb-table td.c {
+            text-align: center;
+        }
+
+        .pb-table td.r {
+            text-align: right;
+        }
+
+    /* ── Cell styles ── */
+    .pb-batch-id {
+        font-family: 'SF Mono', 'Consolas', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-accent);
+    }
+
+    .pb-sub {
         font-size: 11px;
-        color: #bbb;
+        color: var(--c-text-3);
+        margin-top: 2px;
     }
 
-    .pb-field-opt {
-        font-size: 11px;
-        color: #bbb;
-        font-weight: 400;
-        margin-left: 3px;
+    .pb-product-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
     }
 
-    .pb-field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+    .pb-qty-val {
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--c-text);
     }
 
-    .pb-divider {
-        height: 1px;
-        background: #f0f0f0;
+    .pb-date-val {
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
     }
 
-    /* ── Drawer section label ── */
-    .pb-section-label {
+    /* ── Status Pills ── */
+    .pb-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         font-size: 11px;
         font-weight: 600;
-        color: #bbb;
-        text-transform: uppercase;
-        letter-spacing: .5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
     }
 
-    .pb-drawer-foot {
-        padding: 14px 22px;
-        border-top: 1px solid #f0f0f0;
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
+    .pb-pill-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
         flex-shrink: 0;
     }
 
-    .btn-drawer-cancel {
-        padding: 9px 18px;
-        font-size: 13px;
+    .pb-pill-pending {
+        background: var(--c-amber-bg);
+        color: var(--c-amber);
+        border: 1px solid var(--c-amber-border);
+    }
+
+    .pb-pill-processing,
+    .pb-pill-inprogress {
+        background: var(--c-blue-bg);
+        color: var(--c-blue);
+        border: 1px solid var(--c-blue-border);
+    }
+
+    .pb-pill-completed {
+        background: var(--c-green-bg);
+        color: var(--c-green);
+        border: 1px solid var(--c-green-border);
+    }
+
+    .pb-pill-cancelled {
+        background: var(--c-red-bg);
+        color: var(--c-red);
+        border: 1px solid var(--c-red-border);
+    }
+
+    /* ── View detail button ── */
+    .btn-view-detail {
+        padding: 5px 12px;
+        font-size: 11px;
         font-weight: 500;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fff;
-        color: #666;
-        cursor: pointer;
-        transition: background .12s;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-surface);
+        color: var(--c-text-3);
+        text-decoration: none;
+        transition: all .15s;
+        display: inline-block;
+        white-space: nowrap;
     }
 
-        .btn-drawer-cancel:hover {
-            background: #f5f5f5;
+        .btn-view-detail:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: var(--c-text);
+            text-decoration: none;
         }
 
-    .btn-drawer-submit {
-        padding: 9px 22px;
+    /* ── Empty state ── */
+    .pb-empty {
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--c-text-3);
         font-size: 13px;
-        font-weight: 600;
-        border: none;
-        border-radius: 8px;
-        background: #185FA5;
-        color: #fff;
-        cursor: pointer;
-        transition: background .15s;
     }
 
-        .btn-drawer-submit:hover {
-            background: #0C447C;
+    /* ── Footer ── */
+    .pb-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-top: 1px solid var(--c-border);
+        background: #fafbfc;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 48px;
+    }
+
+    .pb-record-count {
+        font-size: 12px;
+        color: var(--c-text-3);
+    }
+
+        .pb-record-count strong {
+            color: var(--c-text-2);
         }
 
-        .btn-drawer-submit:disabled {
-            background: #9ab8d8;
+    .pb-foot-center {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* ── Pagination ── */
+    .pb-pagination {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pb-pg-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+        height: 30px;
+        padding: 0 6px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-surface);
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--c-text-2);
+        cursor: pointer;
+        transition: all .15s;
+        font-family: inherit;
+    }
+
+        .pb-pg-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: var(--c-text);
+        }
+
+        .pb-pg-btn.active {
+            background: var(--c-accent);
+            border-color: var(--c-accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .pb-pg-btn:disabled {
+            opacity: 0.35;
             cursor: not-allowed;
         }
 
-    /* ── Spinner inside submit button ── */
-    .pb-spinner {
-        display: none;
-        width: 14px;
-        height: 14px;
-        border: 2px solid rgba(255,255,255,.4);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: pbspin .7s linear infinite;
-        vertical-align: middle;
-        margin-right: 6px;
+    .pb-pg-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+        height: 30px;
+        font-size: 13px;
+        color: var(--c-text-3);
+        user-select: none;
     }
 
-    @@keyframes pbspin {
-        to {
-            transform: rotate(360deg);
+    .pb-foot-right {
+        font-size: 12px;
+        color: var(--c-text-3);
+    }
+
+        .pb-foot-right strong {
+            color: var(--c-text-2);
         }
-    }
 
-    /* ── Responsive ── */
-    @@media (max-width: 768px) {
+    @@media (max-width: 900px) {
         .pb-stats {
             grid-template-columns: repeat(2, 1fr);
         }
 
-        .pb-drawer {
-            width: 100vw;
+        .pb-stat:nth-child(2) {
+            border-right: none;
         }
 
-        .pb-filters input {
-            width: 140px;
+        .pb-stat:nth-child(3) {
+            border-top: 1px solid var(--c-border);
+        }
+
+        .pb-stat:nth-child(4) {
+            border-top: 1px solid var(--c-border);
+            border-right: none;
         }
     }
 
-    @@media (max-width: 480px) {
+    @@media (max-width: 600px) {
         .pb-stats {
             grid-template-columns: 1fr 1fr;
+        }
+
+        .pb-search {
+            width: 140px;
         }
     }
 </style>
 
-@* ─────────────────────────────────────────────
-   OVERLAY  (outside container so it covers full screen)
-───────────────────────────────────────────── *@
-<div class="pb-overlay" id="pbOverlay"></div>
+<div class="pb">
 
-@* ─────────────────────────────────────────────
-   SLIDE-IN DRAWER
-───────────────────────────────────────────── *@
-<div class="pb-drawer" id="pbDrawer" role="dialog" aria-modal="true" aria-label="Start new batch">
-    <div class="pb-drawer-head">
+    <!-- Page Header -->
+    <div class="pb-page-header">
         <div>
-            <p class="pb-drawer-title">Start new batch</p>
-            <p class="pb-drawer-sub">Fill in the details below to create a production batch</p>
+            <div class="pb-breadcrumb">Production › Production Batches</div>
+            <h1 class="pb-page-title">Production Batches</h1>
+            <div class="pb-tabs">
+                <button class="pb-tab active" data-filter="all">
+                    <i class="bi bi-list-ul"></i>
+                    All
+                    <span class="pb-tab-badge badge-all">@totalBatches</span>
+                </button>
+                <button class="pb-tab" data-filter="Processing,InProgress">
+                    <i class="bi bi-arrow-repeat"></i>
+                    Processing
+                    <span class="pb-tab-badge badge-processing">@processingCount</span>
+                </button>
+                <button class="pb-tab" data-filter="Completed">
+                    <i class="bi bi-check-circle"></i>
+                    Completed
+                    <span class="pb-tab-badge badge-completed">@completedCount</span>
+                </button>
+                <button class="pb-tab" data-filter="Pending">
+                    <i class="bi bi-clock"></i>
+                    Pending
+                    <span class="pb-tab-badge badge-pending">@pendingCount</span>
+                </button>
+                <button class="pb-tab" data-filter="Cancelled">
+                    <i class="bi bi-x-circle"></i>
+                    Cancelled
+                    <span class="pb-tab-badge badge-cancelled">@cancelledCount</span>
+                </button>
+            </div>
         </div>
-        <button class="pb-drawer-close" id="pbDrawerClose" aria-label="Close">&times;</button>
+        <a href="@Url.Action("StartBatch", "Production")" class="btn-start-batch">
+            <i class="bi bi-plus-lg"></i> Start new batch
+        </a>
     </div>
 
-    <div class="pb-drawer-body">
-        <form asp-action="StartBatch" method="post" id="pbBatchForm">
-
-            <div class="pb-section-label" style="margin-bottom:10px">Plant &amp; materials</div>
-
-            <div class="pb-field" style="margin-bottom:14px">
-                <label>Processing plant</label>
-                @if (roleName == "Plant Manager" && sessionPlantId.HasValue)
-                {
-                    <input type="text" value="@sessionPlantName" disabled />
-                    <input type="hidden" name="plantId" value="@sessionPlantId" />
-                }
-                else
-                {
-                    <select name="plantId" id="f-plant" required>
-                        <option value="">— Select plant —</option>
-                        @foreach (var p in (IEnumerable<DairyIndustry.Models.Admin.PlantModel>)ViewBag.Plants)
-                        {
-                            <option value="@p.PlantId">@p.PlantName</option>
-                        }
-                    </select>
-                }
-            </div>
-
-            <div class="pb-field" style="margin-bottom:14px">
-                <label>Milk type</label>
-                <select name="milkTypeId" id="f-milk" required>
-                    <option value="">— Select milk type —</option>
-                    @foreach (var m in (IEnumerable<DairyIndustry.Models.Admin.MilkTypeModel>)ViewBag.MilkTypes)
-                    {
-                        <option value="@m.MilkTypeId">@m.MilkTypeName</option>
-                    }
-                </select>
-            </div>
-
-            <div class="pb-field" style="margin-bottom:0">
-                <label>Product</label>
-                <select name="productId" id="f-product" required>
-                    <option value="">— Select product —</option>
-                    @foreach (var p in (IEnumerable<DairyIndustry.Models.Production.ProductModel>)ViewBag.Products)
-                    {
-                        <option value="@p.ProductId">@p.ProductName (@p.ProductType — @p.Unit)</option>
-                    }
-                </select>
-            </div>
-
-            <div class="pb-divider" style="margin:18px 0"></div>
-            <div class="pb-section-label" style="margin-bottom:10px">Quantity &amp; schedule</div>
-
-            <div class="pb-field-row" style="margin-bottom:14px">
-                <div class="pb-field">
-                    <label>Milk used (litres)</label>
-                    <input type="number" name="milkUsedQuantity" id="f-qty"
-                           step="0.01" min="1" placeholder="e.g. 200.00" required />
-                    <span class="pb-field-hint">Must not exceed available inventory</span>
-                </div>
-                <div class="pb-field">
-                    <label>Production date</label>
-                    <input type="date" name="productionDate" id="f-date"
-                           value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-                </div>
-            </div>
-
-            <div class="pb-field">
-                <label>Notes <span class="pb-field-opt">(optional)</span></label>
-                <textarea name="notes" rows="3" placeholder="Any special instructions or observations..."></textarea>
-            </div>
-
-        </form>
-    </div>
-
-    <div class="pb-drawer-foot">
-        <button type="button" class="btn-drawer-cancel" id="pbDrawerCancel">Cancel</button>
-        <button type="submit" form="pbBatchForm" class="btn-drawer-submit" id="pbSubmitBtn">
-            <span class="pb-spinner" id="pbSpinner"></span>
-            Start batch
-        </button>
-    </div>
-</div>
-
-@* ─────────────────────────────────────────────
-   MAIN PAGE
-───────────────────────────────────────────── *@
-<div class="pb-page">
-
-    @* Top bar *@
-    <div class="pb-topbar">
-        <div>
-            <h1 class="pb-page-title">Production batches</h1>
-            <p class="pb-breadcrumb">
-                Manufacturing <span>›</span>
-                @(roleName == "Plant Manager" && plantName != null ? plantName : "All plants")
-            </p>
-        </div>
-        <button class="btn-new-batch" id="pbOpenDrawer">
-            <span class="icon-plus">+</span> Start new batch
-        </button>
-    </div>
-
-    @* Success alert *@
+    <!-- Alerts -->
     @if (TempData["Success"] != null)
     {
         <div class="pb-alert" id="pbSuccessAlert">
-            ✅ @TempData["Success"]
+            <i class="bi bi-check-circle-fill"></i>
+            @TempData["Success"]
             <button class="pb-alert-close" onclick="document.getElementById('pbSuccessAlert').remove()">×</button>
         </div>
     }
-
-    @* Error alert (e.g. insufficient milk inventory) *@
     @if (TempData["Error"] != null)
     {
         <div class="pb-alert pb-alert-error" id="pbErrorAlert">
-            ⚠️ @TempData["Error"]
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            @TempData["Error"]
             <button class="pb-alert-close" onclick="document.getElementById('pbErrorAlert').remove()">×</button>
         </div>
     }
 
-    @* Stats *@
+    <!-- Stats Row -->
     <div class="pb-stats">
         <div class="pb-stat">
-            <div class="pb-stat-label">Total batches</div>
-            <div class="pb-stat-val" id="statTotal">@Model.Count</div>
+            <div class="pb-stat-label">Total Batches</div>
+            <div class="pb-stat-value">@totalBatches</div>
         </div>
         <div class="pb-stat">
             <div class="pb-stat-label">Processing</div>
-            <div class="pb-stat-val blue" id="statProcessing">@Model.Count(b => b.BatchStatus == "Processing")</div>
+            <div class="pb-stat-value blue">@processingCount</div>
         </div>
         <div class="pb-stat">
             <div class="pb-stat-label">Completed</div>
-            <div class="pb-stat-val green" id="statCompleted">@Model.Count(b => b.BatchStatus == "Completed")</div>
+            <div class="pb-stat-value green">@completedCount</div>
         </div>
         <div class="pb-stat">
             <div class="pb-stat-label">Pending</div>
-            <div class="pb-stat-val amber" id="statPending">@Model.Count(b => b.BatchStatus == "Pending")</div>
+            <div class="pb-stat-value amber">@pendingCount</div>
         </div>
     </div>
 
-    @* Table card *@
+    <!-- Table Card -->
     <div class="pb-card">
-        <div class="pb-card-head">
-            <span class="pb-card-title">Recent batch activity</span>
-            <div class="pb-filters">
-                <select id="pbStatusFilter">
+        <div class="pb-toolbar">
+            <span class="pb-toolbar-left">Recent batch activity</span>
+            <div class="pb-toolbar-right">
+                <select class="pb-select" id="pbStatusFilter">
                     <option value="">All statuses</option>
                     <option value="Pending">Pending</option>
                     <option value="Processing">Processing</option>
+                    <option value="InProgress">In Progress</option>
                     <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
                 </select>
-                <input type="text" id="pbSearch" placeholder="Search batch or product...">
+                <div class="pb-search-wrap">
+                    <i class="bi bi-search pb-search-icon"></i>
+                    <input type="text" class="pb-search" id="pbSearch" placeholder="Search batch or product…">
+                </div>
             </div>
         </div>
 
-        <div class="pb-table-wrap">
-            <table class="pb-table" id="pbTable">
+        <div class="pb-scroll">
+            <table class="pb-table">
                 <thead>
                     <tr>
-                        <th>Batch ID</th>
-                        <th>Location</th>
+                        <th style="width:110px;">Batch ID</th>
+                        <th style="width:160px;">Location</th>
                         <th>Product</th>
-                        <th>Qty (L)</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th style="text-align:center">Action</th>
+                        <th style="width:110px;" class="r">Qty (L)</th>
+                        <th style="width:140px;">Date</th>
+                        <th style="width:130px;" class="c">Status</th>
+                        <th style="width:110px;" class="c">Action</th>
                     </tr>
                 </thead>
                 <tbody id="pbTableBody">
                     @if (!Model.Any())
                     {
-                        <tr id="pbEmptyRow">
+                        <tr>
                             <td colspan="7">
                                 <div class="pb-empty">
-                                    <div class="pb-empty-icon">📋</div>
+                                    <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>
                                     No production batches found.
                                 </div>
                             </td>
                         </tr>
                     }
-                    @foreach (var b in Model)
+                    else
                     {
-                        <tr class="pb-row"
-                            data-id="@b.ProductionBatchId.ToString().ToLower()"
-                            data-product="@b.ProductName.ToLower()"
-                            data-status="@b.BatchStatus">
-                            <td>
-                                <span class="pb-batch-id">@b.ProductionBatchId</span>
-                            </td>
-                            <td>@b.PlantName</td>
-                            <td>
-                                <div class="pb-product-name">@b.ProductName</div>
-                                <div class="pb-product-type">@b.ProductType</div>
-                            </td>
-                            <td>
-                                <span class="pb-qty">@b.MilkUsedQuantity.ToString("N0")</span>
-                                <small style="color:#bbb;font-size:10px"> L</small>
-                            </td>
-                            <td>
-                                <div style="font-size:13px">@b.ProductionDate.ToString("dd MMM yyyy")</div>
-                                <div style="font-size:10px;color:#bbb">@b.ProductionDate.ToString("HH:mm")</div>
-                            </td>
-                            <td>
-                                <span class="pb-pill pb-pill-@b.BatchStatus.ToLower()">@b.BatchStatus</span>
-                            </td>
-                            <td style="text-align:center">
-                                <a asp-action="BatchDetail" asp-route-id="@b.ProductionBatchId"
-                                   class="btn-view-detail">View detail</a>
-                            </td>
-                        </tr>
+                        @foreach (var b in Model)
+                        {
+                            string statusKey = b.BatchStatus?.ToLower().Replace(" ", "") ?? "pending";
+                            string filterVal = b.BatchStatus ?? "Pending";
+                            <tr class="pb-row" data-status="@filterVal" data-search="@b.ProductionBatchId @b.ProductName @b.PlantName @b.ProductType">
+                                <td>
+                                    <span class="pb-batch-id">#@b.ProductionBatchId</span>
+                                </td>
+                                <td>
+                                    <div style="font-size:13px;">@b.PlantName</div>
+                                </td>
+                                <td>
+                                    <div class="pb-product-name">@b.ProductName</div>
+                                    <div class="pb-sub">@b.ProductType</div>
+                                </td>
+                                <td class="r">
+                                    <div class="pb-qty-val">@b.MilkUsedQuantity.ToString("N0") <span style="font-size:11px;font-weight:400;color:var(--c-text-3);">L</span></div>
+                                </td>
+                                <td>
+                                    <div class="pb-date-val">@b.ProductionDate.ToString("dd MMM yyyy")</div>
+                                    <div class="pb-sub">@b.ProductionDate.ToString("HH:mm")</div>
+                                </td>
+                                <td class="c">
+                                    <span class="pb-pill pb-pill-@statusKey">
+                                        <span class="pb-pill-dot"></span>
+                                        @b.BatchStatus
+                                    </span>
+                                </td>
+                                <td class="c">
+                                    <a asp-action="BatchDetail" asp-route-id="@b.ProductionBatchId" class="btn-view-detail">
+                                        View detail
+                                    </a>
+                                </td>
+                            </tr>
+                        }
                     }
-                    <tr id="pbNoResults" style="display:none">
-                        <td colspan="7">
-                            <div class="pb-empty">
-                                <div class="pb-empty-icon">🔍</div>
-                                No batches match your filters.
-                            </div>
-                        </td>
-                    </tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="pb-card-foot">
-            Showing <span id="pbCount">@Model.Count</span> result(s)
+        <div class="pb-footer">
+            <span class="pb-record-count" id="pbRecordCount"></span>
+            <div class="pb-foot-center">
+                <div class="pb-pagination" id="pbPagination"></div>
+            </div>
+            <span class="pb-foot-right">
+                <strong id="pbTotalVisible">@totalBatches</strong> results
+            </span>
         </div>
     </div>
-
 </div>
 
-@* ─────────────────────────────────────────────
-   SCRIPTS
-───────────────────────────────────────────── *@
 <script>
     (function () {
+        const allRows      = Array.from(document.querySelectorAll('.pb-row'));
+        const countEl      = document.getElementById('pbRecordCount');
+        const paginEl      = document.getElementById('pbPagination');
+        const totalEl      = document.getElementById('pbTotalVisible');
+        const tabs         = document.querySelectorAll('.pb-tab');
+        const searchInput  = document.getElementById('pbSearch');
+        const statusFilter = document.getElementById('pbStatusFilter');
 
-        /* ── Drawer open/close ── */
-        const overlay   = document.getElementById('pbOverlay');
-        const drawer    = document.getElementById('pbDrawer');
-        const openBtn   = document.getElementById('pbOpenDrawer');
-        const closeBtn  = document.getElementById('pbDrawerClose');
-        const cancelBtn = document.getElementById('pbDrawerCancel');
+        const PAGE_SIZE = 10;
+        let activeFilter = 'all';
+        let currentPage  = 1;
+        let filteredRows = [];
 
-        function openDrawer() {
-            drawer.classList.add('open');
-            overlay.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeDrawer() {
-            drawer.classList.remove('open');
-            overlay.classList.remove('open');
-            document.body.style.overflow = '';
-        }
+        /* ── Filter logic ── */
+        function getFiltered() {
+            const q      = searchInput.value.trim().toLowerCase();
+            const status = statusFilter.value.toLowerCase();
 
-        openBtn.addEventListener('click', openDrawer);
-        closeBtn.addEventListener('click', closeDrawer);
-        cancelBtn.addEventListener('click', closeDrawer);
-        overlay.addEventListener('click', closeDrawer);
+            return allRows.filter(row => {
+                const rowStatus = (row.dataset.status || '').toLowerCase();
+                const rowSearch = (row.dataset.search || '').toLowerCase();
 
-        /* Close on Escape key */
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeDrawer();
-        });
+                // Tab filter — supports comma-separated values e.g. "Processing,InProgress"
+                let tabMatch = false;
+                if (activeFilter === 'all') {
+                    tabMatch = true;
+                } else {
+                    tabMatch = activeFilter.split(',').some(f => f.trim().toLowerCase() === rowStatus);
+                }
 
-        /* ── Show spinner on form submit ── */
-        const form      = document.getElementById('pbBatchForm');
-        const submitBtn = document.getElementById('pbSubmitBtn');
-        const spinner   = document.getElementById('pbSpinner');
+                // Dropdown status filter
+                const dropMatch = !status || rowStatus === status;
 
-        if (form) {
-            form.addEventListener('submit', function () {
-                submitBtn.disabled = true;
-                spinner.style.display = 'inline-block';
-                submitBtn.childNodes[submitBtn.childNodes.length - 1].textContent = ' Starting...';
+                // Search
+                const searchMatch = !q || rowSearch.includes(q);
+
+                return tabMatch && dropMatch && searchMatch;
             });
         }
 
-        /* ── Client-side table filtering ── */
-        const searchInput  = document.getElementById('pbSearch');
-        const statusFilter = document.getElementById('pbStatusFilter');
-        const rows         = document.querySelectorAll('.pb-row');
-        const noResultsRow = document.getElementById('pbNoResults');
-        const countDisplay = document.getElementById('pbCount');
-        const statTotal    = document.getElementById('statTotal');
-        const statProc     = document.getElementById('statProcessing');
-        const statComp     = document.getElementById('statCompleted');
-        const statPend     = document.getElementById('statPending');
+        /* ── Render rows + pagination ── */
+        function render() {
+            filteredRows = getFiltered();
+            const total      = filteredRows.length;
+            const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
 
-        function filterTable() {
-            const term   = searchInput.value.toLowerCase().trim();
-            const status = statusFilter.value;
-            let visible  = 0, proc = 0, comp = 0, pend = 0;
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = start + PAGE_SIZE;
 
-            rows.forEach(function (row) {
-                const matchSearch = !term ||
-                    row.dataset.id.includes(term) ||
-                    row.dataset.product.includes(term);
-                const matchStatus = !status || row.dataset.status === status;
+            allRows.forEach(r => r.style.display = 'none');
+            filteredRows.forEach((r, i) => {
+                r.style.display = (i >= start && i < end) ? '' : 'none';
+            });
 
-                if (matchSearch && matchStatus) {
-                    row.style.display = '';
-                    visible++;
-                    if (row.dataset.status === 'Processing') proc++;
-                    if (row.dataset.status === 'Completed')  comp++;
-                    if (row.dataset.status === 'Pending')    pend++;
+            const from = total === 0 ? 0 : start + 1;
+            const to   = Math.min(end, total);
+
+            countEl.innerHTML = total === 0
+                ? '<strong>0</strong> records'
+                : `Showing <strong>${from}–${to}</strong> of <strong>${total}</strong> records`;
+
+            totalEl.textContent = total;
+
+            renderPagination(totalPages);
+        }
+
+        /* ── Pagination controls ── */
+        function renderPagination(totalPages) {
+            paginEl.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const pages = getPageNumbers(currentPage, totalPages);
+
+            paginEl.appendChild(makeBtn(
+                '<i class="bi bi-chevron-left"></i>',
+                currentPage === 1,
+                () => { currentPage--; render(); }
+            ));
+
+            pages.forEach(p => {
+                if (p === '…') {
+                    const el = document.createElement('span');
+                    el.className = 'pb-pg-ellipsis';
+                    el.textContent = '…';
+                    paginEl.appendChild(el);
                 } else {
-                    row.style.display = 'none';
+                    paginEl.appendChild(makeBtn(p, false, () => { currentPage = p; render(); }, p === currentPage));
                 }
             });
 
-            noResultsRow.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
-            countDisplay.textContent = visible;
-            statTotal.textContent    = visible;
-            statProc.textContent     = proc;
-            statComp.textContent     = comp;
-            statPend.textContent     = pend;
+            paginEl.appendChild(makeBtn(
+                '<i class="bi bi-chevron-right"></i>',
+                currentPage === totalPages,
+                () => { currentPage++; render(); }
+            ));
         }
 
-        searchInput.addEventListener('input', filterTable);
-        statusFilter.addEventListener('change', filterTable);
+        function getPageNumbers(cur, total) {
+            if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+            const pages = new Set([1, total, cur, cur - 1, cur + 1].filter(p => p >= 1 && p <= total));
+            const sorted = Array.from(pages).sort((a, b) => a - b);
+            const result = [];
+            sorted.forEach((p, i) => {
+                if (i > 0 && p - sorted[i - 1] > 1) result.push('…');
+                result.push(p);
+            });
+            return result;
+        }
 
+        function makeBtn(label, disabled, onClick, active = false) {
+            const btn = document.createElement('button');
+            btn.className = 'pb-pg-btn' + (active ? ' active' : '');
+            btn.innerHTML = label;
+            btn.disabled  = disabled;
+            if (!disabled) btn.addEventListener('click', onClick);
+            return btn;
+        }
+
+        /* ── Tab clicks ── */
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                activeFilter = this.dataset.filter;
+                statusFilter.value = '';
+                currentPage = 1;
+                render();
+            });
+        });
+
+        /* ── Dropdown + search ── */
+        statusFilter.addEventListener('change', () => { currentPage = 1; render(); });
+        searchInput.addEventListener('input',   () => { currentPage = 1; render(); });
+
+        /* ── Init ── */
+        render();
     })();
 </script>

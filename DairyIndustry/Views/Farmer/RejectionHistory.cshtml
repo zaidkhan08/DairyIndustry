@@ -1,0 +1,654 @@
+﻿@model List<DairyIndustry.Models.FarmerModel.FarmerRejectionViewModel>
+
+@{
+    ViewData["Title"] = "Rejection History";
+    Layout = "_FarmerLayout";
+
+    int srNo = 1;
+}
+
+<style>
+    /* ── PAGE SHELL ── */
+    .rej-page {
+        padding: 2rem 1.5rem;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    /* ── PAGE HEADER ── */
+    .rej-header-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.15rem;
+    }
+
+    .rej-header-sub {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin: 0;
+    }
+
+    /* ── FILTER CARD ── */
+    .rej-filter-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+        .rej-filter-card .form-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 0.3rem;
+        }
+
+        .rej-filter-card .form-control,
+        .rej-filter-card .form-select {
+            font-size: 0.82rem;
+            border-color: #e5e7eb;
+            border-radius: 8px;
+            color: #374151;
+            background-color: #f9fafb;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+            .rej-filter-card .form-control:focus,
+            .rej-filter-card .form-select:focus {
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+                background-color: #fff;
+            }
+
+    .rej-reset-btn {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        border-radius: 8px;
+        padding: 0.42rem 1rem;
+        background: #111827;
+        color: #fff;
+        border: none;
+        transition: background .15s;
+    }
+
+        .rej-reset-btn:hover {
+            background: #374151;
+            color: #fff;
+        }
+
+    /* ── TABLE CARD ── */
+    .rej-table-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+
+    /* ── TABLE HEAD ── */
+    .rej-table thead tr {
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .rej-table thead th {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        padding: 0.85rem 1rem;
+        white-space: nowrap;
+        border: none;
+    }
+
+        .rej-table thead th:first-child {
+            padding-left: 1.5rem;
+        }
+
+        .rej-table thead th:last-child {
+            padding-right: 1.5rem;
+        }
+
+    /* ── TABLE BODY ── */
+    .rej-table tbody tr {
+        border-bottom: 1px solid #f3f4f6;
+        transition: background .1s;
+    }
+
+        .rej-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .rej-table tbody tr:hover {
+            background: #fafafa;
+        }
+
+    .rej-table tbody td {
+        font-size: 0.82rem;
+        padding: 0.85rem 1rem;
+        vertical-align: middle;
+        border: none;
+        color: #374151;
+    }
+
+        .rej-table tbody td:first-child {
+            padding-left: 1.5rem;
+        }
+
+        .rej-table tbody td:last-child {
+            padding-right: 1.5rem;
+        }
+
+    /* ── SR NO ── */
+    .rej-sr {
+        font-size: 0.73rem;
+        color: #d1d5db;
+        font-weight: 500;
+    }
+
+    /* ── DATE CELL ── */
+    .rej-date-main {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #111827;
+        display: block;
+        letter-spacing: -0.01em;
+    }
+
+    /* ── SHIFT BADGES ── */
+    .badge-shift-morning {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.28rem 0.65rem;
+        border-radius: 6px;
+        background: #fefce8;
+        color: #854d0e;
+        border: 1px solid #fde68a;
+        white-space: nowrap;
+    }
+
+    .badge-shift-evening {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.28rem 0.65rem;
+        border-radius: 6px;
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        white-space: nowrap;
+    }
+
+    /* ── MILK TYPE ── */
+    .rej-milk-type {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.65rem;
+        border-radius: 20px;
+        background: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    /* ── QTY ── */
+    .rej-qty {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #dc2626;
+        white-space: nowrap;
+    }
+
+    /* ── METRICS (FAT / CLR) ── */
+    .rej-metric {
+        font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+        font-size: 0.78rem;
+        color: #6b7280;
+    }
+
+    /* ── REASON PILL ── */
+    .rej-reason-pill {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.28rem 0.7rem;
+        border-radius: 6px;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        white-space: nowrap;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── REMARKS ── */
+    .rej-remarks {
+        color: #9ca3af;
+        font-size: 0.78rem;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ── CENTER ── */
+    .rej-center {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.82rem;
+    }
+
+    /* ── STAFF ── */
+    .rej-staff {
+        font-size: 0.78rem;
+        color: #6b7280;
+    }
+
+    /* ── EMPTY STATE ── */
+    .rej-empty {
+        padding: 4rem 1rem;
+        text-align: center;
+    }
+
+    .rej-empty-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: #f3f4f6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        color: #9ca3af;
+    }
+
+    .rej-empty h5 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 0.3rem;
+    }
+
+    .rej-empty p {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin: 0;
+    }
+
+    /* ── PAGINATION ── */
+    .rej-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 12.5px;
+        color: #6b7280;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .rej-page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .rej-pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        font-size: 12.5px;
+        color: #374151;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .rej-pg-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .rej-pg-btn.active {
+            background: #185FA5;
+            color: #fff;
+            border-color: #185FA5;
+            font-weight: 600;
+        }
+
+        .rej-pg-btn.disabled {
+            opacity: .35;
+            pointer-events: none;
+            cursor: default;
+        }
+
+    /* ── ALERT ── */
+    .rej-alert-info {
+        font-size: 0.83rem;
+        border-radius: 10px;
+        border: 1px solid #bae6fd;
+        background: #f0f9ff;
+        color: #0369a1;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 1.25rem;
+    }
+</style>
+
+<div class="rej-page container-fluid">
+
+    <!-- HEADER -->
+    <div class="row align-items-center g-3 mb-4">
+        <div class="col-12 col-sm-6">
+            <h4 class="rej-header-title">Milk Rejections</h4>
+            <p class="rej-header-sub">Historical log of unaccepted milk deliveries and quality anomalies.</p>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    @if (TempData["Info"] != null)
+    {
+        <div class="rej-alert-info" role="alert">
+            <i class="bi bi-info-circle-fill fs-6"></i>
+            <div>@TempData["Info"]</div>
+        </div>
+    }
+
+    <!-- FILTER BAR -->
+    <div class="rej-filter-card">
+        <div class="row g-2 align-items-end">
+
+            <!-- SEARCH -->
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" id="searchBox" class="form-control form-control-sm"
+                       placeholder="Milk type / Reason / Center / Staff..." />
+            </div>
+
+            <!-- SHIFT -->
+            <div class="col-md-2">
+                <label class="form-label">Shift</label>
+                <select id="shiftFilter" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                </select>
+            </div>
+
+            <!-- DATE FROM -->
+            <div class="col-md-2">
+                <label class="form-label">From</label>
+                <input type="date" id="fromDate" class="form-control form-control-sm" />
+            </div>
+
+            <!-- DATE TO -->
+            <div class="col-md-2">
+                <label class="form-label">To</label>
+                <input type="date" id="toDate" class="form-control form-control-sm" />
+            </div>
+
+            <!-- RESET -->
+            <div class="col-md-2">
+                <button type="button" class="rej-reset-btn w-100" onclick="resetFilters()">
+                    Reset
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- RECORDS TABLE -->
+    <div class="rej-table-card">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table rej-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">#</th>
+                            <th>Date</th>
+                            <th>Shift</th>
+                            <th>Type</th>
+                            <th class="text-end">Qty (L)</th>
+                            <th class="text-end">Fat %</th>
+                            <th class="text-end">CLR</th>
+                            <th style="min-width:120px;">Reason</th>
+                            <th style="min-width:180px;">Remarks</th>
+                            <th>Center</th>
+                            <th class="pe-4">Staff Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rejTableBody">
+                        @foreach (var r in Model)
+                        {
+                            string rowDate = r.RejectionDate.ToString("yyyy-MM-dd");
+                            <tr class="rej-data-row"
+                                data-date="@rowDate"
+                                data-shift="@r.Shift"
+                                data-search="@($"{r.MilkTypeName} {r.RejectionReason} {r.Remarks} {r.CenterName} {r.RecordedByStaff}".ToLower())">
+                                <td class="ps-4"><span class="rej-sr">@srNo</span></td>
+
+                                <!-- DATE -->
+                                <td>
+                                    <span class="rej-date-main">@r.RejectionDate.ToString("dd-MM-yyyy")</span>
+                                </td>
+
+                                <!-- SHIFT -->
+                                <td>
+                                    @if (r.Shift == "Morning")
+                                    {
+                                        <span class="badge-shift-morning">
+                                            <i class="bi bi-brightness-high-fill" style="font-size:0.65rem;"></i> Morning
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-shift-evening">
+                                            <i class="bi bi-moon-stars-fill" style="font-size:0.65rem;"></i> Evening
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- MILK TYPE -->
+                                <td>
+                                    <span class="rej-milk-type">@r.MilkTypeName</span>
+                                </td>
+
+                                <!-- QTY -->
+                                <td class="text-end">
+                                    <span class="rej-qty">@r.Quantity.ToString("0.00") L</span>
+                                </td>
+
+                                <!-- FAT -->
+                                <td class="text-end">
+                                    <span class="rej-metric">@(r.AppliedFat?.ToString("0.0") ?? "—")</span>
+                                </td>
+
+                                <!-- CLR -->
+                                <td class="text-end">
+                                    <span class="rej-metric">@(r.AppliedCLR?.ToString("0.0") ?? "—")</span>
+                                </td>
+
+                                <!-- REASON -->
+                                <td>
+                                    <span class="rej-reason-pill" title="@r.RejectionReason">
+                                        @r.RejectionReason
+                                    </span>
+                                </td>
+
+                                <!-- REMARKS -->
+                                <td>
+                                    <span class="rej-remarks" title="@r.Remarks">
+                                        @(string.IsNullOrEmpty(r.Remarks) ? "—" : r.Remarks)
+                                    </span>
+                                </td>
+
+                                <!-- CENTER -->
+                                <td><span class="rej-center">@r.CenterName</span></td>
+
+                                <!-- STAFF -->
+                                <td class="pe-4"><span class="rej-staff">@r.RecordedByStaff</span></td>
+                            </tr>
+                            srNo++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION BAR -->
+            <div class="rej-pagination" id="rejPaginationBar">
+                <span id="rejPaginationInfo">Showing records…</span>
+                <div class="rej-page-btns" id="rejPaginationBtns"></div>
+            </div>
+        }
+        else
+        {
+            <div class="rej-empty">
+                <div class="rej-empty-icon">
+                    <i class="bi bi-folder-x"></i>
+                </div>
+                <h5>No Rejections Recorded</h5>
+                <p>All milk deliveries look great! No rejection items found.</p>
+            </div>
+        }
+    </div>
+
+</div>
+
+<script>
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    let filteredRows = [];
+
+    const searchBox      = document.getElementById("searchBox");
+    const shiftFilter    = document.getElementById("shiftFilter");
+    const fromDate       = document.getElementById("fromDate");
+    const toDate         = document.getElementById("toDate");
+    const allRows        = Array.from(document.querySelectorAll(".rej-data-row"));
+    const paginationInfo = document.getElementById("rejPaginationInfo");
+    const paginationBtns = document.getElementById("rejPaginationBtns");
+
+    function filterTable() {
+        const search = searchBox.value.toLowerCase().trim();
+        const shift  = shiftFilter.value;
+        const from   = fromDate.value ? new Date(fromDate.value) : null;
+        const to     = toDate.value   ? new Date(toDate.value)   : null;
+
+        filteredRows = allRows.filter(row => {
+            const matchSearch = !search || row.dataset.search.includes(search);
+            const matchShift  = !shift  || row.dataset.shift === shift;
+            const rowDate     = new Date(row.dataset.date);
+            const matchFrom   = !from   || rowDate >= from;
+            const matchTo     = !to     || rowDate <= to;
+            return matchSearch && matchShift && matchFrom && matchTo;
+        });
+
+        currentPage = 1;
+        renderPage();
+    }
+
+    function renderPage() {
+        allRows.forEach(r => r.style.display = "none");
+
+        const total      = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        currentPage      = Math.min(currentPage, totalPages);
+
+        const start    = (currentPage - 1) * PAGE_SIZE;
+        const end      = Math.min(start + PAGE_SIZE, total);
+        filteredRows.slice(start, end).forEach(r => r.style.display = "");
+
+        const from = total === 0 ? 0 : start + 1;
+        paginationInfo.textContent =
+            `Showing ${from}–${end} of ${total} record${total !== 1 ? "s" : ""}`;
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        paginationBtns.innerHTML = "";
+
+        function addBtn(label, page, cls) {
+            const el = document.createElement("button");
+            el.className = "rej-pg-btn" + (cls ? " " + cls : "");
+            el.innerHTML = label;
+            if (cls !== "disabled") {
+                el.onclick = () => { currentPage = page; renderPage(); };
+            }
+            paginationBtns.appendChild(el);
+        }
+
+        addBtn('<i class="bi bi-chevron-left" style="font-size:11px"></i>',
+            currentPage - 1, currentPage === 1 ? "disabled" : "");
+
+        buildPageList(currentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "rej-pg-btn disabled";
+                el.textContent = "…";
+                paginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === currentPage ? "active" : "");
+            }
+        });
+
+        addBtn('<i class="bi bi-chevron-right" style="font-size:11px"></i>',
+            currentPage + 1, currentPage === totalPages ? "disabled" : "");
+    }
+
+    function buildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    function resetFilters() {
+        searchBox.value   = "";
+        shiftFilter.value = "";
+        fromDate.value    = "";
+        toDate.value      = "";
+        filterTable();
+    }
+
+    searchBox.addEventListener("keyup", filterTable);
+    shiftFilter.addEventListener("change", filterTable);
+    fromDate.addEventListener("change", filterTable);
+    toDate.addEventListener("change", filterTable);
+
+    // init
+    filteredRows = [...allRows];
+    renderPage();
+</script>

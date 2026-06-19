@@ -1,0 +1,450 @@
+﻿@model List<DairyIndustry.Models.Collection.DispatchHistoryViewModel>
+
+@{
+    ViewData["Title"] = "Dispatch History";
+    // Layout = "_CollectionCenterLayout";
+    Layout = "_AdminLayout";
+}
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+<style>
+
+    body {
+        background: #f6f8fb;
+    }
+
+    .pw-page {
+        padding: 24px;
+    }
+
+    .pw-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pw-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+    }
+
+    .pw-subtitle {
+        font-size: 12px;
+        color: #888;
+        margin-top: 4px;
+    }
+
+    .pw-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .pw-stat {
+        background: #fff;
+        border: 1px solid #ececec;
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+    .pw-stat-label {
+        font-size: 11px;
+        color: #888;
+        text-transform: uppercase;
+    }
+
+    .pw-stat-val {
+        font-size: 20px;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+
+    .blue {
+        color: #2563eb;
+    }
+
+    .green {
+        color: #16a34a;
+    }
+
+    .orange {
+        color: #f59e0b;
+    }
+
+    .pw-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #eaeaea;
+        overflow: hidden;
+    }
+
+    .pw-card-head {
+        padding: 14px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .pw-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+        .pw-filters input,
+        .pw-filters select {
+            padding: 7px 10px;
+            font-size: 12px;
+            border-radius: 7px;
+            border: 1px solid #e5e5e5;
+            background: #fafafa;
+        }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    .table {
+        font-size: 13px;
+    }
+
+        .table thead th {
+            background: #f8fafc;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        .table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+    .badge {
+        font-size: 11px;
+        padding: 5px 10px;
+        border-radius: 50px;
+        font-weight: 500;
+    }
+
+    /* PAGINATION */
+    .pagination-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        font-size: 12px;
+        color: #666;
+        flex-wrap: wrap;
+        gap: 10px;
+        border-top: 1px solid #eee;
+    }
+
+    .page-btn {
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+        .page-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+</style>
+
+<div class="pw-page">
+
+    <!-- TOP -->
+    <div class="pw-topbar">
+
+        <div>
+            <h3 class="pw-title">Dispatch History</h3>
+            <div class="pw-subtitle">Track milk dispatch records</div>
+        </div>
+
+        <a href="@Url.Action("Dispatch")" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> New Dispatch
+        </a>
+
+    </div>
+
+    <!-- STATS -->
+    <div class="pw-stats">
+
+        <div class="pw-stat">
+            <div class="pw-stat-label">Total Dispatch</div>
+            <div class="pw-stat-val blue">@Model.Count</div>
+        </div>
+
+        <div class="pw-stat">
+            <div class="pw-stat-label">Total Qty</div>
+            <div class="pw-stat-val blue">
+                @Model.Sum(x => x.DispatchQty).ToString("F2") L
+            </div>
+        </div>
+
+        <div class="pw-stat">
+            <div class="pw-stat-label">Received</div>
+            <div class="pw-stat-val green">@Model.Count(x => x.IsReceived)</div>
+        </div>
+
+        <div class="pw-stat">
+            <div class="pw-stat-label">In Transit</div>
+            <div class="pw-stat-val orange">@Model.Count(x => x.IsInTransit)</div>
+        </div>
+
+    </div>
+
+    <!-- CARD -->
+    <div class="pw-card">
+
+        <!-- FILTERS -->
+        <div class="pw-card-head">
+
+            <div class="pw-filters">
+
+                <input type="text" id="searchBox" placeholder="Search..." />
+
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="Received">Received</option>
+                    <option value="In Transit">In Transit</option>
+                </select>
+
+                <select id="milkFilter">
+                    <option value="">All Milk Types</option>
+                    @foreach (var m in Model.Select(x => x.MilkTypeName).Distinct())
+                    {
+                        <option value="@m">@m</option>
+                    }
+                </select>
+
+                <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                    Reset
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-wrap">
+
+            <table class="table table-hover mb-0" id="dispatchTable">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Transfer ID</th>
+                        <th>Batch</th>
+                        <th>Dispatch Date</th>
+                        <th>Milk Type</th>
+                        <th>Vehicle</th>
+                        <th>Plant</th>
+                        <th>Sent</th>
+                        <th>Received</th>
+                        <th>Loss</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+
+                            <td class="row-no"></td>
+
+                            <td class="fw-semibold text-primary">@row.TransferId</td>
+
+                            <td>
+                                <div class="fw-semibold">@row.BatchDate.ToString("dd MMM yyyy")</div>
+                                <small class="text-muted">@row.Shift</small>
+                            </td>
+
+                            <td>@row.DispatchDate.ToString("dd MMM yyyy")</td>
+
+                            <td>@row.MilkTypeName</td>
+
+                            <td>@row.VehicleNumber</td>
+
+                            <td>@row.PlantName</td>
+
+                            <td class="fw-bold text-primary">@row.DispatchQty.ToString("F2") L</td>
+
+                            <td>
+                                @if (row.IsReceived)
+                                {
+                                    <span class="text-success fw-bold">@row.ReceivedQty?.ToString("F2") L</span>
+                                }
+                                else
+                                {
+
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (row.LossQty > 0)
+                                {
+                                    <span class="text-danger fw-bold">@row.LossQty?.ToString("F2") L</span>
+                                }
+                                else if (row.IsReceived)
+                                {
+                                    <span class="text-success">0.00 L</span>
+                                }
+                                else
+                                {
+
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (row.IsReceived)
+                                {
+                                    <span class="badge bg-success">Received</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">In Transit</span>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="pagination-wrap">
+
+            <div>
+                Showing <span id="showFrom">0</span> to
+                <span id="showTo">0</span> of
+                <span id="totalCount">@Model.Count</span> entries
+            </div>
+
+            <div id="pagination"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    const rows = Array.from(document.querySelectorAll("#dispatchTable tbody tr"));
+    const searchBox = document.getElementById("searchBox");
+    const statusFilter = document.getElementById("statusFilter");
+    const milkFilter = document.getElementById("milkFilter");
+
+    const pagination = document.getElementById("pagination");
+    const showFrom = document.getElementById("showFrom");
+    const showTo = document.getElementById("showTo");
+    const totalCount = document.getElementById("totalCount");
+
+    let currentPage = 1;
+    let pageSize = 10;
+
+    function getFilteredRows() {
+
+        let search = searchBox.value.toLowerCase();
+        let status = statusFilter.value.toLowerCase();
+        let milk = milkFilter.value.toLowerCase();
+
+        return rows.filter(row => {
+
+            let text = row.innerText.toLowerCase();
+
+            let matchSearch = text.includes(search);
+            let matchStatus = !status || text.includes(status);
+            let matchMilk = !milk || text.includes(milk);
+
+            return matchSearch && matchStatus && matchMilk;
+        });
+    }
+
+    function renderTable() {
+
+        let filtered = getFilteredRows();
+        let total = filtered.length;
+
+        let pages = Math.ceil(total / pageSize);
+        if (currentPage > pages) currentPage = 1;
+
+        let start = (currentPage - 1) * pageSize;
+        let end = start + pageSize;
+
+        rows.forEach(r => r.style.display = "none");
+
+        let pageRows = filtered.slice(start, end);
+
+        pageRows.forEach((row, i) => {
+            row.style.display = "";
+            row.querySelector(".row-no").innerText = start + i + 1;
+        });
+
+        showFrom.innerText = total ? start + 1 : 0;
+        showTo.innerText = Math.min(end, total);
+        totalCount.innerText = total;
+
+        renderPagination(pages);
+    }
+
+    function renderPagination(pages) {
+
+        pagination.innerHTML = "";
+
+        if (pages <= 1) return;
+
+        for (let i = 1; i <= pages; i++) {
+
+            let btn = document.createElement("button");
+            btn.innerText = i;
+            btn.className = "page-btn";
+
+            if (i === currentPage) btn.classList.add("active");
+
+            btn.onclick = () => {
+                currentPage = i;
+                renderTable();
+            };
+
+            pagination.appendChild(btn);
+        }
+    }
+
+    // EVENTS
+    searchBox.addEventListener("keyup", () => { currentPage = 1; renderTable(); });
+    statusFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
+    milkFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
+
+    function resetFilters() {
+        searchBox.value = "";
+        statusFilter.value = "";
+        milkFilter.value = "";
+        currentPage = 1;
+        renderTable();
+    }
+
+    renderTable();
+
+</script>

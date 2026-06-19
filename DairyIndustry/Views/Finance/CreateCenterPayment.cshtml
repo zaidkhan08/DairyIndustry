@@ -2,9 +2,8 @@
     ViewData["Title"] = "New Center Payment";
     var transfers = ViewBag.Transfers as List<DairyIndustry.Models.Finance.TransferForPaymentModel>
                     ?? new List<DairyIndustry.Models.Finance.TransferForPaymentModel>();
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
-
 <style>
 
     .ncp-root {
