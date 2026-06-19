@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Registration Submitted";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card text-center">
+            <div class="card-body p-5">
+                <div style="font-size:3.5rem; margin-bottom:1rem;">✅</div>
+                <h4 class="fw-bold mb-2">Registration Submitted!</h4>
+                <p class="text-muted mb-4" style="font-size:.88rem;">
+                    Your application has been received and is pending review by our admin team.
+                    <br /><br />
+                    Once approved, you can log in using your chosen credentials via the
+                    <strong>common login page</strong> and view your orders.
+                </p>
+                <a asp-controller="DistributorRegister" asp-action="Index"
+                   class="btn btn-outline-primary w-100">
+                    Register Another Distributor
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

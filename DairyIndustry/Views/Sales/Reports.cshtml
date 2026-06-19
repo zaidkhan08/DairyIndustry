@@ -1,0 +1,266 @@
+﻿@model DairyIndustry.Models.SalesDashboardViewModel
+@{
+    ViewData["Title"] = "Sales Reports";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h4 class="fw-bold mb-1">Sales Reports</h4>
+        <small class="text-muted">Complete sales analysis and distributor breakdown</small>
+    </div>
+</div>
+
+<!-- Download PDF Form -->
+<div class="card mb-4">
+    <div class="card-header fw-semibold">📥 Download Sales Report PDF</div>
+    <div class="card-body">
+        <form asp-action="DownloadSalesReport" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">From Date</label>
+                <input type="date" name="from" class="form-control form-control-sm"
+                       value="@DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">To Date</label>
+                <input type="date" name="to" class="form-control form-control-sm"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    📄 Download PDF
+                </button>
+            </div>
+            <div class="col-md-3 text-muted small">
+                Includes: revenue summary, orders by status, top distributors, top 5 products.
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #0d6efd!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Total</div>
+                <div class="fs-3 fw-bold text-primary">@Model.Summary.TotalOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Delivered</div>
+                <div class="fs-3 fw-bold text-success">@Model.Summary.DeliveredOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #ffc107!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Pending</div>
+                <div class="fs-3 fw-bold text-warning">@Model.Summary.PendingOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #dc3545!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Cancelled</div>
+                <div class="fs-3 fw-bold text-danger">@Model.Summary.CancelledOrders</div>
+                <small class="text-muted">Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm text-center" style="border-top:3px solid #198754!important;">
+            <div class="card-body py-3">
+                <div class="text-muted small">Total Revenue (Delivered)</div>
+                <div class="fs-3 fw-bold text-success">₹@Model.Summary.TotalRevenue.ToString("N0")</div>
+                <small class="text-muted">Today: ₹@Model.Summary.TodayRevenue.ToString("N0")</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Status Breakdown -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-white border-bottom fw-semibold text-primary">
+                Order Status Breakdown
+            </div>
+            <div class="card-body p-0">
+                @if (Model.OrdersByStatus.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-center">Count</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Model.OrdersByStatus)
+                                {
+                                    var bc = s.OrderStatus switch
+                                    {
+                                        "Pending" => "warning",
+                                        "Confirmed" => "info",
+                                        "Dispatched" => "primary",
+                                        "Delivered" => "success",
+                                        "Cancelled" => "danger",
+                                        _ => "secondary"
+                                    };
+                                    <tr>
+                                        <td><span class="badge bg-@bc">@s.OrderStatus</span></td>
+                                        <td class="text-center fw-semibold">@s.Count</td>
+                                        <td class="text-end">₹@s.TotalAmount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">No data.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Distributor Sales -->
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header bg-white border-bottom fw-semibold text-primary">
+                Distributor-wise Sales
+            </div>
+            <div class="card-body p-0">
+@if (Model.TopDistributors.Any())
+{
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead style="background:#1a2e4a; color:#fff;">
+                                <tr>
+                                    <th>Distributor</th>
+                                    <th class="text-center">Orders</th>
+                                    <th class="text-end">Revenue (₹)</th>
+                                    <th class="text-center">Delivered</th>
+                                    <th class="text-center">Pending</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="distReportTable">
+                                @foreach (var d in Model.TopDistributors)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@d.DistributorName</div>
+                                            @if (!string.IsNullOrEmpty(d.Location))
+                                            {
+                                                <small class="text-muted">@d.Location</small>
+                                            }
+                                        </td>
+                                        <td class="text-center">@d.TotalOrders</td>
+                                        <td class="text-end fw-semibold text-success">
+                                            ₹@d.TotalRevenue.ToString("N2")
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success">@d.DeliveredOrders</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning text-dark">@d.PendingOrders</span>
+                                        </td>
+                                        <td>
+                                            <a asp-action="Index"
+                                               asp-route-distributorId="@d.DistributorId"
+                                               class="btn btn-sm btn-outline-primary">Orders</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.TotalOrders)</td>
+                                    <td class="text-end text-success">
+                                        ₹@Model.TopDistributors.Sum(x => x.TotalRevenue).ToString("N2")
+                                    </td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.DeliveredOrders)</td>
+                                    <td class="text-center">@Model.TopDistributors.Sum(x => x.PendingOrders)</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light">
+                        <small class="text-muted" id="distPageInfo"></small>
+                        <nav><ul class="pagination pagination-sm mb-0" id="distPageControls"></ul></nav>
+                    </div>
+}
+else
+{
+                    <div class="text-center text-muted py-4">No data.</div>
+}
+
+@section Scripts {
+                    <script>
+                        const PAGE_SIZE = 5;
+                        let currentPage = 1;
+
+                        function renderPagination() {
+                            const rows       = [...document.querySelectorAll('#distReportTable tr')];
+                            const total      = rows.length;
+                            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+                            if (currentPage > totalPages) currentPage = totalPages;
+
+                            rows.forEach((row, i) => {
+                                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+                            });
+
+                            const pageInfo     = document.getElementById('distPageInfo');
+                            const pageControls = document.getElementById('distPageControls');
+                            if (!pageInfo || !pageControls) return;
+
+                            if (total <= PAGE_SIZE) {
+                                pageInfo.textContent = `Showing ${total} distributor(s)`;
+                                pageControls.innerHTML = '';
+                                return;
+                            }
+
+                            const start = (currentPage - 1) * PAGE_SIZE + 1;
+                            const end   = Math.min(currentPage * PAGE_SIZE, total);
+                            pageInfo.textContent = `Showing ${start}–${end} of ${total} distributors`;
+
+                            let html = '';
+                            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                                     </li>`;
+                            for (let p = 1; p <= totalPages; p++) {
+                                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                                         </li>`;
+                            }
+                            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                                     </li>`;
+                            pageControls.innerHTML = html;
+                        }
+
+                        function goToPage(p) {
+                            const total   = document.querySelectorAll('#distReportTable tr').length;
+                            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+                            currentPage   = Math.max(1, Math.min(p, maxPage));
+                            renderPagination();
+                        }
+
+                        renderPagination();
+                    </script>
+}

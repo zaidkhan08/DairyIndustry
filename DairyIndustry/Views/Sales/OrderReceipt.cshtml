@@ -1,0 +1,307 @@
+﻿@model DairyIndustry.Models.SalesOrderModel
+@{
+    Layout = null; // No layout — standalone printable page
+    string receiptNo = "RCP-" + Model.OrderId.ToString("D5");
+    string receiptDate = DateTime.Now.ToString("dd MMM yyyy");
+    string receiptTime = DateTime.Now.ToString("hh:mm tt");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receipt — @receiptNo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 13px;
+            color: #1a1a1a;
+            background: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            padding: 32px 16px;
+        }
+
+        .receipt {
+            background: #fff;
+            width: 720px;
+            padding: 44px 48px;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,.10);
+        }
+
+        /* Header */
+        .rcp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #0f2040;
+            padding-bottom: 18px;
+            margin-bottom: 28px;
+        }
+        .rcp-logo { font-size: 22px; font-weight: 800; color: #0f2040; line-height: 1.2; }
+        .rcp-logo span { color: #3b82f6; }
+        .rcp-logo small { display: block; font-size: 11px; font-weight: 400; color: #64748b; margin-top: 4px; }
+        .rcp-title { text-align: right; }
+        .rcp-title h2 { font-size: 24px; font-weight: 700; color: #0f2040; letter-spacing: .06em; margin-bottom: 4px; }
+        .rcp-title .rcp-number { font-size: 13px; color: #64748b; }
+        .rcp-title .rcp-badge {
+            display: inline-block; margin-top: 8px; padding: 3px 14px;
+            border-radius: 20px; font-size: 11px; font-weight: 700;
+            background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; letter-spacing: .04em;
+        }
+
+        /* Meta */
+        .rcp-meta { display: flex; gap: 14px; margin-bottom: 26px; }
+        .rcp-meta-item {
+            flex: 1; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 6px; padding: 10px 14px;
+        }
+        .rcp-meta-item label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: .12em;
+            color: #94a3b8; display: block; margin-bottom: 4px; font-weight: 600;
+        }
+        .rcp-meta-item span { font-size: 13px; font-weight: 700; color: #0f2040; }
+
+        /* Parties */
+        .rcp-parties {
+            display: flex; margin-bottom: 28px;
+            border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;
+        }
+        .rcp-party { flex: 1; padding: 16px 20px; }
+        .rcp-party:first-child { border-right: 1px solid #e2e8f0; background: #f8fafc; }
+        .rcp-party-label { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: #3b82f6; font-weight: 700; margin-bottom: 8px; }
+        .rcp-party-name { font-size: 15px; font-weight: 700; color: #0f2040; margin-bottom: 5px; }
+        .rcp-party-detail { font-size: 12px; color: #64748b; line-height: 1.8; }
+
+        /* Table */
+        .rcp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .rcp-table thead tr { background: #0f2040; color: #fff; }
+        .rcp-table thead th { padding: 10px 12px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-align: left; }
+        .rcp-table thead th:nth-child(n+5) { text-align: right; }
+        .rcp-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .rcp-table tbody td { padding: 10px 12px; border-bottom: 1px solid #e9ecef; vertical-align: middle; }
+        .rcp-table tbody td:nth-child(n+5) { text-align: right; }
+        .rcp-table tfoot tr { background: #eff6ff; }
+        .rcp-table tfoot td { padding: 13px 12px; font-weight: 700; border-top: 2px solid #0f2040; font-size: 14px; text-align: right; color: #0f2040; }
+        .rcp-table tfoot td:first-child { text-align: left; font-size: 13px; }
+
+        /* Acknowledgement */
+        .rcp-ack {
+            margin-top: 28px; border: 2px solid #bbf7d0; border-radius: 8px;
+            background: #f0fdf4; padding: 18px 22px; display: flex; align-items: flex-start; gap: 14px;
+        }
+        .rcp-ack-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+        .rcp-ack-text h4 { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 4px; }
+        .rcp-ack-text p { font-size: 12px; color: #166534; line-height: 1.6; }
+
+        /* Notes */
+        .rcp-notes {
+            margin-top: 16px; padding: 10px 16px; background: #fffbea;
+            border-left: 4px solid #f59e0b; border-radius: 0 4px 4px 0;
+            font-size: 12px; color: #92400e;
+        }
+
+        /* Signature */
+        .rcp-sig-row { display: flex; justify-content: space-between; margin-top: 44px; gap: 30px; }
+        .rcp-sig { flex: 1; text-align: center; }
+        .rcp-sig-line { border-top: 1px dashed #94a3b8; margin-bottom: 8px; }
+        .rcp-sig-label { font-size: 11px; color: #64748b; line-height: 1.5; }
+
+        /* Footer */
+        .rcp-footer {
+            margin-top: 28px; padding-top: 14px; border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8;
+        }
+
+        /* Top bar (screen only) */
+        #topBar {
+            position: fixed; top: 0; left: 0; right: 0; background: #0f2040;
+            padding: 10px 24px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 999; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+        }
+        .btn-print {
+            background: #3b82f6; color: #fff; border: none; padding: 9px 24px;
+            border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .btn-print:hover { background: #2563eb; }
+        .btn-close-tab {
+            background: transparent; color: #94a3b8; border: 1px solid #334155;
+            padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .btn-close-tab:hover { background: #1e3a5f; color: #fff; }
+
+        @@media print {
+            body { background: #fff !important; padding: 0 !important; }
+            .receipt { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; width: 100% !important; }
+            #topBar, .spacer { display: none !important; }
+            @@page { margin: 14mm 16mm 14mm 16mm; size: A4 portrait; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fixed top bar — screen only -->
+    <div id="topBar">
+        <span style="color:#94a3b8; font-size:13px;">🧾 Delivery Receipt — @receiptNo</span>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
+            <button class="btn-close-tab" onclick="window.close()">✕ Close</button>
+        </div>
+    </div>
+    <div class="spacer" style="height:52px;"></div>
+
+    <div class="receipt">
+
+        <!-- Header -->
+        <div class="rcp-header">
+            <div class="rcp-logo">
+                🥛 <span>DMS</span>
+                <small>Dairy Industry Pvt. Ltd. — Sales Division</small>
+            </div>
+            <div class="rcp-title">
+                <h2>DELIVERY RECEIPT</h2>
+                <div class="rcp-number">Receipt No: <strong>@receiptNo</strong></div>
+                <div><span class="rcp-badge">✅ @Model.OrderStatus</span></div>
+            </div>
+        </div>
+
+        <!-- Meta row -->
+        <div class="rcp-meta">
+            <div class="rcp-meta-item">
+                <label>Order ID</label>
+                <span>#@Model.OrderId</span>
+            </div>
+            <div class="rcp-meta-item">
+                <label>Order Date</label>
+                <span>@Model.OrderDate.ToString("dd MMM yyyy")</span>
+            </div>
+            <div class="rcp-meta-item">
+                <label>Receipt Date</label>
+                <span>@receiptDate</span>
+            </div>
+            <div class="rcp-meta-item">
+                <label>Processing Plant</label>
+                <span>@(Model.PlantName ?? "—")</span>
+            </div>
+        </div>
+
+        <!-- Parties -->
+        <div class="rcp-parties">
+            <div class="rcp-party">
+                <div class="rcp-party-label">Delivered By</div>
+                <div class="rcp-party-name">Dairy Industry Pvt. Ltd.</div>
+                <div class="rcp-party-detail">
+                    @(Model.PlantName ?? "Processing Plant")<br />
+                    Gujarat, India<br />
+                    GSTIN: 24XXXXX0000X1ZX
+                </div>
+            </div>
+            <div class="rcp-party">
+                <div class="rcp-party-label">Delivered To</div>
+                <div class="rcp-party-name">@Model.DistributorName</div>
+                <div class="rcp-party-detail">
+                    @if (!string.IsNullOrEmpty(Model.Location))
+                    {
+                        @Model.Location<br />
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ContactNumber))
+                    {
+                        @:Phone: @Model.ContactNumber
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="rcp-notes"><strong>Order Note:</strong> @Model.Notes</div>
+        }
+
+        <!-- Items table -->
+        <table class="rcp-table" style="margin-top:16px;">
+            <thead>
+                <tr>
+                    <th style="width:30px">#</th>
+                    <th>Product Name</th>
+                    <th>Type</th>
+                    <th>Unit</th>
+                    <th>Qty Delivered</th>
+                    <th>Unit Price (₹)</th>
+                    <th>Amount (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int row = 1; }
+                @foreach (var item in Model.OrderDetails)
+                {
+                    <tr>
+                        <td>@(row++)</td>
+                        <td><strong>@item.ProductName</strong></td>
+                        <td style="color:#64748b;">@item.ProductType</td>
+                        <td style="color:#64748b;">@item.Unit</td>
+                        <td>@item.Quantity.ToString("N2")</td>
+                        <td>₹@item.UnitPrice.ToString("N2")</td>
+                        <td>₹@item.LineTotal.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6">Total Amount</td>
+                    <td>₹@Model.TotalAmount.ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Acknowledgement -->
+        <div class="rcp-ack">
+            <div class="rcp-ack-icon">✅</div>
+            <div class="rcp-ack-text">
+                <h4>Delivery Acknowledged</h4>
+                <p>
+                    This receipt confirms that the above goods were delivered to
+                    <strong>@Model.DistributorName</strong> in satisfactory condition
+                    on <strong>@receiptDate</strong>.
+                    Order status is marked as <strong>@Model.OrderStatus</strong>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Signature row -->
+        <div class="rcp-sig-row">
+            <div class="rcp-sig">
+                <div style="height:42px;"></div>
+                <div class="rcp-sig-line"></div>
+                <div class="rcp-sig-label">
+                    Authorised Signatory<br />
+                    <strong>Dairy Industry Pvt. Ltd.</strong>
+                </div>
+            </div>
+            <div class="rcp-sig">
+                <div style="height:42px;"></div>
+                <div class="rcp-sig-line"></div>
+                <div class="rcp-sig-label">
+                    Received By<br />
+                    <strong>@Model.DistributorName</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="rcp-footer">
+            <span>Generated: @receiptDate, @receiptTime</span>
+            <span>DMS — Dairy Management System</span>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('load', () => window.print());
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,388 @@
+﻿@model List<DairyIndustry.Models.StaffModel>
+@{
+    Layout = "~/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "Staff List";
+
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalRecords = ViewBag.TotalRecords ?? Model.Count;
+    int pageSize = ViewBag.PageSize ?? 10;
+    int? roleId = ViewBag.RoleId as int?;
+    bool? isActive = ViewBag.IsActive as bool?;
+    int startRecord = totalRecords == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    int endRecord = Math.Min(currentPage * pageSize, totalRecords);
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-people-fill"></i></span>
+            Staff List
+        </h1>
+        <p class="page-subtitle" id="record-count">
+            @if (totalRecords == 0)
+            {
+                <text>No records found</text>
+            }
+            else
+            {
+                <text>Showing @startRecord–@endRecord of @totalRecords record(s)</text>
+            }
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Dashboard" class="btn-hr-secondary">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a asp-action="Create" class="btn-hr-primary">
+            <i class="bi bi-person-plus-fill"></i> Add Staff
+        </a>
+    </div>
+</div>
+
+<!-- Filter + Search Card -->
+<div class="hr-card mb-4">
+    <div class="hr-card-body">
+
+        <!-- Quick Search -->
+        <label class="form-label-hr mb-2">Quick Search</label>
+        <div style="position:relative; margin-bottom:16px;">
+            <i class="bi bi-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem;pointer-events:none;z-index:1;"></i>
+            <input type="text" id="staff-search" autocomplete="off"
+                   class="form-control-hr" style="padding-left:40px;"
+                   placeholder="Search by name, email or phone..." />
+            <button id="clear-search" type="button"
+                    style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                           background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.85rem;padding:4px;">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+        </div>
+        <div id="search-hint" style="display:none;font-size:.75rem;color:#94a3b8;margin-top:-10px;margin-bottom:12px;">
+            Showing <span id="search-count" style="font-weight:700;color:#2563eb;">0</span> of @Model.Count staff —
+            <a href="#" id="clear-search-link" style="color:#2563eb;text-decoration:none;font-weight:500;">clear</a>
+        </div>
+
+        <div style="border-top:1px solid #f1f5f9;margin-bottom:16px;"></div>
+
+        <!-- Server Filters -->
+        <form method="get" asp-action="Index">
+            <input type="hidden" name="page" value="1" />
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label-hr">Role</label>
+                    <select name="roleId" class="form-select-hr">
+                        <option value="">All Roles</option>
+                        @foreach (var item in ViewBag.Roles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected>@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label-hr">Status</label>
+                    <select name="isActive" class="form-select-hr">
+                        <option value="">All Status</option>
+                        @if (ViewBag.SelectedActive == true)
+                        {
+                            <option value="true" selected>Active</option>
+                            <option value="false">Inactive</option>
+                        }
+                        else if (ViewBag.SelectedActive == false)
+                        {
+                            <option value="true">Active</option>
+                            <option value="false" selected>Inactive</option>
+                        }
+                        else
+                        {
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn-hr-primary flex-grow-1">
+                        <i class="bi bi-funnel-fill"></i> Filter
+                    </button>
+                    <a asp-action="Index" class="btn-hr-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Staff Table -->
+<div class="hr-card">
+    @if (Model.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="hr-table" id="staff-table">
+                <thead>
+                    <tr>
+                        <th style="padding-left:20px;">Staff Member</th>
+                        <th>Role</th>
+                        <th>Phone</th>
+                        <th>Date of Joining</th>
+                        <th>Status</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="staff-tbody">
+                    @foreach (var s in Model)
+                    {
+                        <tr class="staff-row"
+                            data-name="@s.FullName.ToLower()"
+                            data-email="@(s.Email?.ToLower() ?? "")"
+                            data-phone="@(s.Phone ?? "")">
+                            <td style="padding-left:20px;">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(s.ProfilePhoto))
+                                    {
+                                        <img src="@s.ProfilePhoto" class="rounded-circle flex-shrink-0"
+                                             style="width:40px;height:40px;object-fit:cover;border:2px solid #e2e8f0;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                             style="width:40px;height:40px;background:#eff6ff;color:#2563eb;font-size:1rem;border:2px solid #bfdbfe;">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                    }
+                                    <div>
+                                        <div style="font-size:.84rem;font-weight:600;color:#0f172a;">@s.FullName</div>
+                                        <div style="font-size:.72rem;color:#94a3b8;">@(s.Email ?? "—")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge-role">@s.RoleName</span></td>
+                            <td style="color:#475569;font-size:.82rem;">@(s.Phone ?? "—")</td>
+                            <td style="color:#475569;font-size:.82rem;">@(s.DOJ.HasValue? s.DOJ.Value.ToString("dd MMM yyyy") : "—")</td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge-active">Active</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align:center;">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a asp-action="Details" asp-route-id="@s.StaffId"
+                                       class="btn-hr-secondary" style="padding:6px 12px;font-size:.75rem;">
+                                        <i class="bi bi-eye"></i> Details
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@s.StaffId"
+                                       class="btn-hr-secondary" style="padding:6px 12px;font-size:.75rem;color:#d97706;border-color:#fde68a;background:#fffbeb;">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- No results -->
+        <div id="no-search-results" style="display:none;text-align:center;padding:48px 24px;">
+            <i class="bi bi-search" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:12px;"></i>
+            <div style="font-size:.88rem;font-weight:600;color:#64748b;margin-bottom:4px;">No results found</div>
+            <div style="font-size:.78rem;color:#94a3b8;">No staff matched <strong id="search-term-display"></strong></div>
+            <button id="clear-search-btn2" style="margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;padding:6px 16px;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;">
+                Clear Search
+            </button>
+        </div>
+
+        <div style="padding:14px 20px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+
+            <!-- Record info -->
+            <div style="font-size:.75rem;color:#94a3b8;">
+                Showing
+                <span style="font-weight:600;color:#475569;">@startRecord–@endRecord</span>
+                of
+                <span style="font-weight:600;color:#475569;">@totalRecords</span>
+                staff member(s)
+            </div>
+
+            <!-- Pagination controls -->
+            @if (totalPages > 1)
+            {
+                <div style="display:flex;align-items:center;gap:4px;" id="pagination-bar">
+                    @{
+                        string PageUrl(int p) =>
+                        Url.Action("Index", new { roleId, isActive, page = p })!;
+                        bool hasPrev = currentPage > 1;
+                        bool hasNext = currentPage < totalPages;
+                        int windowStart = Math.Max(1, currentPage - 2);
+                        int windowEnd = Math.Min(totalPages, currentPage + 2);
+                        if (windowEnd - windowStart < 4)
+                        {
+                            if (windowStart == 1) windowEnd = Math.Min(totalPages, 5);
+                            else windowStart = Math.Max(1, windowEnd - 4);
+                        }
+                    }
+
+                    @* Prev *@
+                    @if (hasPrev)
+                    {
+                        <a href="@PageUrl(currentPage - 1)"
+                           style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                              border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    }
+                    else
+                    {
+                        <span style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                                 border:1px solid #f1f5f9;border-radius:8px;background:#f8fafc;
+                                                 color:#cbd5e1;font-size:.78rem;font-weight:600;cursor:not-allowed;">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </span>
+                    }
+
+                    @* First page + ellipsis *@
+                    @if (windowStart > 1)
+                    {
+                        <a href="@PageUrl(1)"
+                           style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                              min-width:36px;text-align:center;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">1</a>
+                        @if (windowStart > 2)
+                        {
+                            <span style="padding:7px 8px;color:#94a3b8;font-size:.78rem;">…</span>
+                        }
+                    }
+
+                    @* Page numbers *@
+                    @for (int p = windowStart; p <= windowEnd; p++)
+                    {
+                        if (p == currentPage)
+                        {
+                            <span style="padding:7px 12px;border:1px solid #2563eb;border-radius:8px;
+                                                         background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;
+                                                         font-size:.78rem;font-weight:700;min-width:36px;text-align:center;
+                                                         box-shadow:0 2px 8px rgba(37,99,235,.3);">@p</span>
+                        }
+                        else
+                        {
+                            <a href="@PageUrl(p)"
+                               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                                      color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                                      min-width:36px;text-align:center;transition:all .15s;"
+                               onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">@p</a>
+                        }
+                    }
+
+                    @* Last page + ellipsis *@
+                    @if (windowEnd < totalPages)
+                    {
+                        @if (windowEnd < totalPages - 1)
+                        {
+                            <span style="padding:7px 8px;color:#94a3b8;font-size:.78rem;">…</span>
+                        }
+                        <a href="@PageUrl(totalPages)"
+                           style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;
+                                              min-width:36px;text-align:center;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">@totalPages</a>
+                    }
+
+                    @* Next *@
+                    @if (hasNext)
+                    {
+                        <a href="@PageUrl(currentPage + 1)"
+                           style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                              border:1px solid #e2e8f0;border-radius:8px;background:#fff;
+                                              color:#475569;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .15s;"
+                           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span style="display:flex;align-items:center;gap:5px;padding:7px 14px;
+                                                 border:1px solid #f1f5f9;border-radius:8px;background:#f8fafc;
+                                                 color:#cbd5e1;font-size:.78rem;font-weight:600;cursor:not-allowed;">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </span>
+                    }
+
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-people empty-state-icon"></i>
+            <div class="empty-state-title">No staff members found</div>
+            <div class="empty-state-text">Try adjusting your filters or add a new staff member</div>
+            <div class="d-flex gap-2 justify-content-center mt-3">
+                <a asp-action="Index" class="btn-hr-secondary" style="font-size:.8rem;">Clear Filters</a>
+                <a asp-action="Create" class="btn-hr-primary" style="font-size:.8rem;">Add Staff</a>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var si = document.getElementById('staff-search');
+            var cb = document.getElementById('clear-search');
+            var cl = document.getElementById('clear-search-link');
+            var cb2= document.getElementById('clear-search-btn2');
+            var sh = document.getElementById('search-hint');
+            var sc = document.getElementById('search-count');
+            var rc = document.getElementById('record-count');
+            var fv = document.getElementById('footer-visible');
+            var nr = document.getElementById('no-search-results');
+            var td = document.getElementById('search-term-display');
+            var pb = document.getElementById('pagination-bar');
+            var rows = document.querySelectorAll('.staff-row');
+
+            function doSearch(term) {
+                term = term.trim().toLowerCase();
+                var v = 0;
+                rows.forEach(function(r) {
+                    var match = !term || r.getAttribute('data-name').includes(term)
+                        || r.getAttribute('data-email').includes(term)
+                        || r.getAttribute('data-phone').includes(term);
+                    r.style.display = match ? '' : 'none';
+                    if (match) v++;
+                });
+                if (sc) sc.textContent = v;
+                if (fv) fv.textContent = v;
+                if (rc) rc.textContent = v + ' record(s) found';
+                if (sh) sh.style.display = term ? '' : 'none';
+                if (cb) cb.style.display = term ? '' : 'none';
+                if (td) td.textContent = '"' + term + '"';
+                if (nr) nr.style.display = (term && v === 0) ? '' : 'none';
+                // Hide pagination while searching
+                if (pb) pb.style.display = term ? 'none' : 'flex';
+            }
+
+            function clearSearch() { si.value = ''; doSearch(''); si.focus(); }
+
+            if (si) si.addEventListener('input', function() { doSearch(this.value); });
+            if (cb)  cb.addEventListener('click', clearSearch);
+            if (cl)  cl.addEventListener('click', function(e){ e.preventDefault(); clearSearch(); });
+            if (cb2) cb2.addEventListener('click', function(e){ e.preventDefault(); clearSearch(); });
+        })();
+    </script>
+}

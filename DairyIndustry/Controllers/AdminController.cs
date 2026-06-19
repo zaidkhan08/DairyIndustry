@@ -18,6 +18,7 @@ namespace DairyIndustry.Controllers
         private readonly IAdminRepository _adminRepo;
         private readonly ILogisticsRepository _logisticsRepo;
         private readonly IReportRepository _reportRepo;
+        private readonly ISalesRepository _salesRepo;
         private readonly ICollectionCenterRepository _centerRepository;
         private readonly IFinanceRepository _financeRepo;
         private readonly IWebHostEnvironment _env;
@@ -28,7 +29,7 @@ namespace DairyIndustry.Controllers
         public AdminController(IAdminRepository adminRepo, ILogisticsRepository logisticsRepo,
             IReportRepository reportRepo, IWebHostEnvironment env, IFinanceRepository financeRepo,
             IAuthRepository authRepo, IOptions<EmailSettings> settings, IConverter pdfConverter,
-            ICollectionCenterRepository centerRepository)
+            ICollectionCenterRepository centerRepository, ISalesRepository salesRepo)
         {
             _adminRepo = adminRepo;
             _logisticsRepo = logisticsRepo;
@@ -39,6 +40,7 @@ namespace DairyIndustry.Controllers
             _settings = settings.Value;
             _pdfConverter = pdfConverter;
             _centerRepository = centerRepository;
+            _salesRepo = salesRepo;
         }
 
         // ════════════════════════════════════════════════════════
@@ -63,7 +65,10 @@ namespace DairyIndustry.Controllers
 
                 case "Collection Agent":
                     return RedirectToAction("Dashboard", "CollectionCenter");
-
+                case "HR Manager":
+                    return RedirectToAction("Index", "HR");
+                case "Distributor":
+                    return RedirectToAction("Dashboard", "Sales");
                 default:
                     return RedirectToAction("Login", "Admin");
             }
@@ -197,6 +202,17 @@ namespace DairyIndustry.Controllers
             {
                 HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
                 HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
+            }
+            //Mohit
+            if(user.RoleName=="Distributor")
+            {
+                    HttpContext.Session.SetInt32("DistributorId", distLogin.DistributorId);
+                    HttpContext.Session.SetString("DistributorName", distLogin.DistributorName ?? username);
+                    HttpContext.Session.SetString("DistributorLocation", distLogin.Location ?? "");
+                    HttpContext.Session.SetString("DistributorContact", distLogin.ContactNumber ?? "");
+                    HttpContext.Session.SetString("DistributorEmail", distLogin.Email ?? "");
+                    HttpContext.Session.SetString("DistributorAddress", ""); 
+                    HttpContext.Session.SetString("DistributorGSTIN", distLogin.GSTIN ?? "");
             }
         }
 
@@ -785,7 +801,7 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        [SessionAuthorize("Admin")]
+        //[SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult CreateRole(string roleName)
         {
@@ -923,7 +939,7 @@ namespace DairyIndustry.Controllers
             }
         }
 
-        [SessionAuthorize("Admin")]
+       // [SessionAuthorize("Admin")]
         [HttpPost]
         public IActionResult RegisterUser(string username, string password, int staffId)
         {

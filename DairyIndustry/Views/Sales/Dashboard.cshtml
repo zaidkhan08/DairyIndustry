@@ -1,0 +1,594 @@
+﻿@using DairyIndustry.Models
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+
+    string role = Context.Session.GetString("RoleName") ?? "";
+    bool isAdmin = role == "Admin";
+    bool isDist = role == "Distributor";
+
+    // ── Distributor-side data (cast from ViewBag) ──────────────────────
+    var distVm = Model as DistributorDashboardViewModel;
+
+    // ── Admin-side data (cast from ViewBag) ────────────────────────────
+    var adminVm = Model as SalesDashboardViewModel;
+
+    // ── Chart data serialisation (Distributor only) ────────────────────
+    var monthLabels = distVm?.MonthlySpend.Select(m => m.MonthLabel).ToList() ?? new();
+    var monthAmounts = distVm?.MonthlySpend.Select(m => m.TotalSpent).ToList() ?? new();
+    var doughnutLabels = distVm?.OrdersByStatus.Select(s => s.OrderStatus).ToList() ?? new();
+    var doughnutCounts = distVm?.OrdersByStatus.Select(s => s.Count).ToList() ?? new();
+
+    var statusColors = new Dictionary<string, string>
+    {
+        ["Pending"] = "#f59e0b",
+        ["Confirmed"] = "#3b82f6",
+        ["Dispatched"] = "#06b6d4",
+        ["Delivered"] = "#10b981",
+        ["Received"] = "#6366f1",
+        ["Cancelled"] = "#ef4444"
+    };
+    var doughnutColors = distVm?.OrdersByStatus
+        .Select(s => statusColors.TryGetValue(s.OrderStatus, out var c) ? c : "#94a3b8")
+        .ToList() ?? new();
+}
+
+@section Styles {
+    <style>
+        .chart-card {
+            height: 300px;
+            position: relative;
+        }
+
+            .chart-card canvas {
+                max-height: 260px;
+            }
+    </style>
+}
+
+
+@* ═══════════════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════ *@
+@if (isAdmin && adminVm != null)
+{
+    <div class="page-header">
+        <div>
+            <h4 class="fw-bold mb-1">Sales Dashboard</h4>
+            <small class="text-muted">@DateTime.Today.ToString("dddd, dd MMM yyyy")</small>
+        </div>
+        <a asp-action="Create" class="btn btn-primary btn-sm">➕ New Order</a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100" style="border-left:4px solid #0d6efd!important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Total Orders</div>
+                            <div class="fs-2 fw-bold text-primary">@adminVm.Summary.TotalOrders</div>
+                            <small class="text-muted">all time</small>
+                        </div>
+                        <span style="font-size:2rem;opacity:.25;">📋</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100" style="border-left:4px solid #198754!important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Total Revenue</div>
+                            <div class="fs-2 fw-bold text-success">₹@adminVm.Summary.TotalRevenue.ToString("N0")</div>
+                            <small class="text-muted">Today: ₹@adminVm.Summary.TodayRevenue.ToString("N0")</small>
+                        </div>
+                        <span style="font-size:2rem;opacity:.25;">💰</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100"
+                 style="border-left:4px solid @(adminVm.Summary.PendingOrders > 0 ? "#ffc107" : "#0d6efd")!important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Pending Orders</div>
+                            <div class="fs-2 fw-bold @(adminVm.Summary.PendingOrders > 0 ? "text-warning" : "text-primary")">
+                                @adminVm.Summary.PendingOrders
+                            </div>
+                            <small class="text-muted">awaiting confirmation</small>
+                        </div>
+                        <span style="font-size:2rem;opacity:.25;">⏳</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100" style="border-left:4px solid #6f42c1!important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Distributors</div>
+                            <div class="fs-2 fw-bold" style="color:#6f42c1;">@adminVm.Summary.TotalDistributors</div>
+                            <small class="text-muted">registered</small>
+                        </div>
+                        <span style="font-size:2rem;opacity:.25;">🏪</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Breakdown + Top Distributors -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-white border-bottom fw-semibold text-primary">Orders by Status</div>
+                <div class="card-body p-0">
+                    @if (adminVm.OrdersByStatus.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var s in adminVm.OrdersByStatus)
+                            {
+                                var bc = s.OrderStatus switch
+                                {
+                                    "Pending" => "warning",
+                                    "Confirmed" => "info",
+                                    "Dispatched" => "primary",
+                                    "Delivered" => "success",
+                                    "Cancelled" => "danger",
+                                    _ => "secondary"
+                                };
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-3">
+                                    <div>
+                                        <span class="badge bg-@bc me-2">@s.OrderStatus</span>
+                                        <small class="text-muted">₹@s.TotalAmount.ToString("N0")</small>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">@s.Count</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">No orders yet.</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between">
+                    <span class="fw-semibold text-primary">Top Distributors</span>
+                    <a asp-action="Distributors" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (adminVm.TopDistributors.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Distributor</th>
+                                        <th class="text-center">Orders</th>
+                                        <th class="text-end">Revenue</th>
+                                        <th class="text-center">Delivered</th>
+                                        <th class="text-center">Pending</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in adminVm.TopDistributors)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@d.DistributorName</div>
+                                                <small class="text-muted">@d.Location</small>
+                                            </td>
+                                            <td class="text-center">@d.TotalOrders</td>
+                                            <td class="text-end text-success fw-semibold">₹@d.TotalRevenue.ToString("N2")</td>
+                                            <td class="text-center"><span class="badge bg-success">@d.DeliveredOrders</span></td>
+                                            <td class="text-center"><span class="badge bg-warning text-dark">@d.PendingOrders</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">No data yet.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="card">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between">
+            <span class="fw-semibold text-primary">Recent Orders</span>
+            <a asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+            @if (adminVm.RecentOrders.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Distributor</th>
+                                <th>Date</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in adminVm.RecentOrders)
+                            {
+                                <tr>
+                                    <td class="text-muted small">#@o.OrderId</td>
+                                    <td>
+                                        <div class="fw-semibold">@o.DistributorName</div>
+                                        <small class="text-muted">@o.Location</small>
+                                    </td>
+                                    <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
+                                    </td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@o.OrderId"
+                                           class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted py-5">
+                    No orders yet.
+                    <a asp-action="Create" class="btn btn-primary btn-sm ms-2">Create First Order</a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+
+@* ═══════════════════════════════════════════════════════════════════════
+   DISTRIBUTOR DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════ *@
+@if (isDist && distVm != null)
+{
+    string distName = ViewBag.DistributorName ?? "Distributor";
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">My Dashboard</h1>
+            <p class="text-muted">Welcome back, <strong>@distName</strong></p>
+        </div>
+        <div class="page-header-actions">
+            <a asp-action="MyOrders" class="btn btn-outline-primary btn-sm">📋 My Orders</a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">➕ New Order</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Total Orders</div>
+                        <div class="stat-value text-primary">@distVm.TotalOrders</div>
+                        <div class="stat-sub">All time</div>
+                    </div>
+                    <span class="stat-icon">📦</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value" style="color:var(--warning);">@distVm.PendingOrders</div>
+                        <div class="stat-sub">Awaiting admin</div>
+                    </div>
+                    <span class="stat-icon">⏳</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Delivered</div>
+                        <div class="stat-value" style="color:var(--success);">@distVm.DeliveredOrders</div>
+                        <div class="stat-sub">Delivered + Received</div>
+                    </div>
+                    <span class="stat-icon">✅</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Total Spent</div>
+                        <div class="stat-value" style="color:var(--accent); font-size:1.45rem;">
+                            ₹@distVm.TotalSpent.ToString("N0")
+                        </div>
+                        <div class="stat-sub">On delivered orders</div>
+                    </div>
+                    <span class="stat-icon">💰</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-lg-7">
+            <div class="card h-100">
+                <div class="card-header">📅 Monthly Spend — Last 6 Months</div>
+                <div class="card-body chart-card d-flex align-items-center justify-content-center">
+                    @if (!distVm.MonthlySpend.Any())
+                    {
+                        <div class="text-muted small">No delivered orders yet — data will appear once orders are delivered.</div>
+                    }
+                    else
+                    {
+                        <canvas id="barChart"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="card h-100">
+                <div class="card-header">🥧 Orders by Status</div>
+                <div class="card-body chart-card d-flex align-items-center justify-content-center">
+                    @if (!distVm.OrdersByStatus.Any())
+                    {
+                        <div class="text-muted small">No orders placed yet.</div>
+                    }
+                    else
+                    {
+                        <canvas id="doughnutChart"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 5 Products -->
+    <div class="card mb-4">
+        <div class="card-header">🏆 Top 5 Products Ordered</div>
+        @if (!distVm.TopProducts.Any())
+        {
+            <div class="card-body text-muted small">No order data yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Unit</th>
+                            <th class="text-end">Total Qty</th>
+                            <th class="text-end">Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int rank = 1;
+                        }
+                        @foreach (var p in distVm.TopProducts)
+                        {
+                            <tr>
+                                <td>
+                                    @if (rank == 1)
+                                    {
+                                        <span>🥇</span>
+                                    }
+                                    else if (rank == 2)
+                                    {
+
+                                        <span>🥈</span>
+                                    }
+                                    else if (rank == 3)
+                                    {
+
+                                        <span>🥉</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-muted">@rank</span>
+                                    }
+                                </td>
+                                <td><strong>@p.ProductName</strong></td>
+                                <td><span class="badge bg-light text-dark border">@p.ProductType</span></td>
+                                <td class="text-muted">@p.Unit</td>
+                                <td class="text-end fw-semibold">@p.TotalQuantity.ToString("N2")</td>
+                                <td class="text-end fw-semibold text-primary">₹@p.TotalValue.ToString("N2")</td>
+                            </tr>
+                            rank++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Recent 5 Orders -->
+    <div class="card mb-2">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>🕒 Recent Orders</span>
+            <a asp-action="MyOrders" class="btn btn-outline-primary btn-sm">View all →</a>
+        </div>
+        @if (!distVm.RecentOrders.Any())
+        {
+            <div class="card-body text-muted small">No orders placed yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in distVm.RecentOrders)
+                        {
+                            string badgeCss = o.OrderStatus switch
+                            {
+                                "Pending" => "warning text-dark",
+                                "Confirmed" => "primary",
+                                "Dispatched" => "info text-dark",
+                                "Delivered" => "success",
+                                "Received" => "success",
+                                "Cancelled" => "danger",
+                                _ => "secondary"
+                            };
+                            <tr>
+                                <td><strong>#@o.OrderId</strong></td>
+                                <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                <td class="fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                <td>
+                                    <span class="badge bg-@badgeCss">
+                                        @(o.OrderStatus == "Received" ? "Received ✅" : o.OrderStatus)
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="Details" asp-route-id="@o.OrderId"
+                                       class="btn btn-outline-primary btn-sm">View</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+
+@section Scripts {
+    @if (isDist && distVm != null)
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+                crossorigin="anonymous"></script>
+        <script>
+            const monthLabels    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthLabels));
+            const monthAmounts   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthAmounts));
+            const doughnutLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doughnutLabels));
+            const doughnutCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doughnutCounts));
+            const doughnutColors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doughnutColors));
+
+            // Bar Chart — Monthly Spend
+            const barCtx = document.getElementById('barChart');
+            if (barCtx) {
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Amount Spent (₹)',
+                            data: monthAmounts,
+                            backgroundColor: 'rgba(59,130,246,0.75)',
+                            borderColor: 'rgba(59,130,246,1)',
+                            borderWidth: 1,
+                            borderRadius: 5,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ' ₹' + ctx.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => '₹' + Number(v).toLocaleString('en-IN'),
+                                    font: { size: 11 }
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            },
+                            x: {
+                                ticks: { font: { size: 11 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Doughnut Chart — Order Status
+            const donutCtx = document.getElementById('doughnutChart');
+            if (donutCtx) {
+                new Chart(donutCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: doughnutLabels,
+                        datasets: [{
+                            data: doughnutCounts,
+                            backgroundColor: doughnutColors,
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: { size: 11 },
+                                    padding: 14,
+                                    usePointStyle: true,
+                                    pointStyleWidth: 10
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' orders'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    }
+}

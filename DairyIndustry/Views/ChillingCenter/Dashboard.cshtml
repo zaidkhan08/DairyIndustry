@@ -1,0 +1,639 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@using System.Text.Json
+@model ChillingDashboardViewModel
+
+@{
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Dashboard";
+
+    var chartData = Model.RecentEntries
+        .GroupBy(e => e.StoredDate.ToString("yyyy-MM-dd"))
+        .Select(g => new { Label = DateTime.Parse(g.Key).ToString("dd MMM yy"), Total = g.Sum(e => e.MilkQuantity) })
+        .OrderBy(x => x.Label)
+        .ToList();
+
+    var chartLabels = JsonSerializer.Serialize(chartData.Select(x => x.Label).ToList());
+    var chartValues = JsonSerializer.Serialize(chartData.Select(x => (double)x.Total).ToList());
+}
+
+@section Styles {
+    <style>
+        /* ── Stat Cards ── */
+        .cc-stat-row {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .cc-stat-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 18px 20px;
+            border-top: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .cc-stat-card::after {
+                content: '';
+                position: absolute;
+                right: -12px;
+                top: -12px;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                opacity: .06;
+            }
+
+            .cc-stat-card.blue {
+                border-top-color: #0d6efd;
+            }
+
+                .cc-stat-card.blue::after {
+                    background: #0d6efd;
+                }
+
+            .cc-stat-card.cyan {
+                border-top-color: #0891b2;
+            }
+
+                .cc-stat-card.cyan::after {
+                    background: #0891b2;
+                }
+
+            .cc-stat-card.green {
+                border-top-color: #16a34a;
+            }
+
+                .cc-stat-card.green::after {
+                    background: #16a34a;
+                }
+
+            .cc-stat-card.red {
+                border-top-color: #dc2626;
+            }
+
+                .cc-stat-card.red::after {
+                    background: #dc2626;
+                }
+
+        .cc-stat-icon {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .cc-stat-num {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cc-stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .cc-stat-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* ── Panel Grid ── */
+        .cc-panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cc-panel {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-panel-head {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cc-panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-panel-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-panel-body {
+            padding: 20px;
+        }
+
+        .cc-panel-body-flush {
+            padding: 0;
+        }
+
+        .cc-live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .cc-live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+        }
+
+        /* ── Feed List ── */
+        .cc-feed-item {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f8fafc;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: background .15s;
+        }
+
+            .cc-feed-item:hover {
+                background: #f8fafc;
+            }
+
+            .cc-feed-item:last-child {
+                border-bottom: none;
+            }
+
+        .cc-feed-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        .cc-feed-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .cc-feed-meta {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-feed-temp {
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+        }
+
+        /* ── Bottom Grid ── */
+        .cc-bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 20px;
+        }
+
+        /* ── Capacity Mini Table ── */
+        .cc-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .cc-mini-table thead th {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: #94a3b8;
+                padding: 10px 18px;
+                border-bottom: 1px solid #f1f5f9;
+                text-align: left;
+            }
+
+                .cc-mini-table thead th.num {
+                    text-align: right;
+                }
+
+            .cc-mini-table tbody tr {
+                border-bottom: 1px solid #f8fafc;
+                transition: background .15s;
+            }
+
+                .cc-mini-table tbody tr:hover {
+                    background: #f8fafc;
+                }
+
+                .cc-mini-table tbody tr:last-child {
+                    border-bottom: none;
+                }
+
+            .cc-mini-table tbody td {
+                padding: 12px 18px;
+                font-size: 13px;
+                color: #334155;
+            }
+
+                .cc-mini-table tbody td.num {
+                    text-align: right;
+                    font-weight: 600;
+                    color: #0f172a;
+                    font-variant-numeric: tabular-nums;
+                }
+
+        /* ── Alert Items ── */
+        .cc-alert-item {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .cc-alert-item:last-child {
+                border-bottom: none;
+            }
+
+        .cc-alert-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .cc-alert-meta {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .cc-badge-warning {
+            background: #fefce8;
+            color: #ca8a04;
+        }
+
+        .cc-badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-badge-safe {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-view-all {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .cc-view-all:hover {
+                color: #1d4ed8;
+            }
+    </style>
+}
+
+<!-- Stat Cards -->
+<div class="cc-stat-row">
+    <div class="cc-stat-card blue">
+        <div class="cc-stat-icon" style="color:#0d6efd;"><i class="bi bi-journal-text"></i></div>
+        <div class="cc-stat-num">@Model.Summary.TotalEntries</div>
+        <div class="cc-stat-label">Today's Entries</div>
+        <div class="cc-stat-sub">storage records</div>
+    </div>
+    <div class="cc-stat-card cyan">
+        <div class="cc-stat-icon" style="color:#0891b2;"><i class="bi bi-droplet-half"></i></div>
+        <div class="cc-stat-num">@Model.Summary.TotalQuantity.ToString("N0")</div>
+        <div class="cc-stat-label">Total Quantity</div>
+        <div class="cc-stat-sub">litres stored today</div>
+    </div>
+    <div class="cc-stat-card green">
+        <div class="cc-stat-icon" style="color:#16a34a;"><i class="bi bi-shield-check"></i></div>
+        <div class="cc-stat-num">@Model.Summary.SafeCount</div>
+        <div class="cc-stat-label">Safe</div>
+        <div class="cc-stat-sub">temp &le; 5°C</div>
+    </div>
+    <div class="cc-stat-card @(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "red" : "green")">
+        <div class="cc-stat-icon" style="color:@(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "#dc2626" : "#16a34a");"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="cc-stat-num" style="color:@(Model.Summary.CriticalAlerts + Model.Summary.Warnings > 0 ? "#dc2626" : "#16a34a");">@(Model.Summary.CriticalAlerts + Model.Summary.Warnings)</div>
+        <div class="cc-stat-label">Alerts</div>
+        <div class="cc-stat-sub">@Model.Summary.CriticalAlerts critical &bull; @Model.Summary.Warnings warning</div>
+    </div>
+</div>
+
+<!-- Chart + Live Feed -->
+<div class="cc-panel-grid">
+
+    <!-- Chart -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div>
+                <div class="cc-panel-title">Storage Quantity Trend</div>
+                <div class="cc-panel-sub">Last 10 entries grouped by date</div>
+            </div>
+            <span class="cc-live-badge"><span class="cc-live-dot"></span> Live</span>
+        </div>
+        <div class="cc-panel-body">
+            <div style="height:220px;position:relative;">
+                <canvas id="storageChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7-Day Sparkline Widget -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div>
+                <div class="cc-panel-title">7-Day Trend</div>
+                <div class="cc-panel-sub">Daily quantity per plant — last 7 days</div>
+            </div>
+            <a asp-action="Report" class="cc-view-all">Full Report <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="cc-panel-body" style="padding:12px 18px;">
+            @if (Model.WeeklyTrend.Any())
+            {
+                @foreach (var trend in Model.WeeklyTrend)
+                {
+                    var sparkId = "spark-" + trend.PlantId;
+                    var sparkData = JsonSerializer.Serialize(trend.Days.Select(d => (double)d.Quantity).ToList());
+                    var sparkDates = JsonSerializer.Serialize(trend.Days.Select(d => d.Date.ToString("dd MMM")).ToList());
+                    var sparkVarV = "sparkV_" + trend.PlantId;
+                    var sparkVarD = "sparkD_" + trend.PlantId;
+
+                    <div class="cc-spark-card" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f8fafc;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                            <div>
+                                <div style="font-size:13px;font-weight:700;color:#0f172a;">@trend.PlantName</div>
+                                <div style="font-size:11px;color:#94a3b8;margin-top:2px;">
+                                    @trend.TotalWeekEntries entr@(trend.TotalWeekEntries == 1 ? "y" : "ies") &bull;
+                                    @trend.TotalWeekQty.ToString("N0") L total
+                                </div>
+                            </div>
+                            <div style="font-size:16px;font-weight:800;color:#0d6efd;font-variant-numeric:tabular-nums;">
+                                @trend.TotalWeekQty.ToString("N0")
+                                <span style="font-size:11px;color:#94a3b8;font-weight:500;">L</span>
+                            </div>
+                        </div>
+                        <!-- Sparkline data as inline JS -->
+                        <script>
+                            var @Html.Raw(sparkVarV) = @Html.Raw(sparkData);
+                            var @Html.Raw(sparkVarD) = @Html.Raw(sparkDates);
+                        </script>
+                        <div style="height:52px;position:relative;">
+                            <canvas id="@sparkId" class="cc-spark"
+                                    data-varid="@trend.PlantId"></canvas>
+                        </div>
+                        <!-- Day labels -->
+                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                            @foreach (var day in trend.Days)
+                            {
+                                <span style="font-size:9px;color:#cbd5e1;font-weight:600;">@day.Date.ToString("ddd")</span>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="text-align:center;padding:30px 0;color:#94a3b8;font-size:13px;">
+                    No data for the last 7 days.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Capacity + Alerts -->
+<div class="cc-bottom-grid">
+
+    <!-- Capacity Table -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div>
+                <div class="cc-panel-title">Plant Capacity Overview</div>
+                <div class="cc-panel-sub">Storage summary per plant</div>
+            </div>
+            <a asp-action="Capacity" class="cc-view-all">Monitor <i class="bi bi-arrow-right"></i></a>
+        </div>
+        @if (Model.PlantCapacity.Any())
+        {
+            <table class="cc-mini-table">
+                <thead>
+                    <tr>
+                        <th>Plant</th>
+                        <th class="num">Today (L)</th>
+                        <th class="num">All Time (L)</th>
+                        <th style="text-align:center;">Alerts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plant in Model.PlantCapacity)
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;color:#0f172a;">@plant.PlantName</div>
+                                @if (!string.IsNullOrEmpty(plant.Location))
+                                {
+                                    <div style="font-size:11px;color:#94a3b8;">@plant.Location</div>
+                                }
+                            </td>
+                            <td class="num">@plant.StoredToday.ToString("N0")</td>
+                            <td class="num" style="color:#94a3b8;font-weight:500;">@plant.TotalStoredAllTime.ToString("N0")</td>
+                            <td style="text-align:center;">
+                                <span class="cc-badge @(plant.AlertCount > 0 ? "cc-badge-danger" : "cc-badge-safe")">@plant.AlertCount</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">No plant data.</div>
+        }
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="cc-panel">
+        <div class="cc-panel-head">
+            <div class="cc-panel-title">Active Alerts Today</div>
+            <a asp-action="Alerts" class="cc-view-all" style="color:#dc2626;">View <i class="bi bi-arrow-right"></i></a>
+        </div>
+        @if (Model.ActiveAlerts.Any())
+        {
+            @foreach (var alert in Model.ActiveAlerts)
+            {
+                var tempBadge = alert.TempBadgeClass == "warning" ? "cc-badge-warning" : "cc-badge-danger";
+                <div class="cc-alert-item">
+                    <div>
+                        <div class="cc-alert-name">@alert.PlantName</div>
+                        <div class="cc-alert-meta">@alert.ItemName &mdash; @alert.MilkQuantity.ToString("N0") L</div>
+                    </div>
+                    <span class="cc-badge @tempBadge">
+                        @(alert.Temperature.HasValue? alert.Temperature.Value.ToString("N1") + "°C" : "—")
+                    </span>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px 20px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:#f0fdf4;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#16a34a;margin-bottom:10px;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div style="font-size:14px;font-weight:700;color:#16a34a;">All Clear</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">No temperature alerts today</div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Chart data as inline JS variables — most reliable approach -->
+<script>
+    var _dashLabels = @Html.Raw(chartLabels);
+    var _dashValues = @Html.Raw(chartValues);
+</script>
+
+@section Scripts {
+    <script>
+        // Inject responsive + animation rules (no @@media in Razor)
+        (function() {
+            var s = document.createElement('style');
+            var at = String.fromCharCode(64);
+            s.textContent = [
+                at+'media (max-width:768px){.cc-stat-row{grid-template-columns:repeat(2,1fr);}}',
+                at+'media (max-width:900px){.cc-panel-grid{grid-template-columns:1fr;}.cc-bottom-grid{grid-template-columns:1fr;}}',
+                at+'keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}',
+                '.cc-live-dot{animation:pulse 2s infinite;}'
+            ].join('');
+            document.head.appendChild(s);
+        })();
+
+        function initDashboardCharts() {
+            // ── Main trend chart ──
+            var mainLabels = (typeof _dashLabels !== 'undefined') ? _dashLabels : [];
+            var mainValues = (typeof _dashValues !== 'undefined') ? _dashValues : [];
+            var ctx = document.getElementById('storageChart');
+            if (ctx && mainLabels.length > 0) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: mainLabels,
+                        datasets: [{
+                            label: 'Quantity (L)',
+                            data: mainValues,
+                            borderColor: '#0d6efd',
+                            backgroundColor: function(c) {
+                                var g = c.chart.ctx.createLinearGradient(0,0,0,220);
+                                g.addColorStop(0,'rgba(13,110,253,.15)');
+                                g.addColorStop(1,'rgba(13,110,253,0)');
+                                return g;
+                            },
+                            fill: true, tension: 0.4, borderWidth: 2.5,
+                            pointRadius: 4, pointBackgroundColor: '#fff',
+                            pointBorderColor: '#0d6efd', pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: false, grid: { color:'#f1f5f9' },
+                                 ticks: { font:{size:11}, color:'#94a3b8', callback: function(v){ return v.toLocaleString()+' L'; }}},
+                            x: { grid: { display:false }, ticks: { font:{size:11}, color:'#94a3b8' }}
+                        }
+                    }
+                });
+            }
+
+            // ── Sparklines ──
+            document.querySelectorAll('.cc-spark').forEach(function(canvas) {
+                var pid   = canvas.dataset.varid;
+                var vals  = window['sparkV_' + pid] || [];
+                var dates = window['sparkD_' + pid] || [];
+                if (vals.length === 0) return;
+                var mx = Math.max.apply(null, vals);
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            data: vals,
+                            borderColor: '#0d6efd',
+                            backgroundColor: function(c) {
+                                var g = c.chart.ctx.createLinearGradient(0,0,0,52);
+                                g.addColorStop(0,'rgba(13,110,253,.18)');
+                                g.addColorStop(1,'rgba(13,110,253,0)');
+                                return g;
+                            },
+                            fill: true, tension: 0.4, borderWidth: 2,
+                            pointRadius: function(c){ return c.dataIndex === vals.indexOf(mx) ? 4 : 0; },
+                            pointBackgroundColor: '#fff', pointBorderColor: '#0d6efd', pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return ' '+Number(c.parsed.y).toLocaleString()+' L'; }}}},
+                        scales: { x:{display:false}, y:{display:false, beginAtZero:true}}
+                    }
+                });
+            });
+        }
+
+        // Load Chart.js then init — with CDN fallback
+        var cs = document.createElement('script');
+        cs.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+        cs.onload = function(){ initDashboardCharts(); };
+        cs.onerror = function(){
+            var fb = document.createElement('script');
+            fb.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+            fb.onload = function(){ initDashboardCharts(); };
+            document.head.appendChild(fb);
+        };
+        document.head.appendChild(cs);
+    </script>
+}

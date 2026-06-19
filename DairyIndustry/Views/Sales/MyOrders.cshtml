@@ -1,0 +1,502 @@
+﻿@model List<DairyIndustry.Models.SalesOrderModel>
+@{
+    ViewData["Title"] = "My Orders";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    string distName = ViewBag.DistributorName ?? "Distributor";
+    var productList = ViewBag.ProductList as List<DairyIndustry.Models.ProductSalesModel> ?? new();
+    var plantItems = ViewBag.Plants as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var inactiveIds = ViewBag.InactiveProductIds as HashSet<int> ?? new HashSet<int>();
+
+    // Stats
+    int total = Model.Count;
+    int pending = Model.Count(o => o.OrderStatus == "Pending");
+    int delivered = Model.Count(o => o.OrderStatus == "Delivered" || o.OrderStatus == "Received");
+    int received = Model.Count(o => o.OrderStatus == "Received");
+    int cancelled = Model.Count(o => o.OrderStatus == "Cancelled");
+    decimal spent = Model.Where(o => o.OrderStatus == "Delivered" || o.OrderStatus == "Received").Sum(o => o.TotalAmount);
+
+    // Active filter tab (from query string)
+    string activeFilter = Context.Request.Query["status"].ToString();
+    var filtered = string.IsNullOrEmpty(activeFilter)
+        ? Model
+        : Model.Where(o => o.OrderStatus == activeFilter).ToList();
+}
+
+<!-- ── Header ── -->
+<div class="page-header">
+    <div>
+        <h4 class="fw-bold mb-1">My Orders</h4>
+        <small class="text-muted">Welcome back, <strong>@distName</strong></small>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#placeOrderPanel">
+            ➕ Place New Order
+        </button>
+        <a asp-action="ExportOrders" class="btn btn-outline-success btn-sm">
+            ⬇️ Export CSV
+        </a>
+        <a asp-action="Dashboard" class="btn btn-outline-info btn-sm">
+            📊 My Dashboard
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2">
+        ✅ @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2">
+        ❌ @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ── Summary Stat Cards ── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card text-center">
+            <div class="fs-3 fw-bold text-primary">@total</div>
+            <div class="small text-muted">Total Orders</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card text-center">
+            <div class="fs-3 fw-bold text-warning">@pending</div>
+            <div class="small text-muted">Pending</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card text-center">
+            <div class="fs-3 fw-bold text-success">@delivered</div>
+            <div class="small text-muted">Delivered</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card text-center">
+            <div class="fs-3 fw-bold text-primary">₹@spent.ToString("N0")</div>
+            <div class="small text-muted">Total Spent</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Quick Place-Order Panel ── -->
+<div class="collapse mb-4" id="placeOrderPanel">
+    <div class="card">
+        <div class="card-header fw-semibold text-white" style="background:#0f2040; color:#f0f4ff;">
+            🛒 Quick Order
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted small mb-3">
+                Unit price is set automatically from the product rate.
+                <strong>Same product ordered today?</strong> It will be merged — no duplicate created.
+            </p>
+            <form asp-action="PlaceOrder" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Product</label>
+                        <select name="productId" id="qProductSelect" class="form-select" required>
+                            <option value="">— Select Product —</option>
+                            @foreach (var p in productList)
+                            {
+                                <option value="@p.ProductId" data-mrp="@p.MRP" data-unit="@p.Unit">
+                                    @p.ProductName (@p.ProductType)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">Quantity</label>
+                        <input name="quantity" type="number" step="0.01" min="0.01"
+                               class="form-control" placeholder="e.g. 10" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Processing Plant</label>
+                        <select name="plantId" class="form-select" required>
+                            <option value="">— Select Plant —</option>
+                            @if (plantItems != null)
+                            {
+                                foreach (var pl in plantItems)
+                                {
+                                    <option value="@pl.Value">@pl.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small">MRP</label>
+                        <div class="form-control bg-light text-muted small" id="qMrpDisplay"
+                             style="cursor:not-allowed; font-size:.8rem;">
+                            —
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success w-100">Add</button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-11">
+                        <textarea name="notes" class="form-control form-control-sm" rows="1"
+                                  maxlength="500"
+                                  placeholder="Order note (optional) — e.g. Urgent, deliver before 10am..."></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Filter Tabs ── -->
+<div class="mb-2">
+    <ul class="nav nav-pills gap-1" id="statusTabs">
+        <li class="nav-item">
+            <a class="nav-link @(string.IsNullOrEmpty(activeFilter) ? "active" : "")"
+               href="?" data-status="">All (@total)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Pending" ? "active" : "") text-warning-emphasis"
+               href="?status=Pending" data-status="Pending">Pending (@pending)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Confirmed" ? "active" : "")"
+               href="?status=Confirmed" data-status="Confirmed">
+                Confirmed (@Model.Count(o => o.OrderStatus == "Confirmed"))
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Dispatched" ? "active" : "")"
+               href="?status=Dispatched" data-status="Dispatched">
+                Dispatched (@Model.Count(o => o.OrderStatus == "Dispatched"))
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Delivered" ? "active" : "")"
+               href="?status=Delivered" data-status="Delivered">
+                Delivered (@Model.Count(o => o.OrderStatus == "Delivered"))
+            </a>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Received" ? "active" : "")"
+               href="?status=Received" data-status="Received">
+                Received (@received)
+            </a>
+        </li>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeFilter == "Cancelled" ? "active" : "") text-danger"
+               href="?status=Cancelled" data-status="Cancelled">Cancelled (@cancelled)</a>
+        </li>
+    </ul>
+</div>
+
+<!-- ── Date Range Filter (client-side) ── -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto">
+                <label class="form-label fw-semibold small mb-0 text-muted">📅 Filter by Date</label>
+            </div>
+            <div class="col-auto">
+                <input type="date" id="fromDate" class="form-control form-control-sm"
+                       style="width:155px;" title="From date" />
+            </div>
+            <div class="col-auto text-muted small">to</div>
+            <div class="col-auto">
+                <input type="date" id="toDate" class="form-control form-control-sm"
+                       style="width:155px;" title="To date" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary btn-sm" onclick="applyDateFilter()">Apply</button>
+                <button class="btn btn-outline-secondary btn-sm ms-1" onclick="clearDateFilter()">Clear</button>
+            </div>
+            <div class="col-auto">
+                <span id="dateFilterBadge" class="badge bg-primary" style="display:none;"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Orders Table ── -->
+@if (!filtered.Any())
+{
+    <div class="alert alert-info">
+        @if (!Model.Any())
+        {
+            <span>You haven't placed any orders yet. Click <strong>Place New Order</strong> to get started.</span>
+        }
+        else
+        {
+            <span>No orders with status <strong>@activeFilter</strong>.</span>
+        }
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header fw-semibold" style="background:#f8fafc;">
+            <span id="tableHeader">
+                📦 @(string.IsNullOrEmpty(activeFilter) ? "All Orders" : activeFilter + " Orders")
+                <span class="text-muted fw-normal">(@filtered.Count)</span>
+            </span>
+        </div>
+        <div id="tableWrap" class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="ordersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order id</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in filtered)
+                    {
+                        <tr data-date="@o.OrderDate.ToString("yyyy-MM-dd")"
+                            data-status="@o.OrderStatus">
+                            <td>
+                                <strong>@o.OrderId</strong>
+                                @if (o.OrderDetails.Any(d => inactiveIds.Contains(d.ProductId)))
+                                {
+                                    <span class="badge bg-warning text-dark ms-1"
+                                          title="This order contains one or more inactive products">⚠️ Inactive Product</span>
+                                }
+                            </td>
+                            <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (o.OrderDetails.Any())
+                                {
+                                    <span class="badge bg-light text-dark border">
+                                        @o.OrderDetails.Count item@(o.OrderDetails.Count == 1 ? "" : "s")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td class="fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                            <td>
+                                @{
+                                    string badge = o.OrderStatus switch
+                                    {
+                                        "Pending" => "warning text-dark",
+                                        "Confirmed" => "primary",
+                                        "Dispatched" => "info text-dark",
+                                        "Delivered" => "success",
+                                        "Cancelled" => "danger",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge bg-@badge">
+                                    @(o.OrderStatus == "Received" ? "Received ✅" : o.OrderStatus)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a asp-action="Details" asp-route-id="@o.OrderId"
+                                       class="btn btn-outline-primary btn-sm">View</a>
+
+                                    @if (o.OrderStatus == "Pending")
+                                    {
+                                        <form asp-action="CancelOrder" method="post" class="m-0"
+                                              onsubmit="return confirm('Cancel Order #@o.OrderId?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="orderId" value="@o.OrderId" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (o.OrderStatus == "Delivered")
+                                    {
+                                        <form asp-action="ConfirmReceipt" method="post" class="m-0"
+                                              onsubmit="return confirm('Confirm receipt of Order #@o.OrderId?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="orderId" value="@o.OrderId" />
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                ✅ Confirm
+                                            </button>
+                                        </form>
+                                        <a asp-action="Reorder" asp-route-id="@o.OrderId"
+                                           class="btn btn-outline-success btn-sm"
+                                           onclick="return confirm('Reorder the same items from Order #@o.OrderId?')">
+                                            Reorder
+                                        </a>
+                                    }
+                                    @if (o.OrderStatus == "Received")
+                                    {
+                                        <a asp-action="Reorder" asp-route-id="@o.OrderId"
+                                           class="btn btn-outline-success btn-sm"
+                                           onclick="return confirm('Reorder the same items from Order #@o.OrderId?')">
+                                            Reorder
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div id="noResultsMsg" class="text-center text-muted py-4" style="display:none;">
+            No orders match the selected filters.
+            <button class="btn btn-link btn-sm p-0 ms-1" onclick="clearDateFilter()">Clear date filter</button>
+        </div>
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light"
+             id="paginationWrap" style="display:none!important;">
+            <small class="text-muted" id="pageInfo"></small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="pageControls"></ul>
+            </nav>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // ── Quick Order MRP hint ──────────────────────────────────────────
+        document.getElementById('qProductSelect').addEventListener('change', function () {
+            const opt     = this.options[this.selectedIndex];
+            const mrp     = opt.getAttribute('data-mrp');
+            const unit    = opt.getAttribute('data-unit');
+            const display = document.getElementById('qMrpDisplay');
+            display.textContent = mrp
+                ? '₹' + parseFloat(mrp).toFixed(2) + ' / ' + (unit || 'unit')
+                : '—';
+        });
+
+        // ── Date Range Filter ─────────────────────────────────────────────
+        let activeStatus = '@activeFilter';
+
+        document.querySelectorAll('#statusTabs .nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                activeStatus = this.getAttribute('data-status');
+                document.querySelectorAll('#statusTabs .nav-link')
+                    .forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                applyDateFilter();
+            });
+        });
+
+        function applyDateFilter() {
+            const from  = document.getElementById('fromDate').value;
+            const to    = document.getElementById('toDate').value;
+            const rows  = document.querySelectorAll('#ordersTable tbody tr');
+
+            rows.forEach(row => {
+                const rowDate   = row.getAttribute('data-date');
+                const rowStatus = row.getAttribute('data-status');
+                const statusOk  = !activeStatus || rowStatus === activeStatus;
+                const fromOk    = !from || rowDate >= from;
+                const toOk      = !to   || rowDate <= to;
+                // mark matching rows — pagination will handle visibility
+                row.setAttribute('data-filtered', statusOk && fromOk && toOk ? '1' : '0');
+            });
+
+            const badge = document.getElementById('dateFilterBadge');
+            if (from || to) {
+                badge.style.display = 'inline';
+                badge.textContent   = (from ? from : '…') + ' → ' + (to ? to : '…');
+            } else {
+                badge.style.display = 'none';
+            }
+
+            currentPage = 1;
+            renderPagination();
+        }
+
+        // ── Pagination ────────────────────────────────────────────────────
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows      = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const visible   = rows.filter(r => r.getAttribute('data-filtered') !== '0');
+            const total     = visible.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            // Show/hide rows for current page
+            visible.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+            // Hide filtered-out rows
+            rows.filter(r => r.getAttribute('data-filtered') === '0')
+                .forEach(r => r.style.display = 'none');
+
+            // Update header count
+            const header = document.getElementById('tableHeader');
+            if (header) header.textContent = `📦 Orders (${total} shown)`;
+
+            // Empty state
+            const emptyMsg  = document.getElementById('noResultsMsg');
+            const tableWrap = document.getElementById('tableWrap');
+            if (emptyMsg)  emptyMsg.style.display  = total === 0 ? 'block' : 'none';
+            if (tableWrap) tableWrap.style.display  = total === 0 ? 'none'  : '';
+
+            // Page info
+            const paginationWrap = document.getElementById('paginationWrap');
+            const pageInfo       = document.getElementById('pageInfo');
+            const pageControls   = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                paginationWrap.style.display = 'none';
+                return;
+            }
+            paginationWrap.style.removeProperty('display');
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.textContent = `Showing ${start}–${end} of ${total} orders`;
+
+            // Build page buttons
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
+        }
+
+        function goToPage(p) {
+            const rows    = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const total   = rows.filter(r => r.getAttribute('data-filtered') !== '0').length;
+            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage   = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+            document.getElementById('ordersTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // initialise — mark all rows as visible then paginate
+        document.querySelectorAll('#ordersTable tbody tr').forEach(r => r.setAttribute('data-filtered', '1'));
+        renderPagination();
+
+        function clearDateFilter() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value   = '';
+            applyDateFilter();
+        }
+    </script>
+}

@@ -1,0 +1,687 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@model ChillingStoreItemModel
+
+@{
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "New Storage Entry";
+}
+
+@section Styles {
+    <style>
+        .cc-page-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @@media (max-width:900px) {
+            .cc-page-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .cc-form-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-form-section {
+            padding: 24px 28px;
+        }
+
+            .cc-form-section + .cc-form-section {
+                border-top: 1px solid #f1f5f9;
+            }
+
+        .cc-section-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cc-section-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .cc-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-section-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 1px;
+        }
+
+        .cc-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #475569;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .cc-input {
+            font-size: 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            width: 100%;
+            transition: border-color .15s, box-shadow .15s;
+            background: #fff;
+            color: #0f172a;
+            outline: none;
+        }
+
+            .cc-input:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+            }
+
+        .cc-input-group {
+            display: flex;
+            align-items: stretch;
+        }
+
+            .cc-input-group .cc-input {
+                border-radius: 10px 0 0 10px;
+                flex: 1;
+            }
+
+        .cc-input-addon {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .cc-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .cc-error {
+            font-size: 11px;
+            color: #dc2626;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .cc-form-footer {
+            padding: 18px 28px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cc-btn-primary {
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, box-shadow .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .cc-btn-primary:hover {
+                background: #0b5ed7;
+                box-shadow: 0 4px 12px rgba(13,110,253,.3);
+            }
+
+        .cc-btn-cancel {
+            background: #fff;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-cancel:hover {
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+        /* Shift selector */
+        .cc-shift-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cc-shift-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .18s;
+        }
+
+            .cc-shift-btn:hover {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+            .cc-shift-btn.active[data-value="Morning"] {
+                background: #fefce8;
+                border-color: #fde68a;
+                color: #854d0e;
+            }
+
+            .cc-shift-btn.active[data-value="Afternoon"] {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+                color: #1d4ed8;
+            }
+
+            .cc-shift-btn.active[data-value="Night"] {
+                background: #f5f3ff;
+                border-color: #ddd6fe;
+                color: #5b21b6;
+            }
+
+        /* Right Sidebar */
+        .cc-sidebar-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cc-side-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-side-card-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cc-side-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #64748b;
+        }
+
+        .cc-side-card-body {
+            padding: 16px 18px;
+        }
+
+        .temp-scale {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .temp-scale-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .temp-scale-bar {
+            height: 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .temp-scale-label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .temp-scale-range {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        .cc-checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .cc-check-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .cc-check-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .cc-check-text {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+            .cc-check-text strong {
+                color: #0f172a;
+                display: block;
+                font-size: 12px;
+                margin-bottom: 1px;
+            }
+
+        .cc-quick-stat {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+            .cc-quick-stat:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .cc-quick-stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .cc-quick-stat-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+    </style>
+}
+
+<div class="cc-page-grid">
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert border-0 rounded-3 d-flex align-items-center gap-2 mb-0"
+             style="background:#ecfeff;color:#0891b2;font-size:13px;grid-column:1/-1;" role="alert">
+            <i class="bi bi-copy"></i>
+            <span>@TempData["Info"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:10px;"></button>
+        </div>
+    }
+
+    <!-- LEFT: Form -->
+    <div>
+        <div class="cc-form-card">
+            <form asp-action="Create" method="post" id="createForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PlantId" />
+
+                <!-- Section 1: Product -->
+                <div class="cc-form-section">
+                    <div class="cc-section-head">
+                        <div class="cc-section-num">1</div>
+                        <div>
+                            <div class="cc-section-title">Product</div>
+                            <div class="cc-section-sub">Select the item being stored</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label asp-for="ProductId" class="cc-label"></label>
+                        <select asp-for="ProductId" asp-items="ViewBag.Products" class="cc-input" style="appearance:auto;">
+                            <option value="">— Raw Milk (no product) —</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="cc-error"></span>
+                        <div class="cc-hint">Leave empty if storing raw milk directly.</div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Measurements -->
+                <div class="cc-form-section">
+                    <div class="cc-section-head">
+                        <div class="cc-section-num">2</div>
+                        <div>
+                            <div class="cc-section-title">Measurements</div>
+                            <div class="cc-section-sub">Quantity, temperature and date</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label asp-for="MilkQuantity" class="cc-label"></label>
+                            <div class="cc-input-group">
+                                <input asp-for="MilkQuantity" class="cc-input" type="number" step="0.01" min="0.01" placeholder="0.00" />
+                                <div class="cc-input-addon">L</div>
+                            </div>
+                            <span asp-validation-for="MilkQuantity" class="cc-error"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Temperature" class="cc-label"></label>
+                            <div class="cc-input-group">
+                                <input asp-for="Temperature" class="cc-input" id="tempInput" type="number" step="0.1" placeholder="0.0" />
+                                <div class="cc-input-addon">°C</div>
+                            </div>
+                            <span asp-validation-for="Temperature" class="cc-error"></span>
+                            <div class="cc-hint" id="tempHint" style="margin-top:6px;">Enter a temperature to see status</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label asp-for="StoredDate" class="cc-label"></label>
+                        <input asp-for="StoredDate" class="cc-input" type="date"
+                               max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="StoredDate" class="cc-error"></span>
+                    </div>
+
+                    <!-- Shift Selector -->
+                    <div style="margin-top:16px;">
+                        <label class="cc-label">Shift</label>
+                        <input type="hidden" asp-for="Shift" id="shiftInput" />
+                        <div class="cc-shift-group">
+                            <button type="button" class="cc-shift-btn" data-value="Morning" onclick="selectShift(this)">
+                                <i class="bi bi-sunrise"></i> Morning
+                            </button>
+                            <button type="button" class="cc-shift-btn" data-value="Afternoon" onclick="selectShift(this)">
+                                <i class="bi bi-sun"></i> Afternoon
+                            </button>
+                            <button type="button" class="cc-shift-btn" data-value="Night" onclick="selectShift(this)">
+                                <i class="bi bi-moon-stars"></i> Night
+                            </button>
+                        </div>
+                        <span asp-validation-for="Shift" class="cc-error"></span>
+                        <div class="cc-hint">Optional — select the shift this entry belongs to.</div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="cc-form-footer">
+                    <button type="submit" class="cc-btn-primary">
+                        <i class="bi bi-check-lg"></i> Save Entry
+                    </button>
+                    <a asp-action="Index" class="cc-btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <div class="cc-sidebar-panel">
+
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-thermometer-half" style="color:#0d6efd;font-size:14px;"></i>
+                <span class="cc-side-card-title">Temperature Guide</span>
+            </div>
+            <div class="cc-side-card-body">
+                <div class="temp-scale">
+                    <div class="temp-scale-row">
+                        <div class="temp-scale-bar" style="width:32px;background:#16a34a;"></div>
+                        <span class="temp-scale-label" style="color:#16a34a;">Safe</span>
+                        <span class="temp-scale-range">0°C – 5°C</span>
+                    </div>
+                    <div class="temp-scale-row">
+                        <div class="temp-scale-bar" style="width:32px;background:#ca8a04;"></div>
+                        <span class="temp-scale-label" style="color:#ca8a04;">Warning</span>
+                        <span class="temp-scale-range">5°C – 8°C</span>
+                    </div>
+                    <div class="temp-scale-row">
+                        <div class="temp-scale-bar" style="width:32px;background:#dc2626;"></div>
+                        <span class="temp-scale-label" style="color:#dc2626;">Critical</span>
+                        <span class="temp-scale-range">above 8°C</span>
+                    </div>
+                </div>
+                <div id="liveStatus" style="display:none;margin-top:14px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;transition:all .2s;"></div>
+            </div>
+        </div>
+
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-list-check" style="color:#0d6efd;font-size:14px;"></i>
+                <span class="cc-side-card-title">Before You Save</span>
+            </div>
+            <div class="cc-side-card-body">
+                <div class="cc-checklist">
+                    <div class="cc-check-row">
+                        <div class="cc-check-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-box-seam"></i></div>
+                        <div class="cc-check-text"><strong>Product selected</strong>Leave blank for raw milk storage</div>
+                    </div>
+                    <div class="cc-check-row">
+                        <div class="cc-check-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-droplet-half"></i></div>
+                        <div class="cc-check-text"><strong>Quantity verified</strong>Measure in litres before entry</div>
+                    </div>
+                    <div class="cc-check-row">
+                        <div class="cc-check-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-thermometer-half"></i></div>
+                        <div class="cc-check-text"><strong>Temperature logged</strong>Record at time of storage</div>
+                    </div>
+                    <div class="cc-check-row">
+                        <div class="cc-check-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-calendar3"></i></div>
+                        <div class="cc-check-text"><strong>Date is correct</strong>Date cannot be changed after saving</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-lightbulb" style="color:#ca8a04;font-size:14px;"></i>
+                <span class="cc-side-card-title">Storage Tips</span>
+            </div>
+            <div class="cc-side-card-body" style="padding-top:12px;padding-bottom:12px;">
+                <div class="cc-quick-stat">
+                    <span class="cc-quick-stat-label">Ideal storage temp</span>
+                    <span class="cc-quick-stat-val" style="color:#16a34a;">2°C – 4°C</span>
+                </div>
+                <div class="cc-quick-stat">
+                    <span class="cc-quick-stat-label">Max safe temp</span>
+                    <span class="cc-quick-stat-val" style="color:#ca8a04;">5°C</span>
+                </div>
+                <div class="cc-quick-stat">
+                    <span class="cc-quick-stat-label">Critical threshold</span>
+                    <span class="cc-quick-stat-val" style="color:#dc2626;">8°C</span>
+                </div>
+                <div class="cc-quick-stat">
+                    <span class="cc-quick-stat-label">Max holding time</span>
+                    <span class="cc-quick-stat-val">48 hours</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Temperature Confirmation Modal -->
+<div id="tempConfirmModal" style="
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(15,23,42,.5);backdrop-filter:blur(3px);
+    align-items:center;justify-content:center;">
+    <div style="
+        background:#fff;border-radius:16px;padding:28px;
+        max-width:380px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,.2);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#fef2f2;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="bi bi-thermometer-high" style="font-size:20px;color:#dc2626;"></i>
+            </div>
+            <div>
+                <div style="font-size:15px;font-weight:700;color:#0f172a;">Temperature Warning</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Above safe limit</div>
+            </div>
+        </div>
+        <p id="tempConfirmMsg" style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:20px;"></p>
+        <div style="display:flex;gap:10px;">
+            <button id="tempConfirmSave" type="button" style="
+                flex:1;padding:10px;border-radius:10px;border:none;
+                background:#dc2626;color:#fff;font-size:13px;font-weight:700;
+                cursor:pointer;transition:background .15s;">
+                <i class="bi bi-check-lg" style="margin-right:4px;"></i>Save Anyway
+            </button>
+            <button id="tempConfirmBack" type="button" style="
+                flex:1;padding:10px;border-radius:10px;
+                border:1.5px solid #e2e8f0;background:#fff;
+                color:#475569;font-size:13px;font-weight:600;
+                cursor:pointer;transition:all .15s;">
+                <i class="bi bi-arrow-left" style="margin-right:4px;"></i>Go Back
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <style>
+        @@keyframes modalIn {
+            from {
+                transform: scale(.94);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #tempConfirmModal > div {
+            animation: modalIn .2s cubic-bezier(.4,0,.2,1);
+        }
+    </style>
+    <script>
+        var _formConfirmed = false;
+
+        // ── Form submit intercept ──
+        document.getElementById('createForm').addEventListener('submit', function (e) {
+            if (_formConfirmed) return;
+            var val = parseFloat(document.getElementById('tempInput').value);
+            if (!isNaN(val) && val > 5) {
+                e.preventDefault();
+                var isCritical = val > 8;
+                document.getElementById('tempConfirmMsg').innerHTML = isCritical
+                    ? 'The temperature you entered (<strong>' + val.toFixed(1) + '°C</strong>) is <strong>critical</strong> — significantly above the 5°C safe limit. This entry will be flagged as a critical temperature alert.'
+                    : 'The temperature you entered (<strong>' + val.toFixed(1) + '°C</strong>) is above the safe limit of 5°C. This entry will appear as a temperature warning.';
+                document.getElementById('tempConfirmModal').style.display = 'flex';
+            }
+        });
+
+        document.getElementById('tempConfirmSave').addEventListener('click', function () {
+            _formConfirmed = true;
+            document.getElementById('tempConfirmModal').style.display = 'none';
+            document.getElementById('createForm').submit();
+        });
+
+        document.getElementById('tempConfirmBack').addEventListener('click', function () {
+            document.getElementById('tempConfirmModal').style.display = 'none';
+            document.getElementById('tempInput').focus();
+        });
+
+        document.getElementById('tempConfirmModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.getElementById('tempInput').focus();
+            }
+        });
+
+        // ── Shift selector ──
+        function selectShift(btn) {
+            document.querySelectorAll('.cc-shift-btn').forEach(b => b.classList.remove('active'));
+            var cur = document.getElementById('shiftInput').value;
+            if (cur === btn.dataset.value) {
+                document.getElementById('shiftInput').value = '';
+            } else {
+                btn.classList.add('active');
+                document.getElementById('shiftInput').value = btn.dataset.value;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var val = document.getElementById('shiftInput').value;
+            if (val) {
+                var btn = document.querySelector('.cc-shift-btn[data-value="' + val + '"]');
+                if (btn) btn.classList.add('active');
+            }
+        });
+
+        // ── Live temperature hint ──
+        document.getElementById('tempInput')?.addEventListener('input', function () {
+            var hint = document.getElementById('tempHint');
+            var live = document.getElementById('liveStatus');
+            var val = parseFloat(this.value);
+            if (isNaN(val)) {
+                hint.style.color = '#94a3b8';
+                hint.textContent = 'Enter a temperature to see status';
+                live.style.display = 'none';
+                return;
+            }
+            live.style.display = 'block';
+            if (val <= 5) {
+                hint.style.color = '#16a34a'; hint.textContent = '✓ Safe temperature';
+                live.style.background = '#f0fdf4'; live.style.color = '#16a34a';
+                live.innerHTML = '<i class="bi bi-shield-check" style="margin-right:6px;"></i>Safe — ' + val.toFixed(1) + '°C';
+            } else if (val <= 8) {
+                hint.style.color = '#ca8a04'; hint.textContent = '⚠ Warning — approaching limit';
+                live.style.background = '#fefce8'; live.style.color = '#ca8a04';
+                live.innerHTML = '<i class="bi bi-exclamation-triangle" style="margin-right:6px;"></i>Warning — ' + val.toFixed(1) + '°C';
+            } else {
+                hint.style.color = '#dc2626'; hint.textContent = '✕ Critical — exceeds safe limit';
+                live.style.background = '#fef2f2'; live.style.color = '#dc2626';
+                live.innerHTML = '<i class="bi bi-thermometer-high" style="margin-right:6px;"></i>Critical — ' + val.toFixed(1) + '°C';
+            }
+        });
+    </script>
+}

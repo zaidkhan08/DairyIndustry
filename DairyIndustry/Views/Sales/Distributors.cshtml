@@ -1,0 +1,237 @@
+﻿@model List<DairyIndustry.Models.DistributorModel>
+@{
+    ViewData["Title"] = "Distributors";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    var sales = ViewBag.DistributorSales as List<DairyIndustry.Models.DistributorSalesModel> ?? new();
+    var statusFilter = ViewBag.StatusFilter as string;
+}
+
+<div class="page-header">
+    <div>
+        <h4 class="fw-bold mb-1">Distributors</h4>
+        <small class="text-muted">Manage and approve registered distributors</small>
+    </div>
+    <a asp-action="AddDistributor" class="btn btn-primary btn-sm">➕ Add Distributor</a>
+</div>
+
+<!-- Status Filter Tabs -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == null ? "active" : "")"
+           asp-action="Distributors">All</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Pending" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Pending">⏳ Pending</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Approved" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Approved">✅ Approved</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Rejected" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Rejected">❌ Rejected</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(statusFilter == "Suspended" ? "active" : "")"
+           asp-action="Distributors" asp-route-status="Suspended">🚫 Suspended</a>
+    </li>
+</ul>
+
+@if (Model.Any())
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background:#1a2e4a; color:#fff;">
+                        <tr>
+                            <th>Distributor</th>
+                            <th>GSTIN</th>
+                            <th>Contact</th>
+                            <th>Registered</th>
+                            <th class="text-center">Total Orders</th>
+                            <th>Last Order</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="distTable">
+                        @foreach (var d in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@d.DistributorName</div>
+                                    @if (!string.IsNullOrEmpty(d.Location))
+                                    {
+                                        <small class="text-muted">📍 @d.Location</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(d.Email))
+                                    {
+                                        <br />
+
+                                        <small class="text-muted">✉️ @d.Email</small>
+                                    }
+                                </td>
+                                <td><small class="font-monospace text-muted">@(d.GSTIN ?? "—")</small></td>
+                                <td>@(d.ContactNumber ?? "—")</td>
+                                <td>
+                                    @if (d.RegisteredOn.HasValue)
+                                    {
+                                        <small>@d.RegisteredOn.Value.ToString("dd MMM yyyy")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                @{
+                                    var distSale = sales.FirstOrDefault(s => s.DistributorId == d.DistributorId);
+                                }
+                                <td class="text-center">
+                                    @if (distSale != null && distSale.TotalOrders > 0)
+                                    {
+                                        <span class="badge bg-primary">@distSale.TotalOrders</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (distSale?.LastOrderDate != null)
+                                    {
+                                        <small>@distSale.LastOrderDate.Value.ToString("dd MMM yyyy")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-@d.StatusBadgeClass">@d.Status</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                        <a asp-action="DistributorDetails" asp-route-id="@d.DistributorId"
+                                           class="btn btn-sm btn-outline-primary">View</a>
+
+                                        @if (d.Status == "Pending")
+                                        {
+                                            <form asp-action="ApproveDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <input type="hidden" name="action" value="Approve" />
+                                                <button class="btn btn-sm btn-success">Approve</button>
+                                            </form>
+                                            <form asp-action="ApproveDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <input type="hidden" name="action" value="Reject" />
+                                                <button class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('Reject this distributor?')">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        }
+                                        @if (d.Status == "Approved")
+                                        {
+                                            <form asp-action="SuspendDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <button class="btn btn-sm btn-outline-warning"
+                                                        onclick="return confirm('Suspend this distributor?')">
+                                                    Suspend
+                                                </button>
+                                            </form>
+                                        }
+                                        @if (d.Status == "Suspended" || d.Status == "Rejected")
+                                        {
+                                            <form asp-action="ReinstateDistributor" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="distributorId" value="@d.DistributorId" />
+                                                <button class="btn btn-sm btn-success">Reinstate</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted" id="pageInfo">Showing <strong>@Model.Count</strong> distributor(s)</small>
+                <nav><ul class="pagination pagination-sm mb-0" id="pageControls"></ul></nav>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="text-center text-muted py-5">
+            <div style="font-size:3rem;">🏪</div>
+            <div class="fs-5 mt-2">No distributors found.</div>
+            <a asp-action="AddDistributor" class="btn btn-primary btn-sm mt-3">Add First Distributor</a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows       = [...document.querySelectorAll('#distTable tr')];
+            const total      = rows.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            rows.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+
+            const pageInfo     = document.getElementById('pageInfo');
+            const pageControls = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                pageInfo.textContent = `Showing ${total} distributor(s)`;
+                pageControls.innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total}</strong> distributors`;
+
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
+        }
+
+        function goToPage(p) {
+            const total    = document.querySelectorAll('#distTable tr').length;
+            const maxPage  = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage    = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+        }
+
+        renderPagination();
+    </script>
+}

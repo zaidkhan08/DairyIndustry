@@ -1,0 +1,184 @@
+﻿@model DairyIndustry.Models.DistributorModel
+@{
+    ViewData["Title"] = "My Details";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+
+    // Profile completeness
+    var fields = new[] {
+        ("Business Name",   !string.IsNullOrEmpty(Model.DistributorName)),
+        ("Location",        !string.IsNullOrEmpty(Model.Location)),
+        ("Contact Number",  !string.IsNullOrEmpty(Model.ContactNumber)),
+        ("Email",           !string.IsNullOrEmpty(Model.Email)),
+        ("Address",         !string.IsNullOrEmpty(Model.Address)),
+        ("GSTIN",           !string.IsNullOrEmpty(Model.GSTIN))
+    };
+    int filled = fields.Count(f => f.Item2);
+    int total = fields.Length;
+    int pct = filled * 100 / total;
+    string pctColor = pct == 100 ? "success" : pct >= 50 ? "warning" : "danger";
+}
+
+<div class="page-header">
+    <div>
+        <h4 class="fw-bold mb-1">My Details</h4>
+        <small class="text-muted">Your registration information</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="MyProfile" class="btn btn-primary btn-sm">✏️ Edit Profile</a>
+        <a asp-action="MyOrders" class="btn btn-outline-secondary btn-sm">← My Orders</a>
+    </div>
+</div>
+
+<!-- ── Profile Completeness Card ── -->
+@if (pct < 100)
+{
+    <div class="alert alert-@pctColor d-flex align-items-center gap-3 mb-4 py-2">
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between small fw-semibold mb-1">
+                <span>Profile Completeness</span>
+                <span>@filled / @total fields filled</span>
+            </div>
+            <div class="progress" style="height:6px;">
+                <div class="progress-bar bg-@pctColor" style="width:@pct%"></div>
+            </div>
+            <div class="mt-1 small">
+                Missing:
+                @string.Join(", ", fields.Where(f => !f.Item2).Select(f => f.Item1))
+            </div>
+        </div>
+        <a asp-action="MyProfile" class="btn btn-sm btn-@pctColor">Complete →</a>
+    </div>
+}
+else
+{
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-4 py-2">
+        ✅ <strong>Profile 100% complete!</strong>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2">
+        ✅ @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header text-white d-flex justify-content-between align-items-center"
+                 style="background:#0f2040; color:#f0f4ff;">
+                <span class="fw-semibold">👤 Distributor Profile</span>
+                @{
+                    string badgeColor = Model.Status switch
+                    {
+                        "Approved" => "success",
+                        "Pending" => "warning text-dark",
+                        "Rejected" => "danger",
+                        "Suspended" => "secondary",
+                        _ => "secondary"
+                    };
+                }
+                <span class="badge bg-@badgeColor">@Model.Status</span>
+            </div>
+
+            <div class="card-body p-4">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted fw-normal">Distributor ID</dt>
+                    <dd class="col-sm-8 fw-semibold">#@Model.DistributorId</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Business Name</dt>
+                    <dd class="col-sm-8 fw-semibold fs-6">@Model.DistributorName</dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Location</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrEmpty(Model.Location))
+                        {
+                            @Model.Location
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Contact Number</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrEmpty(Model.ContactNumber))
+                        {
+                            @Model.ContactNumber
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Email</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrEmpty(Model.Email))
+                        {
+                            @Model.Email
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Address</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrEmpty(Model.Address))
+                        {
+                            @Model.Address
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">GSTIN</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrEmpty(Model.GSTIN))
+                        {
+                            <span class="font-monospace">@Model.GSTIN</span>
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Registered On</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.RegisteredOn.HasValue)
+                        {
+                            @Model.RegisteredOn.Value.ToString("dd MMM yyyy")
+                        }
+                        else
+                        {
+
+                            <span class="text-muted">—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted fw-normal">Account Status</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-@badgeColor">@Model.Status</span>
+                    </dd>
+                </dl>
+            </div>
+
+            <div class="card-footer bg-white text-muted small py-2">
+                To update your details, click <strong>Edit Profile</strong> above.
+            </div>
+        </div>
+    </div>
+</div>

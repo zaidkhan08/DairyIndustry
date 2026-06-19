@@ -1,0 +1,255 @@
+﻿@model DairyIndustry.Models.StaffFormModel
+@{
+    Layout = "~/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "Edit Staff";
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-pencil-fill"></i></span>
+            Edit Staff
+        </h1>
+        <p class="page-subtitle">Updating — @Model.FirstName @Model.LastName</p>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.StaffId" class="btn-hr-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Details
+    </a>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="StaffId" />
+    <input type="hidden" asp-for="ProfilePhoto" />
+    <input type="hidden" asp-for="CurrentSalary" />
+
+    <div class="row g-4">
+
+        <!-- LEFT -->
+        <div class="col-md-8">
+
+            <!-- Personal Info -->
+            <div class="hr-card mb-4">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-person-fill"></i></div>
+                    Personal Information
+                </div>
+                <div class="hr-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-hr">First Name <span style="color:#dc2626;">*</span></label>
+                            <input asp-for="FirstName" class="form-control-hr" />
+                            <span asp-validation-for="FirstName" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Last Name <span style="color:#dc2626;">*</span></label>
+                            <input asp-for="LastName" class="form-control-hr" />
+                            <span asp-validation-for="LastName" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Role <span style="color:#dc2626;">*</span></label>
+                            <select asp-for="RoleId" class="form-select-hr" asp-items="ViewBag.Roles">
+                                <option value="0">— Select Role —</option>
+                            </select>
+                            <span asp-validation-for="RoleId" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Phone Number</label>
+                            <input asp-for="Phone" class="form-control-hr" />
+                            <span asp-validation-for="Phone" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Email Address</label>
+                            <input asp-for="Email" class="form-control-hr" type="email" />
+                            <span asp-validation-for="Email" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Date of Joining</label>
+                            <input asp-for="DOJ" class="form-control-hr" type="date" />
+                        </div>
+
+                        <!-- Salary + Change Reason -->
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Salary (₹)</label>
+                            <input asp-for="Salary" class="form-control-hr" type="number"
+                                   step="0.01" id="salaryInput" oninput="checkSalaryChange()" />
+                            @if (Model.CurrentSalary.HasValue)
+                            {
+                                <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;">
+                                    Current: <strong style="color:#475569;">₹@Model.CurrentSalary.Value.ToString("N2")</strong>
+                                </div>
+                            }
+                            <span asp-validation-for="Salary" style="font-size:.72rem;color:#dc2626;"></span>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-end pb-1">
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input asp-for="IsActive" type="checkbox"
+                                       style="width:18px;height:18px;accent-color:#2563eb;cursor:pointer;" />
+                                <span style="font-size:.82rem;font-weight:600;color:#0f172a;">Active Staff Member</span>
+                            </label>
+                        </div>
+
+                        <!-- Salary change reason — shown only when salary changes -->
+                        <div class="col-12" id="salaryReasonBox" style="display:none;">
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:3px solid #22c55e;border-radius:10px;padding:14px 16px;">
+                                <label class="form-label-hr" style="color:#166534;margin-bottom:6px;">
+                                    <i class="bi bi-chat-left-text me-1"></i>Reason for Salary Change
+                                    <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;"> (optional)</span>
+                                </label>
+                                <input asp-for="SalaryChangeReason" class="form-control-hr"
+                                       placeholder="e.g. Annual Increment, Promotion, Correction..." />
+                                <div style="font-size:.7rem;color:#94a3b8;margin-top:5px;">
+                                    <i class="bi bi-info-circle me-1"></i>This reason will be saved in the salary history log.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment -->
+            <div class="hr-card mb-4">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-diagram-3-fill"></i></div>
+                    Assignment
+                    <span style="font-size:.72rem;color:#94a3b8;font-weight:400;margin-left:4px;">— fill only one</span>
+                </div>
+                <div class="hr-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Plant</label>
+                            <select asp-for="PlantId" class="form-select-hr" asp-items="ViewBag.Plants">
+                                <option value="">— Select Plant —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-hr">Collection Center</label>
+                            <select asp-for="CenterId" class="form-select-hr" asp-items="ViewBag.Centers">
+                                <option value="">— Select Center —</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#0369a1;">
+                                <i class="bi bi-info-circle me-1"></i>Select either a Plant or a Collection Center — not both.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Details -->
+            <div class="hr-card">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-bank2"></i></div>
+                    Bank Account Details
+                </div>
+                <div class="hr-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label-hr">Bank Name</label>
+                            <input asp-for="BankName" class="form-control-hr" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-hr">Account Number</label>
+                            <input asp-for="AccountNumber" class="form-control-hr" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-hr">IFSC Code</label>
+                            <input asp-for="IFSCCode" class="form-control-hr" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="col-md-4">
+
+            <!-- Photo -->
+            <div class="hr-card mb-3">
+                <div class="hr-card-header">
+                    <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-camera-fill"></i></div>
+                    Profile Photo
+                </div>
+                <div style="padding:20px;text-align:center;">
+                    @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                    {
+                        <img id="photoPreview" src="@Model.ProfilePhoto"
+                             class="rounded-circle mb-3"
+                             style="width:120px;height:120px;object-fit:cover;border:3px solid #bfdbfe;" />
+                    }
+                    else
+                    {
+                        <img id="photoPreview"
+                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23eff6ff' rx='60'/%3E%3Ccircle cx='60' cy='48' r='22' fill='%23bfdbfe'/%3E%3Cellipse cx='60' cy='104' rx='36' ry='28' fill='%23bfdbfe'/%3E%3C/svg%3E"
+                             class="rounded-circle mb-3"
+                             style="width:120px;height:120px;object-fit:cover;border:3px solid #bfdbfe;" />
+                    }
+                    <input asp-for="PhotoFile" type="file" accept="image/*"
+                           class="form-control-hr mb-2" style="font-size:.78rem;padding:7px 12px;"
+                           onchange="previewPhoto(this)" />
+                    <div style="font-size:.7rem;color:#94a3b8;">Leave empty to keep existing photo</div>
+                </div>
+            </div>
+
+            <!-- Info box -->
+            <div class="hr-card" style="border-left:3px solid #f59e0b;">
+                <div class="hr-card-header" style="background:#fffbeb;border-color:#fde68a;">
+                    <div class="hch-icon" style="background:#fef3c7;color:#d97706;"><i class="bi bi-exclamation-circle-fill"></i></div>
+                    <span style="color:#92400e;">Note</span>
+                </div>
+                <div style="padding:14px 16px;">
+                    <div style="font-size:.78rem;color:#475569;line-height:1.7;">
+                        <div class="d-flex gap-2 mb-1"><i class="bi bi-lock-fill" style="color:#d97706;margin-top:2px;flex-shrink:0;"></i>Login credentials cannot be changed here — use the Admin Panel.</div>
+                        <div class="d-flex gap-2"><i class="bi bi-clock-history" style="color:#d97706;margin-top:2px;flex-shrink:0;"></i>Salary changes are automatically logged to history.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-end gap-3 mt-4">
+        <a asp-action="Details" asp-route-id="@Model.StaffId" class="btn-hr-secondary" style="padding:10px 24px;">
+            <i class="bi bi-x-lg"></i> Cancel
+        </a>
+        <button type="submit" class="btn-hr-primary" style="padding:10px 28px;">
+            <i class="bi bi-check-lg"></i> Save Changes
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                var r = new FileReader();
+                r.onload = function(e) { document.getElementById('photoPreview').src = e.target.result; };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+
+        var originalSalary = @(Model.CurrentSalary.HasValue
+                    ? Model.CurrentSalary.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                : "null");
+
+    function checkSalaryChange() {
+        var input = document.getElementById('salaryInput');
+        var box   = document.getElementById('salaryReasonBox');
+        if (!input.value) { box.style.display = 'none'; return; }
+        var changed = originalSalary === null ? true : Math.abs(parseFloat(input.value) - originalSalary) > 0.001;
+        box.style.display = changed ? '' : 'none';
+    }
+
+        document.addEventListener('DOMContentLoaded', checkSalaryChange);
+    </script>
+}

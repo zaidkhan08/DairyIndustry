@@ -1,0 +1,571 @@
+﻿@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Chilling Center</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 78px;
+            --navbar-height: 64px;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --primary-color: #0d6efd;
+            --transition-speed: 0.25s;
+            --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1001;
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width var(--transition-speed) var(--transition-curve);
+        }
+
+        #sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        #main-wrapper {
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: margin-left var(--transition-speed) var(--transition-curve);
+        }
+
+        #sidebar.collapsed + #main-wrapper {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* HARD KILL for all transitions during page load/init */
+        .no-transition #sidebar,
+        .no-transition #main-wrapper,
+        .no-transition .brand-text,
+        .no-transition .nav-text,
+        .no-transition i {
+            transition: none !important;
+        }
+
+        /* ── Sidebar Header ── */
+        .sidebar-header {
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sidebar-header:hover {
+            background-color: #f8fafc;
+        }
+
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            min-width: 40px;
+            justify-content: center;
+        }
+
+        .logo-expanded { display: block; }
+        .logo-collapsed { display: none; }
+
+        #sidebar.collapsed .logo-expanded { display: none; }
+        #sidebar.collapsed .logo-collapsed { display: block; }
+
+        /* ── Nav Links ── */
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            margin: 0.125rem 0.75rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .nav-link-custom i {
+            font-size: 1.25rem;
+            min-width: 24px;
+            margin-right: 1.25rem;
+            text-align: center;
+            transition: margin 0.2s;
+            z-index: 2;
+        }
+
+        .nav-link-custom:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .nav-link-custom.active {
+            background-color: #eef2ff;
+            color: var(--primary-color);
+        }
+
+        /* ── Text fade on collapse ── */
+        .brand-text, .nav-text {
+            opacity: 1;
+            transition: opacity 0.2s var(--transition-curve);
+        }
+
+        #sidebar.collapsed .brand-text,
+        #sidebar.collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        #sidebar.collapsed .nav-link-custom {
+            margin: 0.125rem 0.65rem;
+            padding: 0.75rem;
+            justify-content: center;
+        }
+
+        #sidebar.collapsed .nav-link-custom i {
+            margin-right: 0;
+        }
+
+        /* ── Nav Section Label ── */
+        .nav-section-label {
+            padding: 0.35rem 1.25rem 0.2rem;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        #sidebar.collapsed .nav-section-label {
+            display: none;
+        }
+
+        /* ── Sidebar Footer ── */
+        .sidebar-footer {
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        #sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-back-production {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 0.6rem 1rem;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        .btn-back-production:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: var(--primary-color);
+        }
+
+        /* ── Navbar ── */
+        .navbar-custom {
+            height: var(--navbar-height);
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        /* ── Search ── */
+        .search-container {
+            position: relative;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .search-container input {
+            background-color: #f1f5f9;
+            border: 1px solid transparent;
+            border-radius: 0.5rem;
+            padding-left: 2.5rem;
+        }
+
+        .search-container input:focus {
+            background-color: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        /* ── Content ── */
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .no-caret::after { display: none !important; }
+    </style>
+
+    @RenderSection("Styles", required: false)
+
+    <!-- Print styles injected via JS to avoid Razor @@media/@@page conflicts -->
+    <script>
+        (function() {
+            var s = document.createElement('style');
+            var at = String.fromCharCode(64);
+            s.textContent =
+                at + 'media print {' +
+                '  #sidebar, #cc-topbar, .cc-filter-bar, .cc-tab-bar,' +
+                '  .cc-pagination-bar, .cc-chart-card, .cc-report-strip,' +
+                '  .btn, .cc-btn-icon, .cc-btn-edit, .cc-btn-del,' +
+                '  .cc-btn-duplicate, .no-print { display:none !important; }' +
+                '  #cc-main { margin:0 !important; padding:16px !important; }' +
+                '  #main-wrapper { margin-left:0 !important; }' +
+                '  .cc-table-card, .cc-info-card, .cc-summary-card {' +
+                '    box-shadow:none !important; border:1px solid #e2e8f0 !important; border-radius:0 !important;' +
+                '  }' +
+                '  .cc-tab-panel { display:block !important; }' +
+                '  body { background:#fff !important; font-size:12px; }' +
+                '  .cc-table thead tr { background:#f8fafc !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+                '  .cc-badge,.cc-trend,.cc-strip-card { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+                '}' +
+                at + 'page { margin:1.5cm; }';
+            document.head.appendChild(s);
+        })();
+    </script>
+</head>
+<body class="no-transition">
+
+    <!-- ── SIDEBAR ───────────────────────────────────────── -->
+    <aside id="sidebar" class="shadow-sm">
+
+        <!-- Logo / Toggle Header -->
+        <div class="sidebar-header" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <div class="brand-logo-container">
+                <i class="bi bi-snow2 text-primary fs-3 logo-expanded"></i>
+                <i class="bi bi-list text-dark fs-3 logo-collapsed"></i>
+            </div>
+            <span class="brand-text fw-bold fs-5 ms-2">Chilling</span>
+            <i class="bi bi-list text-dark fs-3 ms-auto brand-text"></i>
+        </div>
+
+        <!-- Nav Links -->
+        <div class="flex-grow-1 mt-3" style="overflow-y:auto; overflow-x:hidden;">
+
+            <div class="nav-section-label">Overview</div>
+            <a href="@Url.Action("Dashboard", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Dashboard" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i>
+                <span class="nav-text">Dashboard</span>
+            </a>
+
+            <div class="nav-section-label">Storage</div>
+            <a href="@Url.Action("Index", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Index" ? "active" : "")">
+                <i class="bi bi-table"></i>
+                <span class="nav-text">All Entries</span>
+            </a>
+            <a href="@Url.Action("Create", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Create" ? "active" : "")">
+                <i class="bi bi-plus-circle"></i>
+                <span class="nav-text">New Entry</span>
+            </a>
+
+            <div class="nav-section-label">Monitoring</div>
+            <a href="@Url.Action("Alerts", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Alerts" ? "active" : "")">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="nav-text">Temperature Alerts</span>
+            </a>
+            <a href="@Url.Action("Capacity", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Capacity" ? "active" : "")">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="nav-text">Capacity Monitor</span>
+            </a>
+            <a href="@Url.Action("Report", "ChillingCenter")"
+               class="nav-link-custom @(currentAction == "Report" ? "active" : "")">
+                <i class="bi bi-calendar2-week"></i>
+                <span class="nav-text">Daily Report</span>
+            </a>
+
+        </div>
+
+        <!-- Footer: Back to Production -->
+        <div class="sidebar-footer">
+            <a href="@Url.Action("Index", "Production")" class="btn-back-production">
+                <i class="bi bi-arrow-left-circle"></i>
+                <span>Back to Production</span>
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- ── MAIN WRAPPER ───────────────────────────────────── -->
+    <div id="main-wrapper">
+
+        <!-- Top Navbar -->
+        <header class="navbar-custom">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-link text-dark p-0 d-md-none" onclick="toggleSidebar()">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="search-container d-none d-md-block">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control border-0" placeholder="Search...">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+
+                <!-- Plant Name badge (from session) -->
+                @if (Context.Session.GetString("PlantName") != null)
+                {
+                    <div class="badge bg-light text-dark border px-3 py-2 rounded-pill d-none d-sm-block">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                        @Context.Session.GetString("PlantName")
+                    </div>
+                }
+
+                <!-- User Avatar Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-circle p-0 dropdown-toggle no-caret border shadow-sm"
+                            style="width:40px; height:40px;" data-bs-toggle="dropdown">
+                        <span class="fw-bold">
+                            @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "P")
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 p-2">
+                        <li class="px-3 py-2 border-bottom mb-2">
+                            <div class="fw-bold">@(Context.Session.GetString("Username") ?? "Plant Manager")</div>
+                            <div class="text-muted small">Plant Manager</div>
+                            <div class="text-muted small">@DateTime.Now.ToString("dd MMM yyyy")</div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded text-danger fw-bold"
+                               asp-controller="Admin" asp-action="Logout">
+                                <i class="bi bi-power me-2"></i>Sign out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="content-body">
+            <div class="container-fluid p-0">
+                <div class="mb-4">
+                    <h1 class="h3 fw-bold mb-0">@ViewData["Title"]</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mt-1">
+                            <li class="breadcrumb-item small text-muted">Chilling Center</li>
+                            <li class="breadcrumb-item active small" aria-current="page">@ViewData["Title"]</li>
+                        </ol>
+                    </nav>
+                </div>
+                @RenderBody()
+            </div>
+        </main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Restore sidebar state before first paint (no-transition class prevents flash)
+        (function () {
+            const savedState = localStorage.getItem('cc_sidebarCollapsed');
+            if (savedState === 'true' || savedState === null) {
+                document.getElementById('sidebar').classList.add('collapsed');
+            } else {
+                document.getElementById('sidebar').classList.remove('collapsed');
+            }
+        })();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('cc_sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Remove no-transition after init to re-enable animations
+            setTimeout(() => { document.body.classList.remove('no-transition'); }, 50);
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- ── Toast Notification System ── -->
+    @if (TempData["Success"] != null || TempData["Error"] != null || TempData["Info"] != null)
+    {
+        <div id="toastData"
+             data-success="@(TempData["Success"] ?? "")"
+             data-error="@(TempData["Error"] ?? "")"
+             data-info="@(TempData["Info"] ?? "")"
+             style="display:none;"></div>
+    }
+
+    <div id="cc-toast-container" style="
+        position:fixed;bottom:24px;right:24px;z-index:9999;
+        display:flex;flex-direction:column;gap:10px;
+        max-width:360px;pointer-events:none;"></div>
+
+    <style>
+        .cc-toast {
+            display:flex;align-items:flex-start;gap:12px;
+            padding:14px 16px;border-radius:12px;
+            box-shadow:0 8px 24px rgba(0,0,0,.12);
+            font-size:13px;font-weight:500;line-height:1.5;
+            pointer-events:all;cursor:pointer;
+            transform:translateX(120%);opacity:0;
+            transition:transform .35s cubic-bezier(.4,0,.2,1), opacity .35s;
+            border:1px solid transparent;
+            font-family:'Inter',sans-serif;
+        }
+        .cc-toast.show { transform:translateX(0);opacity:1; }
+        .cc-toast.hide { transform:translateX(120%);opacity:0; }
+        .cc-toast-success { background:#f0fdf4;border-color:#bbf7d0;color:#15803d; }
+        .cc-toast-error   { background:#fef2f2;border-color:#fecaca;color:#dc2626; }
+        .cc-toast-info    { background:#ecfeff;border-color:#a5f3fc;color:#0891b2; }
+        .cc-toast-icon { font-size:18px;flex-shrink:0;margin-top:1px; }
+        .cc-toast-body { flex:1; }
+        .cc-toast-title { font-weight:700;font-size:13px;margin-bottom:2px; }
+        .cc-toast-msg   { font-size:12px;opacity:.85; }
+        .cc-toast-close { font-size:14px;opacity:.5;flex-shrink:0;margin-top:1px;transition:opacity .15s; }
+        .cc-toast-close:hover { opacity:1; }
+        .cc-toast-progress {
+            position:absolute;bottom:0;left:0;height:3px;
+            border-radius:0 0 12px 12px;
+            transition:width linear;
+        }
+        .cc-toast { position:relative;overflow:hidden; }
+        .cc-toast-success .cc-toast-progress { background:#16a34a; }
+        .cc-toast-error   .cc-toast-progress { background:#dc2626; }
+        .cc-toast-info    .cc-toast-progress { background:#0891b2; }
+    </style>
+
+    <script>
+        (function () {
+            var td = document.getElementById('toastData');
+            if (!td) return;
+
+            var toasts = [
+                { type: 'success', msg: td.dataset.success, icon: 'bi-check-circle-fill', title: 'Success' },
+                { type: 'error',   msg: td.dataset.error,   icon: 'bi-exclamation-circle-fill', title: 'Error' },
+                { type: 'info',    msg: td.dataset.info,    icon: 'bi-info-circle-fill', title: 'Info' }
+            ].filter(t => t.msg && t.msg.trim() !== '');
+
+            toasts.forEach(function (t, i) {
+                setTimeout(function () { showToast(t.type, t.title, t.msg, t.icon); }, i * 150);
+            });
+
+            function showToast(type, title, msg, icon) {
+                var duration = 4000;
+                var container = document.getElementById('cc-toast-container');
+
+                var el = document.createElement('div');
+                el.className = 'cc-toast cc-toast-' + type;
+                el.innerHTML =
+                    '<i class="bi ' + icon + ' cc-toast-icon"></i>' +
+                    '<div class="cc-toast-body">' +
+                        '<div class="cc-toast-title">' + title + '</div>' +
+                        '<div class="cc-toast-msg">' + msg + '</div>' +
+                    '</div>' +
+                    '<i class="bi bi-x cc-toast-close"></i>' +
+                    '<div class="cc-toast-progress" style="width:100%;"></div>';
+
+                container.appendChild(el);
+
+                // Animate in
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () { el.classList.add('show'); });
+                });
+
+                // Progress bar
+                var bar = el.querySelector('.cc-toast-progress');
+                bar.style.transition = 'width ' + duration + 'ms linear';
+                setTimeout(function () { bar.style.width = '0%'; }, 50);
+
+                // Auto dismiss
+                var timer = setTimeout(function () { dismiss(el); }, duration);
+
+                // Click to dismiss
+                el.addEventListener('click', function () {
+                    clearTimeout(timer);
+                    dismiss(el);
+                });
+            }
+
+            function dismiss(el) {
+                el.classList.add('hide');
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+            }
+        })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,418 @@
+﻿@model DairyIndustry.Models.StaffModel
+@{
+    Layout = "~/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "Staff Details";
+    var salaryHistory = ViewBag.SalaryHistory as List<DairyIndustry.Models.SalaryHistoryModel>;
+    var staffNotes = ViewBag.StaffNotes as List<DairyIndustry.Models.StaffNoteModel>;
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-person-lines-fill"></i></span>
+            Staff Details
+        </h1>
+        <p class="page-subtitle">Full profile — #@Model.StaffId</p>
+    </div>
+    <a asp-action="Index" class="btn-hr-secondary">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+</div>
+
+<div class="row g-4">
+
+    <!-- ── LEFT: Profile ── -->
+    <div class="col-md-4">
+
+        <!-- Profile Card -->
+        <div class="hr-card text-center mb-3">
+            <div style="padding:28px 20px 20px;">
+                @if (!string.IsNullOrEmpty(Model.ProfilePhoto))
+                {
+                    <img src="@Model.ProfilePhoto"
+                         class="rounded-circle mb-3"
+                         style="width:110px;height:110px;object-fit:cover;border:3px solid #bfdbfe;box-shadow:0 4px 16px rgba(37,99,235,.15);"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22110%22 height=%22110%22 viewBox=%220 0 110 110%22%3E%3Crect width=%22110%22 height=%22110%22 fill=%22%23eff6ff%22 rx=%2255%22/%3E%3Ccircle cx=%2255%22 cy=%2244%22 r=%2220%22 fill=%22%23bfdbfe%22/%3E%3Cellipse cx=%2255%22 cy=%2295%22 rx=%2232%22 ry=%2225%22 fill=%22%23bfdbfe%22/%3E%3C/svg%3E'" />
+                }
+                else
+                {
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                         style="width:110px;height:110px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:3px solid #bfdbfe;box-shadow:0 4px 16px rgba(37,99,235,.1);">
+                        <i class="bi bi-person-fill" style="font-size:2.8rem;color:#2563eb;"></i>
+                    </div>
+                }
+
+                <div style="font-size:1.1rem;font-weight:800;color:#0f172a;letter-spacing:-.02em;margin-bottom:6px;">@Model.FullName</div>
+                <div class="mb-2"><span class="badge-role">@Model.RoleName</span></div>
+                <div class="mb-3">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge-active">● Active</span>
+                    }
+                    else
+                    {
+
+                        <span class="badge-inactive">● Inactive</span>
+                    }
+                </div>
+
+                @if (Model.Salary.HasValue)
+                {
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 16px;margin-bottom:16px;">
+                        <div style="font-size:.68rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Monthly Salary</div>
+                        <div style="font-size:1.25rem;font-weight:800;color:#16a34a;letter-spacing:-.02em;">₹@Model.Salary.Value.ToString("N0")</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Update Photo -->
+            <div style="border-top:1px solid #f1f5f9;padding:16px 20px;">
+                <form asp-action="UpdatePhoto" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="staffId" value="@Model.StaffId" />
+                    <label class="form-label-hr mb-1">Update Photo</label>
+                    <input type="file" name="photo" accept="image/*"
+                           class="form-control-hr mb-2" style="font-size:.78rem;padding:7px 12px;" />
+                    <button type="submit" class="btn-hr-secondary w-100 justify-content-center" style="font-size:.78rem;">
+                        <i class="bi bi-upload"></i> Upload Photo
+                    </button>
+                </form>
+            </div>
+
+            <!-- Toggle Active -->
+            <div style="border-top:1px solid #f1f5f9;padding:12px 20px;">
+                <form asp-action="ToggleActive" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.StaffId" />
+                    <input type="hidden" name="currentStatus" value="@Model.IsActive.ToString().ToLower()" />
+                    @if (Model.IsActive)
+                    {
+                        <button type="submit" class="w-100 d-flex align-items-center justify-content-center gap-2"
+                                style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:9px 16px;border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;">
+                            <i class="bi bi-person-dash-fill"></i> Deactivate Staff
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="w-100 d-flex align-items-center justify-content-center gap-2"
+                                style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;padding:9px 16px;border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;">
+                            <i class="bi bi-person-check-fill"></i> Activate Staff
+                        </button>
+                    }
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="hr-card">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-lightning-fill"></i></div>
+                Quick Actions
+            </div>
+            <div style="padding:12px;">
+                <div class="d-flex flex-column gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.StaffId" class="btn-hr-primary justify-content-center" style="font-size:.8rem;">
+                        <i class="bi bi-pencil-fill"></i> Edit Staff Details
+                    </a>
+                    <a asp-action="Payments" asp-route-staffId="@Model.StaffId" class="btn-hr-secondary justify-content-center" style="font-size:.8rem;color:#d97706;border-color:#fde68a;background:#fffbeb;">
+                        <i class="bi bi-cash-stack"></i> View Payments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RIGHT: Info Cards ── -->
+    <div class="col-md-8">
+
+        <!-- Personal Info -->
+        <div class="hr-card mb-3">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-person-fill"></i></div>
+                Personal Information
+            </div>
+            <div style="padding:4px 0;">
+                @{
+                    void InfoRow(string label, string value, string? extra = null)
+                    {
+                        <div style="display:flex;align-items:center;padding:11px 20px;border-bottom:1px solid #f8fafc;">
+                            <div style="width:140px;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;">@label</div>
+                            <div style="font-size:.83rem;color:#0f172a;font-weight:500;">@(string.IsNullOrEmpty(value) ? "—" : value)</div>
+                        </div>
+                    }
+                }
+                @{
+                    InfoRow("Staff ID", "#" + Model.StaffId);
+                }
+                @{
+                    InfoRow("Full Name", Model.FullName);
+                }
+                @{
+                    InfoRow("Phone", Model.Phone ?? "—");
+                }
+                @{
+                    InfoRow("Email", Model.Email ?? "—");
+                }
+                @{
+                    InfoRow("Date of Joining", Model.DOJ.HasValue ? Model.DOJ.Value.ToString("dd MMM yyyy") : "—");
+                }
+                @{
+                    InfoRow("Salary", Model.Salary.HasValue ? "₹" + Model.Salary.Value.ToString("N2") : "—");
+                }
+                <div style="display:flex;align-items:center;padding:11px 20px;">
+                    <div style="width:140px;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;">Status</div>
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge-active">Active</span>
+                    }
+                    else
+                    {
+
+                        <span class="badge-inactive">Inactive</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment -->
+        <div class="hr-card mb-3">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-diagram-3-fill"></i></div>
+                Assignment
+            </div>
+            <div style="padding:14px 20px;">
+                @if (Model.PlantName != null)
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="background:#e0f2fe;color:#0369a1;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">Plant</span>
+                        <span style="font-size:.84rem;font-weight:600;color:#0f172a;">@Model.PlantName</span>
+                    </div>
+                }
+                else if (Model.CenterName != null)
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="background:#dcfce7;color:#15803d;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">Center</span>
+                        <span style="font-size:.84rem;font-weight:600;color:#0f172a;">@Model.CenterName</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="font-size:.83rem;color:#94a3b8;font-style:italic;">Not assigned to any plant or collection center</div>
+                }
+            </div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="hr-card mb-3">
+            <div class="hr-card-header">
+                <div class="hch-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-bank2"></i></div>
+                Bank Account
+            </div>
+            <div style="padding:4px 0;">
+                @{
+                    InfoRow("Bank Name", Model.BankName ?? "—");
+                }
+                @{
+                    InfoRow("Account Number", Model.AccountNumber ?? "—");
+                }
+                @{
+                    InfoRow("IFSC Code", Model.IFSCCode ?? "—");
+                }
+            </div>
+        </div>
+
+        <!-- Login Account Status -->
+        <div class="hr-card mb-3" style="border-left:3px solid @(Model.HasLoginAccount ? "#6366f1" : "#e2e8f0");">
+            <div class="hr-card-header" style="background:@(Model.HasLoginAccount ? "#eef2ff" : "#f8fafc");border-color:@(Model.HasLoginAccount ? "#c7d2fe" : "#e2e8f0");">
+                <div class="hch-icon" style="background:@(Model.HasLoginAccount ? "#e0e7ff" : "#f1f5f9");color:@(Model.HasLoginAccount ? "#6366f1" : "#94a3b8");">
+                    <i class="bi bi-shield-@(Model.HasLoginAccount ? "lock-fill" : "x")"></i>
+                </div>
+                <span style="color:@(Model.HasLoginAccount ? "#3730a3" : "#64748b");">Login Account</span>
+                <span class="ms-auto" style="font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;
+                    background:@(Model.HasLoginAccount ? (Model.IsLoginActive ? "#dcfce7" : "#f1f5f9") : "#f1f5f9");
+                    color:@(Model.HasLoginAccount ? (Model.IsLoginActive ? "#15803d" : "#64748b") : "#94a3b8");">
+                    @(Model.HasLoginAccount ? (Model.IsLoginActive ? "● Active" : "● Inactive") : "No Account")
+                </span>
+            </div>
+            <div style="padding:14px 20px;">
+                @if (Model.HasLoginAccount)
+                {
+                    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:.68rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Username</div>
+                            <div style="font-size:.88rem;font-weight:700;color:#0f172a;">@Model.LoginUsername</div>
+                        </div>
+                        @if (Model.LoginCreatedDate.HasValue)
+                        {
+                            <div>
+                                <div style="font-size:.68rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Created</div>
+                                <div style="font-size:.82rem;color:#475569;">@Model.LoginCreatedDate.Value.ToString("dd MMM yyyy")</div>
+                            </div>
+                        }
+                    </div>
+                    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#0369a1;">
+                        <i class="bi bi-info-circle me-1"></i>Manage credentials via <strong>Admin Panel → User Management</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" style="padding:20px 0;">
+                        <i class="bi bi-shield-x empty-state-icon" style="font-size:1.8rem;"></i>
+                        <div class="empty-state-title">No login account</div>
+                        <div class="empty-state-text">Create one via Admin Panel → User Management</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Salary History -->
+        @if (salaryHistory != null && salaryHistory.Any())
+        {
+            <div class="hr-card mb-3" style="border-left:3px solid #8b5cf6;">
+                <div class="hr-card-header" style="background:#f5f3ff;border-color:#ddd6fe;">
+                    <div class="hch-icon" style="background:#ede9fe;color:#7c3aed;"><i class="bi bi-clock-history"></i></div>
+                    <span style="color:#5b21b6;">Salary History</span>
+                    <span class="ms-auto" style="background:#8b5cf6;color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;">@salaryHistory.Count</span>
+                </div>
+                <div style="padding:4px 0;">
+                    @foreach (var h in salaryHistory)
+                    {
+                        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 20px;border-bottom:1px solid #f8fafc;">
+                            <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;
+                                        background:@(h.ChangeDirection == "increase" ? "#dcfce7" : h.ChangeDirection == "decrease" ? "#fee2e2" : "#eff6ff");
+                                        color:@(h.ChangeDirection == "increase" ? "#16a34a" : h.ChangeDirection == "decrease" ? "#dc2626" : "#2563eb");">
+                                <i class="bi @h.ChangeIcon"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span style="font-size:.9rem;font-weight:800;color:#0f172a;">₹@h.NewSalary.ToString("N2")</span>
+                                    @if (h.OldSalary.HasValue)
+                                    {
+                                        <span style="font-size:.72rem;color:#94a3b8;">from ₹@h.OldSalary.Value.ToString("N2")</span>
+                                        <span style="font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;
+                                                        background:@(h.ChangeDirection == "increase" ? "#dcfce7" : "#fee2e2");
+                                                        color:@(h.ChangeDirection == "increase" ? "#15803d" : "#b91c1c");">
+                                            @(h.ChangeDirection == "increase" ? "+" : "")₹@Math.Abs(h.NewSalary - h.OldSalary.Value).ToString("N2")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="background:#eff6ff;color:#1d4ed8;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;">Starting Salary</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(h.Reason))
+                                {
+                                    <div style="font-size:.75rem;color:#64748b;margin-bottom:3px;"><i class="bi bi-chat-left-text me-1"></i>@h.Reason</div>
+                                }
+                                <div style="font-size:.7rem;color:#94a3b8;">
+                                    <i class="bi bi-calendar3 me-1"></i>@h.ChangedDate.ToString("dd MMM yyyy, hh:mm tt")
+                                    @if (!string.IsNullOrEmpty(h.ChangedBy))
+                                    {
+                                        <span class="ms-2"><i class="bi bi-person me-1"></i>@h.ChangedBy</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Performance Notes -->
+        <div class="hr-card" style="border-left:3px solid #f97316;">
+            <div class="hr-card-header" style="background:#fff7ed;border-color:#fed7aa;">
+                <div class="hch-icon" style="background:#ffedd5;color:#ea580c;"><i class="bi bi-journal-text"></i></div>
+                <span style="color:#9a3412;">Performance Notes</span>
+                <span class="ms-auto" style="background:#f97316;color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;">@(staffNotes?.Count ?? 0)</span>
+            </div>
+            <div style="padding:16px 20px;">
+
+                <!-- Add Note Form -->
+                <form asp-action="AddNote" method="post" class="mb-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="staffId" value="@Model.StaffId" />
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label-hr mb-1">Note Type</label>
+                            <select name="noteType" class="form-select-hr" style="font-size:.8rem;padding:8px 12px;">
+                                <option value="General">📋 General</option>
+                                <option value="Warning">⚠️ Warning</option>
+                                <option value="Appreciation">⭐ Appreciation</option>
+                                <option value="Feedback">💬 Feedback</option>
+                                <option value="Observation">👁️ Observation</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label-hr mb-1">Note <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(<span id="charCount">0</span>/1000)</span></label>
+                            <div class="d-flex gap-2">
+                                <textarea name="noteText" id="noteTextArea" rows="2"
+                                          placeholder="Write a note about this staff member..."
+                                          maxlength="1000" required
+                                          class="form-control-hr flex-grow-1" style="resize:vertical;min-height:72px;font-size:.82rem;"></textarea>
+                                <button type="submit" class="btn-hr-primary align-self-end flex-shrink-0" style="padding:9px 14px;">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Notes -->
+                @if (staffNotes != null && staffNotes.Any())
+                {
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var note in staffNotes)
+                        {
+                            <div style="background:@note.CardBgColor;border:1px solid @note.CardBorderColor;border-left:3px solid @note.CardBorderColor;border-radius:10px;padding:12px 14px;">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="bi @note.IconClass flex-shrink-0" style="margin-top:1px;"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                            <span class="badge @note.BadgeClass" style="font-size:.65rem;border-radius:20px;">@note.NoteType</span>
+                                            <span style="font-size:.68rem;color:#94a3b8;"><i class="bi bi-calendar3 me-1"></i>@note.CreatedDate.ToString("dd MMM yyyy, hh:mm tt")</span>
+                                            @if (!string.IsNullOrEmpty(note.CreatedBy))
+                                            {
+                                                <span style="font-size:.68rem;color:#94a3b8;"><i class="bi bi-person me-1"></i>@note.CreatedBy</span>
+                                            }
+                                        </div>
+                                        <div style="font-size:.82rem;color:#0f172a;white-space:pre-wrap;line-height:1.5;">@note.NoteText</div>
+                                    </div>
+                                    <form asp-action="DeleteNote" method="post" class="flex-shrink-0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="noteId" value="@note.NoteId" />
+                                        <input type="hidden" name="staffId" value="@Model.StaffId" />
+                                        <button type="submit"
+                                                style="width:26px;height:26px;border-radius:50%;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;"
+                                                onclick="return confirm('Delete this note? This cannot be undone.');">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" style="padding:24px 0 8px;">
+                        <i class="bi bi-journal-x empty-state-icon"></i>
+                        <div class="empty-state-title">No notes yet</div>
+                        <div class="empty-state-text">Add the first note using the form above</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var noteArea  = document.getElementById('noteTextArea');
+        var charCount = document.getElementById('charCount');
+        if (noteArea && charCount) {
+            noteArea.addEventListener('input', function () { charCount.textContent = this.value.length; });
+        }
+    </script>
+}

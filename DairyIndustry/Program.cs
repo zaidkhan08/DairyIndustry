@@ -17,17 +17,8 @@ namespace DairyIndustry
     {
         public static void Main(string[] args)
         {
-
-            //  LOAD DLL
-            //var context = new CustomAssemblyLoadContext();
-            //context.LoadUnmanagedLibrary(
-            //    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/lib/libwkhtmltox.dll")
-            //);
-
-
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSingleton<DbHelper>();
-            //builder.Services.AddControllersWithViews(options =>
             builder.Services.AddScoped<ActionLogFilter>();
             builder.Services.AddScoped<EmailService>();
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
@@ -39,6 +30,10 @@ namespace DairyIndustry
             builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
             builder.Services.AddScoped<IHomeRepository, HomeRepository>();
             builder.Services.AddScoped<FileUploadService>();
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddScoped<IChillingCenterRepository, ChillingCenterRepository>();
+            builder.Services.AddScoped<IHRRepository, HRRepository>();
+            builder.Services.AddScoped<ISalesRepository, SalesRepository>();
 
 
             //  REGISTER DinkToPdf
@@ -51,7 +46,6 @@ namespace DairyIndustry
 
             builder.Services.AddControllersWithViews(options =>
             {
-                //options.Filters.Add<ExceptionHandlerFilter>();
                 options.Filters.Add<ResultInfoFilter>();
             });
 
@@ -61,6 +55,7 @@ namespace DairyIndustry
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
 
             builder.Services.Configure<FormOptions>(options =>
             {
@@ -82,7 +77,7 @@ namespace DairyIndustry
             app.UseAuthorization();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Admin}/{action=Login}/{id?}");
+                pattern: "{controller=Sales}/{action=Index}/{id?}");
 
             app.Run();
         }

@@ -1,0 +1,178 @@
+﻿@model List<DairyIndustry.Models.StaffPaymentModel>
+@{
+    Layout = "~/Views/Shared/_HRLayout.cshtml";
+    ViewData["Title"] = "Staff Payments";
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">
+            <span class="page-icon"><i class="bi bi-cash-stack"></i></span>
+            Staff Payments
+        </h1>
+        <p class="page-subtitle">@Model.Count payment record(s) found</p>
+    </div>
+    <a asp-action="Dashboard" class="btn-hr-secondary">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+</div>
+
+<!-- Filter Card -->
+<div class="hr-card mb-4">
+    <div class="hr-card-body">
+        <form method="get" asp-action="Payments">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label-hr">Payment Status</label>
+                    <select name="status" class="form-select-hr">
+                        <option value="">All Statuses</option>
+                        @foreach (var item in ViewBag.StatusList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected>@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label-hr">Staff ID</label>
+                    <input type="number" name="staffId" class="form-control-hr"
+                           placeholder="Enter Staff ID" value="@ViewBag.SelectedStaffId" />
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn-hr-primary flex-grow-1">
+                        <i class="bi bi-funnel-fill"></i> Filter
+                    </button>
+                    <a asp-action="Payments" class="btn-hr-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+@if (Model.Any())
+{
+    var pending = Model.Count(p => p.PaymentStatus == "Pending");
+    var processed = Model.Count(p => p.PaymentStatus == "Processed");
+    var failed = Model.Count(p => p.PaymentStatus == "Failed");
+    var totalAmt = Model.Sum(p => p.TotalAmount);
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-card-amber stat-amber">
+                <div class="stat-icon stat-icon-amber"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="stat-value">@pending</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-card-green stat-green">
+                <div class="stat-icon stat-icon-green"><i class="bi bi-check-circle-fill"></i></div>
+                <div>
+                    <div class="stat-value">@processed</div>
+                    <div class="stat-label">Processed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-card-red stat-red">
+                <div class="stat-icon stat-icon-red"><i class="bi bi-x-circle-fill"></i></div>
+                <div>
+                    <div class="stat-value">@failed</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-card-blue stat-blue">
+                <div class="stat-icon stat-icon-blue"><i class="bi bi-currency-rupee"></i></div>
+                <div>
+                    <div class="stat-value" style="font-size:1.4rem;">@totalAmt.ToString("N0")</div>
+                    <div class="stat-label">Total Amount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Payments Table -->
+<div class="hr-card">
+    @if (Model.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="hr-table">
+                <thead>
+                    <tr>
+                        <th style="padding-left:20px;">Payment ID</th>
+                        <th>Staff Name</th>
+                        <th>Type</th>
+                        <th>Plant</th>
+                        <th>Period</th>
+                        <th>Amount</th>
+                        <th>Payment Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td style="padding-left:20px;">
+                                <span style="font-size:.78rem;font-weight:700;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:6px;">#@p.PaymentId</span>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@p.StaffId"
+                                   style="font-size:.83rem;font-weight:600;color:#2563eb;text-decoration:none;">
+                                    @p.StaffName
+                                </a>
+                            </td>
+                            <td><span class="badge-role">@p.StaffType</span></td>
+                            <td style="font-size:.82rem;color:#475569;">@(p.PlantName ?? "—")</td>
+                            <td style="font-size:.78rem;color:#64748b;">
+                                @p.FromDate.ToString("dd MMM") – @p.ToDate.ToString("dd MMM yyyy")
+                            </td>
+                            <td style="font-size:.84rem;font-weight:700;color:#0f172a;">₹@p.TotalAmount.ToString("N2")</td>
+                            <td style="font-size:.78rem;color:#475569;">@p.PaymentDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @{
+                                    var (bg, fg) = p.PaymentStatus switch
+                                    {
+                                        "Processed" => ("#dcfce7", "#15803d"),
+                                        "Pending" => ("#fef3c7", "#92400e"),
+                                        "Failed" => ("#fee2e2", "#b91c1c"),
+                                        "Cancelled" => ("#f1f5f9", "#64748b"),
+                                        _ => ("#f1f5f9", "#64748b")
+                                    };
+                                }
+                                <span style="background:@bg;color:@fg;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">@p.PaymentStatus</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div style="padding:12px 20px;border-top:1px solid #f1f5f9;font-size:.75rem;color:#94a3b8;">
+            Showing <strong style="color:#475569;">@Model.Count</strong> payment record(s)
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-cash-stack empty-state-icon"></i>
+            <div class="empty-state-title">No payments found</div>
+            <div class="empty-state-text">Try adjusting your filters to see results</div>
+            <a asp-action="Payments" class="btn-hr-secondary mt-3" style="font-size:.8rem;">Clear Filters</a>
+        </div>
+    }
+</div>

@@ -1,0 +1,613 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@model ChillingStorageModel
+
+@{
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Entry #" + Model.StorageId;
+
+    var isSafe = Model.TempBadgeClass == "success";
+    var isWarning = Model.TempBadgeClass == "warning";
+
+    var statusBg = isSafe ? "#f0fdf4" : isWarning ? "#fefce8" : "#fef2f2";
+    var statusBorder = isSafe ? "#bbf7d0" : isWarning ? "#fde68a" : "#fecaca";
+    var statusColor = isSafe ? "#16a34a" : isWarning ? "#ca8a04" : "#dc2626";
+    var statusIcon = isSafe ? "shield-check" : isWarning ? "thermometer-half" : "thermometer-high";
+    var statusLabel = isSafe ? "Safe" : isWarning ? "Warning" : "Critical";
+}
+
+@section Styles {
+    <style>
+        .cc-page-grid {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @@media (max-width:900px) {
+            .cc-page-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Temp Hero ── */
+        .cc-temp-hero {
+            border-radius: 14px;
+            padding: 22px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border: 1.5px solid;
+        }
+
+        .cc-temp-hero-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .cc-temp-hero-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .cc-temp-hero-label {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .cc-temp-hero-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        .cc-temp-hero-val {
+            font-size: 40px;
+            font-weight: 800;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Info Card ── */
+        .cc-info-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-info-card-header {
+            padding: 14px 22px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cc-info-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #64748b;
+        }
+
+        .cc-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cc-info-cell {
+            padding: 16px 22px;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+            .cc-info-cell:nth-child(odd) {
+                border-right: 1px solid #f8fafc;
+            }
+
+            .cc-info-cell.full {
+                grid-column: 1/-1;
+                border-right: none;
+            }
+
+        .cc-info-cell-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .cc-info-cell-val {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-info-cell-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .cc-actions {
+            padding: 16px 22px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 10px;
+        }
+
+        .cc-btn-edit {
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 9px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s;
+        }
+
+            .cc-btn-edit:hover {
+                background: #0b5ed7;
+                color: #fff;
+            }
+
+        .cc-btn-duplicate {
+            background: #fff;
+            color: #0891b2;
+            border: 1.5px solid #a5f3fc;
+            border-radius: 10px;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-duplicate:hover {
+                background: #ecfeff;
+                border-color: #67e8f9;
+                color: #0891b2;
+            }
+
+        .cc-btn-del {
+            background: #fff;
+            color: #dc2626;
+            border: 1.5px solid #fecaca;
+            border-radius: 10px;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .cc-btn-del:hover {
+                background: #fef2f2;
+                border-color: #f87171;
+                color: #dc2626;
+            }
+
+        /* ── Right Sidebar ── */
+        .cc-sidebar-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cc-side-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .cc-side-card-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cc-side-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #64748b;
+        }
+
+        .cc-side-card-body {
+            padding: 16px 18px;
+        }
+
+        /* Gauge */
+        .cc-gauge-wrap {
+            text-align: center;
+            padding: 8px 0 4px;
+        }
+
+        .cc-gauge-arc {
+            position: relative;
+            width: 120px;
+            height: 64px;
+            margin: 0 auto 10px;
+            overflow: hidden;
+        }
+
+        .cc-gauge-bg {
+            position: absolute;
+            inset: 0;
+            border-radius: 60px 60px 0 0;
+            background: conic-gradient(#16a34a 0% 33%, #ca8a04 33% 55%, #dc2626 55% 100%);
+            opacity: .18;
+        }
+
+        .cc-gauge-needle-wrap {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 56px;
+            transform-origin: bottom center;
+            transition: transform 1s cubic-bezier(.4,0,.2,1);
+        }
+
+        .cc-gauge-needle {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top,#0f172a,#475569);
+            border-radius: 2px;
+        }
+
+        .cc-gauge-dot {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #0f172a;
+        }
+
+        .cc-gauge-val {
+            font-size: 22px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cc-gauge-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-top: 2px;
+        }
+
+        /* Timeline */
+        .cc-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .cc-tl-item {
+            display: flex;
+            gap: 12px;
+            padding-bottom: 14px;
+            position: relative;
+        }
+
+            .cc-tl-item:last-child {
+                padding-bottom: 0;
+            }
+
+            .cc-tl-item:not(:last-child)::before {
+                content: '';
+                position: absolute;
+                left: 9px;
+                top: 20px;
+                bottom: 0;
+                width: 2px;
+                background: #f1f5f9;
+            }
+
+        .cc-tl-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .cc-tl-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cc-tl-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* Quick nav */
+        .cc-nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .cc-nav-link:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .cc-nav-link:hover .cc-nav-link-label {
+                color: #0d6efd;
+            }
+
+        .cc-nav-link-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cc-nav-link-icon {
+            font-size: 14px;
+            color: #94a3b8;
+            transition: transform .15s;
+        }
+
+        .cc-nav-link:hover .cc-nav-link-icon {
+            transform: translateX(3px);
+            color: #0d6efd;
+        }
+    </style>
+}
+
+<div class="cc-page-grid">
+
+    <!-- ── LEFT: Entry Details ── -->
+    <div>
+        <!-- Temperature Hero -->
+        <div class="cc-temp-hero" style="background:@statusBg; border-color:@statusBorder;">
+            <div class="cc-temp-hero-left">
+                <div class="cc-temp-hero-icon" style="background:@statusBorder;">
+                    <i class="bi bi-@statusIcon" style="color:@statusColor;"></i>
+                </div>
+                <div>
+                    <div class="cc-temp-hero-label" style="color:@statusColor;">@Model.TempStatus</div>
+                    <div class="cc-temp-hero-sub">Temperature status for this entry</div>
+                </div>
+            </div>
+            <div class="cc-temp-hero-val" style="color:@statusColor;">
+                @(Model.Temperature.HasValue? Model.Temperature.Value.ToString("N1") + "°C" : "—")
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="cc-info-card">
+            <div class="cc-info-card-header">
+                <i class="bi bi-info-circle" style="color:#94a3b8;font-size:14px;"></i>
+                <span class="cc-info-card-title">Entry Information</span>
+            </div>
+
+            <div class="cc-info-grid">
+                <div class="cc-info-cell">
+                    <div class="cc-info-cell-label">Storage ID</div>
+                    <div class="cc-info-cell-val">#@Model.StorageId</div>
+                </div>
+                <div class="cc-info-cell">
+                    <div class="cc-info-cell-label">Stored Date</div>
+                    <div class="cc-info-cell-val">@Model.StoredDate.ToString("dd MMM yyyy")</div>
+                </div>
+                <div class="cc-info-cell full">
+                    <div class="cc-info-cell-label">Plant</div>
+                    <div class="cc-info-cell-val">@Model.PlantName</div>
+                </div>
+                <div class="cc-info-cell">
+                    <div class="cc-info-cell-label">Item Stored</div>
+                    <div class="cc-info-cell-val">@Model.ItemName</div>
+                    @if (!string.IsNullOrEmpty(Model.ProductType))
+                    {
+                        <div class="cc-info-cell-sub">@Model.ProductType &bull; @Model.Unit</div>
+                    }
+                </div>
+                <div class="cc-info-cell">
+                    <div class="cc-info-cell-label">Quantity</div>
+                    <div class="cc-info-cell-val">
+                        @Model.MilkQuantity.ToString("N2")
+                        <span style="font-size:12px;color:#94a3b8;font-weight:500;">L</span>
+                    </div>
+                </div>
+                <div class="cc-info-cell full">
+                    <div class="cc-info-cell-label">Shift</div>
+                    <div class="cc-info-cell-val">
+                        @if (!string.IsNullOrEmpty(Model.Shift))
+                        {
+                            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;@Model.ShiftBadgeStyle">
+                                <i class="bi @Model.ShiftIcon"></i> @Model.Shift
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="color:#94a3b8;font-size:13px;font-weight:400;">Not specified</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="cc-actions">
+                <a asp-action="Edit" asp-route-id="@Model.StorageId" class="cc-btn-edit">
+                    <i class="bi bi-pencil"></i> Edit Entry
+                </a>
+                <a asp-action="Duplicate" asp-route-id="@Model.StorageId" class="cc-btn-duplicate">
+                    <i class="bi bi-copy"></i> Duplicate
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.StorageId" class="cc-btn-del">
+                    <i class="bi bi-trash3"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RIGHT: Sidebar ── -->
+    <div class="cc-sidebar-panel">
+
+        <!-- Temperature Gauge -->
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-thermometer-half" style="color:@statusColor;font-size:14px;"></i>
+                <span class="cc-side-card-title">Temperature Gauge</span>
+            </div>
+            <div class="cc-side-card-body">
+                @{
+                    double tempVal = (double)(Model.Temperature ?? 0);
+                    // Map 0–8°C range to -90deg to +90deg (critical threshold = 8°C = 100%)
+                    double clampedVal = Math.Max(0, Math.Min(8, tempVal));
+                    double needleDeg = -90 + (clampedVal / 8.0 * 180);
+                    bool hasTemp = Model.Temperature.HasValue;
+                }
+                @if (hasTemp)
+                {
+                    <div class="cc-gauge-wrap">
+                        <div class="cc-gauge-arc">
+                            <div class="cc-gauge-bg"></div>
+                            <div class="cc-gauge-needle-wrap" id="gaugeNeedle"
+                                 style="transform:translateX(-50%) rotate(@(needleDeg.ToString("F0"))deg);">
+                                <div class="cc-gauge-needle"></div>
+                                <div class="cc-gauge-dot"></div>
+                            </div>
+                        </div>
+                        <div class="cc-gauge-val" style="color:@statusColor;">
+                            @Model.Temperature.Value.ToString("N1")°C
+                        </div>
+                        <div class="cc-gauge-label" style="color:@statusColor;">@statusLabel</div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;">
+                        <span style="font-size:10px;color:#16a34a;font-weight:700;">0°C</span>
+                        <span style="font-size:10px;color:#ca8a04;font-weight:700;">5°C</span>
+                        <span style="font-size:10px;color:#dc2626;font-weight:700;">8°C+</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align:center;padding:20px 0;">
+                        <div style="font-size:32px;color:#e2e8f0;"><i class="bi bi-thermometer"></i></div>
+                        <div style="font-size:12px;color:#94a3b8;margin-top:8px;font-weight:600;">No temperature recorded</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Entry Timeline -->
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-clock-history" style="color:#0d6efd;font-size:14px;"></i>
+                <span class="cc-side-card-title">Entry Timeline</span>
+            </div>
+            <div class="cc-side-card-body">
+                <div class="cc-timeline">
+                    <div class="cc-tl-item">
+                        <div class="cc-tl-dot" style="background:#eff6ff;color:#2563eb;">
+                            <i class="bi bi-plus"></i>
+                        </div>
+                        <div>
+                            <div class="cc-tl-title">Entry Created</div>
+                            <div class="cc-tl-sub">@Model.StoredDate.ToString("dd MMM yyyy")</div>
+                        </div>
+                    </div>
+                    <div class="cc-tl-item">
+                        <div class="cc-tl-dot" style="background:@statusBg;color:@statusColor;">
+                            <i class="bi bi-thermometer-half"></i>
+                        </div>
+                        <div>
+                            <div class="cc-tl-title">Temperature Logged</div>
+                            <div class="cc-tl-sub" style="color:@statusColor;">
+                                @(Model.Temperature.HasValue? Model.Temperature.Value.ToString("N1") + "°C — " + statusLabel : "Not recorded")
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cc-tl-item">
+                        <div class="cc-tl-dot" style="background:#f0fdf4;color:#16a34a;">
+                            <i class="bi bi-check"></i>
+                        </div>
+                        <div>
+                            <div class="cc-tl-title">Stored at @Model.PlantName</div>
+                            <div class="cc-tl-sub">@Model.MilkQuantity.ToString("N2") L of @Model.ItemName</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="cc-side-card">
+            <div class="cc-side-card-head">
+                <i class="bi bi-grid" style="color:#0d6efd;font-size:14px;"></i>
+                <span class="cc-side-card-title">Quick Navigation</span>
+            </div>
+            <div class="cc-side-card-body" style="padding-top:8px;padding-bottom:8px;">
+                <a asp-action="Index" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-table" style="color:#64748b;"></i> All Entries</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+                <a asp-action="Create" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-plus-circle" style="color:#64748b;"></i> New Entry</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+                <a asp-action="Alerts" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-exclamation-triangle" style="color:#64748b;"></i> Temperature Alerts</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+                <a asp-action="Capacity" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-bar-chart-line" style="color:#64748b;"></i> Capacity Monitor</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+                <a asp-action="Report" class="cc-nav-link">
+                    <span class="cc-nav-link-label"><i class="bi bi-calendar2-week" style="color:#64748b;"></i> Daily Report</span>
+                    <i class="bi bi-chevron-right cc-nav-link-icon"></i>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>

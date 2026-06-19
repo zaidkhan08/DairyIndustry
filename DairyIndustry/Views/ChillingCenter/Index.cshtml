@@ -1,0 +1,830 @@
+﻿@using DairyIndustry.Models.ChillingStorage
+@model List<ChillingStorageModel>
+
+@{
+    Layout = "_ChillingLayout";
+    ViewData["Title"] = "Storage Entries";
+}
+
+@section Styles {
+    <style>
+        .cc-filter-bar {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+            .cc-filter-bar .form-label {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: #94a3b8;
+                margin-bottom: 4px;
+            }
+
+            .cc-filter-bar .form-control, .cc-filter-bar .form-select {
+                font-size: 13px;
+                border-color: #e2e8f0;
+                border-radius: 8px;
+                height: 36px;
+            }
+
+                .cc-filter-bar .form-control:focus, .cc-filter-bar .form-select:focus {
+                    border-color: #0d6efd;
+                    box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+                }
+
+        .cc-table-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+            .cc-table-card .card-header {
+                background: #fff;
+                border-bottom: 1px solid #f1f5f9;
+                padding: 16px 20px;
+            }
+
+            .cc-table-card .card-header-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .cc-table-card .card-header-sub {
+                font-size: 12px;
+                color: #94a3b8;
+                margin-top: 2px;
+            }
+
+        .cc-table thead tr {
+            background: #f8fafc;
+        }
+
+        .cc-table thead th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: #94a3b8;
+            border: none;
+            padding: 12px 16px;
+            white-space: nowrap;
+        }
+
+        .cc-table tbody tr {
+            border-bottom: 1px solid #f8fafc;
+            transition: background .15s;
+        }
+
+            .cc-table tbody tr:hover {
+                background: #f8fafc;
+            }
+
+                .cc-table tbody tr:hover td:first-child {
+                    box-shadow: inset 3px 0 0 #0d6efd;
+                }
+
+        .cc-table tbody td {
+            font-size: 13px;
+            color: #334155;
+            padding: 14px 16px;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .cc-table .cell-id {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .cc-table .cell-primary {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .cc-table .cell-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .cc-table .cell-num {
+            font-weight: 600;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .cc-badge-safe {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-badge-warning {
+            background: #fefce8;
+            color: #ca8a04;
+        }
+
+        .cc-badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-btn-icon {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            transition: all .15s;
+            text-decoration: none;
+        }
+
+            .cc-btn-icon:hover.view {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+                color: #2563eb;
+            }
+
+            .cc-btn-icon:hover.edit {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+                color: #475569;
+            }
+
+            .cc-btn-icon:hover.del {
+                background: #fef2f2;
+                border-color: #fecaca;
+                color: #dc2626;
+            }
+
+        /* Temperature trend badge */
+        .cc-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 5px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .cc-trend-up {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cc-trend-down {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cc-trend-same {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+
+        .cc-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .cc-empty-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: #f1f5f9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        .cc-empty-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .cc-empty-sub {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        /* Pagination */
+        .cc-pagination-bar {
+            padding: 12px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .cc-pagination-info {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+            .cc-pagination-info span {
+                font-weight: 600;
+                color: #0f172a;
+            }
+
+        .cc-pages {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cc-page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .15s;
+            user-select: none;
+        }
+
+            .cc-page-btn:hover:not(.disabled):not(.active) {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+                color: #0f172a;
+            }
+
+            .cc-page-btn.active {
+                background: #0d6efd;
+                border-color: #0d6efd;
+                color: #fff;
+                font-weight: 700;
+            }
+
+            .cc-page-btn.disabled {
+                opacity: .35;
+                cursor: not-allowed;
+            }
+
+        /* Quick Edit popover */
+        .cc-qe-popover {
+            display: none;
+            position: fixed;
+            z-index: 9000;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 12px 32px rgba(0,0,0,.15);
+            border: 1px solid #e2e8f0;
+            padding: 18px 20px;
+            width: 260px;
+        }
+
+            .cc-qe-popover.visible {
+                display: block;
+            }
+
+        .cc-qe-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cc-qe-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .cc-qe-input {
+            font-size: 13px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+            width: 100%;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+            .cc-qe-input:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+            }
+
+        .cc-qe-input-group {
+            display: flex;
+        }
+
+            .cc-qe-input-group .cc-qe-input {
+                border-radius: 8px 0 0 8px;
+                flex: 1;
+            }
+
+        .cc-qe-addon {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .cc-qe-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .cc-qe-save {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+            .cc-qe-save:hover {
+                background: #0b5ed7;
+            }
+
+        .cc-qe-cancel {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .cc-qe-msg {
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+            min-height: 16px;
+        }
+    </style>
+}
+
+<!-- Hidden antiforgery token for QuickEdit fetch calls -->
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<input type="hidden" id="cc-csrf-token" value="@requestToken" />
+
+<!-- Filter Bar -->
+<div class="cc-filter-bar">
+    <form method="get" asp-action="Index">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Search Item</label>
+                <div style="position:relative;">
+                    <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
+                    <input type="text" name="search" class="form-control"
+                           style="padding-left:32px;"
+                           placeholder="e.g. Raw Milk, Cheese…"
+                           value="@ViewBag.Search" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100" style="height:36px;font-size:13px;border-radius:8px;">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100" style="height:36px;font-size:13px;border-radius:8px;">Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="cc-table-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="card-header-title">Storage Records</div>
+            <div class="card-header-sub">@Model.Count entr@(Model.Count == 1 ? "y" : "ies") found</div>
+        </div>
+        <a asp-action="Create" class="btn btn-primary btn-sm" style="font-size:13px;border-radius:8px;padding:7px 16px;">
+            <i class="bi bi-plus-lg me-1"></i>New Entry
+        </a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table cc-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="padding-left:20px;">ID</th>
+                        <th>Date</th>
+                        <th>Plant</th>
+                        <th>Item</th>
+                        <th class="text-end">Qty (L)</th>
+                        <th class="text-center">Temp</th>
+                        <th class="text-center">Shift</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center" style="padding-right:20px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int idx = 0;
+                    }
+                    @foreach (var entry in Model)
+                    {
+                        var badgeClass = entry.TempBadgeClass == "success" ? "cc-badge-safe"
+                        : entry.TempBadgeClass == "warning" ? "cc-badge-warning"
+                        : entry.TempBadgeClass == "danger" ? "cc-badge-danger"
+                        : "cc-badge-secondary";
+
+                        // ── Temperature trend vs previous entry from same plant ──
+                        string trendHtml = "";
+                        if (entry.Temperature.HasValue)
+                        {
+                            var prev = Model.Skip(idx + 1)
+                            .FirstOrDefault(e => e.PlantId == entry.PlantId
+                            && e.Temperature.HasValue);
+                            if (prev != null)
+                            {
+                                var diff = entry.Temperature.Value - prev.Temperature.Value;
+                                if (diff > 0)
+                                    trendHtml = $"<span class='cc-trend cc-trend-up'><i class='bi bi-arrow-up'></i>{diff.ToString("N1")}</span>";
+                                else if (diff < 0)
+                                    trendHtml = $"<span class='cc-trend cc-trend-down'><i class='bi bi-arrow-down'></i>{Math.Abs(diff).ToString("N1")}</span>";
+                                else
+                                    trendHtml = "<span class='cc-trend cc-trend-same'><i class='bi bi-arrow-right'></i></span>";
+                            }
+                        }
+                        idx++;
+
+                        <tr data-id="@entry.StorageId"
+                            data-qty="@entry.MilkQuantity.ToString("F2")"
+                            data-temp="@(entry.Temperature.HasValue? entry.Temperature.Value.ToString("F1") : "")">
+                            <td style="padding-left:20px;"><span class="cell-id">#@entry.StorageId</span></td>
+                            <td>@entry.StoredDate.ToString("dd MMM yyyy")</td>
+                            <td><span class="cell-primary">@entry.PlantName</span></td>
+                            <td>
+                                <span class="cell-primary">@entry.ItemName</span>
+                                @if (!string.IsNullOrEmpty(entry.ProductType))
+                                {
+                                    <div class="cell-sub">@entry.ProductType</div>
+                                }
+                            </td>
+                            <td class="text-end"><span class="cell-num">@entry.MilkQuantity.ToString("N2")</span></td>
+                            <td class="text-center">
+                                @if (entry.Temperature.HasValue)
+                                {
+                                    <span class="cell-num">@entry.Temperature.Value.ToString("N1")°C</span>
+                                    @Html.Raw(trendHtml)
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1;">—</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (!string.IsNullOrEmpty(entry.Shift))
+                                {
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;@entry.ShiftBadgeStyle">
+                                        <i class="bi @entry.ShiftIcon"></i> @entry.Shift
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1;">—</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="cc-badge @badgeClass">@entry.TempStatus</span>
+                            </td>
+                            <td class="text-center" style="padding-right:20px;">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <a asp-action="Details" asp-route-id="@entry.StorageId" class="cc-btn-icon view" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" class="cc-btn-icon cc-qe-trigger" title="Quick Edit"
+                                            data-id="@entry.StorageId"
+                                            data-qty="@entry.MilkQuantity.ToString("F2")"
+                                            data-temp="@(entry.Temperature.HasValue? entry.Temperature.Value.ToString("F1") : "")">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <a asp-action="Edit" asp-route-id="@entry.StorageId" class="cc-btn-icon edit" title="Full Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@entry.StorageId" class="cc-btn-icon del" title="Delete">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="cc-pagination-bar">
+            <div class="cc-pagination-info">
+                Showing <span id="idx-range"></span> of <span>@Model.Count</span> record@(Model.Count == 1 ? "" : "s")
+            </div>
+            <div class="cc-pages" id="idx-pages"></div>
+        </div>
+    }
+    else
+    {
+        <div class="cc-empty">
+            <div class="cc-empty-icon"><i class="bi bi-inbox"></i></div>
+            <div class="cc-empty-title">No storage entries found</div>
+            <div class="cc-empty-sub">Try adjusting your filters or add the first entry.</div>
+            <a asp-action="Create" class="btn btn-primary btn-sm" style="border-radius:8px;font-size:13px;">
+                <i class="bi bi-plus-lg me-1"></i>Add First Entry
+            </a>
+        </div>
+    }
+</div>
+
+<!-- Quick Edit Popover -->
+<div id="qePopover" class="cc-qe-popover">
+    <div class="cc-qe-title">
+        <span><i class="bi bi-pencil-square me-2"></i>Quick Edit</span>
+        <span id="qeEntryLabel" style="font-size:11px;color:#94a3b8;font-weight:500;"></span>
+    </div>
+    <div style="margin-bottom:10px;">
+        <label class="cc-qe-label">Quantity</label>
+        <div class="cc-qe-input-group">
+            <input type="number" id="qeQty" class="cc-qe-input" step="0.01" min="0.01" />
+            <div class="cc-qe-addon">L</div>
+        </div>
+    </div>
+    <div>
+        <label class="cc-qe-label">Temperature</label>
+        <div class="cc-qe-input-group">
+            <input type="number" id="qeTemp" class="cc-qe-input" step="0.1" placeholder="optional" />
+            <div class="cc-qe-addon">°C</div>
+        </div>
+    </div>
+    <div class="cc-qe-actions">
+        <button class="cc-qe-save" id="qeSave"><i class="bi bi-check-lg me-1"></i>Save</button>
+        <button class="cc-qe-cancel" id="qeCancel">Cancel</button>
+    </div>
+    <div class="cc-qe-msg" id="qeMsg"></div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Pagination ──
+        (function () {
+            const PAGE_SIZE = 5;
+            const rows = Array.from(document.querySelectorAll('.cc-table tbody tr'));
+            const totalRows = rows.length;
+            if (totalRows === 0) return;
+
+            const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+            let currentPage = 1;
+
+            function showPage(page) {
+                currentPage = page;
+                const start = (page - 1) * PAGE_SIZE;
+                const end   = start + PAGE_SIZE;
+                rows.forEach((row, i) => { row.style.display = (i >= start && i < end) ? '' : 'none'; });
+                const rangeEl = document.getElementById('idx-range');
+                if (rangeEl) rangeEl.textContent = (start + 1) + '–' + Math.min(end, totalRows);
+                renderPages();
+            }
+
+            function renderPages() {
+                const container = document.getElementById('idx-pages');
+                if (!container) return;
+                container.innerHTML = '';
+                const prev = btn('<i class="bi bi-chevron-left"></i>', currentPage === 1);
+                prev.addEventListener('click', () => { if (currentPage > 1) showPage(currentPage - 1); });
+                container.appendChild(prev);
+                getPageRange(currentPage, totalPages).forEach(p => {
+                    if (p === '…') {
+                        const el = document.createElement('div');
+                        el.className = 'cc-page-btn disabled'; el.textContent = '…'; container.appendChild(el);
+                    } else {
+                        const b = btn(p, false, p === currentPage);
+                        b.addEventListener('click', () => showPage(p)); container.appendChild(b);
+                    }
+                });
+                const next = btn('<i class="bi bi-chevron-right"></i>', currentPage === totalPages);
+                next.addEventListener('click', () => { if (currentPage < totalPages) showPage(currentPage + 1); });
+                container.appendChild(next);
+            }
+
+            function btn(html, disabled, active) {
+                const el = document.createElement('div');
+                el.className = 'cc-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                el.innerHTML = html; return el;
+            }
+
+            function getPageRange(cur, total) {
+                if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+                if (cur <= 4)   return [1,2,3,4,5,'…',total];
+                if (cur >= total - 3) return [1,'…',total-4,total-3,total-2,total-1,total];
+                return [1,'…',cur-1,cur,cur+1,'…',total];
+            }
+
+            showPage(1);
+        })();
+
+        // ── Quick Edit ──
+        (function () {
+            var popover    = document.getElementById('qePopover');
+            var qeQty      = document.getElementById('qeQty');
+            var qeTemp     = document.getElementById('qeTemp');
+            var qeMsg      = document.getElementById('qeMsg');
+            var qeLabel    = document.getElementById('qeEntryLabel');
+            var currentId  = null;
+            var currentRow = null;
+            var token = document.getElementById('cc-csrf-token')?.value
+                     || document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                     || '';
+
+            // Open popover
+            document.querySelectorAll('.cc-qe-trigger').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    currentId  = btn.dataset.id;
+                    currentRow = btn.closest('tr');
+
+                    qeQty.value  = btn.dataset.qty;
+                    qeTemp.value = btn.dataset.temp;
+                    qeMsg.textContent = '';
+                    qeLabel.textContent = '#' + currentId;
+
+                    // Position popover near the button
+                    var rect = btn.getBoundingClientRect();
+                    var top  = rect.bottom + window.scrollY + 6;
+                    var left = rect.left + window.scrollX - 200;
+                    if (left < 8) left = 8;
+                    popover.style.top  = top + 'px';
+                    popover.style.left = left + 'px';
+                    popover.classList.add('visible');
+                    qeQty.focus();
+                });
+            });
+
+            // Close on outside click
+            document.addEventListener('click', function (e) {
+                if (!popover.contains(e.target)) popover.classList.remove('visible');
+            });
+
+            // Cancel
+            document.getElementById('qeCancel').addEventListener('click', function () {
+                popover.classList.remove('visible');
+            });
+
+            // Save via fetch
+            document.getElementById('qeSave').addEventListener('click', function () {
+                var qty  = parseFloat(qeQty.value);
+                var temp = qeTemp.value.trim() === '' ? null : parseFloat(qeTemp.value);
+
+                if (isNaN(qty) || qty <= 0) {
+                    qeMsg.style.color = '#dc2626';
+                    qeMsg.textContent = 'Quantity must be greater than 0.';
+                    return;
+                }
+
+                qeMsg.style.color = '#94a3b8';
+                qeMsg.textContent = 'Saving…';
+
+                var body = new URLSearchParams({
+                    storageId:    currentId,
+                    milkQuantity: qty,
+                    __RequestVerificationToken: token
+                });
+                if (temp !== null && !isNaN(temp)) body.append('temperature', temp);
+
+                fetch('@Url.Action("QuickEdit", "ChillingCenter")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                })
+                .then(function (r) {
+                    if (!r.ok) {
+                        // Server returned 400/401/500 — not a network error
+                        throw new Error('Server error: ' + r.status +
+                            (r.status === 400 ? ' (antiforgery token missing or invalid)' : ''));
+                    }
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.success) {
+                        qeMsg.style.color = '#16a34a';
+                        qeMsg.textContent = '✓ Saved';
+
+                        // Update the row cells live — no reload needed
+                        if (currentRow) {
+                            var cells = currentRow.querySelectorAll('td');
+
+                            // Qty cell (index 4)
+                            var qtyCell = cells[4];
+                            if (qtyCell) {
+                                var qtySpan = qtyCell.querySelector('.cell-num');
+                                if (qtySpan) qtySpan.textContent = data.milkQuantity;
+                            }
+
+                            // Temperature cell (index 5) — update value, clear trend badge
+                            var tempCell = cells[5];
+                            if (tempCell) {
+                                if (data.temperature && data.temperature !== '—') {
+                                    tempCell.innerHTML = '<span class="cell-num">' + data.temperature + '</span>';
+                                } else {
+                                    tempCell.innerHTML = '<span style="color:#cbd5e1;">—</span>';
+                                }
+                            }
+
+                            // Update button data attrs so re-open shows new values
+                            var trigger = currentRow.querySelector('.cc-qe-trigger');
+                            if (trigger) {
+                                trigger.dataset.qty  = qty.toFixed(2);
+                                trigger.dataset.temp = temp !== null && !isNaN(temp) ? temp.toFixed(1) : '';
+                            }
+                        }
+
+                        setTimeout(function () { popover.classList.remove('visible'); }, 900);
+                    } else {
+                        qeMsg.style.color = '#dc2626';
+                        qeMsg.textContent = data.message;
+                    }
+                })
+                .catch(function (err) {
+                    qeMsg.style.color = '#dc2626';
+                    qeMsg.textContent = err.message.includes('antiforgery')
+                        ? 'Token error — please refresh the page and try again.'
+                        : 'Network error. Please try again.';
+                    console.error('[QuickEdit]', err);
+                });
+            });
+
+            // Enter key to save
+            [qeQty, qeTemp].forEach(function (inp) {
+                inp.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') document.getElementById('qeSave').click();
+                    if (e.key === 'Escape') popover.classList.remove('visible');
+                });
+            });
+        })();
+    </script>
+}

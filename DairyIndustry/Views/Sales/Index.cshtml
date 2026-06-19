@@ -1,0 +1,253 @@
+﻿@model List<DairyIndustry.Models.SalesOrderModel>
+@{
+    ViewData["Title"] = "Sales Orders";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h4 class="fw-bold mb-1">Sales Orders</h4>
+        <small class="text-muted">All orders across all distributors</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">➕ New Order</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label text-muted small mb-1">Distributor</label>
+                    <select name="distributorId" class="form-select form-select-sm">
+                        <option value="">— All Distributors —</option>
+                        @foreach (SelectListItem item in (SelectList)ViewBag.Distributors)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Search by Name</label>
+                    <input type="text" name="search" class="form-control form-control-sm"
+                           placeholder="Distributor name..."
+                           value="@ViewBag.Search" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">— All Status —</option>
+                        @foreach (SelectListItem item in (SelectList)ViewBag.Statuses)
+                        {
+                            if (item.Selected)
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">From Date</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm"
+                           value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">To Date</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm"
+                           value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <form method="post" asp-action="BulkUpdateStatus" id="bulkForm">
+                @Html.AntiForgeryToken()
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="ordersTable">
+                        <thead style="background:#1a2e4a; color:#fff;">
+                            <tr>
+                                <th style="width:36px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input" title="Select all" />
+                                </th>
+                                <th>#</th>
+                                <th>Distributor</th>
+                                <th>Date</th>
+                                <th class="text-end">Amount (₹)</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="orderIds" value="@o.OrderId"
+                                               class="form-check-input row-check" />
+                                    </td>
+                                    <td class="text-muted small">#@o.OrderId</td>
+                                    <td>
+                                        <div class="fw-semibold">@o.DistributorName</div>
+                                        @if (!string.IsNullOrEmpty(o.Location))
+                                        {
+                                            <small class="text-muted">📍 @o.Location</small>
+                                        }
+                                    </td>
+                                    <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end fw-semibold">₹@o.TotalAmount.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-@o.StatusBadgeClass">@o.OrderStatus</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@o.OrderId"
+                                           class="btn btn-sm btn-outline-primary">Details</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span id="pageInfo">Showing <strong>@Model.Count</strong> order(s)</span>
+                    <nav><ul class="pagination pagination-sm mb-0" id="pageControls"></ul></nav>
+                </div>
+                <div class="px-3 py-2 border-top bg-light text-muted small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>Showing <strong>@Model.Count</strong> order(s)</span>
+                    <div id="bulkBar" style="display:none;" class="d-flex align-items-center gap-2">
+                        <span class="text-dark fw-semibold small" id="selectedCount"></span>
+                        <select name="newStatus" class="form-select form-select-sm" style="width:160px;">
+                            <option value="">— Set Status —</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm"
+                                onclick="return validateBulk()">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                No orders found.
+                <a asp-action="Create" class="btn btn-primary btn-sm ms-2">Create First Order</a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const selectAll = document.getElementById('selectAll');
+        const checks    = document.querySelectorAll('.row-check');
+        const bulkBar   = document.getElementById('bulkBar');
+        const countSpan = document.getElementById('selectedCount');
+
+        function updateBar() {
+            const checked = document.querySelectorAll('.row-check:checked').length;
+            bulkBar.style.display = checked > 0 ? 'flex' : 'none';
+            countSpan.textContent = checked + ' selected';
+        }
+
+        selectAll.addEventListener('change', function () {
+            checks.forEach(c => c.checked = this.checked);
+            updateBar();
+        });
+
+        checks.forEach(c => c.addEventListener('change', function () {
+            selectAll.checked = [...checks].every(c => c.checked);
+            updateBar();
+        }));
+
+        function validateBulk() {
+            const status = document.querySelector('#bulkForm select[name="newStatus"]').value;
+            if (!status) { alert('Please select a status.'); return false; }
+            const count = document.querySelectorAll('.row-check:checked').length;
+            return confirm(`Update ${count} order(s) to "${status}"?`);
+        }
+
+        // ── Pagination ────────────────────────────────────────────────────
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
+
+        function renderPagination() {
+            const rows       = [...document.querySelectorAll('#ordersTable tbody tr')];
+            const total      = rows.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            rows.forEach((row, i) => {
+                row.style.display = (i >= (currentPage - 1) * PAGE_SIZE && i < currentPage * PAGE_SIZE) ? '' : 'none';
+            });
+
+            // Keep select-all in sync after page change
+            const visibleChecks = [...document.querySelectorAll('.row-check')].filter(c => c.closest('tr').style.display !== 'none');
+            if (selectAll) selectAll.checked = visibleChecks.length > 0 && visibleChecks.every(c => c.checked);
+
+            const pageInfo     = document.getElementById('pageInfo');
+            const pageControls = document.getElementById('pageControls');
+
+            if (total <= PAGE_SIZE) {
+                pageInfo.innerHTML = `Showing <strong>${total}</strong> order(s)`;
+                pageControls.innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * PAGE_SIZE + 1;
+            const end   = Math.min(currentPage * PAGE_SIZE, total);
+            pageInfo.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total}</strong> orders`;
+
+            let html = '';
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1});return false;">‹</a>
+                     </li>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === totalPages - 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                    continue;
+                }
+                html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${p});return false;">${p}</a>
+                         </li>`;
+            }
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1});return false;">›</a>
+                     </li>`;
+            pageControls.innerHTML = html;
+        }
+
+        function goToPage(p) {
+            const total   = document.querySelectorAll('#ordersTable tbody tr').length;
+            const maxPage = Math.ceil(total / PAGE_SIZE) || 1;
+            currentPage   = Math.max(1, Math.min(p, maxPage));
+            renderPagination();
+        }
+
+        renderPagination();
+    </script>
+}
