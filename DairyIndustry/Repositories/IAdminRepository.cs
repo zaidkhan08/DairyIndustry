@@ -86,6 +86,23 @@ namespace DairyIndustry.Repositories
                         string bankName, string accountNumber, string ifscCode,
                         decimal salary, string profilePhoto,
                         int? centerId, int? plantId);
+        Task UpdateStaffWithUserAsync(
+    int staffId,
+    string firstName,
+    string lastName,
+    string phone,
+    string email,
+    int roleId,
+    DateTime? doj,
+    string bankName,
+    string accountNumber,
+    string ifscCode,
+    decimal salary,
+    string profilePhoto,
+    int? centerId,
+    int? plantId,
+    string username,
+    string passwordHash);
         List<StaffModel> GetAllStaff(int? roleId = null, bool? isActive = null);
 
         void ToggleStaffActive(int staffId, bool isActive);
@@ -94,6 +111,9 @@ namespace DairyIndustry.Repositories
         void AssignUserToPlant(int userId, int plantId);
 
         void AssignUserToCenter(int userId, int centerId);
+        List<User> GetUsersByRole(string roleName);
+        List<User> GetPlantManagers();
+        List<User> GetCollectionAgents();
         // ════════════════════════════════════════════════════════
         // PLANT
         // ════════════════════════════════════════════════════════
@@ -147,6 +167,17 @@ namespace DairyIndustry.Repositories
         //collection center
         List<CollectionCenterModel> GetAllCenters();
 
+        List<BatchModel> GetAllBatches(int? centerId = null, string status = null,
+                               DateTime? fromDate = null, DateTime? toDate = null);
+
+        BatchModel GetBatchById(int batchId);
+
+        int OpenBatch(int centerId, string shift, DateTime batchDate);
+
+        void CloseBatch(int batchId);
+
+        List<BatchCollectionEntryModel> GetBatchCollections(int batchId);
+
         //Distributers
         List<Distributor> GetDistributors();
         int RegisterDistributor(Distributor distributor, string username, string passwordHash);
@@ -162,6 +193,7 @@ namespace DairyIndustry.Repositories
         int CreateOrder(AdminOrderModel model);
         bool UpdateOrderStatus(int orderId, string status);
         List<OrderSummary> GetAllOrders(int? distributorId, string? status, DateTime? fromDate, DateTime? toDate);
+
 
         List<PlantModel> GetActivePlants();
         //Notification

@@ -658,5 +658,256 @@ namespace DairyIndustry.Controllers
 
             return _pdfConverter.Convert(doc);
         }
+
+
+        // ════════════════════════════════════════════════════════
+        // ADD THESE ACTIONS TO FinanceController.cs
+        // inside the public class FinanceController block
+        // ════════════════════════════════════════════════════════
+
+        // ── HELPER: returns CenterId from session for Collection Agent ─
+        private int? GetSessionCenterId()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            return role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STAFF PAYMENTS — LIST
+        // Admin          → sees all
+        // Plant Manager  → sees only their plant's staff
+        // Collection Agent → sees only their center's staff
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        public IActionResult StaffPayments()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var vm = _financeRepo.GetAllStaffPayments(plantId, centerId);
+
+            ViewBag.Role = role;
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+
+            return View(vm);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CREATE STAFF PAYMENT — GET (slide-in drawer page)
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        [HttpGet]
+        public IActionResult CreateStaffPayment()
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var staffList = _financeRepo.GetStaffForPayment(plantId, centerId);
+
+            ViewBag.Role = role;
+            ViewBag.StaffList = staffList;
+            ViewBag.PlantId = plantId;
+            ViewBag.CenterId = centerId;
+
+            return View(staffList);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CREATE STAFF PAYMENT — POST
+        // ════════════════════════════════════════════════════════
+
+        [SessionAuthorize("Admin", "Plant Manager", "Collection Agent")]
+        [HttpPost]
+        [HttpPost]
+        public IActionResult CreateStaffPayment(int staffId, int plantId, DateTime fromDate,
+                                        DateTime toDate, decimal totalAmount)
+        {
+            // ── 1. Bank account check ────────────────────────────────────────
+            bool hasBankAccount = _financeRepo.StaffHasBankAccount(staffId);
+            if (!hasBankAccount)
+            {
+                TempData["Error"] = "This staff member has no bank account linked. Please add bank details before processing payment.";
+                return RedirectToAction("CreateStaffPayment");
+            }
+
+            // ── 2. Duplicate payment check ───────────────────────────────────
+            bool alreadyPaid = _financeRepo.StaffPaymentExists(staffId, fromDate, toDate);
+            if (alreadyPaid)
+            {
+                // Get a human-readable month label for the error message
+                string period = fromDate.ToString("MMM yyyy");
+                TempData["Error"] = $"A payment already exists for this staff member covering {period}. Cancel the existing record first if you need to reprocess.";
+                return RedirectToAction("CreateStaffPayment");
+            }
+
+            // ── 3. Create payment ────────────────────────────────────────────
+            int userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+
+            try
+            {
+                int paymentId = _financeRepo.CreateStaffPayment(
+                    staffId, plantId, fromDate, toDate, totalAmount, DateTime.Today, userId);
+
+                if (paymentId == 0)
+                {
+                    TempData["Error"] = "Payment creation failed. Please verify staff details.";
+                    return RedirectToAction("CreateStaffPayment");
+                }
+
+                TempData["Success"] = $"Staff payment SP-{paymentId:D4} created. Proceed to pay via Stripe.";
+                return RedirectToAction("StaffPaymentDetail", new { id = paymentId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CreateStaffPayment");
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        // GET STAFF DETAILS (AJAX — auto-fill salary/bank in drawer)
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        public IActionResult GetStaffDetails(int staffId)
+        {
+            string role = HttpContext.Session.GetString("RoleName");
+            int? plantId = role == "Plant Manager" ? HttpContext.Session.GetInt32("PlantId") : null;
+            int? centerId = role == "Collection Agent" ? HttpContext.Session.GetInt32("CenterId") : null;
+
+            var list = _financeRepo.GetStaffForPayment(plantId, centerId);
+            var staff = list.FirstOrDefault(s => s.StaffId == staffId);
+
+            if (staff == null)
+                return Json(new { success = false, message = "Staff member not found." });
+
+            if (!staff.HasBankAccount)
+                return Json(new { success = false, message = "No bank account linked to this staff member." });
+
+            // Calculate suggested amount = monthly salary (full month default)
+            decimal suggested = staff.Salary ?? 0m;
+
+            return Json(new
+            {
+                success = true,
+                staffId = staff.StaffId,
+                fullName = staff.FullName,
+                roleName = staff.RoleName,
+                centerName = staff.CenterName,
+                plantName = staff.PlantName,
+                plantId = staff.PlantId,
+                salary = staff.Salary,
+                suggestedAmount = suggested,
+                bankName = staff.BankName,
+                accountNumber = staff.AccountNumber,
+                ifscCode = staff.IFSCCode,
+                hasBank = staff.HasBankAccount
+            });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STAFF PAYMENT DETAIL
+        // ════════════════════════════════════════════════════════
+
+        [HttpGet]
+        [Route("Finance/StaffPaymentDetail/{id}")]
+        public IActionResult StaffPaymentDetail(int id)
+        {
+            var payment = _financeRepo.GetStaffPaymentById(id);
+            if (payment == null) return NotFound();
+            ViewBag.PublishableKey = _config["Stripe:PublishableKey"];
+            ViewBag.Role = HttpContext.Session.GetString("RoleName");
+            return View(payment);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // STRIPE CHECKOUT — STAFF
+        // ════════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult CreateStaffCheckoutSession(int staffPaymentId, decimal totalAmount, string staffName)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var domain = $"{Request.Scheme}://{Request.Host}";
+
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+        {
+            new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency   = "inr",
+                    UnitAmount = (long)(totalAmount * 100),
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name        = $"Staff Salary Payment - {staffName}",
+                        Description = $"Staff Payment ID: {staffPaymentId}"
+                    }
+                },
+                Quantity = 1
+            }
+        },
+                Mode = "payment",
+                SuccessUrl = $"{domain}/Finance/StaffPaymentSuccess?staffPaymentId={staffPaymentId}&session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{domain}/Finance/StaffPaymentCancelled?staffPaymentId={staffPaymentId}",
+                Metadata = new Dictionary<string, string>
+        {
+            { "paymentId",   staffPaymentId.ToString() },
+            { "paymentType", "Staff" }
+        }
+            };
+
+            var service = new SessionService();
+            Session session = service.Create(options);
+            return Redirect(session.Url);
+        }
+
+        [HttpGet]
+        public IActionResult StaffPaymentSuccess(int staffPaymentId, string session_id)
+        {
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+            var service = new SessionService();
+            Session session = service.Get(session_id);
+            string bankStatus = session.PaymentStatus == "paid" ? "Success" : "Failed";
+            _financeRepo.RecordPaymentTransaction("Staff", staffPaymentId, bankStatus, session_id);
+            TempData["Success"] = bankStatus == "Success"
+                ? $"Staff payment processed successfully! Transaction: {session_id}"
+                : $"Payment failed. Transaction: {session_id}";
+            return RedirectToAction("StaffPaymentDetail", new { id = staffPaymentId });
+        }
+
+        [HttpGet]
+        public IActionResult StaffPaymentCancelled(int staffPaymentId)
+        {
+            TempData["Error"] = "Payment was cancelled. You can try again from the payment detail page.";
+            return RedirectToAction("StaffPaymentDetail", new { id = staffPaymentId });
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CANCEL STAFF PAYMENT
+        // ════════════════════════════════════════════════════════
+
+        [HttpPost]
+        public IActionResult CancelStaffPayment(int paymentId)
+        {
+            try
+            {
+                _financeRepo.CancelStaffPayment(paymentId);
+                TempData["Success"] = $"Staff payment SP-{paymentId:D4} has been cancelled.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+            return RedirectToAction("StaffPayments");
+        }
     }
 }

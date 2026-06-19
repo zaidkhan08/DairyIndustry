@@ -1,6 +1,6 @@
 ﻿@* ============================================================
    DAIRY MANAGEMENT SYSTEM — Unified Role-Based Layout
-   Supports: Admin | Plant Manager
+   Supports: Admin | Plant Manager | Driver
    Design: Admin Layout Style (DM Sans + Bootstrap)
    ============================================================ *@
 <!DOCTYPE html>
@@ -10,21 +10,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — DMS</title>
 
-    <!-- DM Sans + DM Mono (premium, distinctive) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
 
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-    <!-- Admin Layout CSS -->
     <link rel="stylesheet" href="~/css/admin-layout.css" asp-append-version="true" />
 
-    <!-- Notification CSS -->
     <link rel="stylesheet" href="~/css/admin-notifications.css" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
@@ -40,6 +35,7 @@
         bool isAdmin = currentRole == "Admin";
         bool isPlantManager = currentRole == "Plant Manager";
         bool isCollectionAgent = currentRole == "Collection Agent";
+        bool isDriver = currentRole == "Driver";
 
         // ── Helpers ─────────────────────────────────────────────
         bool IsActive(string c, string a = null) =>
@@ -50,35 +46,31 @@
     }
 
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- SIDEBAR                                                  -->
-    <!-- ═══════════════════════════════════════════════════════ -->
     <div id="sidebar" role="navigation" aria-label="Main navigation">
 
-        <!-- Brand -->
         <a class="sidebar-brand"
            asp-controller="@(isAdmin ? "Admin" : isPlantManager ? "Production" : "CollectionCenter")"
            asp-action="@(isAdmin ? "Index" : isPlantManager ? "Dashboard" : "Dashboard")"
+           asp-controller="@(isAdmin ? "Admin" : (isDriver ? "Logistics" : "Production"))"
+           asp-action="@(isAdmin ? "Index" : (isDriver ? "Index" : "Dashboard"))"
            aria-label="DairyManage home">
             <div class="brand-icon" aria-hidden="true">
                 <i class="bi bi-droplet-fill"></i>
             </div>
             <div class="brand-text">
                 <span>DairyManage</span>
-                <small>@(isAdmin ? "Management System" : "Plant Manager")</small>
+                <small>@(isAdmin ? "Management System" : (isDriver ? "Logistics Panel" : "Plant Manager"))</small>
             </div>
         </a>
 
-        <!-- Nav -->
         <nav class="sidebar-nav">
 
 
             @* ══════════════════════════════════════════════════ *@
-            @* ADMIN MENUS                                        *@
+            @* ADMIN MENUS                                         *@
             @* ══════════════════════════════════════════════════ *@
             @if (isAdmin)
             {
-                <!-- ── Main ──────────────────────────── -->
                 <div class="nav-label">Main</div>
 
                 <a asp-controller="Admin" asp-action="Index"
@@ -87,7 +79,6 @@
                     <span>Dashboard</span>
                 </a>
 
-                <!-- ── People ────────────────────────── -->
                 <div class="nav-label">People</div>
 
                 <a asp-controller="Admin" asp-action="Users"
@@ -96,11 +87,11 @@
                     <span>Users</span>
                 </a>
 
-                <a asp-controller="Admin" asp-action="RegisterUser"
+                @* <a asp-controller="Admin" asp-action="RegisterUser"
                    class="nav-item-link @(IsActive("Admin", "RegisterUser") ? "active" : "")">
                     <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
                     <span>Register User</span>
-                </a>
+                </a> *@
 
                 <a asp-controller="Admin" asp-action="Roles"
                    class="nav-item-link @(IsActive("Admin", "Roles") ? "active" : "")">
@@ -114,7 +105,6 @@
                     <span>Staff</span>
                 </a>
 
-                <!-- ── Assignments ────────────────────── -->
                 <div class="nav-label">Assignments</div>
 
                 <a asp-controller="Admin" asp-action="AssignUserToPlant"
@@ -129,7 +119,6 @@
                     <span>Assign to Center</span>
                 </a>
 
-                <!-- ── Master Data ───────────────────── -->
                 <div class="nav-label">Master Data</div>
 
                 <a asp-controller="Admin" asp-action="Location"
@@ -161,23 +150,27 @@
                     <i class="bi bi-bucket-fill" aria-hidden="true"></i>
                     <span>Collection Centers</span>
                 </a>
+                <a asp-controller="Admin" asp-action="Batches"
+                   class="nav-item-link @(IsActive("Admin", "Batches") ? "active" : "")">
+                    <i class="bi bi-collection" aria-hidden="true"></i>
+                    <span>Batches</span>
+                </a>
 
-                <!-- ── Operations ────────────────────── -->
                 <div class="nav-label">Operations</div>
 
                 {
                     bool logisticsOpen = ctrl == "Logistics" || IsActive("Admin", "MilkTransfers");
                 }
-                <a class="nav-item-link d-flex align-items-center justify-content-between (logisticsOpen ? " active" : "" )"
+                <a class="nav-item-link d-flex align-items-center justify-content-between (logisticsOpen ? "active" : "")"
                    data-bs-toggle="collapse" href="#logisticsMenu" role="button"
-                   aria-expanded="(logisticsOpen ? " true" : "false" )" aria-controls="logisticsMenu">
+                   aria-expanded="(logisticsOpen ? "true" : "false")" aria-controls="logisticsMenu">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-truck-front-fill" aria-hidden="true"></i>
                         <span>Logistics</span>
                     </span>
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-                <div class="collapse (logisticsOpen ? " show" : "" )" id="logisticsMenu">
+                <div class="collapse (logisticsOpen ? "show" : "")" id="logisticsMenu">
                     <a asp-controller="Logistics" asp-action="AllDrivers"
                        class="nav-item-link ps-4 @(IsActiveAny("Logistics", "AllDrivers", "UpdateDriverStatus") ? "active" : "")">
                         <i class="bi bi-person-vcard" aria-hidden="true"></i>
@@ -199,16 +192,16 @@
                     var productionActions = new[] { "Products", "AddProduct", "EditProduct", "ProductDetail", "ProductionBatches", "WastageSummary" };
                     bool productionOpen = IsActiveAny("Admin", productionActions);
                 }
-                <a class="nav-item-link d-flex align-items-center justify-content-between (productionOpen ? " active" : "" )"
+                <a class="nav-item-link d-flex align-items-center justify-content-between (productionOpen ? "active" : "")"
                    data-bs-toggle="collapse" href="#productionMenu" role="button"
-                   aria-expanded="(productionOpen ? " true" : "false" )" aria-controls="productionMenu">
+                   aria-expanded="(productionOpen ? "true" : "false")" aria-controls="productionMenu">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-gear-fill" aria-hidden="true"></i>
                         <span>Production</span>
                     </span>
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-                <div class="collapse (productionOpen ? " show" : "" )" id="productionMenu">
+                <div class="collapse (productionOpen ? "show" : "")" id="productionMenu">
                     <a asp-controller="Admin" asp-action="Products"
                        class="nav-item-link ps-4 @(IsActiveAny("Admin", "Products", "AddProduct", "EditProduct", "ProductDetail") ? "active" : "")">
                         <i class="bi bi-box-seam" aria-hidden="true"></i>
@@ -226,23 +219,22 @@
                     </a>
                 </div>
 
-                <!-- ── Commerce ──────────────────────── -->
                 <div class="nav-label">Commerce</div>
 
                 {
                     var distActions = new[] { "Distributors", "RegisterDistributor", "PendingDistributors", "UpdateDistributorStatus", "AdminOrder", "AdminOrderList", "UpdateOrderStatus" };
                     bool distOpen = IsActiveAny("Admin", distActions);
                 }
-                <a class="nav-item-link d-flex align-items-center justify-content-between (distOpen ? " active" : "" )"
+                <a class="nav-item-link d-flex align-items-center justify-content-between (distOpen ? "active" : "")"
                    data-bs-toggle="collapse" href="#distributorMenu" role="button"
-                   aria-expanded="(distOpen ? " true" : "false" )" aria-controls="distributorMenu">
+                   aria-expanded="(distOpen ? "true" : "false")" aria-controls="distributorMenu">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
                         <span>Distributors</span>
                     </span>
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-                <div class="collapse (distOpen ? " show" : "" )" id="distributorMenu">
+                <div class="collapse (distOpen ? "show" : "")" id="distributorMenu">
                     <a asp-controller="Admin" asp-action="Distributors"
                        class="nav-item-link ps-4 @(IsActive("Admin", "Distributors") ? "active" : "")">
                         <i class="bi bi-people-fill" aria-hidden="true"></i>
@@ -271,38 +263,37 @@
                     </a>
                 </div>
 
-                <!-- ── Finance ───────────────────────── -->
                 <div class="nav-label">Finance</div>
 
-                <a asp-controller="Admin" asp-action="CenterPayments"
+                @* <a asp-controller="Admin" asp-action="CenterPayments"
                    class="nav-item-link @(IsActive("Admin", "CenterPayments") ? "active" : "")">
                     <i class="bi bi-bucket-fill" aria-hidden="true"></i>
                     <span>Center Payments</span>
-                </a>
+                </a> *@
 
                 {
                     var finActions = new[] { "Index", "FarmerPayments", "StaffPayments" };
                     bool finOpen = ctrl == "Finance" && finActions.Contains(act);
                 }
-                <a class="nav-item-link d-flex align-items-center justify-content-between (finOpen ? " active" : "" )"
+                <a class="nav-item-link d-flex align-items-center justify-content-between (finOpen ? "active" : "")"
                    data-bs-toggle="collapse" href="#financeMenu" role="button"
-                   aria-expanded="(finOpen ? " true" : "false" )" aria-controls="financeMenu">
+                   aria-expanded="(finOpen ? "true" : "false")" aria-controls="financeMenu">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-wallet2" aria-hidden="true"></i>
                         <span>Payments</span>
                     </span>
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
-                <div class="collapse (finOpen ? " show" : "" )" id="financeMenu">
+                <div class="collapse (finOpen ? "show" : "")" id="financeMenu">
                     <a asp-controller="Finance" asp-action="Index"
                        class="nav-item-link ps-4 @(ctrl == "Finance" && act == "Index" ? "active" : "")">
                         <i class="bi bi-grid" aria-hidden="true"></i>
                         <span>Overview</span>
                     </a>
-                    <a asp-controller="Finance" asp-action="FarmerPayments"
-                       class="nav-item-link ps-4 @(ctrl == "Finance" && act == "FarmerPayments" ? "active" : "")">
-                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-                        <span>Farmer Payments</span>
+                    <a asp-controller="Finance" asp-action="CenterPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "CenterPayments") ? "active" : "")">
+                        <i class="bi bi-currency-rupee" aria-hidden="true"></i>
+                        <span>Pay to Center</span>
                     </a>
                     <a asp-controller="Finance" asp-action="StaffPayments"
                        class="nav-item-link ps-4 @(ctrl == "Finance" && act == "StaffPayments" ? "active" : "")">
@@ -311,14 +302,13 @@
                     </a>
                 </div>
 
-                <!-- ── System ────────────────────────── -->
                 <div class="nav-label">System</div>
 
-                <a asp-controller="HR" asp-action="Index"
+                @* <a asp-controller="HR" asp-action="Index"
                    class="nav-item-link @(ctrl == "HR" ? "active" : "")">
                     <i class="bi bi-people-fill" aria-hidden="true"></i>
                     <span>HR</span>
-                </a>
+                </a> *@
 
                 <a asp-controller="Reports" asp-action="Index"
                    class="nav-item-link @(ctrl == "Reports" ? "active" : "")">
@@ -335,11 +325,10 @@
 
 
             @* ══════════════════════════════════════════════════ *@
-            @* PLANT MANAGER MENUS                                *@
+            @* PLANT MANAGER MENUS                                 *@
             @* ══════════════════════════════════════════════════ *@
             @if (isPlantManager)
             {
-                <!-- ── Overview ──────────────────────── -->
                 <div class="nav-label">Overview</div>
 
                 <a asp-controller="Production" asp-action="Dashboard"
@@ -348,7 +337,6 @@
                     <span>Dashboard</span>
                 </a>
 
-                <!-- ── Milk Transfers ─────────────────── -->
                 <div class="nav-label">Milk Transfers</div>
 
                 <a asp-controller="Production" asp-action="Index"
@@ -357,49 +345,82 @@
                     <span>Receive Milk</span>
                 </a>
 
-                <a asp-controller="Production" asp-action="QualityTests"
-                   class="nav-item-link @(IsActive("Production", "QualityTests") ? "active" : "")">
-                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                    <span>Quality Tests</span>
-                </a>
+                @* DropDown Added By Zaid *@
 
-                <a asp-controller="Production" asp-action="TransferLossLog"
-                   class="nav-item-link @(IsActive("Production", "TransferLossLog") ? "active" : "")">
-                    <i class="bi bi-activity" aria-hidden="true"></i>
-                    <span>Transfer Losses</span>
+                <div class="nav-label">Milk Transfers</div>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#milkTransferMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "true" : "false")" aria-controls="milkTransferMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-truck" aria-hidden="true"></i>
+                        <span>Milk Transfers</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
+                <div class="collapse @(IsActiveAny("Production", "Index", "QualityTests", "TransferLossLog") ? "show" : "")" id="milkTransferMenu">
+                    <a asp-controller="Production" asp-action="Index"
+                       class="nav-item-link ps-4 @(IsActive("Production", "Index") ? "active" : "")">
+                        <i class="bi bi-droplet-fill" aria-hidden="true"></i>
+                        <span>Receive Milk</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="QualityTests"
+                       class="nav-item-link ps-4 @(IsActive("Production", "QualityTests") ? "active" : "")">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <span>Quality Tests</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="TransferLossLog"
+                       class="nav-item-link ps-4 @(IsActive("Production", "TransferLossLog") ? "active" : "")">
+                        <i class="bi bi-activity" aria-hidden="true"></i>
+                        <span>Transfer Losses</span>
+                    </a>
+                </div>
 
-                <!-- ── Production ─────────────────────── -->
                 <div class="nav-label">Production</div>
-
-                <a asp-controller="Production" asp-action="Batches"
-                   class="nav-item-link @(IsActive("Production", "Batches") ? "active" : "")">
-                    <i class="bi bi-layers-fill" aria-hidden="true"></i>
-                    <span>Product Batches</span>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#productionMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "true" : "false")" aria-controls="productionMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Production</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
+                <div class="collapse @(IsActiveAny("Production", "Batches", "RawMilkInventory") ? "show" : "")" id="productionMenu">
+                    <a asp-controller="Production" asp-action="Batches"
+                       class="nav-item-link ps-4 @(IsActive("Production", "Batches") ? "active" : "")">
+                        <i class="bi bi-layers-fill" aria-hidden="true"></i>
+                        <span>Product Batches</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="RawMilkInventory"
+                       class="nav-item-link ps-4 @(IsActive("Production", "RawMilkInventory") ? "active" : "")">
+                        <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
+                        <span>Plant Inventory</span>
+                    </a>
+                </div>
 
-                <a asp-controller="Production" asp-action="RawMilkInventory"
-                   class="nav-item-link @(IsActive("Production", "RawMilkInventory") ? "active" : "")">
-                    <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
-                    <span>Plant Inventory</span>
-                </a>
-
-                <!-- ── Wastage ────────────────────────── -->
                 <div class="nav-label">Wastage</div>
-
-                <a asp-controller="Production" asp-action="ProductWastage"
-                   class="nav-item-link @(IsActive("Production", "ProductWastage") ? "active" : "")">
-                    <i class="bi bi-trash3-fill" aria-hidden="true"></i>
-                    <span>Wastage Bin</span>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#wastageMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "true" : "false")" aria-controls="wastageMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+                        <span>Wastage</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </a>
+                <div class="collapse @(IsActiveAny("Production", "ProductWastage", "MilkProcessWastage") ? "show" : "")" id="wastageMenu">
+                    <a asp-controller="Production" asp-action="ProductWastage"
+                       class="nav-item-link ps-4 @(IsActive("Production", "ProductWastage") ? "active" : "")">
+                        <i class="bi bi-trash3-f ill" aria-hidden="true"></i>
+                        <span>Wastage Bin</span>
+                    </a>
+                    <a asp-controller="Production" asp-action="MilkProcessWastage"
+                       class="nav-item-link ps-4 @(IsActive("Production", "MilkProcessWastage") ? "active" : "")">
+                        <i class="bi bi-droplet-half" aria-hidden="true"></i>
+                        <span>Milk Process Wastage</span>
+                    </a>
+                </div>
 
-                <a asp-controller="Production" asp-action="MilkProcessWastage"
-                   class="nav-item-link @(IsActive("Production", "MilkProcessWastage") ? "active" : "")">
-                    <i class="bi bi-droplet-half" aria-hidden="true"></i>
-                    <span>Milk Process Wastage</span>
-                </a>
-
-                <!-- ── Manage Staff ───────────────────── -->
                 <div class="nav-label">Manage Staff</div>
 
                 <a asp-controller="Finance" asp-action="StaffList"
@@ -408,25 +429,83 @@
                     <span>All Staffs</span>
                 </a>
 
-                <!-- ── Finance ───────────────────────── -->
                 <div class="nav-label">Finance</div>
+                <a class="nav-item-link d-flex align-items-center justify-content-between @(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "active" : "")"
+                   data-bs-toggle="collapse" href="#financeMenu" role="button"
+                   aria-expanded="@(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "true" : "false")" aria-controls="financeMenu">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                        <span>Finance</span>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                </a>
+                <div class="collapse @(IsActiveAny("Finance", "CenterPayments", "CenterWallet", "Index", "StaffPayments") ? "show" : "")" id="financeMenu">
+                    <a asp-controller="Finance" asp-action="CenterPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "CenterPayments") ? "active" : "")">
+                        <i class="bi bi-currency-rupee" aria-hidden="true"></i>
+                        <span>Pay to Center</span>
+                    </a>
+                    <a asp-controller="Finance" asp-action="StaffPayments"
+                       class="nav-item-link ps-4 @(IsActive("Finance", "StaffPayments") ? "active" : "")">
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                        <span>Staff Payments</span>
+                    </a>
+                    @if (currentRole == "Collection Agent")
+                    {
+                        <a asp-controller="Finance" asp-action="CenterWallet"
+                           class="nav-item-link ps-4 @(IsActive("Finance", "CenterWallet") ? "active" : "")">
+                            <i class="bi bi-wallet2" aria-hidden="true"></i>
+                            <span>Center Wallet</span>
+                        </a>
+                        <a asp-controller="Finance" asp-action="Index"
+                           class="nav-item-link ps-4 @(ctrl == "Finance" && act == "Index" ? "active" : "")">
+                            <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                            <span>Farmer Payments</span>
+                        </a>
+                    }
+                </div>
+            }
 
-                <a asp-controller="Finance" asp-action="CenterPayments"
-                   class="nav-item-link @(IsActive("Finance", "CenterPayments") ? "active" : "")">
-                    <i class="bi bi-currency-rupee" aria-hidden="true"></i>
-                    <span>Pay to Center</span>
+
+            @* ══════════════════════════════════════════════════ *@
+            @* DRIVER MENUS                                       *@
+            @* ══════════════════════════════════════════════════ *@
+            @if (isDriver)
+            {
+                <div class="nav-label">Main</div>
+
+                <a asp-controller="Logistics" asp-action="Index"
+                   class="nav-item-link @(ctrl == "Logistics" && act == "Index" ? "active" : "")">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                    <span>Dashboard</span>
                 </a>
 
-                <a asp-controller="Finance" asp-action="CenterWallet"
-                   class="nav-item-link @(IsActive("Finance", "CenterWallet") ? "active" : "")">
-                    <i class="bi bi-wallet2" aria-hidden="true"></i>
-                    <span>Center Wallet</span>
+                <div class="nav-label">My Account</div>
+
+                <a asp-controller="Logistics" asp-action="RegisterVehicle"
+                   class="nav-item-link @(ctrl == "Logistics" && act == "RegisterVehicle" ? "active" : "")">
+                    <i class="bi bi-truck" aria-hidden="true"></i>
+                    <span>Register Vehicle</span>
                 </a>
 
-                <a asp-controller="Finance" asp-action="Index"
-                   class="nav-item-link @(ctrl == "Finance" && act == "Index" ? "active" : "")">
-                    <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-                    <span>Farmer Payments</span>
+                <a asp-controller="Logistics" asp-action="MyTransfers"
+                   class="nav-item-link @(ctrl == "Logistics" && act == "MyTransfers" ? "active" : "")">
+                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                    <span>My Transfers</span>
+                </a>
+
+                <a asp-controller="Logistics" asp-action="MyVehicles"
+                   class="nav-item-link @(ctrl == "Logistics" && act == "MyVehicles" ? "active" : "")">
+                    <i class="bi bi-car-front-fill" aria-hidden="true"></i>
+                    <span>My Vehicles</span>
+                </a>
+
+                <div class="nav-label">System</div>
+
+                <a asp-controller="Admin" asp-action="Logout"
+                   class="nav-item-link text-danger">
+                    <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                    <span>Logout</span>
                 </a>
             }
 
@@ -519,9 +598,7 @@
 
         </nav>
 
-        <!-- Sidebar Footer -->
         <div class="sidebar-footer">
-
             <div class="user-avatar" aria-hidden="true">
                 @(Context.Session.GetString("Username")?[0].ToString().ToUpper() ?? "A")
             </div>
@@ -534,17 +611,12 @@
     </div>
 
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- TOPBAR                                                   -->
-    <!-- ═══════════════════════════════════════════════════════ -->
     <header id="topbar" role="banner">
 
-        <!-- Hamburger -->
         <button class="topbar-icon-btn me-2" onclick="toggleSidebar()" aria-label="Toggle navigation">
             <i class="bi bi-list fs-5" aria-hidden="true"></i>
         </button>
 
-        <!-- Page title + breadcrumb -->
         <div>
             <p class="topbar-title mb-0">@ViewData["Title"]</p>
             <p class="page-breadcrumb mb-0">
@@ -552,10 +624,8 @@
             </p>
         </div>
 
-        <!-- Right side actions -->
         <div class="topbar-right">
 
-            <!-- Fullscreen -->
             <button class="topbar-icon-btn" onclick="toggleFullScreen()" title="Toggle fullscreen" aria-label="Toggle fullscreen">
                 <i class="bi bi-fullscreen" aria-hidden="true"></i>
             </button>
@@ -572,7 +642,6 @@
 
             <div class="topbar-divider"></div>
 
-            <!-- ─── NOTIFICATIONS BELL ─── -->
             <div class="dropdown">
                 <button class="topbar-icon-btn position-relative"
                         id="notifBell"
@@ -590,13 +659,11 @@
                 <div class="dropdown-menu dropdown-menu-end p-0 notif-dropdown-menu"
                      role="menu" aria-label="Notifications panel">
 
-                    <!-- Header -->
                     <div class="notif-header">
                         <span class="notif-header-title">Notifications</span>
                         <span id="notif-badge-header" class="badge bg-danger" style="display:none;">0</span>
                     </div>
 
-                    <!-- Filter Tabs -->
                     <div class="notif-tabs" role="tablist">
                         <button class="notif-tab active" data-sev="all" role="tab">All</button>
                         <button class="notif-tab notif-tab-danger" data-sev="danger" role="tab">Urgent</button>
@@ -604,7 +671,6 @@
                         <button class="notif-tab notif-tab-info" data-sev="info" role="tab">Info</button>
                     </div>
 
-                    <!-- List -->
                     <div id="notif-list" class="notif-list" role="list">
                         <div class="notif-loading">
                             <div class="spinner-border spinner-border-sm mb-2" role="status" aria-label="Loading"></div>
@@ -612,7 +678,6 @@
                         </div>
                     </div>
 
-                    <!-- Footer -->
                     <div class="notif-footer">
                         <button class="notif-mark-all-btn" onclick="markAllRead()" type="button">
                             <i class="bi bi-check2-all" aria-hidden="true"></i> Mark all read
@@ -624,7 +689,6 @@
 
             <div class="topbar-divider"></div>
 
-            <!-- User Dropdown -->
             <div class="dropdown">
                 <div class="topbar-avatar dropdown-toggle"
                      data-bs-toggle="dropdown"
@@ -645,11 +709,14 @@
                             </p>
                         </div>
                     </li>
-                    <li>
-                        <a class="dropdown-item" asp-controller="Admin" asp-action="Profile">
-                            <i class="bi bi-person me-2 text-primary" aria-hidden="true"></i> My Profile
-                        </a>
-                    </li>
+                    @if (!isDriver)
+                    {
+                        <li>
+                            <a class="dropdown-item" asp-controller="Admin" asp-action="Profile">
+                                <i class="bi bi-person me-2 text-primary" aria-hidden="true"></i> My Profile
+                            </a>
+                        </li>
+                    }
                     <li>
                         <a class="dropdown-item" href="/Admin/Settings">
                             <i class="bi bi-gear me-2" style="color:#6b7280;" aria-hidden="true"></i> Settings
@@ -673,17 +740,11 @@
     </header>
 
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- MAIN CONTENT                                            -->
-    <!-- ═══════════════════════════════════════════════════════ -->
     <main id="main-content" role="main">
         @RenderBody()
     </main>
 
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- FOOTER                                                   -->
-    <!-- ═══════════════════════════════════════════════════════ -->
     <footer id="main-footer" role="contentinfo">
         <div class="d-flex justify-content-between w-100 align-items-center">
             <small class="text-muted">
@@ -701,13 +762,10 @@
     </footer>
 
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Admin Layout JS -->
     <script src="~/js/admin-layout.js" asp-append-version="true"></script>
 
-    <!-- Notification JS -->
     <script src="~/js/admin-notifications.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)

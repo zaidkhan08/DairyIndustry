@@ -1,0 +1,379 @@
+﻿@model List<DairyIndustry.Models.Admin.BatchModel>
+
+@{
+    ViewData["Title"] = "Batch Management";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 20px;
+    }
+
+    .stat-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stat-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stat-warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    .stat-purple {
+        border-top: 4px solid #a855f7;
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+
+    .badge-green {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+
+    .badge-purple {
+        background-color: #faf5ff;
+        color: #6b21a8;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-collection me-2 text-primary"></i>Batch Management
+            </h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Operations</span> &gt; <span class="text-muted">Collection Batches</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ALERTS ─────────────────────────────────────────── -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+        </div>
+    }
+
+    <!-- ── SUMMARY CARDS ───────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="premium-stat-card stat-green d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Open</p>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.OpenCount</h3>
+                </div>
+                <span class="metric-badge badge-green">Active</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="premium-stat-card stat-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Closed</p>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.ClosedCount</h3>
+                </div>
+                <span class="metric-badge badge-warning">Locked</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="premium-stat-card stat-blue d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Dispatched</p>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.DispatchedCount</h3>
+                </div>
+                <span class="metric-badge badge-blue">In Transit</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="premium-stat-card stat-purple d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count</h3>
+                </div>
+                <span class="metric-badge badge-purple">Aggregated</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── FILTER CARD ─────────────────────────────────────── -->
+    <div class="card premium-stat-card p-0 mb-4 border-top-0 border-start-0 border-end-0 border-bottom-0" style="border: 1px solid #e2e8f0 !important;">
+        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.85rem; background-color: #fafafa;">
+            <i class="bi bi-funnel-fill text-secondary me-2"></i>Filter Options Matrix
+        </div>
+        <div class="card-body p-3">
+            <form method="get" action="@Url.Action("Batches", "Admin")" id="filterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Collection Center</label>
+                        <select name="centerId" class="form-select form-select-sm" style="border-radius: 6px;">
+                            <option value="">All Centers</option>
+                            @foreach (var c in (List<DairyIndustry.Models.Admin.CollectionCenterModel>)ViewBag.Centers)
+                            {
+                                <option value="@c.CenterId" selected="@(ViewBag.CenterId != null && (int)ViewBag.CenterId == c.CenterId ? "selected" : null)">
+                                    @c.CenterName
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Status</label>
+                        <select name="status" class="form-select form-select-sm" style="border-radius: 6px;">
+                            <option value="">All Status</option>
+                            @foreach (var s in new[] { "Open", "Closed", "Dispatched", "Cancelled" })
+                            {
+                                <option value="@s" selected="@(ViewBag.Status?.ToString() == s ? "selected" : null)">
+                                    @s
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">From Date</label>
+                        <input type="date" name="fromDate" class="form-control form-control-sm" style="border-radius: 6px;" value="@ViewBag.FromDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">To Date</label>
+                        <input type="date" name="toDate" class="form-control form-control-sm" style="border-radius: 6px;" value="@ViewBag.ToDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="col-12 col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-custom-blue btn-sm flex-grow-1" style="height: 31px;">
+                            <i class="bi bi-funnel me-1"></i> Filter
+                        </button>
+                        <a href="@Url.Action("Batches", "Admin")" class="btn btn-light border btn-sm px-3" style="height: 31px; border-radius: 6px;" title="Reset Form">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── BATCHES TABLE ───────────────────────────────────── -->
+    <div class="card premium-stat-card stat-blue p-0 border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-dark" style="font-size: 0.95rem;">
+                <i class="bi bi-table me-2 text-muted"></i>Operational Node Batches
+                <span class="badge bg-light text-dark border ms-1" style="border-radius: 6px;">@Model.Count</span>
+            </span>
+            <small class="text-muted d-none d-md-inline italic">
+                <i class="bi bi-info-circle me-1"></i>Click row hierarchy context to reveal child data sets
+            </small>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox display-6 text-muted opacity-50 d-block mb-2"></i>
+                <p class="text-muted mb-0">No active parameters match the chosen query parameters.</p>
+                <a href="@Url.Action("Batches", "Admin")" class="btn btn-sm btn-light border mt-3 px-3" style="border-radius: 6px;">Clear Constraints</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-clean align-middle mb-0" id="batchTable">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width:70px;">ID</th>
+                            <th>Collection Center</th>
+                            <th>Operation Shift</th>
+                            <th>Target Date</th>
+                            <th class="text-end">Total Volume (L)</th>
+                            <th class="text-center">Avg Fat</th>
+                            <th class="text-center">Avg CLR</th>
+                            <th class="text-center">State Status</th>
+                            <th class="text-end pe-4">Actions Matrix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var batch in Model)
+                        {
+                            <tr class="batch-row" role="button" onclick="window.location='@Url.Action("BatchDetail", "Admin", new { id = batch.BatchId })'">
+                                <td class="ps-4 text-muted small fw-medium">#@batch.BatchId</td>
+                                <td class="fw-bold text-dark">@batch.CenterName</td>
+                                <td>
+                                    @{
+                                        string shiftStyle = batch.Shift == "Morning" ? "badge-warning" : "badge-blue";
+                                        string shiftIcon = batch.Shift == "Morning" ? "bi-sunrise" : "bi-sunset";
+                                    }
+                                    <span class="metric-badge @shiftStyle border">
+                                        <i class="bi @shiftIcon me-1"></i>@batch.Shift
+                                    </span>
+                                </td>
+                                <td class="text-secondary small font-monospace">@batch.BatchDate.ToString("dd MMM yyyy")</td>
+                                <td class="text-end fw-bold text-dark">
+                                    @(batch.TotalQuantity.HasValue? batch.TotalQuantity.Value.ToString("N1") : "—")
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    @(batch.AvgFat.HasValue? batch.AvgFat.Value.ToString("F2") : "—")<span class="tiny text-muted ms-0.5">%</span>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    @(batch.AvgCLR.HasValue? batch.AvgCLR.Value.ToString("F2") : "—")
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        string bg = batch.Status switch
+                                        {
+                                            "Open" => "success",
+                                            "Closed" => "warning",
+                                            "Dispatched" => "primary",
+                                            _ => "danger"
+                                        };
+                                        string icon = batch.Status switch
+                                        {
+                                            "Open" => "bi-circle-fill",
+                                            "Closed" => "bi-lock-fill",
+                                            "Dispatched" => "bi-truck",
+                                            _ => "bi-x-circle-fill"
+                                        };
+                                    }
+                                    <span class="badge bg-@bg-subtle text-@bg border border-@bg-subtle px-2 py-1" style="font-weight:600; font-size:0.8rem; border-radius:6px;">
+                                        <i class="bi @icon me-1" style="font-size:0.65rem;"></i>@batch.Status
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4" onclick="event.stopPropagation()">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="@Url.Action("BatchDetail", "Admin", new { id = batch.BatchId })" class="btn btn-sm btn-light border text-secondary px-2" style="border-radius:6px;" title="View Detail Mapping">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        @if (batch.Status == "Open")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-warning px-2" style="border-radius:6px;" title="Lock/Close Matrix Node" onclick="confirmClose(@batch.BatchId, '@batch.CenterName', '@batch.Shift', '@batch.BatchDate.ToString("dd MMM yyyy")')">
+                                                <i class="bi bi-lock"></i> Close
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Filter Date Validation ───────────────────────────
+        document.getElementById('filterForm').addEventListener('submit', function (e) {
+            const from = document.querySelector('[name="fromDate"]').value;
+            const to = document.querySelector('[name="toDate"]').value;
+
+            if (from && to && from > to) {
+                alert('From Date cannot be after To Date.');
+                e.preventDefault();
+            }
+        });
+
+        // ── Close Batch Modal Trigger ────────────────────────
+        function confirmClose(batchId, center, shift, date) {
+            document.getElementById('closeBatchId').value = batchId;
+            document.getElementById('closeBatchInfo').textContent = center + ' · ' + shift + ' · ' + date;
+
+            new bootstrap.Modal(document.getElementById('closeBatchModal')).show();
+        }
+
+        // ── Pointer Row Styling ─────────────────────────────
+        document.querySelectorAll('.batch-row').forEach(row => {
+            row.style.cursor = 'pointer';
+        });
+    </script>
+}

@@ -1,103 +1,299 @@
 ﻿@model DairyIndustry.Models.Production.MilkTransferModel
 @{
     ViewData["Title"] = $"Quality Test — Transfer #{Model.TransferId}";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml"
+        ;
 }
 
-<div class="container py-4" style="max-width:640px">
+<style>
+    .qt-wrap {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 0 16px 60px;
+        font-family: 'Segoe UI', sans-serif;
+        color: #1a1a2e;
+    }
 
-    <!-- ── Page Header ─────────────────────────────────────── -->
-    <div class="mb-4">
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Record Quality Test
-        </h4>
-        <small class="text-muted">Transfer #@Model.TransferId — @Model.CenterName → @Model.PlantName</small>
+    /* Header */
+    .qt-header {
+        margin-bottom: 28px;
+    }
+
+        .qt-header h4 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px;
+            color: #111827;
+        }
+
+        .qt-header p {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+    /* Cards */
+    .qt-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .qt-card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+        .qt-card-header i {
+            color: #3b82f6;
+        }
+
+    /* Transfer grid */
+    .qt-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .qt-cell {
+        padding: 14px 20px;
+        border-right: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+        .qt-cell:nth-child(3n) {
+            border-right: none;
+        }
+
+        .qt-cell:nth-last-child(-n+3) {
+            border-bottom: none;
+        }
+
+    .qt-cell-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .qt-cell-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    /* Form */
+    .qt-form-body {
+        padding: 24px 20px;
+    }
+
+    .qt-field {
+        margin-bottom: 20px;
+    }
+
+        .qt-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+            .qt-field label span {
+                color: #9ca3af;
+                font-weight: 400;
+                font-size: 12px;
+                margin-left: 4px;
+            }
+
+        .qt-field input {
+            width: 100%;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #111827;
+            background: #f9fafb;
+            transition: border-color .15s, box-shadow .15s;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+
+            .qt-field input::-webkit-outer-spin-button,
+            .qt-field input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+            }
+
+            .qt-field input:focus {
+                border-color: #3b82f6;
+                background: #fff;
+                box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+            }
+
+    .qt-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 5px;
+    }
+
+    .qt-divider {
+        height: 1px;
+        background: #f3f4f6;
+        margin: 24px -20px 24px;
+    }
+
+    /* Buttons */
+    .qt-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 22px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .btn-save:hover {
+            background: #2563eb;
+        }
+
+    .btn-cancel {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        color: #6b7280;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: border-color .15s, color .15s;
+    }
+
+        .btn-cancel:hover {
+            border-color: #9ca3af;
+            color: #374151;
+        }
+
+    @@media (max-width: 480px) {
+        .qt-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .qt-cell:nth-child(3n) {
+            border-right: 1px solid #f3f4f6;
+        }
+
+        .qt-cell:nth-child(2n) {
+            border-right: none;
+        }
+    }
+</style>
+
+<div class="qt-wrap">
+
+    <!-- Header -->
+    <div class="qt-header">
+        <h4><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Record Quality Test</h4>
+        <p>Transfer #@Model.TransferId &nbsp;·&nbsp; @Model.CenterName → @Model.PlantName</p>
     </div>
 
-    <!-- ── Transfer Context Card ───────────────────────────── -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-light fw-semibold">
-            <i class="bi bi-truck me-1"></i>Transfer Summary
+    <!-- Transfer Summary -->
+    <div class="qt-card">
+        <div class="qt-card-header">
+            <i class="bi bi-truck"></i> Transfer Summary
         </div>
-        <div class="card-body">
-            <div class="row g-2 text-sm">
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Batch Ref</span>
-                    <strong>@Model.BatchRef</strong>
-                </div>
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Vehicle</span>
-                    <strong>@Model.VehicleNumber</strong>
-                </div>
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Driver</span>
-                    <strong>@Model.DriverName</strong>
-                </div>
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Dispatch Date</span>
-                    <strong>@Model.DispatchDate.ToString("dd MMM yyyy")</strong>
-                </div>
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Dispatched Qty</span>
-                    <strong>@Model.DispatchQty.ToString("F2") L</strong>
-                </div>
-                <div class="col-6">
-                    <span class="text-muted d-block" style="font-size:.8rem">Received Qty</span>
-                    <strong>@(Model.ReceivedQty?.ToString("F2") ?? "-") L</strong>
-                </div>
+        <div class="qt-grid">
+            <div class="qt-cell">
+                <div class="qt-cell-label">Batch Ref</div>
+                <div class="qt-cell-value">@Model.BatchRef</div>
+            </div>
+            <div class="qt-cell">
+                <div class="qt-cell-label">Vehicle</div>
+                <div class="qt-cell-value">@Model.VehicleNumber</div>
+            </div>
+            <div class="qt-cell">
+                <div class="qt-cell-label">Driver</div>
+                <div class="qt-cell-value">@Model.DriverName</div>
+            </div>
+            <div class="qt-cell">
+                <div class="qt-cell-label">Dispatch Date</div>
+                <div class="qt-cell-value">@Model.DispatchDate.ToString("dd MMM yyyy")</div>
+            </div>
+            <div class="qt-cell">
+                <div class="qt-cell-label">Dispatched</div>
+                <div class="qt-cell-value">@Model.DispatchQty.ToString("F2") L</div>
+            </div>
+            <div class="qt-cell">
+                <div class="qt-cell-label">Received</div>
+                <div class="qt-cell-value">@(Model.ReceivedQty?.ToString("F2") ?? "—") L</div>
             </div>
         </div>
     </div>
 
-    <!-- ── Quality Test Form ────────────────────────────────── -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-primary text-white fw-semibold">
-            <i class="bi bi-eyedropper me-1"></i>Enter Quality Readings
+    <!-- Quality Form -->
+    <div class="qt-card">
+        <div class="qt-card-header">
+            <i class="bi bi-eyedropper"></i> Enter Quality Readings
         </div>
-        <div class="card-body">
+        <div class="qt-form-body">
             <form asp-action="AddQualityTest" method="post">
                 <input type="hidden" name="transferId" value="@Model.TransferId" />
 
-                <!-- Fat % -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Fat % <span class="text-danger">*</span>
-                        <small class="text-muted fw-normal">(e.g. 3.50)</small>
-                    </label>
+                <div class="qt-field">
+                    <label>Fat % <span>* e.g. 3.50</span></label>
                     <input type="number" name="testedFat" step="0.01" min="0" max="10"
-                           class="form-control" placeholder="Enter fat percentage" required />
-                    <div class="form-text">Acceptable range: 3.00 – 7.00 %</div>
+                           placeholder="0.00" required />
+                    <p class="qt-hint">Acceptable range: 3.00 – 7.00 %</p>
                 </div>
 
-                <!-- CLR -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        CLR <span class="text-danger">*</span>
-                        <small class="text-muted fw-normal">(Corrected Lactometer Reading)</small>
-                    </label>
+                <div class="qt-field">
+                    <label>CLR <span>* Corrected Lactometer Reading</span></label>
                     <input type="number" name="testedCLR" step="0.1" min="20" max="40"
-                           class="form-control" placeholder="Enter CLR value" required />
-                    <div class="form-text">Acceptable range: 26 – 32</div>
+                           placeholder="0.0" required />
+                    <p class="qt-hint">Acceptable range: 26 – 32</p>
                 </div>
 
-                <!-- Test Date -->
-                <div class="mb-4">
-                    <label class="form-label fw-semibold">
-                        Test Date <span class="text-danger">*</span>
-                    </label>
+                <div class="qt-field">
+                    <label>Test Date <span>*</span></label>
                     <input type="date" name="testDate"
                            value="@DateTime.Today.ToString("yyyy-MM-dd")"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")"
-                           class="form-control" required />
+                           required />
                 </div>
 
-                <!-- Buttons -->
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-save me-1"></i>Save Quality Test
+                <div class="qt-divider"></div>
+
+                <div class="qt-actions">
+                    <button type="submit" class="btn-save">
+                        <i class="bi bi-check2"></i> Save Quality Test
                     </button>
-                    <a asp-action="QualityTests" class="btn btn-outline-secondary">Cancel</a>
+                    <a asp-action="QualityTests" class="btn-cancel">
+                        Cancel
+                    </a>
                 </div>
             </form>
         </div>
     </div>
+
 </div>

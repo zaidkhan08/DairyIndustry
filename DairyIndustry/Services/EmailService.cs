@@ -130,5 +130,3 @@ namespace DairyIndustry.Services
         }
     }
 
-
-}

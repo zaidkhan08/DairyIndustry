@@ -6,256 +6,378 @@
     var productTypes = ViewBag.ProductTypes as List<string> ?? new List<string>();
 }
 
-<div class="container mt-4">
+<!-- Custom Styles to perfectly match image_3f9839.png -->
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <!-- Title -->
-    <div class="row mb-4">
-        <div class="col d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Products</h3>
-                <p class="text-muted mb-0">Manage all dairy products</p>
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Container Cards from image_3f9839.png */
+    .premium-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        padding: 20px;
+    }
+
+    .stat-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stat-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stat-red {
+        border-top: 4px solid #ef4444;
+    }
+
+    .card-title-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .metric-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+    .badge-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+    }
+
+    .badge-green {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge-red {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+
+    /* Clean Data Tables */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Premium Soft Badges */
+    .pill-badge-blue {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-badge-purple {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-badge-green {
+        background-color: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-status-active {
+        background-color: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .pill-status-inactive {
+        background-color: #fef2f2;
+        color: #991b1b;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .btn-custom-blue {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-custom-blue:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- Workspace Header Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0 text-dark">Products Directory</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-muted">Dairy Products</span>
             </div>
-            <a asp-controller="Admin" asp-action="AddProduct" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i> Add Product
+        </div>
+        <div>
+            <a asp-controller="Admin" asp-action="AddProduct" class="btn btn-custom-blue shadow-sm px-3 py-2" style="border-radius: 6px; font-size: 0.9rem;">
+                <i class="bi bi-plus-lg me-1"></i> Add Product
             </a>
         </div>
     </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success mb-4">
-            <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
-
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger mb-4">
-            <i class="bi bi-exclamation-circle me-1"></i> @TempData["Error"]
+        <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i> @TempData["Error"]
         </div>
     }
 
-    <!-- Stats -->
+    <!-- Metric Panels matching row hierarchy in image_3f9839.png -->
     <div class="row mb-4 g-3">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="mb-1 small">Total Products</p>
-                        <h4 class="fw-bold mb-0">@Model.Count</h4>
-                    </div>
-                    <i class="bi bi-box-seam-fill fs-2 opacity-75"></i>
+            <div class="premium-stat-card stat-blue d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Total Products</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count</h3>
                 </div>
+                <span class="metric-badge badge-blue">Catalogued</span>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="mb-1 small">Active</p>
-                        <h4 class="fw-bold mb-0">@Model.Count(p => p.IsActive)</h4>
-                    </div>
-                    <i class="bi bi-check-circle-fill fs-2 opacity-75"></i>
+            <div class="premium-stat-card stat-green d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Active</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(p => p.IsActive)</h3>
                 </div>
+                <span class="metric-badge badge-green">Live SKU</span>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-danger text-white">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="mb-1 small">Inactive</p>
-                        <h4 class="fw-bold mb-0">@Model.Count(p => !p.IsActive)</h4>
-                    </div>
-                    <i class="bi bi-x-circle-fill fs-2 opacity-75"></i>
+            <div class="premium-stat-card stat-red d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="card-title-text mb-1">Inactive</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.Count(p => !p.IsActive)</h3>
                 </div>
+                <span class="metric-badge badge-red">Archived</span>
             </div>
         </div>
     </div>
 
-    <!-- Filter -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
+    <!-- ── FILTER CARD ─────────────────────────────────────── -->
+    <div class="card premium-stat-card p-0 mb-4 border-top-0 border-start-0 border-end-0 border-bottom-0" style="border: 1px solid #e2e8f0 !important;">
+        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.85rem; background-color: #fafafa;">
+            <i class="bi bi-funnel-fill text-secondary me-2"></i>Filter Options Matrix
+        </div>
+        <div class="card-body p-3">
             <form method="get" asp-controller="Admin" asp-action="Products" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Product Type</label>
-                    <select name="productType" class="form-select">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Product Classification Type</label>
+                    <select name="productType" class="form-select form-select-sm" style="border-radius: 6px;">
                         <option value="">-- All Types --</option>
                         @foreach (var type in productTypes)
                         {
-                            <option value="@type"
-                                    selected="@(ViewBag.CurrentType == type ? "selected" : null)">
+                            <option value="@type" selected="@(ViewBag.CurrentType == type ? "selected" : null)">
                                 @type
                             </option>
                         }
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Status</label>
-                    <select name="isActive" class="form-select">
-                        <option value="" selected="@(ViewBag.CurrentActive == null ? "selected" : null)">All</option>
-                        <option value="true" selected="@(ViewBag.CurrentActive?.ToString() == "True" ? "selected" : null)">Active</option>
-                        <option value="false" selected="@(ViewBag.CurrentActive?.ToString() == "False" ? "selected" : null)">Inactive</option>
+                    <label class="form-label small fw-semibold text-secondary mb-1">Operational Status</label>
+                    <select name="isActive" class="form-select form-select-sm" style="border-radius: 6px;">
+                        <option value="" selected="@(ViewBag.CurrentActive == null ? "selected" : null)">All States</option>
+                        <option value="true" selected="@(ViewBag.CurrentActive?.ToString() == "True" ? "selected" : null)">Active Only</option>
+                        <option value="false" selected="@(ViewBag.CurrentActive?.ToString() == "False" ? "selected" : null)">Inactive Only</option>
                     </select>
                 </div>
                 <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-funnel me-1"></i> Filter
+                    <button type="submit" class="btn btn-custom-blue btn-sm flex-grow-1" style="height: 31px;">
+                        <i class="bi bi-funnel me-1"></i> Filter Table
                     </button>
-                    <a asp-controller="Admin" asp-action="Products" class="btn btn-outline-secondary">Clear</a>
+                    <a asp-controller="Admin" asp-action="Products" class="btn btn-light border btn-sm px-3" style="height: 31px; border-radius: 6px;">Clear Constraints</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-box-seam me-1"></i> All Products</span>
-            <span class="badge bg-primary">Total : @Model.Count</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Product Name</th>
-                            <th>Type</th>
-                            <th>MRP</th>
-                            <th>Unit</th>
-                            <th>Shelf Life</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                                    No products found.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            int sr = 1;
-                            foreach (var p in Model)
-                            {
-                                string formId = $"toggleForm_{p.ProductId}";
-                                <tr>
-                                    <td>@sr</td>
-                                    <td>
-                                        <div class="fw-semibold small">@p.ProductName</div>
-                                        @if (!string.IsNullOrEmpty(p.Description))
-                                        {
-                                            <div class="text-muted" style="font-size:11px;">@p.Description</div>
-                                        }
-                                    </td>
-                                    <td>
-                                        @{
-                                            string typeBadge = p.ProductType?.ToLower() switch
-                                            {
-                                                "milk" => "bg-info text-dark",
-                                                "dairy" => "bg-warning text-dark",
-                                                "beverage" => "bg-success",
-                                                _ => "bg-secondary"
-                                            };
-                                        }
-                                        <span class="badge @typeBadge">@p.ProductType</span>
-                                    </td>
-                                    <td><small>₹ @p.MRP.ToString("0.00")</small></td>
-                                    <td><small>@p.Unit</small></td>
-                                    <td>
-                                        @if (p.ShelfLifeDays.HasValue)
-                                        {
-                                            <small>@p.ShelfLifeDays days</small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (p.IsActive)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Inactive</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <a asp-controller="Admin"
-                                               asp-action="ProductDetail"
-                                               asp-route-id="@p.ProductId"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a asp-controller="Admin"
-                                               asp-action="EditProduct"
-                                               asp-route-id="@p.ProductId"
-                                               class="btn btn-sm btn-outline-secondary">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            @if (p.IsActive)
-                                            {
-                                                <button type="submit"
-                                                        form="@formId"
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        onclick="return confirm('Deactivate @p.ProductName?')">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <button type="submit"
-                                                        form="@formId"
-                                                        class="btn btn-sm btn-outline-success"
-                                                        onclick="return confirm('Activate @p.ProductName?')">
-                                                    <i class="bi bi-check-circle"></i>
-                                                </button>
-                                            }
-                                        </div>
-                                    </td>
-                                </tr>
-                                sr++;
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+    <!-- Main Grid Box Data Container -->
+    <div class="card premium-stat-card stat-blue p-0 border-start-0 border-end-0 border-bottom-0">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <span class="panel-header-text"><i class="bi bi-box-seam text-primary me-2"></i>All Catalogued Dairy Products</span>
+            <span class="badge bg-light text-dark border px-2 py-1" style="font-weight: 500; border-radius: 6px;">Active Records: @Model.Count</span>
         </div>
 
-        <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-            <span>Total: @Model.Count | Active: @Model.Count(p => p.IsActive) | Inactive: @Model.Count(p => !p.IsActive)</span>
-            <span>Types: @Model.Select(p => p.ProductType).Distinct().Count()</span>
+        <div class="table-responsive">
+            <table class="table table-clean align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">#</th>
+                        <th>Product Identity & Parameters</th>
+                        <th>Classification</th>
+                        <th>MRP Value</th>
+                        <th>Packaging Unit</th>
+                        <th>Shelf Life</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions Matrix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>
+                                No active product variants match the chosen search context variables.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int sr = 1;
+                        foreach (var p in Model)
+                        {
+                            string formId = $"toggleForm_{p.ProductId}";
+                            <tr>
+                                <td class="ps-4 text-muted small fw-medium">@sr</td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0" style="font-size: 0.92rem;">@p.ProductName</div>
+                                        @if (!string.IsNullOrEmpty(p.Description))
+                                        {
+                                            <div class="text-muted tiny" style="font-size: 11px;">@p.Description</div>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    @{
+                                        string typeStyle = p.ProductType?.ToLower() switch
+                                        {
+                                            "milk" => "pill-badge-blue",
+                                            "dairy" => "pill-badge-purple",
+                                            "beverage" => "pill-badge-green",
+                                            _ => "bg-light text-dark border"
+                                        };
+                                    }
+                                    <span class="pill-milk-badge @typeStyle">@p.ProductType</span>
+                                </td>
+                                <td class="fw-bold text-dark">₹ @p.MRP.ToString("N2")</td>
+                                <td class="text-secondary small">@p.Unit</td>
+                                <td class="text-secondary small">
+                                    @if (p.ShelfLifeDays.HasValue)
+                                    {
+                                        <span>@p.ShelfLifeDays days</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="@(p.IsActive ? "pill-status-active" : "pill-status-inactive")">
+                                        @(p.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <a asp-controller="Admin" asp-action="ProductDetail" asp-route-id="@p.ProductId" class="btn btn-sm btn-white border px-2 text-secondary" style="border-radius:6px;" title="View Extended Summary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-controller="Admin" asp-action="EditProduct" asp-route-id="@p.ProductId" class="btn btn-sm btn-white border px-2 text-primary" style="border-radius:6px;" title="Modify Configuration">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        @if (p.IsActive)
+                                        {
+                                            <button type="submit" form="@formId" class="btn btn-sm btn-outline-danger px-2" style="border-radius:6px;" onclick="return confirm('Deactivate access permission for @p.ProductName?')">
+                                                <i class="bi bi-x-circle"></i> Deactivate
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" form="@formId" class="btn btn-sm btn-outline-success px-2" style="border-radius:6px;" onclick="return confirm('Restore active catalog access for @p.ProductName?')">
+                                                <i class="bi bi-check-circle"></i> Activate
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            sr++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-white border-top text-muted small py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="font-size: 0.82rem;">
+            <div>
+                Total: <strong>@Model.Count</strong> &middot;
+                Active SKUs: <span class="text-success fw-bold">@Model.Count(p => p.IsActive)</span> &middot;
+                Archived: <span class="text-danger fw-bold">@Model.Count(p => !p.IsActive)</span>
+            </div>
+            <div>
+                Distinct Classifications Mapped: <strong>@Model.Select(p => p.ProductType).Distinct().Count() types</strong>
+            </div>
         </div>
     </div>
 
-    @*
-        ── Toggle forms rendered OUTSIDE the table ──
-        FIX: value="@(p.IsActive ? "false" : "true")"
-        The original code used @(!p.IsActive).ToString().ToLower() which Razor
-        parsed as @(!p.IsActive) + literal text ".ToString().ToLower()", so the
-        hidden input always received the string "True.ToString().ToLower()" or
-        "False.ToString().ToLower()" instead of a plain bool. Model binding
-        could coerce "false" → false (deactivate worked) but could NOT coerce
-        "False.ToString().ToLower()" → true (activate never worked).
-    *@
+    <!-- Hidden State Forms Render Block Outer Frame -->
     @foreach (var p in Model)
     {
-        <form id="toggleForm_@p.ProductId"
-              method="post"
-              asp-controller="Admin"
-              asp-action="ToggleProductStatus">
+        <form id="toggleForm_@p.ProductId" method="post" asp-controller="Admin" asp-action="ToggleProductStatus">
             @Html.AntiForgeryToken()
             <input type="hidden" name="productId" value="@p.ProductId" />
             <input type="hidden" name="isActive" value="@(p.IsActive ? "false" : "true")" />
         </form>
     }
-
 </div>

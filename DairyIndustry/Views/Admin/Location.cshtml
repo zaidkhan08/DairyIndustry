@@ -1,205 +1,242 @@
-﻿@{
+﻿@model dynamic
+@{
     ViewData["Title"] = "Manage Location";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    var states = ViewBag.States as List<DairyIndustry.Models.Admin.StateModel>;
-    var cities = ViewBag.Cities as List<DairyIndustry.Models.Admin.CityModel>;
-    var villages = ViewBag.Villages as List<DairyIndustry.Models.Admin.VillageModel>;
+    var states = ViewBag.States as List<DairyIndustry.Models.Admin.StateModel> ?? new List<DairyIndustry.Models.Admin.StateModel>();
+    var cities = ViewBag.Cities as List<DairyIndustry.Models.Admin.CityModel> ?? new List<DairyIndustry.Models.Admin.CityModel>();
+    var villages = ViewBag.Villages as List<DairyIndustry.Models.Admin.VillageModel> ?? new List<DairyIndustry.Models.Admin.VillageModel>();
 
     string activeTab = TempData["ActiveTab"]?.ToString() ?? "state";
 }
 
-<div class="bg-primary text-white py-4 px-4 mb-4 shadow-sm">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+<style>
+    body {
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    /* Top Border Accent Cards matching image_3f9839.png */
+    .premium-data-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .stripe-blue {
+        border-top: 4px solid #3b82f6;
+    }
+
+    .stripe-green {
+        border-top: 4px solid #10b981;
+    }
+
+    .stripe-warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    /* Custom Metric Badges */
+    .metric-pill {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+    }
+
+    .pill-blue {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border-color: #bfdbfe;
+    }
+
+    .pill-green {
+        background-color: #f0fdf4;
+        color: #166534;
+        border-color: #bbf7d0;
+    }
+
+    .pill-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+        border-color: #fef3c7;
+    }
+
+    /* Custom Navigation Tabs Layout */
+    .nav-tabs-custom {
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 20px;
+            margin-bottom: -2px;
+        }
+
+            .nav-tabs-custom .nav-link.active {
+                background: transparent;
+                color: #111827;
+                border-bottom: 3px solid #3b82f6;
+            }
+
+    /* Clean Table Implementations */
+    .table-clean th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 14px 20px;
+        background-color: #ffffff;
+    }
+
+    .table-clean td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1f2937;
+        font-size: 0.9rem;
+    }
+
+    .table-clean tbody tr:hover {
+        background-color: #f8fafc;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
-            <h4 class="mb-1 fw-bold">
-                <i class="bi bi-geo-alt-fill me-2"></i>Location Management
-            </h4>
-            <p class="mb-0 opacity-75 small">
-                Manage States, Cities and Villages from one place.
-            </p>
+            <h4 class="fw-bold mb-0 text-dark">Location Management</h4>
+            <div class="breadcrumb-custom mt-1">
+                <span>Admin</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-muted">Geographic Nodes</span>
+            </div>
         </div>
         <div class="d-flex gap-2">
-            <span class="badge bg-light text-primary fw-semibold px-3 py-2">
-                <i class="bi bi-geo me-1"></i>States: @states.Count
-            </span>
-            <span class="badge bg-light text-primary fw-semibold px-3 py-2">
-                <i class="bi bi-building me-1"></i>Cities: @cities.Count
-            </span>
-            <span class="badge bg-light text-primary fw-semibold px-3 py-2">
-                <i class="bi bi-map me-1"></i>Villages: @villages.Count
-            </span>
+            <div class="metric-pill pill-blue"><i class="bi bi-geo me-1"></i>States: @states.Count</div>
+            <div class="metric-pill pill-green"><i class="bi bi-building me-1"></i>Cities: @cities.Count</div>
+            <div class="metric-pill pill-warning"><i class="bi bi-map me-1"></i>Villages: @villages.Count</div>
         </div>
     </div>
-</div>
-
-<div class="container-fluid px-4 pb-5">
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
         </div>
     }
 
-    <!-- Tabs -->
-    <ul class="nav nav-tabs border-bottom mb-4" id="locationTabs">
+    <ul class="nav nav-tabs nav-tabs-custom mb-4" id="locationTabs" role="tablist">
         <li class="nav-item">
-            <a class="nav-link fw-semibold @(activeTab == "state" ? "active" : "")"
-               id="state-tab" href="#statePanel"
-               data-bs-toggle="tab" role="tab">
-                <i class="bi bi-geo-alt-fill me-1 text-primary"></i>States
-                <span class="badge bg-primary ms-1">@states.Count</span>
-            </a>
+            <button class="nav-link @(activeTab == "state" ? "active" : "")" id="state-tab" data-bs-toggle="tab" data-bs-target="#statePanel" type="button" role="tab">
+                <i class="bi bi-geo-alt-fill me-1 text-primary"></i> States <span class="badge bg-light text-dark border ms-1">@states.Count</span>
+            </button>
         </li>
         <li class="nav-item">
-            <a class="nav-link fw-semibold @(activeTab == "city" ? "active" : "")"
-               id="city-tab" href="#cityPanel"
-               data-bs-toggle="tab" role="tab">
-                <i class="bi bi-building me-1 text-success"></i>Cities
-                <span class="badge bg-success ms-1">@cities.Count</span>
-            </a>
+            <button class="nav-link @(activeTab == "city" ? "active" : "")" id="city-tab" data-bs-toggle="tab" data-bs-target="#cityPanel" type="button" role="tab">
+                <i class="bi bi-building-fill me-1 text-success"></i> Cities <span class="badge bg-light text-dark border ms-1">@cities.Count</span>
+            </button>
         </li>
         <li class="nav-item">
-            <a class="nav-link fw-semibold @(activeTab == "village" ? "active" : "")"
-               id="village-tab" href="#villagePanel"
-               data-bs-toggle="tab" role="tab">
-                <i class="bi bi-map me-1 text-warning"></i>Villages
-                <span class="badge bg-warning text-dark ms-1">@villages.Count</span>
-            </a>
+            <button class="nav-link @(activeTab == "village" ? "active" : "")" id="village-tab" data-bs-toggle="tab" data-bs-target="#villagePanel" type="button" role="tab">
+                <i class="bi bi-map-fill me-1 text-warning"></i> Villages <span class="badge bg-light text-dark border ms-1">@villages.Count</span>
+            </button>
         </li>
     </ul>
 
     <div class="tab-content" id="locationTabContent">
 
-        <!-- ════════════════════════════════════
-             STATE TAB
-        ════════════════════════════════════ -->
-        <div class="tab-pane fade @(activeTab == "state" ? "show active" : "")"
-             id="statePanel" role="tabpanel">
+        <div class="tab-pane fade @(activeTab == "state" ? "show active" : "")" id="statePanel" role="tabpanel">
             <div class="row g-4">
-
                 <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-plus-circle text-primary"></i>
-                            <span class="fw-semibold">Add New State</span>
+                    <div class="card premium-data-card stripe-blue border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            <i class="bi bi-plus-circle-fill text-primary me-2"></i>Add New State
                         </div>
                         <div class="card-body p-4">
                             <form method="post" action="/Admin/AddState">
                                 <div class="mb-4">
-                                    <label class="form-label fw-medium">
-                                        State Name <span class="text-danger">*</span>
-                                    </label>
+                                    <label class="form-label small fw-semibold text-secondary">State Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-geo-alt text-primary"></i>
-                                        </span>
-                                        <input type="text" name="stateName"
-                                               class="form-control border-start-0 ps-0"
-                                               placeholder="e.g. Gujarat, Maharashtra"
-                                               required />
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-primary"></i></span>
+                                        <input type="text" name="stateName" class="form-control border-start-0 ps-1" style="border-radius: 0 6px 6px 0;" placeholder="e.g. Gujarat" required />
                                     </div>
-                                    <div class="form-text ms-1">State name must be unique.</div>
+                                    <div class="form-text mt-2 small text-muted">State entry configurations must remain distinct.</div>
                                 </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary fw-semibold">
-                                        <i class="bi bi-plus-circle me-2"></i>Add State
-                                    </button>
-                                </div>
+                                <button type="submit" class="btn btn-primary w-100 fw-medium" style="border-radius: 6px;">
+                                    <i class="bi bi-plus-lg me-1"></i> Register State
+                                </button>
                             </form>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-table text-primary"></i>
-                                <span class="fw-semibold">All States</span>
-                            </div>
-                            <span class="badge bg-primary px-3">Total: @states.Count</span>
+                    <div class="card premium-data-card stripe-blue border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            Current Configured States
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                                            <th class="py-3 text-muted fw-semibold small">State ID</th>
-                                            <th class="py-3 text-muted fw-semibold small">State Name</th>
-                                            <th class="py-3 text-muted fw-semibold small">Cities</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (!states.Any())
+                        <div class="table-responsive">
+                            <table class="table table-clean align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4" style="width: 70px;">#</th>
+                                        <th>State ID</th>
+                                        <th>State Jurisdiction Name</th>
+                                        <th>Child Cities</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!states.Any())
+                                    {
+                                        <tr><td colspan="4" class="text-muted text-center py-5"><i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>No states registered.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        int sr = 1;
+                                        foreach (var state in states)
                                         {
+                                            int cityCount = cities.Count(c => c.StateId == state.StateId);
                                             <tr>
-                                                <td colspan="4" class="text-center text-muted py-5">
-                                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                                    No states added yet.
-                                                </td>
+                                                <td class="ps-4 text-muted small">@sr</td>
+                                                <td><span class="badge bg-light text-dark border">#@state.StateId</span></td>
+                                                <td class="fw-bold text-dark"><i class="bi bi-geo-alt text-muted me-2"></i>@state.StateName</td>
+                                                <td><span class="metric-badge px-2 py-1 pill-blue small">@cityCount cities linked</span></td>
                                             </tr>
+                                            sr++;
                                         }
-                                        else
-                                        {
-                                            int sr = 1;
-                                            foreach (var state in states)
-                                            {
-                                                int cityCount = cities.Count(c => c.StateId == state.StateId);
-                                                <tr>
-                                                    <td class="px-4 text-muted small">@sr</td>
-                                                    <td>
-                                                        <span class="badge bg-light text-dark border">
-                                                            #@state.StateId
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <i class="bi bi-geo-alt-fill me-2 text-primary"></i>
-                                                        <span class="fw-semibold">@state.StateName</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
-                                                            @cityCount cities
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                sr++;
-                                            }
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- ════════════════════════════════════
-             CITY TAB
-        ════════════════════════════════════ -->
-        <div class="tab-pane fade @(activeTab == "city" ? "show active" : "")"
-             id="cityPanel" role="tabpanel">
+        <div class="tab-pane fade @(activeTab == "city" ? "show active" : "")" id="cityPanel" role="tabpanel">
             <div class="row g-4">
-
                 <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-plus-circle text-success"></i>
-                            <span class="fw-semibold">Add New City</span>
+                    <div class="card premium-data-card stripe-green border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            <i class="bi bi-plus-circle-fill text-success me-2"></i>Add New City
                         </div>
                         <div class="card-body p-4">
                             <form method="post" action="/Admin/AddCity">
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">
-                                        State <span class="text-danger">*</span>
-                                    </label>
-                                    <select name="stateId" class="form-select" required>
-                                        <option value="">-- Select State --</option>
+                                    <label class="form-label small fw-semibold text-secondary">Parent State <span class="text-danger">*</span></label>
+                                    <select name="stateId" class="form-select" style="border-radius: 6px;" required>
+                                        <option value="">-- Choose State --</option>
                                         @foreach (var state in states)
                                         {
                                             <option value="@state.StateId">@state.StateName</option>
@@ -207,123 +244,78 @@
                                     </select>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label fw-medium">
-                                        City Name <span class="text-danger">*</span>
-                                    </label>
+                                    <label class="form-label small fw-semibold text-secondary">City Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-building text-success"></i>
-                                        </span>
-                                        <input type="text" name="cityName"
-                                               class="form-control border-start-0 ps-0"
-                                               placeholder="e.g. Surat, Pune"
-                                               required />
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-building text-success"></i></span>
+                                        <input type="text" name="cityName" class="form-control border-start-0 ps-1" style="border-radius: 0 6px 6px 0;" placeholder="e.g. Surat" required />
                                     </div>
-                                    <div class="form-text ms-1">Must be unique within the state.</div>
                                 </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-success fw-semibold">
-                                        <i class="bi bi-plus-circle me-2"></i>Add City
-                                    </button>
-                                </div>
+                                <button type="submit" class="btn btn-success w-100 fw-medium" style="border-radius: 6px;">
+                                    <i class="bi bi-plus-lg me-1"></i> Register City
+                                </button>
                             </form>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-table text-success"></i>
-                                <span class="fw-semibold">All Cities</span>
-                            </div>
-                            <span class="badge bg-success px-3">Total: @cities.Count</span>
+                    <div class="card premium-data-card stripe-green border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            Current Configured Cities
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                                            <th class="py-3 text-muted fw-semibold small">City ID</th>
-                                            <th class="py-3 text-muted fw-semibold small">City Name</th>
-                                            <th class="py-3 text-muted fw-semibold small">State</th>
-                                            <th class="py-3 text-muted fw-semibold small">Villages</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (!cities.Any())
+                        <div class="table-responsive">
+                            <table class="table table-clean align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4" style="width: 70px;">#</th>
+                                        <th>City ID</th>
+                                        <th>City Name</th>
+                                        <th>Parent State</th>
+                                        <th>Linked Villages</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!cities.Any())
+                                    {
+                                        <tr><td colspan="5" class="text-muted text-center py-5"><i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>No cities registered.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        int sr = 1;
+                                        foreach (var city in cities)
                                         {
+                                            int villageCount = villages.Count(v => v.CityId == city.CityId);
                                             <tr>
-                                                <td colspan="5" class="text-center text-muted py-5">
-                                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                                    No cities added yet.
-                                                </td>
+                                                <td class="ps-4 text-muted small">@sr</td>
+                                                <td><span class="badge bg-light text-dark border">#@city.CityId</span></td>
+                                                <td class="fw-bold text-dark"><i class="bi bi-building text-muted me-2"></i>@city.CityName</td>
+                                                <td><span class="metric-badge px-2 py-1 pill-blue small">@city.StateName</span></td>
+                                                <td><span class="metric-badge px-2 py-1 pill-green small">@villageCount villages</span></td>
                                             </tr>
+                                            sr++;
                                         }
-                                        else
-                                        {
-                                            int sr = 1;
-                                            foreach (var city in cities)
-                                            {
-                                                int villageCount = villages.Count(v => v.CityId == city.CityId);
-                                                <tr>
-                                                    <td class="px-4 text-muted small">@sr</td>
-                                                    <td>
-                                                        <span class="badge bg-light text-dark border">
-                                                            #@city.CityId
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <i class="bi bi-building me-2 text-success"></i>
-                                                        <span class="fw-semibold">@city.CityName</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
-                                                            @city.StateName
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold">
-                                                            @villageCount villages
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                sr++;
-                                            }
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- ════════════════════════════════════
-             VILLAGE TAB
-        ════════════════════════════════════ -->
-        <div class="tab-pane fade @(activeTab == "village" ? "show active" : "")"
-             id="villagePanel" role="tabpanel">
+        <div class="tab-pane fade @(activeTab == "village" ? "show active" : "")" id="villagePanel" role="tabpanel">
             <div class="row g-4">
-
                 <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-plus-circle text-warning"></i>
-                            <span class="fw-semibold">Add New Village</span>
+                    <div class="card premium-data-card stripe-warning border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            <i class="bi bi-plus-circle-fill text-warning me-2"></i>Add New Village
                         </div>
                         <div class="card-body p-4">
                             <form method="post" action="/Admin/AddVillage">
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">
-                                        State <span class="text-danger">*</span>
-                                    </label>
-                                    <select id="stateDropdown" class="form-select" required>
-                                        <option value="">-- Select State --</option>
+                                    <label class="form-label small fw-semibold text-secondary">State Context <span class="text-danger">*</span></label>
+                                    <select id="stateDropdown" class="form-select" style="border-radius: 6px;" required>
+                                        <option value="">-- Choose State --</option>
                                         @foreach (var state in states)
                                         {
                                             <option value="@state.StateId">@state.StateName</option>
@@ -331,108 +323,67 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">
-                                        City <span class="text-danger">*</span>
-                                    </label>
-                                    <select id="cityDropdown" name="cityId"
-                                            class="form-select" required disabled>
+                                    <label class="form-label small fw-semibold text-secondary">City Context <span class="text-danger">*</span></label>
+                                    <select id="cityDropdown" name="cityId" class="form-select" style="border-radius: 6px;" required disabled>
                                         <option value="">-- Select State First --</option>
                                     </select>
-                                    <div class="form-text ms-1">Select state to load cities.</div>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label fw-medium">
-                                        Village Name <span class="text-danger">*</span>
-                                    </label>
+                                    <label class="form-label small fw-semibold text-secondary">Village Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="bi bi-map text-warning"></i>
-                                        </span>
-                                        <input type="text" name="villageName"
-                                               class="form-control border-start-0 ps-0"
-                                               placeholder="e.g. Bardoli, Olpad"
-                                               required />
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-map text-warning"></i></span>
+                                        <input type="text" name="villageName" class="form-control border-start-0 ps-1" style="border-radius: 0 6px 6px 0;" placeholder="e.g. Bardoli" required />
                                     </div>
-                                    <div class="form-text ms-1">Must be unique within the city.</div>
                                 </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-warning fw-semibold">
-                                        <i class="bi bi-plus-circle me-2"></i>Add Village
-                                    </button>
-                                </div>
+                                <button type="submit" class="btn btn-warning w-100 fw-medium text-dark" style="border-radius: 6px;">
+                                    <i class="bi bi-plus-lg me-1"></i> Register Village
+                                </button>
                             </form>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-table text-warning"></i>
-                                <span class="fw-semibold">All Villages</span>
-                            </div>
-                            <span class="badge bg-warning text-dark px-3">Total: @villages.Count</span>
+                    <div class="card premium-data-card stripe-warning border-start-0 border-end-0 border-bottom-0">
+                        <div class="p-3 bg-white border-bottom fw-bold text-dark" style="font-size: 0.9rem;">
+                            Current Configured Villages
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="px-4 py-3 text-muted fw-semibold small">#</th>
-                                            <th class="py-3 text-muted fw-semibold small">Village ID</th>
-                                            <th class="py-3 text-muted fw-semibold small">Village Name</th>
-                                            <th class="py-3 text-muted fw-semibold small">City</th>
-                                            <th class="py-3 text-muted fw-semibold small">State</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (!villages.Any())
+                        <div class="table-responsive">
+                            <table class="table table-clean align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4" style="width: 70px;">#</th>
+                                        <th>Village ID</th>
+                                        <th>Village Name</th>
+                                        <th>City Cluster</th>
+                                        <th>State Jurisdiction</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!villages.Any())
+                                    {
+                                        <tr><td colspan="5" class="text-muted text-center py-5"><i class="bi bi-inbox d-block display-6 mb-2 text-secondary"></i>No villages registered.</td></tr>
+                                    }
+                                    else
+                                    {
+                                        int sr = 1;
+                                        foreach (var village in villages)
                                         {
                                             <tr>
-                                                <td colspan="5" class="text-center text-muted py-5">
-                                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                                    No villages added yet.
-                                                </td>
+                                                <td class="ps-4 text-muted small">@sr</td>
+                                                <td><span class="badge bg-light text-dark border">#@village.VillageId</span></td>
+                                                <td class="fw-bold text-dark"><i class="bi bi-map text-muted me-2"></i>@village.VillageName</td>
+                                                <td><span class="metric-badge px-2 py-1 pill-green small">@village.CityName</span></td>
+                                                <td><span class="metric-badge px-2 py-1 pill-blue small">@village.StateName</span></td>
                                             </tr>
+                                            sr++;
                                         }
-                                        else
-                                        {
-                                            int sr = 1;
-                                            foreach (var village in villages)
-                                            {
-                                                <tr>
-                                                    <td class="px-4 text-muted small">@sr</td>
-                                                    <td>
-                                                        <span class="badge bg-light text-dark border">
-                                                            #@village.VillageId
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <i class="bi bi-map me-2 text-warning"></i>
-                                                        <span class="fw-semibold">@village.VillageName</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold">
-                                                            @village.CityName
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
-                                                            @village.StateName
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                sr++;
-                                            }
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
 

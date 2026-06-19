@@ -22,11 +22,11 @@ namespace DairyIndustry.Repository
         {
             var now = DateTime.Now.TimeOfDay;
 
-            if (now >= new TimeSpan(10, 00, 0) && now < new TimeSpan(12, 00
+            if (now >= new TimeSpan(10, 0, 0) && now < new TimeSpan(12, 0
                 , 0))
                 return "Morning";
 
-            if (now >= new TimeSpan(15, 00, 0) && now < new TimeSpan(16, 00, 0))
+            if (now >= new TimeSpan(15, 0, 0) && now < new TimeSpan(16, 0, 0))
                 return "Evening";
 
             return "No Active Shift";

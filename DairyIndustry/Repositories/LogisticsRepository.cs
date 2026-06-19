@@ -1,8 +1,9 @@
-﻿using DairyIndustry.Data;
+﻿// Repositories/LogisticsRepository.cs
+using DairyIndustry.Data;
 using DairyIndustry.Models.Admin;
 using DairyIndustry.Models.Logistics;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using MimeKit;
 using System.Data;
 
 namespace DairyIndustry.Repositories
@@ -10,13 +11,42 @@ namespace DairyIndustry.Repositories
     public class LogisticsRepository : ILogisticsRepository
     {
         private readonly DbHelper _db;
-
-        public LogisticsRepository(DbHelper db)
+        private readonly EmailSettings _settings;
+        public LogisticsRepository(DbHelper db, IConfiguration configuration)
         {
             _db = db;
+            _settings = configuration.GetSection("EmailSettings").Get<EmailSettings>();
         }
-        public int RegisterDriver(string driverName, string licenseNo,
-                          string phone, string username, string passwordHash)
+
+        public void SaveEmailOtp(string email, string otpCode)
+        {
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_SendEmailOtp", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@Email", email);
+            cmd.Parameters.AddWithValue("@OtpCode", otpCode);
+            con.Open();
+            cmd.ExecuteNonQuery();
+        }
+
+        public bool VerifyEmailOtp(string email, string otpCode)
+        {
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_VerifyEmailOtp", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@Email", email);
+            cmd.Parameters.AddWithValue("@OtpCode", otpCode);
+            con.Open();
+            var result = cmd.ExecuteScalar();
+            return Convert.ToInt32(result) == 1;
+        }
+        public async Task<int> RegisterDriverAsync(string driverName, string licenseNo,
+    string phone, string email, string username, string passwordHash,
+    string drivingLicensePath)
         {
             using (SqlConnection con = _db.GetConnection())
             {
@@ -26,325 +56,636 @@ namespace DairyIndustry.Repositories
                     cmd.Parameters.AddWithValue("@DriverName", driverName);
                     cmd.Parameters.AddWithValue("@LicenseNo", licenseNo);
                     cmd.Parameters.AddWithValue("@Phone", (object?)phone ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Email", email);
                     cmd.Parameters.AddWithValue("@Username", username);
                     cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    cmd.Parameters.AddWithValue("@DrivingLicensePath", drivingLicensePath);
 
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
+                    await con.OpenAsync();
+                    var result = await cmd.ExecuteScalarAsync();
                     return Convert.ToInt32(result);
                 }
             }
         }
+
         public DriversModel GetDriverByUserId(int userId)
         {
-            DriversModel driver = null;
-
-            using (SqlConnection con = _db.GetConnection())
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetDriverByUserId", con)
             {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetDriverByUserId", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@UserId", userId);
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            driver = new DriversModel
-                            {
-                                DriverId = Convert.ToInt32(reader["DriverId"]),
-                                DriverName = reader["DriverName"].ToString(),
-                                LicenseNo = reader["LicenseNo"].ToString(),
-                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                                Status = reader["Status"].ToString(),
-                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
-                                Username = reader["Username"].ToString(),
-                                IsActive = Convert.ToBoolean(reader["IsActive"])
-                            };
-                        }
-                    }
-                }
-            }
-            return driver;
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            if (!r.Read()) return null;
+            return MapDriver(r);
         }
-        public List<VehiclesModel> GetVehicleByDriverId(int driverId)
-        {
-            List<VehiclesModel> vehicles = new List<VehiclesModel>();
-            using (SqlConnection con = _db.GetConnection())
-            {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetVehicleByDriverId", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            vehicles.Add(new VehiclesModel
-                            {
-                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
-                                VehicleNumber = reader["VehicleNumber"].ToString(),
-                                Capacity = Convert.ToDecimal(reader["Capacity"]),
-                                Status = reader["Status"].ToString(),
-                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
-                                DriverName = reader["DriverName"].ToString(),
-                                Phone = reader["Phone"].ToString()
-                            });
-                        }
-                    }
-                }
-            }
-            return vehicles;
-        }
-        public int AddVehicle(int driverId, string vehicleNumber, decimal capacity)
-        {
-            using (SqlConnection con = _db.GetConnection())
-            {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_AddVehicle", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    cmd.Parameters.AddWithValue("@VehicleNumber", vehicleNumber);
-                    cmd.Parameters.AddWithValue("@Capacity", capacity);
 
-                    con.Open();
-                    var result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result);
-                }
-            }
-        }
-        public List<VehiclesModel> GetVehiclesByDriverId(int driverId)
-        {
-            var list = new List<VehiclesModel>();
-
-            using (SqlConnection con = _db.GetConnection())
-            {
-                string query = @"
-            SELECT VehicleId, DriverId, VehicleNumber, 
-                   Capacity, Status, RegisteredOn
-            FROM Logistics.VehiclesNew
-            WHERE DriverId = @DriverId
-            ORDER BY RegisteredOn DESC";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
-                {
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            list.Add(new VehiclesModel
-                            {
-                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
-                                DriverId = Convert.ToInt32(reader["DriverId"]),
-                                VehicleNumber = reader["VehicleNumber"].ToString(),
-                                Capacity = Convert.ToDecimal(reader["Capacity"]),
-                                Status = reader["Status"].ToString(),
-                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"])
-                            });
-                        }
-                    }
-                }
-            }
-
-            return list;
-        }
         public List<DriversModel> GetAllDrivers()
         {
             var list = new List<DriversModel>();
-
-            using (SqlConnection con = _db.GetConnection())
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetAllDrivers", con)
             {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetAllDrivers", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            list.Add(new DriversModel
-                            {
-                                DriverId = Convert.ToInt32(reader["DriverId"]),
-                                DriverName = reader["DriverName"].ToString(),
-                                LicenseNo = reader["LicenseNo"].ToString(),
-                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                                Status = reader["Status"].ToString(),
-                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
-                                Username = reader["Username"].ToString(),
-                                IsActive = Convert.ToBoolean(reader["IsActive"]),
-                                VehicleNumber = reader["VehicleNumber"] == DBNull.Value ? null : reader["VehicleNumber"].ToString(),
-                                VehicleStatus = reader["VehicleStatus"] == DBNull.Value ? null : reader["VehicleStatus"].ToString()
-                            });
-                        }
-                    }
-                }
-            }
-
+                CommandType = CommandType.StoredProcedure
+            };
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            while (r.Read()) list.Add(MapDriver(r, includeVehicle: true));
             return list;
         }
 
         public void UpdateDriverStatus(int driverId, string status)
         {
-            using (SqlConnection con = _db.GetConnection())
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_UpdateDriverStatus", con)
             {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_UpdateDriverStatus", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@DriverId", driverId);
-                    cmd.Parameters.AddWithValue("@Status", status);
-
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            cmd.Parameters.AddWithValue("@Status", status);
+            con.Open();
+            cmd.ExecuteNonQuery();
         }
+        public async Task<int> AddVehicleAsync(int driverId, string vehicleNumber, decimal capacity,
+                          string vehicleRcPath)
+        {
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_AddVehicle", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            cmd.Parameters.AddWithValue("@VehicleNumber", vehicleNumber);
+            cmd.Parameters.AddWithValue("@Capacity", capacity);
+            cmd.Parameters.AddWithValue("@VehicleRCPath", vehicleRcPath);
+            await con.OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result);
+        }
+
+        public List<VehiclesModel> GetVehiclesByDriverId(int driverId)
+        {
+            var list = new List<VehiclesModel>();
+            using SqlConnection con = _db.GetConnection();
+            const string query = @"
+                SELECT VehicleId, DriverId, VehicleNumber,
+                       Capacity, VehicleRCPath, Status, RegisteredOn
+                FROM Logistics.VehiclesNew
+                WHERE DriverId = @DriverId
+                ORDER BY RegisteredOn DESC";
+            using SqlCommand cmd = new(query, con);
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            while (r.Read()) list.Add(MapVehicle(r));
+            return list;
+        }
+
         public List<VehiclesModel> GetAllVehicles()
         {
             var list = new List<VehiclesModel>();
-
-            using (SqlConnection con = _db.GetConnection())
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetAllVehicles", con)
             {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_GetAllVehicles", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    con.Open();
-
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            list.Add(new VehiclesModel
-                            {
-                                VehicleId = Convert.ToInt32(reader["VehicleId"]),
-                                VehicleNumber = reader["VehicleNumber"].ToString(),
-                                Capacity = Convert.ToDecimal(reader["Capacity"]),
-                                Status = reader["Status"].ToString(),
-                                RegisteredOn = Convert.ToDateTime(reader["RegisteredOn"]),
-                                DriverId = Convert.ToInt32(reader["DriverId"]),
-                                DriverName = reader["DriverName"].ToString(),
-                                Phone = reader["Phone"] == DBNull.Value ? null : reader["Phone"].ToString(),
-                                DriverStatus = reader["DriverStatus"].ToString()
-                            });
-                        }
-                    }
-                }
-            }
-
+                CommandType = CommandType.StoredProcedure
+            };
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            while (r.Read()) list.Add(MapVehicle(r, includeDriver: true));
             return list;
         }
 
         public void UpdateVehicleStatus(int vehicleId, string status)
         {
-            using (SqlConnection con = _db.GetConnection())
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_UpdateVehicleStatus", con)
             {
-                using (SqlCommand cmd = new SqlCommand("Logistics.usp_Logistics_UpdateVehicleStatus", con))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
-                    cmd.Parameters.AddWithValue("@Status", status);
-
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
+            cmd.Parameters.AddWithValue("@Status", status);
+            con.Open();
+            cmd.ExecuteNonQuery();
         }
+
         public List<MilkTransferModel> GetDriverTransfers(int driverId)
         {
             var list = new List<MilkTransferModel>();
+            const string query = @"
+                SELECT mt.TransferId, mt.DispatchDate, mt.ReceivedDate,
+                    mt.DispatchQty, mt.ReceivedQty, mt.LossQty,
+                    CASE WHEN mt.DispatchQty > 0 AND mt.LossQty IS NOT NULL
+                         THEN ROUND((mt.LossQty / mt.DispatchQty) * 100, 2)
+                         ELSE 0 END AS LossPercent,
+                    CASE WHEN mt.ReceivedDate IS NULL THEN 'Pending' ELSE 'Received' END AS TransferStatus,
+                    cc.CenterId, cc.CenterName,
+                    pp.PlantId,  pp.PlantName,
+                    v.VehicleId, v.VehicleNumber,
+                    d.DriverId,  d.DriverName, d.Phone AS DriverPhone,
+                    tqt.TestedFat, tqt.TestedCLR, tqt.TestDate,
+                    cb.BatchId, cb.Shift, cb.BatchDate, cb.AvgFat AS BatchAvgFat, cb.AvgCLR AS BatchAvgCLR
+                FROM Production.MilkTransfers mt
+                INNER JOIN Collection.CollectionBatches    cb  ON cb.BatchId  = mt.BatchId
+                INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId = cb.CenterId
+                INNER JOIN Production.ProcessingPlants     pp  ON pp.PlantId  = mt.PlantId
+                INNER JOIN Logistics.VehiclesNew           v   ON v.VehicleId = mt.VehicleId
+                INNER JOIN Logistics.DriversNew            d   ON d.DriverId  = v.DriverId
+                LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
+                WHERE d.DriverId = @DriverId
+                ORDER BY mt.DispatchDate DESC";
 
-            string query = @"
-        SELECT
-            mt.TransferId,
-            mt.DispatchDate,
-            mt.ReceivedDate,
-            mt.DispatchQty,
-            mt.ReceivedQty,
-            mt.LossQty,
-            CASE
-                WHEN mt.DispatchQty > 0 AND mt.LossQty IS NOT NULL
-                THEN ROUND((mt.LossQty / mt.DispatchQty) * 100, 2)
-                ELSE 0
-            END AS LossPercent,
-            CASE
-                WHEN mt.ReceivedDate IS NULL THEN 'Pending'
-                ELSE 'Received'
-            END AS TransferStatus,
-            cc.CenterId,
-            cc.CenterName,
-            pp.PlantId,
-            pp.PlantName,
-            v.VehicleId,
-            v.VehicleNumber,
-            d.DriverId,
-            d.DriverName,
-            d.Phone AS DriverPhone,
-            tqt.TestedFat,
-            tqt.TestedCLR,
-            tqt.TestDate,
-            cb.BatchId,
-            cb.Shift,
-            cb.BatchDate,
-            cb.AvgFat AS BatchAvgFat,
-            cb.AvgCLR AS BatchAvgCLR
-        FROM Production.MilkTransfers mt
-        INNER JOIN Collection.CollectionBatches    cb  ON cb.BatchId  = mt.BatchId
-        INNER JOIN Collection.CollectionCenters    cc  ON cc.CenterId = cb.CenterId
-        INNER JOIN Production.ProcessingPlants     pp  ON pp.PlantId  = mt.PlantId
-        INNER JOIN Logistics.VehiclesNew           v   ON v.VehicleId = mt.VehicleId
-        INNER JOIN Logistics.DriversNew            d   ON d.DriverId  = v.DriverId
-        LEFT  JOIN Production.TransferQualityTests tqt ON tqt.TransferId = mt.TransferId
-        WHERE d.DriverId = @DriverId
-        ORDER BY mt.DispatchDate DESC";
-
-            using (SqlConnection con = _db.GetConnection())
-            using (SqlCommand cmd = new SqlCommand(query, con))
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new(query, con);
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+            while (r.Read())
             {
-                cmd.Parameters.AddWithValue("@DriverId", driverId);
-                con.Open();
-
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                list.Add(new MilkTransferModel
                 {
-                    while (reader.Read())
-                    {
-                        list.Add(new MilkTransferModel
-                        {
-                            TransferId = Convert.ToInt32(reader["TransferId"]),
-                            DispatchDate = Convert.ToDateTime(reader["DispatchDate"]),
-                            ReceivedDate = reader["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ReceivedDate"]),
-                            DispatchQty = Convert.ToDecimal(reader["DispatchQty"]),
-                            ReceivedQty = reader["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["ReceivedQty"]),
-                            LossQty = reader["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(reader["LossQty"]),
-                            LossPercent = Convert.ToDecimal(reader["LossPercent"]),
-                            TransferStatus = reader["TransferStatus"].ToString(),
-                            CenterId = Convert.ToInt32(reader["CenterId"]),
-                            CenterName = reader["CenterName"].ToString(),
-                            PlantId = Convert.ToInt32(reader["PlantId"]),
-                            PlantName = reader["PlantName"].ToString(),
-                            VehicleId = Convert.ToInt32(reader["VehicleId"]),
-                            VehicleNumber = reader["VehicleNumber"].ToString(),
-                            DriverId = Convert.ToInt32(reader["DriverId"]),
-                            DriverName = reader["DriverName"] == DBNull.Value ? null : reader["DriverName"].ToString(),
-                            DriverPhone = reader["DriverPhone"] == DBNull.Value ? null : reader["DriverPhone"].ToString(),
-                            TestedFat = reader["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedFat"]),
-                            TestedCLR = reader["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["TestedCLR"]),
-                            TestDate = reader["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["TestDate"]),
-                            BatchId = Convert.ToInt32(reader["BatchId"]),
-                            Shift = reader["Shift"].ToString(),
-                            BatchDate = Convert.ToDateTime(reader["BatchDate"]),
-                            BatchAvgFat = reader["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgFat"]),
-                            BatchAvgCLR = reader["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(reader["BatchAvgCLR"])
-                        });
-                    }
-                }
+                    TransferId = Convert.ToInt32(r["TransferId"]),
+                    DispatchDate = Convert.ToDateTime(r["DispatchDate"]),
+                    ReceivedDate = r["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(r["ReceivedDate"]),
+                    DispatchQty = Convert.ToDecimal(r["DispatchQty"]),
+                    ReceivedQty = r["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(r["ReceivedQty"]),
+                    LossQty = r["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(r["LossQty"]),
+                    LossPercent = Convert.ToDecimal(r["LossPercent"]),
+                    TransferStatus = r["TransferStatus"].ToString(),
+                    CenterId = Convert.ToInt32(r["CenterId"]),
+                    CenterName = r["CenterName"].ToString(),
+                    PlantId = Convert.ToInt32(r["PlantId"]),
+                    PlantName = r["PlantName"].ToString(),
+                    VehicleId = Convert.ToInt32(r["VehicleId"]),
+                    VehicleNumber = r["VehicleNumber"].ToString(),
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"] == DBNull.Value ? null : r["DriverName"].ToString(),
+                    DriverPhone = r["DriverPhone"] == DBNull.Value ? null : r["DriverPhone"].ToString(),
+                    TestedFat = r["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedFat"]),
+                    TestedCLR = r["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedCLR"]),
+                    TestDate = r["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(r["TestDate"]),
+                    BatchId = Convert.ToInt32(r["BatchId"]),
+                    Shift = r["Shift"].ToString(),
+                    BatchDate = Convert.ToDateTime(r["BatchDate"]),
+                    BatchAvgFat = r["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgFat"]),
+                    BatchAvgCLR = r["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgCLR"])
+                });
             }
             return list;
         }
 
+        private static DriversModel MapDriver(SqlDataReader r, bool includeVehicle = false)
+        {
+            var d = new DriversModel
+            {
+                DriverId = Convert.ToInt32(r["DriverId"]),
+                DriverName = r["DriverName"].ToString(),
+                LicenseNo = r["LicenseNo"].ToString(),
+                Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                IsEmailVerified = Convert.ToBoolean(r["IsEmailVerified"]),
+                DrivingLicensePath = r["DrivingLicensePath"] == DBNull.Value ? null : r["DrivingLicensePath"].ToString(),
+                Status = r["Status"].ToString(),
+                RegisteredOn = Convert.ToDateTime(r["RegisteredOn"]),
+                Username = r["Username"].ToString(),
+                IsActive = Convert.ToBoolean(r["IsActive"])
+            };
+            if (includeVehicle)
+            {
+                d.VehicleNumber = r["VehicleNumber"] == DBNull.Value ? null : r["VehicleNumber"].ToString();
+                d.VehicleStatus = r["VehicleStatus"] == DBNull.Value ? null : r["VehicleStatus"].ToString();
+                d.VehicleRCPath = r["VehicleRCPath"] == DBNull.Value ? null : r["VehicleRCPath"].ToString();
+            }
+            return d;
+        }
+
+        private static VehiclesModel MapVehicle(SqlDataReader r, bool includeDriver = false)
+        {
+            var v = new VehiclesModel
+            {
+                VehicleId = Convert.ToInt32(r["VehicleId"]),
+                DriverId = Convert.ToInt32(r["DriverId"]),
+                VehicleNumber = r["VehicleNumber"].ToString(),
+                Capacity = Convert.ToDecimal(r["Capacity"]),
+                VehicleRCPath = r["VehicleRCPath"] == DBNull.Value ? null : r["VehicleRCPath"].ToString(),
+                Status = r["Status"].ToString(),
+                RegisteredOn = Convert.ToDateTime(r["RegisteredOn"])
+            };
+            if (includeDriver)
+            {
+                v.DriverName = r["DriverName"] == DBNull.Value ? null : r["DriverName"].ToString();
+                v.Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString();
+                v.DriverStatus = r["DriverStatus"].ToString();
+            }
+            return v;
+        }
+
+        public DriverContactInfo GetDriverContactInfo(int driverId)
+        {
+            string query = @"
+    SELECT
+        d.DriverId,
+        d.DriverName,
+        d.Phone,
+        u.Username,
+        COALESCE(s.Email, d.Email) AS Email   -- ← fallback to driver's own email
+    FROM Logistics.DriversNew d
+    INNER JOIN Admin.Users    u ON u.UserId  = d.UserId
+    LEFT  JOIN HR.Staffs      s ON s.StaffId = u.StaffId
+    WHERE d.DriverId = @DriverId";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+            using var r = cmd.ExecuteReader();
+            if (r.Read())
+            {
+                return new DriverContactInfo
+                {
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"].ToString(),
+                    Username = r["Username"].ToString(),
+                    Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                    Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString()
+                };
+            }
+            return null;
+        }
+
+        public DriverContactInfo GetDriverContactInfoByVehicleId(int vehicleId)
+        {
+            string query = @"
+    SELECT
+        d.DriverId,
+        d.DriverName,
+        d.Phone,
+        u.Username,
+        COALESCE(s.Email, d.Email) AS Email,   -- ← fallback
+        v.VehicleNumber
+    FROM Logistics.VehiclesNew v
+    INNER JOIN Logistics.DriversNew d ON d.DriverId = v.DriverId
+    INNER JOIN Admin.Users          u ON u.UserId   = d.UserId
+    LEFT  JOIN HR.Staffs            s ON s.StaffId  = u.StaffId
+    WHERE v.VehicleId = @VehicleId";
+
+            using var con = _db.GetConnection();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@VehicleId", vehicleId);
+            con.Open();
+            using var r = cmd.ExecuteReader();
+            if (r.Read())
+            {
+                return new DriverContactInfo
+                {
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"].ToString(),
+                    Username = r["Username"].ToString(),
+                    Phone = r["Phone"] == DBNull.Value ? null : r["Phone"].ToString(),
+                    Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                    VehicleNumber = r["VehicleNumber"].ToString()
+                };
+            }
+            return null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // FILE 1 — Add these two methods to AdminRepository.cs
+        // (same pattern as your existing SendOtpEmail method)
+        // ════════════════════════════════════════════════════════
+
+        // ── 1. Driver approval / rejection email ─────────────────
+        public async Task SendDriverStatusEmailAsync(string toEmail, string driverName,
+                                                      string username, string status)
+        {
+            if (string.IsNullOrWhiteSpace(toEmail)) return;
+
+            bool approved = status == "Active";
+
+            string subject = approved
+                ? "✅ DMS — Your Driver Account Has Been Approved"
+                : "❌ DMS — Your Driver Registration Update";
+
+            string statusColor = approved ? "#16a34a" : "#dc2626";
+            string statusBg = approved ? "#f0fdf4" : "#fef2f2";
+            string statusBorder = approved ? "#bbf7d0" : "#fecaca";
+            string statusLabel = approved ? "APPROVED" : status.ToUpper();
+            string statusIcon = approved ? "✅" : "❌";
+
+            string actionBlock = approved ? $@"
+<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>What happens next?</p>
+    <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
+        <li>Log in at <strong>DMS</strong> using your username: <strong>{username}</strong></li>
+        <li>Register your vehicle from your dashboard</li>
+        <li>Your vehicle will also need admin approval before assignments</li>
+        <li>Once your vehicle is approved, you will start receiving transfer assignments</li>
+    </ul>
+</div>" : @"
+<div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0;color:#713f12;font-size:14px;'>
+        If you believe this is a mistake or need more information,
+        please contact the DMS admin team.
+    </p>
+</div>";
+
+            string body = $@"<!DOCTYPE html>
+<html><head><meta charset='utf-8'/></head>
+<body style='margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;'>
+<table width='100%' cellpadding='0' cellspacing='0' style='padding:40px 20px;'>
+  <tr><td align='center'>
+    <table width='560' cellpadding='0' cellspacing='0'
+           style='background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);'>
+      <tr>
+        <td style='background:linear-gradient(135deg,#0a1628,#1e40af);padding:32px 36px;text-align:center;'>
+          <div style='font-size:28px;margin-bottom:8px;'>🥛</div>
+          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;'>DMS</div>
+          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>Driver Registration Update</div>
+        </td>
+      </tr>
+      <tr>
+        <td style='padding:28px 36px 0;text-align:center;'>
+          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};border-radius:50px;padding:8px 24px;'>
+            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>{statusIcon} &nbsp; {statusLabel}</span>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td style='padding:24px 36px 32px;'>
+          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>Hi <strong>{driverName}</strong>,</p>
+          <p style='font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px;'>
+            {(approved
+                        ? "Great news! Your driver registration on <strong>DMS</strong> has been reviewed and <strong style='color:#16a34a;'>approved</strong> by the admin team."
+                        : $"Your driver registration on <strong>DMS</strong> has been <strong style='color:#dc2626;'>{status.ToLower()}</strong> by the admin team."
+                    )}
+          </p>
+          <table width='100%' cellpadding='0' cellspacing='0'
+                 style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 16px;'>
+            <tr>
+              <td style='padding:6px 12px;width:50%;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Driver Name</div>
+                <div style='font-size:14px;font-weight:600;color:#1e293b;margin-top:2px;'>{driverName}</div>
+              </td>
+              <td style='padding:6px 12px;width:50%;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Username</div>
+                <div style='font-size:14px;font-weight:600;color:#1e293b;margin-top:2px;'>{username}</div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan='2' style='padding:6px 12px;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Status</div>
+                <div style='font-size:14px;font-weight:600;color:{statusColor};margin-top:2px;'>{statusLabel}</div>
+              </td>
+            </tr>
+          </table>
+          {actionBlock}
+          <p style='font-size:13px;color:#94a3b8;margin:20px 0 0;border-top:1px solid #f1f5f9;padding-top:16px;'>
+            This is an automated message from DMS. Please do not reply.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style='background:#0a1628;padding:16px 36px;text-align:center;'>
+          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>© {DateTime.Now.Year} DMS Management System</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>";
+
+            await SendEmailAsync(toEmail, subject, body);
+        }
+
+
+        // ── 2. Vehicle approval / rejection email ────────────────
+        public async Task SendVehicleStatusEmailAsync(string toEmail, string driverName,
+                                                       string vehicleNumber, string status)
+        {
+            if (string.IsNullOrWhiteSpace(toEmail)) return;
+
+            bool approved = status == "Approved";
+
+            string subject = approved
+                ? "✅ DMS — Your Vehicle Has Been Approved"
+                : "❌ DMS — Your Vehicle Registration Update";
+
+            string statusColor = approved ? "#16a34a" : "#dc2626";
+            string statusBg = approved ? "#f0fdf4" : "#fef2f2";
+            string statusBorder = approved ? "#bbf7d0" : "#fecaca";
+            string statusLabel = approved ? "APPROVED" : status.ToUpper();
+            string statusIcon = approved ? "✅" : "❌";
+
+            string actionBlock = approved ? @"
+<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0 0 8px;font-weight:600;color:#1e40af;'>You are all set!</p>
+    <ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>
+        <li>Your vehicle is now active in the DMS system</li>
+        <li>You may receive milk transfer assignments to your vehicle</li>
+        <li>Log in to your dashboard to view upcoming transfers</li>
+    </ul>
+</div>" : @"
+<div style='background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin:20px 0;'>
+    <p style='margin:0;color:#713f12;font-size:14px;'>
+        If you believe this is a mistake, please contact the DMS admin team
+        or register a different vehicle from your dashboard.
+    </p>
+</div>";
+
+            string body = $@"<!DOCTYPE html>
+<html><head><meta charset='utf-8'/></head>
+<body style='margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;'>
+<table width='100%' cellpadding='0' cellspacing='0' style='padding:40px 20px;'>
+  <tr><td align='center'>
+    <table width='560' cellpadding='0' cellspacing='0'
+           style='background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);'>
+      <tr>
+        <td style='background:linear-gradient(135deg,#0a1628,#1e40af);padding:32px 36px;text-align:center;'>
+          <div style='font-size:28px;margin-bottom:8px;'>🚛</div>
+          <div style='font-family:Georgia,serif;font-size:22px;font-weight:600;color:#ffffff;'>DMS</div>
+          <div style='color:rgba(255,255,255,0.65);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;'>Vehicle Registration Update</div>
+        </td>
+      </tr>
+      <tr>
+        <td style='padding:28px 36px 0;text-align:center;'>
+          <div style='display:inline-block;background:{statusBg};border:1.5px solid {statusBorder};border-radius:50px;padding:8px 24px;'>
+            <span style='color:{statusColor};font-weight:700;font-size:13px;letter-spacing:1px;'>{statusIcon} &nbsp; {statusLabel}</span>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td style='padding:24px 36px 32px;'>
+          <p style='font-size:16px;color:#1e293b;margin:0 0 12px;'>Hi <strong>{driverName}</strong>,</p>
+          <p style='font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px;'>
+            {(approved
+                        ? $"Your vehicle <strong>{vehicleNumber}</strong> has been <strong style='color:#16a34a;'>approved</strong> by the admin team."
+                        : $"Your vehicle <strong>{vehicleNumber}</strong> has been <strong style='color:#dc2626;'>{status.ToLower()}</strong> by the admin team."
+                    )}
+          </p>
+          <table width='100%' cellpadding='0' cellspacing='0'
+                 style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 16px;'>
+            <tr>
+              <td style='padding:6px 12px;width:50%;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Driver</div>
+                <div style='font-size:14px;font-weight:600;color:#1e293b;margin-top:2px;'>{driverName}</div>
+              </td>
+              <td style='padding:6px 12px;width:50%;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Vehicle Number</div>
+                <div style='font-size:14px;font-weight:700;color:#1e293b;margin-top:2px;'>{vehicleNumber}</div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan='2' style='padding:6px 12px;'>
+                <div style='font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;'>Status</div>
+                <div style='font-size:14px;font-weight:600;color:{statusColor};margin-top:2px;'>{statusLabel}</div>
+              </td>
+            </tr>
+          </table>
+          {actionBlock}
+          <p style='font-size:13px;color:#94a3b8;margin:20px 0 0;border-top:1px solid #f1f5f9;padding-top:16px;'>
+            This is an automated message from DMS. Please do not reply.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style='background:#0a1628;padding:16px 36px;text-align:center;'>
+          <p style='color:rgba(255,255,255,0.4);font-size:11px;margin:0;'>© {DateTime.Now.Year} DMS Management System</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>";
+
+            await SendEmailAsync(toEmail, subject, body);
+        }
+
+
+        // ── 3. Private shared SendEmail helper ───────────────────
+        // If you already have this from SendOtpEmail, skip it.
+        // Otherwise add this private method to AdminRepository.
+        private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
+        {
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
+                message.To.Add(new MailboxAddress("", toEmail));
+                message.Subject = subject;
+                message.Body = new TextPart("html") { Text = htmlBody };
+
+                using var client = new MailKit.Net.Smtp.SmtpClient();
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort,
+                                          MailKit.Security.SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync(_settings.SenderEmail, _settings.AppPassword);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Email] Failed to send to {toEmail}: {ex.Message}");
+            }
+        }
+        public DriverDashboardViewModel GetDriverDashboard(int driverId)
+        {
+            var vm = new DriverDashboardViewModel();
+
+            using SqlConnection con = _db.GetConnection();
+            using SqlCommand cmd = new("Logistics.usp_Logistics_GetDriverDashboard", con)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            cmd.Parameters.AddWithValue("@DriverId", driverId);
+            con.Open();
+
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                vm.Transfers.Add(new MilkTransferModel
+                {
+                    TransferId = Convert.ToInt32(r["TransferId"]),
+                    DispatchDate = Convert.ToDateTime(r["DispatchDate"]),
+                    ReceivedDate = r["ReceivedDate"] == DBNull.Value ? null : Convert.ToDateTime(r["ReceivedDate"]),
+                    DispatchQty = Convert.ToDecimal(r["DispatchQty"]),
+                    ReceivedQty = r["ReceivedQty"] == DBNull.Value ? null : Convert.ToDecimal(r["ReceivedQty"]),
+                    LossQty = r["LossQty"] == DBNull.Value ? null : Convert.ToDecimal(r["LossQty"]),
+                    LossPercent = Convert.ToDecimal(r["LossPercent"]),
+                    TransferStatus = r["TransferStatus"].ToString(),
+                    CenterId = Convert.ToInt32(r["CenterId"]),
+                    CenterName = r["CenterName"].ToString(),
+                    PlantId = Convert.ToInt32(r["PlantId"]),
+                    PlantName = r["PlantName"].ToString(),
+                    VehicleId = Convert.ToInt32(r["VehicleId"]),
+                    VehicleNumber = r["VehicleNumber"].ToString(),
+                    DriverId = Convert.ToInt32(r["DriverId"]),
+                    DriverName = r["DriverName"] == DBNull.Value ? null : r["DriverName"].ToString(),
+                    DriverPhone = r["DriverPhone"] == DBNull.Value ? null : r["DriverPhone"].ToString(),
+                    TestedFat = r["TestedFat"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedFat"]),
+                    TestedCLR = r["TestedCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["TestedCLR"]),
+                    TestDate = r["TestDate"] == DBNull.Value ? null : Convert.ToDateTime(r["TestDate"]),
+                    BatchId = Convert.ToInt32(r["BatchId"]),
+                    Shift = r["Shift"].ToString(),
+                    BatchDate = Convert.ToDateTime(r["BatchDate"]),
+                    BatchAvgFat = r["BatchAvgFat"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgFat"]),
+                    BatchAvgCLR = r["BatchAvgCLR"] == DBNull.Value ? null : Convert.ToDecimal(r["BatchAvgCLR"])
+                });
+            }
+
+            if (r.NextResult() && r.Read())
+            {
+                vm.LossSummary = new DriverLossSummary
+                {
+                    TotalLossEvents = r["TotalLossEvents"] == DBNull.Value ? 0 : Convert.ToInt32(r["TotalLossEvents"]),
+                    TotalLossLitres = r["TotalLossLitres"] == DBNull.Value ? 0 : Convert.ToDecimal(r["TotalLossLitres"]),
+                    AvgLossPct = r["AvgLossPct"] == DBNull.Value ? 0 : Convert.ToDecimal(r["AvgLossPct"]),
+                    MaxSingleLoss = r["MaxSingleLoss"] == DBNull.Value ? 0 : Convert.ToDecimal(r["MaxSingleLoss"]),
+                    SevereCount = r["SevereCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["SevereCount"]),
+                    ModerateCount = r["ModerateCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ModerateCount"]),
+                    MinorCount = r["MinorCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["MinorCount"])
+                };
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Vehicles.Add(new VehiclesModel
+                    {
+                        VehicleId = Convert.ToInt32(r["VehicleId"]),
+                        DriverId = driverId,
+                        VehicleNumber = r["VehicleNumber"].ToString(),
+                        Capacity = Convert.ToDecimal(r["Capacity"]),
+                        Status = r["Status"].ToString(),
+                        RegisteredOn = Convert.ToDateTime(r["RegisteredOn"]),
+                        VehicleRCPath = r["VehicleRCPath"] == DBNull.Value ? null : r["VehicleRCPath"].ToString()
+                    });
+                }
+            }
+
+            if (r.NextResult())
+            {
+                while (r.Read())
+                {
+                    vm.Notifications.Add(new DriverNotification
+                    {
+                        NotificationId = Convert.ToInt32(r["NotificationId"]),
+                        Title = r["Title"].ToString(),
+                        Message = r["Message"].ToString(),
+                        Category = r["Category"].ToString(),
+                        Severity = r["Severity"].ToString(),
+                        EntityType = r["EntityType"] == DBNull.Value ? null : r["EntityType"].ToString(),
+                        EntityId = r["EntityId"] == DBNull.Value ? null : Convert.ToInt32(r["EntityId"]),
+                        ActionUrl = r["ActionUrl"] == DBNull.Value ? null : r["ActionUrl"].ToString(),
+                        IsRead = Convert.ToBoolean(r["IsRead"]),
+                        CreatedAt = Convert.ToDateTime(r["CreatedAt"])
+                    });
+                }
+            }
+
+            return vm;
+        }
     }
 }
