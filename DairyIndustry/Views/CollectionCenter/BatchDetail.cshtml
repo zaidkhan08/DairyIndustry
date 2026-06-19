@@ -33,7 +33,7 @@
 
     .batch-title {
         font-size: 18px;
-        font-weight: 700;
+        font-weight: normal;
         color: #111;
     }
 
@@ -193,8 +193,15 @@
     }
 
     .cell-farmer {
-        font-weight: 600;
         color: #222;
+    }
+
+    .text-qty {
+        color: #3B6D11;
+    }
+
+    .text-amt {
+        color: #854F0B;
     }
 
     .cell-code {
@@ -202,15 +209,7 @@
         font-size: 12px;
     }
 
-    .text-qty {
-        color: #3B6D11;
-        font-weight: 600;
-    }
-
-    .text-amt {
-        color: #854F0B;
-        font-weight: 600;
-    }
+    
 
     /* ── PILLS (milk type / entry status) ── */
     .pill {
@@ -321,7 +320,7 @@
     <div class="batch-header-card mb-3">
         <div>
             <div class="batch-title">
-                <i class="ti ti-package"></i> Batch #@Model.BatchId
+                <i class="ti ti-package"></i> Batch ID #@Model.BatchId
             </div>
             <div class="batch-meta">
                 <span class="meta-pill">
@@ -363,7 +362,7 @@
             <div class="kpi-card">
                 <div class="kpi-icon amber"><i class="ti ti-currency-rupee"></i></div>
                 <div class="kpi-label">Total Amount</div>
-                <div class="kpi-value amber">₹ @Model.TotalAmount.ToString("F2")</div>
+                <div class="kpi-value amber"><i class="ti ti-currency-rupee"></i>@Model.TotalAmount.ToString("F2")</div>
             </div>
         </div>
 
@@ -405,7 +404,7 @@
     <div class="card border-0 shadow-sm">
 
         <div class="card-header bg-white d-flex align-items-center justify-content-between">
-            <span class="fw-bold" style="font-size:16px; color:#111;">Batch Entries</span>
+            <span style="font-size:16px; color:#111;">Batch Entries</span>
             <div class="d-flex gap-2">
                 <input type="text" id="searchBox" class="form-control form-control-sm"
                        placeholder="Search Farmer / Code" style="width:200px;">
@@ -468,8 +467,30 @@
                             <td class="text-qty">@(item.Quantity?.ToString("F2") ?? "-")</td>
                             <td>@(item.Fat?.ToString("F2") ?? "-")</td>
                             <td>@(item.CLR?.ToString("F2") ?? "-")</td>
-                            <td>@(item.Rate != null ? $"₹ {item.Rate:F2}" : "-")</td>
-                            <td class="text-amt">@(item.Amount != null ? $"₹ {item.Amount:F2}" : "-")</td>
+                            <td>
+                                @if (item.Rate != null)
+                                {
+                                    <i class="ti ti-currency-rupee"></i>
+                                    @item.Rate.Value.ToString("F2")
+                                }
+                                else
+                                {
+
+                                    <text>-</text>
+                                }
+                            </td>
+                            <td class="text-amt">
+                                @if (item.Amount != null)
+                                {
+                                    <i class="ti ti-currency-rupee"></i>
+                                    @item.Amount.Value.ToString("F2")
+                                }
+                                else
+                                {
+
+                                    <text>-</text>
+                                }
+                            </td>
                             <td>
                                 <span class="pill @entryStatusClass">@item.Status</span>
                             </td>

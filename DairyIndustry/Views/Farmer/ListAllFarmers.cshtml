@@ -244,7 +244,7 @@
     }
 
     .farmer-name {
-        font-weight: 600;
+        font-weight: normal;
         font-size: 13.5px;
     }
 
@@ -255,7 +255,7 @@
     }
 
     .loc-main {
-        font-weight: 500;
+        font-weight: normal;
     }
 
     .loc-sub {
@@ -557,8 +557,7 @@
                             <td>@item.Phone</td>
 
                             <td>
-                                <div class="loc-main">Village: @item.VillageName</div>
-                                <div class="loc-sub">City: @item.CityName</div>
+                                <div class="loc-main">@item.VillageName, @item.CityName</div>
                             </td>
 
                             <td style="text-align:center">

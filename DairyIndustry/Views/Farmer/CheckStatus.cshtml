@@ -327,6 +327,17 @@
         gap: 12px
     }
 
+    .info-rows {
+        border-top: none /* ← remove border-top */
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        padding: 11px 1.5rem;
+        border-bottom: none; /* ← remove border-bottom */
+        gap: 12px
+    }
         .info-row:last-child {
             border-bottom: none
         }
@@ -371,7 +382,7 @@
 
     .farmer-code-value {
         font-size: 22px;
-        font-weight: 800;
+        font-weight: 500;
         color: var(--navy-dark);
         letter-spacing: 2px
     }
@@ -512,7 +523,6 @@
 
     <!-- Header -->
     <div class="page-header">
-        <div class="brand-chip"><i class="ti ti-droplet-filled"></i>Dairy Collection Services</div>
         <h1>Registration status</h1>
         <p>Enter your mobile number to check your application status</p>
     </div>
@@ -599,9 +609,7 @@
                         <div class="result-head-title">Application approved!</div>
                         <div class="result-head-sub">Your farmer account is active and ready</div>
                     </div>
-                    <div style="margin-left:auto">
-                        <span class="badge badge-approved"><i class="ti ti-circle-check" style="font-size:11px"></i> Approved</span>
-                    </div>
+                    
                 </div>
                 <div class="info-rows">
                     <div class="info-row">
@@ -620,12 +628,9 @@
 
                 <!-- Farmer code highlight -->
                 <div class="farmer-code-box">
-                    <div style="width:40px;height:40px;border-radius:10px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">
-                        <i class="ti ti-id-badge"></i>
-                    </div>
                     <div>
                         <div class="farmer-code-label">Your farmer code</div>
-                        <div class="farmer-code-value">@Model.FarmerCode</div>
+                        <div class="farmer-code-value" style="font-size:16px;letter-spacing:1px">@Model.FarmerCode</div>
                     </div>
                 </div>
 
@@ -636,7 +641,7 @@
 
                 <div class="action-area">
                     <a asp-controller="Farmer" asp-action="Login" class="btn btn-success-action">
-                        <i class="ti ti-login" style="font-size:16px"></i> Go to login
+                         Go to login
                     </a>
                 </div>
             </div>

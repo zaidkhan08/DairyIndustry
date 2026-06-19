@@ -48,7 +48,9 @@ namespace DairyIndustry.Controllers
                 FarmerStats = _collectionCenterRepo.GetFarmerStats(staffId.Value),
                 CollectionTrend = _collectionCenterRepo.GetCollectionTrend(staffId.Value),
                 CollectionVsRejectionTrend =_collectionCenterRepo.GetCollectionVsRejectionTrend(staffId.Value),
-                RejectionReasons = _collectionCenterRepo.GetRejectionReasons(staffId.Value)
+                RejectionReasons = _collectionCenterRepo.GetRejectionReasons(staffId.Value),
+                TopFarmers = _collectionCenterRepo.GetTopFarmersThisMonth(staffId.Value),
+                PaymentStats = _collectionCenterRepo.GetPaymentStats(staffId.Value)
             };
 
             if (model == null)

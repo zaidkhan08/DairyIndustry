@@ -929,5 +929,47 @@ namespace DairyIndustry.Repository
             return list;
         }
 
+        public List<FarmerPaymentHistoryModel> GetPaymentHistory(int farmerId)
+        {
+            var result = new List<FarmerPaymentHistoryModel>();
+
+            const string sql = @"
+            SELECT
+                PaymentId,
+                FromDate,
+                ToDate,
+                TotalQty,
+                TotalAmount,
+                PaymentDate,
+                PaymentStatus
+            FROM Finance.FarmerPayments
+            WHERE FarmerId = @FarmerId
+            ORDER BY PaymentDate DESC";
+
+
+            using var conn = _dbHelper.GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@FarmerId", farmerId);
+
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                result.Add(new FarmerPaymentHistoryModel
+                {
+                    PaymentId = reader.GetInt32(reader.GetOrdinal("PaymentId")),
+                    FromDate = reader.GetDateTime(reader.GetOrdinal("FromDate")),
+                    ToDate = reader.GetDateTime(reader.GetOrdinal("ToDate")),
+                    TotalQty = reader.GetDecimal(reader.GetOrdinal("TotalQty")),
+                    TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                    PaymentDate = reader.GetDateTime(reader.GetOrdinal("PaymentDate")),
+                    PaymentStatus = reader.GetString(reader.GetOrdinal("PaymentStatus")),
+                });
+            }
+
+            return result;
+        }
+
     }
 }

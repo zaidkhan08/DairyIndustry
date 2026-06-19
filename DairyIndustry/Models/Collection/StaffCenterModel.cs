@@ -144,6 +144,32 @@
     {
         public string RejectionReason { get; set; }
         public int RejectionCount { get; set; }
+        public string ChartLabel => $"{RejectionReason} ({RejectionCount})";
+    }
+
+    //to giev top 5 farmers of month
+    public class TopFarmerModel
+    {
+        public int FarmerId { get; set; }
+        public string FarmerName { get; set; }
+        public string FarmerCode { get; set; }
+        public decimal TotalQty { get; set; }
+        public decimal TotalAmount { get; set; }
+        public int DaysDelivered { get; set; }
+    }
+
+
+    //payments 
+    public class PaymentStatsModel
+    {
+        public int PendingCount { get; set; }
+        public decimal PendingAmount { get; set; }
+
+        public int ProcessedCount { get; set; }
+        public decimal ProcessedAmount { get; set; }
+
+        public int FailedCount { get; set; }
+        public decimal FailedAmount { get; set; }
     }
     /* ============================================================
        COMPOSITE — holds all 5 results together
@@ -160,5 +186,8 @@
         public List<CollectionTrendModel> CollectionTrend { get; set; } = new();
         public List<CollectionRejectionTrendModel> CollectionVsRejectionTrend { get; set; } = new();
         public List<RejectionReasonModel> RejectionReasons { get; set; } = new();
+        public List<TopFarmerModel> TopFarmers { get; set; }
+
+        public PaymentStatsModel PaymentStats { get; set; }
     }
 }

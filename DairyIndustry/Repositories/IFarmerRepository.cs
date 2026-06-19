@@ -67,5 +67,8 @@ namespace DairyIndustry.Repositories
         int farmerId, DateTime? fromDate = null, DateTime? toDate = null);
 
         string ChangePassword(int farmerId, string currentPassword, string newPassword);
+
+        //farmer payment history
+        List<FarmerPaymentHistoryModel> GetPaymentHistory(int farmerId);
     }
 }

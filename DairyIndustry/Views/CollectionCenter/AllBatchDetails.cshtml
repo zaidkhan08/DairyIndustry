@@ -102,26 +102,57 @@
     .status-dispatched { background: #e6f9f0; color: #198754; }
     .status-cancelled  { background: #fdecea; color: #a32d2d; }
 
-    .pagination {
+    .pagination-bar {
         display: flex;
-        justify-content: center;
-        gap: 6px;
-        margin-top: 10px;
-        padding-bottom: 14px;
-    }
-    .page-btn {
-        padding: 6px 10px;
-        border: 1px solid #ddd;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #f0f0f0;
         background: #fff;
-        border-radius: 6px;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #888;
+    }
+
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pg-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e5e5e5;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 13px;
         cursor: pointer;
-        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        transition: all 0.15s;
     }
-    .page-btn.active {
-        background: #185FA5;
-        color: #fff;
-        border-color: #185FA5;
-    }
+
+        .pg-btn:hover:not(:disabled) {
+            border-color: #185FA5;
+            color: #185FA5;
+        }
+
+        .pg-btn.active {
+            background: #185FA5;
+            color: #fff;
+            border-color: #185FA5;
+            font-weight: 600;
+        }
+
+        .pg-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
 </style>
 
 <div class="container-fluid py-3">
@@ -141,7 +172,7 @@
         <div class="summary-card">
             <div class="summary-label">Total Amount</div>
             <div class="summary-value text-orange">
-                ₹ @Model.Sum(x => x.TotalAmount)
+                <i class="ti ti-currency-rupee"></i>@Model.Sum(x => x.TotalAmount).ToString("F2")
             </div>
         </div>
         <div class="summary-card">
@@ -180,11 +211,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Batch</th>
+                        <th>Batch ID</th>
                         <th>Date</th>
                         <th>Shift</th>
                         <th>Center</th>
-                        <th>Milk</th>
+                        <th>Milk Quantity</th>
                         <th>FAT</th>
                         <th>CLR</th>
                         <th>Amount</th>
@@ -217,19 +248,19 @@
                             data-status="@item.Status">
 
                             <td>@i</td>
-                            <td><b>@item.BatchId</b></td>
+                            <td>@item.BatchId</td>
                             <td>@item.BatchDate.ToString("dd-MM-yyyy")</td>
                             <td>
                                 <span class="shift-badge @shiftClass">@item.Shift</span>
                             </td>
                             <td>@item.CenterName</td>
-                            <td style="color:#198754;font-weight:600">
+                            <td>
                                 @item.TotalMilkCollected.ToString("F2") L
                             </td>
                             <td>@item.AvgFat</td>
                             <td>@item.AvgCLR</td>
-                            <td style="color:#b58900;font-weight:700">
-                                ₹ @item.TotalAmount
+                            <td>
+                                <i class="ti ti-currency-rupee"></i>@item.TotalAmount.ToString("F2")
                             </td>
                             <td>
                                 <span class="status-badge @statusClass">@item.Status</span>
@@ -248,7 +279,10 @@
             </table>
         </div>
 
-        <div class="pagination" id="pagination"></div>
+        <div class="pagination-bar">
+            <span class="pagination-info" id="paginationInfo"></span>
+            <div class="pagination-controls" id="pagination"></div>
+        </div>
     </div>
 </div>
 
@@ -286,17 +320,38 @@
         renderPagination(filtered.length);
     }
 
-    function renderPagination(totalRows) {
+        function renderPagination(totalRows) {
         const totalPages = Math.ceil(totalRows / rowsPerPage);
         const pagination = document.getElementById("pagination");
+        const info = document.getElementById("paginationInfo");
+
+        const start = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+        const end = Math.min(currentPage * rowsPerPage, totalRows);
+        info.textContent = `Showing ${start}–${end} of ${totalRows} entries`;
+
         pagination.innerHTML = "";
+
+        const prev = document.createElement("button");
+        prev.className = "pg-btn";
+        prev.innerHTML = `<i class="ti ti-chevron-left"></i>`;
+        prev.disabled = currentPage === 1;
+        prev.onclick = () => { currentPage--; renderTable(); };
+        pagination.appendChild(prev);
+
         for (let i = 1; i <= totalPages; i++) {
-            const btn      = document.createElement("button");
-            btn.innerText  = i;
-            btn.className  = "page-btn" + (i === currentPage ? " active" : "");
-            btn.onclick    = () => { currentPage = i; renderTable(); };
+            const btn = document.createElement("button");
+            btn.textContent = i;
+            btn.className = "pg-btn" + (i === currentPage ? " active" : "");
+            btn.onclick = () => { currentPage = i; renderTable(); };
             pagination.appendChild(btn);
         }
+
+        const next = document.createElement("button");
+        next.className = "pg-btn";
+        next.innerHTML = `<i class="ti ti-chevron-right"></i>`;
+        next.disabled = currentPage === totalPages || totalPages === 0;
+        next.onclick = () => { currentPage++; renderTable(); };
+        pagination.appendChild(next);
     }
 
     function resetPage() { currentPage = 1; renderTable(); }

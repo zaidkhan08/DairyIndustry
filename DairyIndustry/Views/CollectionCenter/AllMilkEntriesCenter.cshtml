@@ -267,7 +267,7 @@
 
                             <td class="row-no"></td>
 
-                            <td class="farmer-name fw-semibold">@item.FarmerName</td>
+                            <td class="farmer-name ">@item.FarmerName</td>
                             <td class="farmer-code">@item.FarmerCode</td>
 
                             <td>@item.CollectionDate.ToString("dd-MM-yyyy")</td>
@@ -284,11 +284,11 @@
                             <td>@item.AppliedCLR</td>
 
                             <td>
-                                @(item.Status == "Accepted" ? $"₹ {item.RatePerLiter}" : "-")
+                                @(item.Status == "Accepted" ? $"{item.RatePerLiter}" : "-")
                             </td>
 
                             <td>
-                                @(item.Status == "Accepted" ? $"₹ {item.Amount}" : "-")
+                                @(item.Status == "Accepted" ? $"{item.Amount}" : "-")
                             </td>
 
                             <td><span class="badge @statusClass">@item.Status</span></td>

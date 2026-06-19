@@ -27,6 +27,8 @@ namespace DairyIndustry.Filters
             var userId = context.HttpContext.Session.GetInt32("UserId");
             var roleName = context.HttpContext.Session.GetString("RoleName");
 
+           
+
             // Not logged in
             if (userId == null || string.IsNullOrEmpty(roleName))
             {

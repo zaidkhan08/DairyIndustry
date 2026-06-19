@@ -270,7 +270,12 @@
         white-space: nowrap;
     }
     table.milk-table td.num-col { color: #9ca3af; font-size: 13px; }
-    table.milk-table td.farmer-name { font-weight: 600; color: #111; white-space: normal; min-width: 120px; }
+
+            table.milk-table td.farmer-name {
+                font-weight: normal;
+                white-space: normal;
+                min-width: 120px;
+            }
     table.milk-table td.mono { font-variant-numeric: tabular-nums; }
 
     /* Shift badge */
@@ -348,7 +353,7 @@
         <div class="kpi-card">
             <div class="kpi-icon amber"><i class="ti ti-currency-rupee"></i></div>
             <div class="kpi-label">Amount</div>
-            <div class="kpi-value">₹ @totalAmount</div>
+            <div class="kpi-value">@totalAmount</div>
             <div class="kpi-sub">Total payout</div>
         </div>
         <div class="kpi-card">
@@ -442,7 +447,6 @@
                         <th>Qty</th>
                         <th>FAT</th>
                         <th>CLR</th>
-                        <th>Rate</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Reason</th>
@@ -471,7 +475,6 @@
                             <td class="mono">@item.Quantity</td>
                             <td class="mono">@item.Fat</td>
                             <td class="mono">@item.CLR</td>
-                            <td class="mono">@item.Amount</td>
                             <td class="mono">@(item.Status == "Accepted" ? $"₹ {item.Amount:F2}" : "-")</td>
                             <td>
                                 <span class="status-badge @(item.Status == "Accepted" ? "accepted" : "rejected")">

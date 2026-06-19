@@ -54,39 +54,67 @@
         margin-bottom: 1.5rem;
     }
 
-    .mh-card {
+    .kpi-card {
         background: #fff;
-        border: 1px solid #ebebeb;
-        border-radius: 10px;
-        padding: 14px 16px;
+        border: 1px solid #e8eef6;
+        border-radius: 14px;
+        padding: 16px 20px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 14px;
     }
 
-    .mh-card-label {
-        font-size: 0.68rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #999;
-        margin-bottom: 4px;
-    }
-
-    .mh-card-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    .mh-card-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+    .kpi-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 1.1rem;
         flex-shrink: 0;
+    }
+
+        .kpi-icon.blue {
+            background: #eef6ff;
+            color: #1d6fce;
+        }
+
+        .kpi-icon.green {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .kpi-icon.amber {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .kpi-icon.gray {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+    .kpi-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 2px;
+    }
+
+    .kpi-value {
+        font-size: 1.05rem;
+        font-weight: normal;
+        color: #0a2540;
+        line-height: 1.2;
+    }
+
+    .kpi-sub {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        margin-top: 1px;
     }
 
         .mh-card-icon.blue {
@@ -256,19 +284,7 @@
         display: inline-block;
     }
 
-    .val-qty {
-        color: #1f9e5c;
-        font-weight: 700;
-    }
-
-    .val-fat {
-        color: #555;
-    }
-
-    .val-amount {
-        color: #b87a00;
-        font-weight: 700;
-    }
+    
 
     .status-accepted {
         background: #e7f5ee;
@@ -401,50 +417,59 @@
     </div>
 
     <!-- SUMMARY CARDS -->
-    <div class="mh-cards">
-
-        <div class="mh-card">
-            <div>
-                <div class="mh-card-label">Total Quantity</div>
-                <div class="mh-card-value" style="color:#1f9e5c;">
-                    @totalQty.ToString("N2") <span style="font-size:0.75rem;font-weight:400;color:#999;">L</span>
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon blue">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Total Quantity</div>
+                    <div class="kpi-value">@totalQty.ToString("N2") <span style="font-size:.78rem;color:#64748b;font-weight:500;">L</span></div>
+                    <div class="kpi-sub">Litres collected</div>
                 </div>
             </div>
-            <div class="mh-card-icon blue"><i class="bi bi-droplet-fill"></i></div>
         </div>
-
-        <div class="mh-card">
-            <div>
-                <div class="mh-card-label">Total Earnings</div>
-                <div class="mh-card-value" style="color:#b87a00;">
-                    ₹@totalAmount.ToString("N2")
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon green">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Total Earnings</div>
+                    <div class="kpi-value"><i class="bi bi-currency-rupee" style="font-size:.9rem;"></i>@totalAmount.ToString("N2")</div>
+                    <div class="kpi-sub">Estimated payout</div>
                 </div>
             </div>
-            <div class="mh-card-icon green"><i class="bi bi-currency-rupee"></i></div>
         </div>
-
-        <div class="mh-card">
-            <div>
-                <div class="mh-card-label">Average Fat</div>
-                <div class="mh-card-value" style="color:#c47d10;">
-                    @(Model != null && Model.Any(x => x.AppliedFat != null)
-                                        ? Model.Average(x => x.AppliedFat ?? 0).ToString("0.0")
-                                        : "0.0")<span style="font-size:0.75rem;font-weight:400;color:#999;">%</span>
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon amber">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Average Fat</div>
+                    <div class="kpi-value">
+                        @(Model != null && Model.Any(x => x.AppliedFat != null)
+                                                ? Model.Average(x => x.AppliedFat ?? 0).ToString("0.0")
+                                                : "0.0")<span style="font-size:.78rem;color:#64748b;font-weight:500;">%</span>
+                    </div>
+                    <div class="kpi-sub">Across all entries</div>
                 </div>
             </div>
-            <div class="mh-card-icon amber"><i class="bi bi-graph-up-arrow"></i></div>
         </div>
-
-        <div class="mh-card">
-            <div>
-                <div class="mh-card-label">Generated Receipts</div>
-                <div class="mh-card-value" style="color:#1a1a1a;">
-                    @Model?.Count(x => !string.IsNullOrEmpty(x.ReceiptNumber))
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon gray">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="kpi-label">Receipts</div>
+                    <div class="kpi-value">@Model?.Count(x => !string.IsNullOrEmpty(x.ReceiptNumber))</div>
+                    <div class="kpi-sub">Generated</div>
                 </div>
             </div>
-            <div class="mh-card-icon gray"><i class="bi bi-receipt"></i></div>
         </div>
-
     </div>
 
     <!-- FILTER BAR -->
@@ -501,9 +526,9 @@
                             <th>Center</th>
                             <th>Milk Type</th>
                             <th style="text-align:right;">Qty</th>
-                            <th style="text-align:right;">Fat</th>
+                            <th style="text-align:right;">Fat %</th>
                             <th style="text-align:right;">CLR</th>
-                            <th style="text-align:right;">Rate</th>
+                            <th style="text-align:right;">Rate / L</th>
                             <th style="text-align:right;">Amount</th>
                             <th style="text-align:center;">Status</th>
                             <th style="text-align:center; padding-right:20px;">Receipt</th>
@@ -550,23 +575,23 @@
                                 <td><span class="milk-badge">@item.MilkTypeName</span></td>
 
                                 <td style="text-align:right;">
-                                    <span class="val-qty">@item.Quantity.ToString("0.00") L</span>
+                                    @item.Quantity.ToString("0.00") L
                                 </td>
 
-                                <td style="text-align:right;" class="val-fat">
+                                <td style="text-align:right; color:#1e293b;">
                                     @(item.AppliedFat?.ToString("0.0") ?? "—")
                                 </td>
 
-                                <td style="text-align:right;" class="val-fat">
+                                <td style="text-align:right; color:#1e293b;">
                                     @(item.AppliedCLR?.ToString("0.0") ?? "—")
                                 </td>
 
-                                <td style="text-align:right; color:#888;">
-                                    ₹@item.RatePerLiter.ToString("0.00")
+                                <td style="text-align:right; color:#1e293b;">
+                                    <i class="bi bi-currency-rupee" style="font-size:.78rem;"></i>@item.RatePerLiter.ToString("0.00")
                                 </td>
 
-                                <td style="text-align:right;">
-                                    <span class="val-amount">₹@item.Amount.ToString("0.00")</span>
+                                <td style="text-align:right; color:#1e293b;">
+                                    <i class="bi bi-currency-rupee" style="font-size:.78rem;"></i>@item.Amount.ToString("0.00")
                                 </td>
 
                                 <td style="text-align:center;">

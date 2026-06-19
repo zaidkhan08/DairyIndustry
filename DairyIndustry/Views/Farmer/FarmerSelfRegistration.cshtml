@@ -148,7 +148,7 @@
     .field input:focus { background:var(--white) }
     .field input.err,.field select.err { border-color:var(--red);background:var(--red-light) }
     .field input.err:focus,.field select.err:focus { box-shadow:0 0 0 3px rgba(220,38,38,0.10);background:var(--white) }
-    .field input.ok { border-color:var(--green-ok) }
+   
     .field input:disabled,.field select:disabled { background:#F9FAFB;color:var(--gray-hint);cursor:not-allowed;border-color:#E5E7EB }
     .field-err { font-size:11.5px;color:var(--red);display:none;align-items:center;gap:4px;font-weight:500 }
     .field-err.show { display:flex }
@@ -158,7 +158,21 @@
     /* ── INPUT GROUP ── */
     .input-group { display:flex;gap:8px;align-items:flex-start }
     .input-group input { flex:1 }
-    .verified-badge { display:none;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--green-ok);background:#F0FDF4;border:1px solid #BBF7D0;padding:3px 10px;border-radius:12px }
+
+    .verified-badge {
+        display: none;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--green-ok);
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        padding: 3px 10px;
+        border-radius: 20px white-space:nowrap; 
+        align-self: center; 
+        flex-shrink: 0;
+    }
     .verified-badge.show { display:inline-flex }
     .verified-badge i { font-size:13px }
 
@@ -233,13 +247,6 @@
             </div>
             <div class="otp-label">Enter verification code</div>
             <div class="otp-digits">
-                @* <input type="number" id="d0" aria-label="Digit 1" inputmode="numeric" autocomplete="one-time-code">
-                <input type="number" id="d1" aria-label="Digit 2" inputmode="numeric">
-                <input type="number" id="d2" aria-label="Digit 3" inputmode="numeric">
-                <input type="number" id="d3" aria-label="Digit 4" inputmode="numeric">
-                <input type="number" id="d4" aria-label="Digit 5" inputmode="numeric">
-                <input type="number" id="d5" aria-label="Digit 6" inputmode="numeric"> *@
-
                 <input type="text" id="d0" aria-label="Digit 1" inputmode="numeric" autocomplete="one-time-code" maxlength="1">
                 <input type="text" id="d1" aria-label="Digit 2" inputmode="numeric" maxlength="1">
                 <input type="text" id="d2" aria-label="Digit 3" inputmode="numeric" maxlength="1">
@@ -258,7 +265,7 @@
         <div class="otp-foot">
             <button class="btn btn-outline btn-sm" onclick="closeOtp()">Cancel</button>
             <button class="btn btn-primary btn-sm" onclick="verifyOtp()" id="verifyBtn">
-                <i class="ti ti-shield-check" aria-hidden="true"></i> Verify
+                 Verify
             </button>
         </div>
     </div>
@@ -268,7 +275,7 @@
     <h2 class="sr-only">Farmer Self Registration Form</h2>
 
     <div class="page-header">
-        <div class="brand-chip"><i class="ti ti-droplet-filled" aria-hidden="true"></i>Dairy Collection Services</div>
+
         <h1>Farmer registration</h1>
         <p>Complete all steps to register for dairy milk collection services</p>
     </div>
@@ -343,13 +350,12 @@
                             <div class="input-group">
                                 <input asp-for="Email" id="email" placeholder="you@example.com" autocomplete="email" />
                                 <button type="button" class="btn-otp" id="sendOtpBtn" onclick="handleSendOtp()">
-                                    <i class="ti ti-mail-forward" aria-hidden="true"></i> Send OTP
+                                     Send OTP
                                 </button>
+                                <span class="verified-badge" id="verifiedBadge"><i class="ti ti-circle-check"></i>verified</span>
                             </div>
                             <div class="field-err" id="err-email"><i class="ti ti-alert-circle"></i><span></span></div>
-                            <div style="margin-top:5px">
-                                <span class="verified-badge" id="verifiedBadge"><i class="ti ti-circle-check"></i>Email verified</span>
-                            </div>
+                           
                         </div>
                         <!-- GENDER — now required -->
                         <div class="field">
@@ -683,10 +689,14 @@
 
         <!-- FOOTER -->
         <div class="form-footer">
-            <button type="button" class="btn btn-outline" id="backBtn" onclick="goBack()" style="display:none">
-                <i class="ti ti-arrow-left" aria-hidden="true"></i> Back
-            </button>
-            <div></div>
+            <div style="display:flex;gap:8px">
+                <button type="button" class="btn btn-outline" id="backBtn" onclick="goBack()" style="display:none">
+                    <i class="ti ti-arrow-left" aria-hidden="true"></i> Back
+                </button>
+                <button type="button" class="btn btn-outline" id="clearBtn" onclick="clearForm()">
+                    <i class="ti ti-trash" aria-hidden="true"></i> Clear form
+                </button>
+            </div>
             <div style="display:flex;gap:8px;align-items:center">
                 <span style="font-size:12px;color:var(--gray-hint)" id="stepCounter">Step 1 of 5</span>
                 <button type="button" class="btn btn-primary" id="nextBtn" onclick="goNext()">
@@ -808,6 +818,7 @@
                     btn.disabled  = false;
                     btn.innerHTML = '<i class="ti ti-mail-forward" aria-hidden="true"></i> Send OTP';
                     btn.onclick   = handleSendOtp;
+                    btn.style.display = ''; 
                 }
             });
 
@@ -861,6 +872,7 @@
                 var b = document.getElementById('sendOtpBtn');
                 b.className = 'btn-otp verified-state';
                 b.innerHTML = '<i class="ti ti-circle-check"></i> Verified';
+                        b.style.display = 'none';   // ← add this
             }
 
             // Restore cascading dropdowns on postback
@@ -996,7 +1008,7 @@
                 btn.disabled  = false;
                 if (res.success) {
                     btn.className = 'btn-otp';
-                    btn.innerHTML = '<i class="ti ti-mail-forward"></i> Resend OTP';
+                    btn.innerHTML = 'Resend OTP';
                     btn.onclick   = handleSendOtp;
                     document.getElementById('otpEmailDisplay').textContent = email;
                     openOtp();
@@ -1005,7 +1017,7 @@
                 } else {
                     // Restore button, show vague server message
                     btn.className = 'btn-otp';
-                    btn.innerHTML = '<i class="ti ti-mail-forward"></i> Send OTP';
+                    btn.innerHTML = 'Send OTP';
                     btn.onclick   = handleSendOtp;
                     // Show the vague message from server — never tells user if email exists
                     setErr('email', res.message || 'Unable to send OTP. Please try again.');
@@ -1015,7 +1027,7 @@
             .catch(function () {
                 btn.disabled  = false;
                 btn.className = 'btn-otp';
-                btn.innerHTML = '<i class="ti ti-mail-forward"></i> Send OTP';
+                btn.innerHTML = 'Send OTP';
                 btn.onclick   = handleSendOtp;
                 showToast('Network error. Please try again.', 'error');
             });
@@ -1039,12 +1051,7 @@
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && document.getElementById('otpOverlay').classList.contains('open')) closeOtp();
         });
-        // function clearOtpDigits() {
-        //     for (var i = 0; i < 6; i++) {
-        //         var d = document.getElementById('d' + i);
-        //         d.value = ''; d.classList.remove('filled','error-flash');
-        //     }
-        // }
+      
         function clearOtpDigits() {
             for (var i = 0; i < 6; i++) {
                 var d = document.getElementById('d' + i);
@@ -1108,16 +1115,7 @@
         for (var _i = 0; _i < 6; _i++) {
             (function (idx) {
                 var d = document.getElementById('d' + idx);
-                // d.addEventListener('input', function () {
-                //     this.value = this.value.replace(/\D/g, '').slice(-1);
-                //     this.classList.toggle('filled', this.value.length === 1);
-                //     if (this.value && idx < 5) document.getElementById('d' + (idx + 1)).focus();
-                //     if (idx === 5 && this.value) {
-                //         var code = '';
-                //         for (var j = 0; j < 6; j++) code += document.getElementById('d' + j).value;
-                //         if (code.length === 6) verifyOtp();
-                //     }
-                // });
+               
 
                 d.addEventListener('input', function () {
                     // Keep only the last digit typed
@@ -1134,13 +1132,7 @@
                     if (e.key === 'ArrowLeft'  && idx > 0)                 document.getElementById('d' + (idx - 1)).focus();
                     if (e.key === 'ArrowRight' && idx < 5)                 document.getElementById('d' + (idx + 1)).focus();
                 });
-                // d.addEventListener('paste', function (e) {
-                //     e.preventDefault();
-                //     var text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-                //     for (var j = 0; j < 6; j++) { var el = document.getElementById('d' + j); el.value = text[j] || ''; el.classList.toggle('filled', !!text[j]); }
-                //     if (text.length === 6) verifyOtp();
-                //     else document.getElementById('d' + Math.min(text.length, 5)).focus();
-                // });
+               
             })(_i);
         }
 
@@ -1168,11 +1160,12 @@
                     document.getElementById('email').readOnly = true;
                     var btn = document.getElementById('sendOtpBtn');
                     btn.className = 'btn-otp verified-state';
-                    btn.innerHTML = '<i class="ti ti-circle-check"></i> Verified';
+                    btn.innerHTML = '<i class="ti ti-circle-check"></i>';
                     clrErr('email');
                     closeOtp();
                     showToast('Email address verified successfully!', 'success');
-                } else {
+                            btn.style.display = 'none';
+                        } else {
                     // Flash the boxes red
                     for (var j = 0; j < 6; j++) {
                         (function (el) {
@@ -1205,39 +1198,29 @@
 
                     showToast('Incorrect OTP. Please try again.', 'error');
                 }
-                // } else {
-                //     for (var j = 0; j < 6; j++) {
-                //         (function (el) {
-                //             el.classList.add('error-flash');
-                //             setTimeout(function () { el.classList.remove('error-flash'); }, 650);
-                //         })(document.getElementById('d' + j));
-                //     }
-                //     showToast('Incorrect OTP. Please try again.', 'error');
-                // }
+                
             })
             .catch(function () { showToast('Verification failed. Please try again.', 'error'); });
         }
 
-        // =============================================
-        // STEP VALIDATIONS
-        // =============================================
-        // =============================================
-// STEP 1 — DUPLICATE CHECK HELPERS
-// =============================================
-var _token = function () {
-    return document.querySelector('input[name="__RequestVerificationToken"]').value;
-};
 
-function checkDuplicate(url, body) {
-    return fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'RequestVerificationToken': _token()
-        },
-        body: body
-    }).then(function (r) { return r.json(); });
-}
+        // =============================================
+        // STEP 1 — DUPLICATE CHECK HELPERS
+        // =============================================
+        var _token = function () {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        };
+
+        function checkDuplicate(url, body) {
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': _token()
+                },
+                body: body
+            }).then(function (r) { return r.json(); });
+        }
 
         // =============================================
         // STEP VALIDATIONS  (Step 1 now async)
@@ -1501,7 +1484,7 @@ function checkDuplicate(url, body) {
             if (currentStep > 1) { currentStep--; updateUI(); window.scrollTo({ top:0, behavior:'smooth' }); }
         }
 
-                // =============================================
+        // =============================================
         // FILE PREVIEW — opens uploaded file in new tab
         // =============================================
         function previewFile(inputId) {
@@ -1521,6 +1504,54 @@ function checkDuplicate(url, body) {
             }
         }
 
+        function clearForm() {
+            // Reset all text/select inputs
+            document.getElementById('regForm').reset();
+
+            // Reset step back to 1
+            currentStep = 1;
+
+            // Reset email verification state
+            isEmailVerified = false;
+            document.getElementById('IsEmailVerified').value = 'false';
+            document.getElementById('verifiedBadge').classList.remove('show');
+            document.getElementById('email').classList.remove('ok');
+            document.getElementById('email').readOnly = false;
+            var otpBtn = document.getElementById('sendOtpBtn');
+            otpBtn.className = 'btn-otp';
+            otpBtn.disabled  = false;
+            otpBtn.innerHTML = 'Send OTP';
+            otpBtn.onclick   = handleSendOtp;
+            otpBtn.style.display = '';
+
+            // Clear all error states
+            var errEls = document.querySelectorAll('.field-err');
+            errEls.forEach(function(e) { e.classList.remove('show'); });
+            var errInputs = document.querySelectorAll('.field input.err, .field select.err');
+            errInputs.forEach(function(e) { e.classList.remove('err'); });
+
+            // Reset file uploads
+            ['fw-profile','fw-aadhaarDoc','fw-passbook'].forEach(function(id) {
+                var w = document.getElementById(id);
+                if (w) { w.classList.remove('has-file','file-err'); }
+            });
+            ['fn-profile','fn-aadhaarDoc','fn-passbook'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) { el.textContent = ''; el.style.display = 'none'; }
+            });
+
+            // Reset cascading dropdowns
+            resetDD('CityId',   'Select city');
+            resetDD('VillageId','Select village');
+            resetDD('CenterId', 'Select center');
+
+            // Stop any OTP timers
+            clearTimers();
+
+            updateUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('Form cleared.', 'info');
+        }
         // =============================================
         // UI STATE
         // =============================================

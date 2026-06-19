@@ -225,7 +225,100 @@ namespace DairyIndustry.Repository
             };
         }
 
+        public List<TopFarmerModel> GetTopFarmersThisMonth(int staffId)
+        {
+            var list = new List<TopFarmerModel>();
 
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                DECLARE @CenterId INT;
+                SELECT @CenterId = CenterId FROM HR.Staffs WHERE StaffId = @StaffId;
+
+                SELECT TOP 5
+                    f.FarmerId,
+                    f.FarmerName,
+                    f.FarmerCode,
+                    ISNULL(SUM(mc.Quantity), 0)                  AS TotalQty,
+                    ISNULL(SUM(mc.Amount), 0)                    AS TotalAmount,
+                    COUNT(DISTINCT mc.CollectionDate)             AS DaysDelivered
+                FROM Collection.MilkCollection mc
+                INNER JOIN Farmer.Farmers f ON f.FarmerId = mc.FarmerId
+                WHERE mc.CenterId = @CenterId
+                  AND mc.CollectionDate >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)
+                  AND mc.CollectionDate <= CAST(GETDATE() AS DATE)
+                GROUP BY f.FarmerId, f.FarmerName, f.FarmerCode
+                ORDER BY SUM(mc.Quantity) DESC";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using SqlDataReader r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                list.Add(new TopFarmerModel
+                {
+                    FarmerId = Convert.ToInt32(r["FarmerId"]),
+                    FarmerName = r["FarmerName"].ToString(),
+                    FarmerCode = r["FarmerCode"].ToString(),
+                    TotalQty = Convert.ToDecimal(r["TotalQty"]),
+                    TotalAmount = Convert.ToDecimal(r["TotalAmount"]),
+                    DaysDelivered = Convert.ToInt32(r["DaysDelivered"])
+                });
+            }
+
+            return list;
+        }
+
+        //payment kpi
+        public PaymentStatsModel GetPaymentStats(int staffId)
+        {
+            using SqlConnection con = _dbHelper.GetConnection();
+
+            string sql = @"
+                DECLARE @CenterId INT;
+                SELECT @CenterId = CenterId FROM HR.Staffs WHERE StaffId = @StaffId;
+
+                SELECT
+                    SUM(CASE WHEN fp.PaymentStatus = 'Pending'
+                        THEN 1 ELSE 0 END)                      AS PendingCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Pending'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS PendingAmount,
+
+                    SUM(CASE WHEN fp.PaymentStatus = 'Processed'
+                        THEN 1 ELSE 0 END)                      AS ProcessedCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Processed'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS ProcessedAmount,
+
+                    SUM(CASE WHEN fp.PaymentStatus = 'Failed'
+                        THEN 1 ELSE 0 END)                      AS FailedCount,
+                    ISNULL(SUM(CASE WHEN fp.PaymentStatus = 'Failed'
+                        THEN fp.TotalAmount ELSE 0 END), 0)     AS FailedAmount
+
+                FROM Finance.FarmerPayments fp
+                WHERE fp.CenterId = @CenterId";
+
+            using SqlCommand cmd = new SqlCommand(sql, con);
+            cmd.Parameters.AddWithValue("@StaffId", staffId);
+
+            con.Open();
+            using var r = cmd.ExecuteReader();
+
+            if (!r.Read())
+                return new PaymentStatsModel();
+
+            return new PaymentStatsModel
+            {
+                PendingCount = r["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingCount"]),
+                PendingAmount = r["PendingAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["PendingAmount"]),
+                ProcessedCount = r["ProcessedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ProcessedCount"]),
+                ProcessedAmount = r["ProcessedAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["ProcessedAmount"]),
+                FailedCount = r["FailedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["FailedCount"]),
+                FailedAmount = r["FailedAmount"] == DBNull.Value ? 0 : Convert.ToDecimal(r["FailedAmount"])
+            };
+        }
         public List<CollectionTrendModel> GetCollectionTrend(int staffId)
         {
             var list = new List<CollectionTrendModel>();

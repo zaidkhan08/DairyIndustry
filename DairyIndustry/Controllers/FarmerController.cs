@@ -10,6 +10,7 @@ using Microsoft.Data.SqlClient;
 
 namespace DairyIndustry.Controllers
 {
+    [ServiceFilter(typeof(ActionLogFilter))]
     public class FarmerController : Controller
     {
         private readonly IFarmerRepository _farmerRepo;
@@ -72,6 +73,7 @@ namespace DairyIndustry.Controllers
         }
 
         // List Of All Farmers After Approved from Center
+        [SessionAuthorize("Collection Agent")]
         public IActionResult ListAllFarmers()
         {
             int staffId = GetStaffId();
@@ -82,7 +84,9 @@ namespace DairyIndustry.Controllers
             return View(data);
         }
 
+
         // Details of farmer
+        [SessionAuthorize("Collection Agent")]
         public async Task<IActionResult> CenterFarmerDetails(int id)
         {
             int staffId = Convert.ToInt32(HttpContext.Session.GetInt32("StaffId"));
@@ -93,6 +97,7 @@ namespace DairyIndustry.Controllers
         }
 
         // Toggle Status - Activate/Decativate of farmer
+        [SessionAuthorize("Collection Agent")]
         public IActionResult ToggleStatus(int id, bool isActive)
         {
             try
@@ -304,99 +309,7 @@ namespace DairyIndustry.Controllers
             return View(model);
         }
 
-        //[SessionAuthorize("Collection Agent")]
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> FarmerRegistrationByCenter(RegByCenterModel model)
-        //{
-        //    int staffId = GetStaffId();
-
-        //    if (staffId == 0)
-        //        return RedirectToAction("Login", "Auth");
-
-        //    // Reload dropdowns
-        //    model.States = _farmerRepo.GetStates();
-        //    model.Cities = model.StateId > 0? _farmerRepo.GetCitiesByState(model.StateId.Value): new List<CityModel>();
-        //    model.Villages = model.CityId > 0? _farmerRepo.GetVillagesByCity(model.CityId.Value): new List<VillageModel>();
-
-        //    // Email verification check
-        //    if (!string.IsNullOrEmpty(model.Email) && !model.IsEmailVerified)
-        //    {
-        //        ModelState.AddModelError("Email", "Please verify the email address first.");
-        //    }
-
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return View(model);
-        //    }
-
-        //    try
-        //    {
-        //        // Upload files
-        //        model.ProfilePhoto = _fileUploadService.SaveFile(model.PhotoFile, "profile");
-        //        model.AadhaarCardPath = _fileUploadService.SaveFile(model.AadhaarFile, "aadhaar");
-        //        model.PassbookPath = _fileUploadService.SaveFile(model.PassbookFile, "passbook");
-
-        //        // Register farmer
-        //        var result = await _farmerRepo.AddFarmerAsync(model, staffId);
-
-        //        string emailNote = string.Empty;
-
-        //        if (!string.IsNullOrWhiteSpace(model.Email))
-        //        {
-        //            try
-        //            {
-        //                string loginUrl = $"{Request.Scheme}://{Request.Host}/Farmer/Login";
-
-        //                await _emailService.SendApprovalEmailAsync(
-        //                    toEmail: model.Email,
-        //                    farmerCode: result.FarmerCode,
-        //                    defaultPassword: result.DefaultPassword,
-        //                    loginUrl: loginUrl);
-
-        //                emailNote = $" Credentials emailed to {model.Email}.";
-        //            }
-        //            catch (Exception mailEx)
-        //            {
-        //                emailNote = $" (Email could not be sent: {mailEx.Message}. Share credentials manually.)";
-        //            }
-        //        }
-
-        //        TempData["FarmerCode"] = result.FarmerCode;
-        //        TempData["Password"] = result.DefaultPassword;
-        //        TempData["Success"] = "Farmer registered successfully!" + emailNote;
-
-        //        return RedirectToAction("FarmerRegistrationByCenter");
-        //    }
-        //    catch (SqlException ex)
-        //    {
-        //        // Show SP errors in validation alert
-
-        //        if (ex.Message.Contains("phone", StringComparison.OrdinalIgnoreCase))
-        //        {
-        //            ModelState.AddModelError("", "Farmer with this phone number already exists or is pending approval.");
-        //        }
-        //        else if (ex.Message.Contains("email", StringComparison.OrdinalIgnoreCase))
-        //        {
-        //            ModelState.AddModelError("", "This email is already registered.");
-        //        }
-        //        else if (ex.Message.Contains("aadhaar", StringComparison.OrdinalIgnoreCase))
-        //        {
-        //            ModelState.AddModelError("", "Aadhaar number already exists.");
-        //        }
-        //        else
-        //        {
-        //            ModelState.AddModelError("", ex.Message);
-        //        }
-
-        //        return View(model);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ModelState.AddModelError("", "An unexpected error occurred: " + ex.Message);
-        //        return View(model);
-        //    }
-        //}
+     
         [SessionAuthorize("Collection Agent")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -617,7 +530,6 @@ namespace DairyIndustry.Controllers
             return RedirectToAction("Dashboard");
         }
 
-
         [HttpGet]
         public IActionResult ChangePassword()
         {
@@ -627,7 +539,6 @@ namespace DairyIndustry.Controllers
 
             return View();
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -673,13 +584,14 @@ namespace DairyIndustry.Controllers
         // =========================
         // LOGOUT
         // =========================
+        
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
         }
 
-       
+
 
         //Tody's milk Entries
         public IActionResult TodayMilk()
@@ -771,7 +683,7 @@ namespace DairyIndustry.Controllers
             return File(pdf, "application/pdf", "MilkReceipt.pdf");
         }
 
-      
+
         //farmer profile
         public IActionResult Profile()
         {
@@ -922,15 +834,13 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        // CHECK STATUS — GET
+        // CHECK STATUS 
         [HttpGet]
         public IActionResult CheckStatus()
         {
             return View(new FarmerStatusViewModel());
         }
 
-        // CHECK STATUS — POST
-        // Looks up registration by phone and shows result.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CheckStatus(FarmerStatusViewModel model)
@@ -983,6 +893,12 @@ namespace DairyIndustry.Controllers
                 TempData["Info"] = "No rejections found for this period.";
 
             return View(data);
+        }
+        public IActionResult PaymentHistory()
+        {
+            int farmerId = (int)HttpContext.Session.GetInt32("FarmerId");
+            var payments = _farmerRepo.GetPaymentHistory(farmerId);
+            return View(payments);
         }
     }
 

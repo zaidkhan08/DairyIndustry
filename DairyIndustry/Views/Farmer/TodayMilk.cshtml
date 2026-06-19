@@ -43,7 +43,7 @@
 
     .kpi-value {
         font-size: 1.05rem;
-        font-weight: 700;
+        font-weight: normal;
         color: #0a2540;
         line-height: 1.2;
     }
@@ -75,32 +75,32 @@
         font-size: 0.84rem;
     }
 
-    .milk-table thead th {
-        background: #f8fafc;
-        padding: 11px 16px;
-        font-size: 0.68rem;
-        font-weight: 700;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        border-bottom: 1px solid #e8eef6;
-        white-space: nowrap;
-    }
+        .milk-table thead th {
+            background: #f8fafc;
+            padding: 11px 16px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid #e8eef6;
+            white-space: nowrap;
+        }
 
-    .milk-table tbody td {
-        padding: 13px 16px;
-        color: #1e293b;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-    }
+        .milk-table tbody td {
+            padding: 13px 16px;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
 
-    .milk-table tbody tr:last-child td {
-        border-bottom: none;
-    }
+        .milk-table tbody tr:last-child td {
+            border-bottom: none;
+        }
 
-    .milk-table tbody tr:hover td {
-        background: #fafbfd;
-    }
+        .milk-table tbody tr:hover td {
+            background: #fafbfd;
+        }
 
     .row-num {
         color: #cbd5e1;
@@ -139,8 +139,8 @@
     }
 
     .qty-val {
-        color: #0a2540;
-        font-weight: 700;
+        color: #64748b;
+        font-weight: normal;
     }
 
     .qty-unit {
@@ -150,8 +150,8 @@
     }
 
     .amt-val {
-        color: #d97706;
-        font-weight: 700;
+        color: #64748b;
+        font-weight: normal;
     }
 
     .receipt-chip {
@@ -207,12 +207,12 @@
         color: #94a3b8;
     }
 
-    .empty-state i {
-        font-size: 2.6rem;
-        opacity: .35;
-        margin-bottom: 12px;
-        display: block;
-    }
+        .empty-state i {
+            font-size: 2.6rem;
+            opacity: .35;
+            margin-bottom: 12px;
+            display: block;
+        }
 
     .date-badge {
         background: #f0f7ff;
@@ -223,6 +223,75 @@
         font-size: 0.78rem;
         font-weight: 600;
     }
+
+    /* PAGINATION */
+    .tm-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .tm-page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 7px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 0.78rem;
+        color: #475569;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.12s;
+        line-height: 1;
+    }
+
+    .btn-view {
+        font-size: 0.75rem;
+        border: 1px solid #d5d5d2;
+        border-radius: 6px;
+        padding: 4px 12px;
+        color: #444;
+        background: #fafaf8;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-view:hover {
+            background: #f0f0ee;
+            color: #222;
+        }
+
+        .pg-btn:hover {
+            background: #f8fafc;
+        }
+
+        .pg-btn.active {
+            background: #1d6fce;
+            color: #fff;
+            border-color: #1d6fce;
+            font-weight: 600;
+        }
+
+        .pg-btn.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            cursor: default;
+        }
 </style>
 
 <!-- Page header -->
@@ -257,7 +326,9 @@
             </div>
             <div>
                 <div class="kpi-label">Total Earnings</div>
-                <div class="kpi-value" style="color:#16a34a;">₹@totalAmount.ToString("0.00")</div>
+                <div class="kpi-value">
+                    <i class="bi bi-currency-rupee" style="font-size:.9rem;color:#0a2540;"></i>@totalAmount.ToString("0.00")
+                </div>
                 <div class="kpi-sub">Estimated payout</div>
             </div>
         </div>
@@ -316,21 +387,21 @@
                         <th>Shift</th>
                         <th>Milk Type</th>
                         <th>Qty (L)</th>
-                        <th>Fat</th>
+                        <th>Fat %</th>
                         <th>CLR</th>
                         <th>Rate / L</th>
                         <th>Amount</th>
-                        <th>Receipt</th>
+                        <th style="text-align:center; padding-right:20px;">Receipt</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tmTableBody">
                     @{
                         int rowNum = 1;
                     }
                     @foreach (var item in Model)
                     {
-                        <tr>
-                            <td><span class="row-num">@rowNum</span></td>
+                        <tr class="tm-data-row">
+                            <td><span class="row-num tm-sr">@rowNum</span></td>
                             <td>
                                 @if (item.Shift == "Morning")
                                 {
@@ -352,16 +423,21 @@
                             </td>
                             <td style="color:#475569;">@(item.AppliedFat.HasValue? item.AppliedFat.Value.ToString("0.0") : "—")</td>
                             <td style="color:#475569;">@(item.AppliedCLR.HasValue? item.AppliedCLR.Value.ToString("0.0") : "—")</td>
-                            <td style="color:#475569;">₹@item.RatePerLiter</td>
-                            <td><span class="amt-val">₹@item.Amount</span></td>
-                            <td>
+
+                            <td style="color:#1e293b;"><i class="bi bi-currency-rupee" style="font-size:.78rem;color:#475569;"></i>@item.RatePerLiter</td>
+
+                            <td><i class="bi bi-currency-rupee" style="font-size:.78rem;color:#475569;"></i>@item.Amount</td>
+
+                            <td style="text-align:center; padding-right:20px;">
                                 @if (!string.IsNullOrEmpty(item.ReceiptNumber))
                                 {
-                                    <span class="receipt-chip">@item.ReceiptNumber</span>
+                                    <a href="/Farmer/ViewReceipt/@item.CollectionId" class="btn-view">
+                                        <i class="bi bi-file-earmark-text me-1"></i>View
+                                    </a>
                                 }
                                 else
                                 {
-                                    <span style="color:#cbd5e1;">—</span>
+                                    <span style="color:#ddd;">—</span>
                                 }
                             </td>
                         </tr>
@@ -370,5 +446,102 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- PAGINATION BAR -->
+        <div class="tm-pagination" id="tmPaginationBar">
+            <span id="tmPaginationInfo">Showing 1–@(Math.Min(10, Model.Count)) of @Model.Count entries</span>
+            <div class="tm-page-btns" id="tmPaginationBtns"></div>
+        </div>
     }
 </div>
+
+<script>
+    const TM_PAGE_SIZE = 10;
+    let tmCurrentPage = 1;
+
+    const tmAllRows = Array.from(document.querySelectorAll(".tm-data-row"));
+    const tmPaginationInfo = document.getElementById("tmPaginationInfo");
+    const tmPaginationBtns = document.getElementById("tmPaginationBtns");
+
+    function tmRenderPage() {
+        const total = tmAllRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / TM_PAGE_SIZE));
+        tmCurrentPage = Math.min(tmCurrentPage, totalPages);
+
+        const start = (tmCurrentPage - 1) * TM_PAGE_SIZE;
+        const end = Math.min(start + TM_PAGE_SIZE, total);
+
+        tmAllRows.forEach((row, i) => {
+            const visible = i >= start && i < end;
+            row.style.display = visible ? "" : "none";
+            if (visible) {
+                const srCell = row.querySelector(".tm-sr");
+                if (srCell) srCell.textContent = i + 1;
+            }
+        });
+
+        if (tmPaginationInfo) {
+            const from = total === 0 ? 0 : start + 1;
+            tmPaginationInfo.textContent =
+                `Showing ${from}–${end} of ${total} entr${total !== 1 ? "ies" : "y"}`;
+        }
+
+        tmRenderPagination(totalPages);
+    }
+
+    function tmRenderPagination(totalPages) {
+        if (!tmPaginationBtns) return;
+        tmPaginationBtns.innerHTML = "";
+
+        function addBtn(html, page, extraClass) {
+            const btn = document.createElement("button");
+            btn.className = "pg-btn" + (extraClass ? " " + extraClass : "");
+            btn.innerHTML = html;
+            if (extraClass !== "disabled") {
+                btn.onclick = () => { tmCurrentPage = page; tmRenderPage(); };
+            }
+            tmPaginationBtns.appendChild(btn);
+        }
+
+        // Prev
+        addBtn('<i class="bi bi-chevron-left" style="font-size:10px;"></i>',
+            tmCurrentPage - 1, tmCurrentPage === 1 ? "disabled" : "");
+
+        // Page numbers
+        tmBuildPageList(tmCurrentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "pg-btn disabled";
+                el.textContent = "…";
+                tmPaginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === tmCurrentPage ? "active" : "");
+            }
+        });
+
+        // Next
+        addBtn('<i class="bi bi-chevron-right" style="font-size:10px;"></i>',
+            tmCurrentPage + 1, tmCurrentPage === totalPages ? "disabled" : "");
+    }
+
+    function tmBuildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    if (tmAllRows.length > 0) {
+        tmRenderPage();
+    }
+</script>

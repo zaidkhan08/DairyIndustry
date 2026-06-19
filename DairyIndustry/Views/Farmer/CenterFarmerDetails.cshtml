@@ -27,12 +27,7 @@
         gap: 10px;
     }
 
-    .fd-back {
-        text-decoration: none;
-        font-size: 13px;
-        color: #666;
-    }
-
+    .fd-back,
     .fd-btn {
         padding: 7px 14px;
         border-radius: 8px;
@@ -40,11 +35,23 @@
         background: #fff;
         font-size: 13px;
         color: #444;
+        text-decoration: none !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        line-height: 1;
+        transition: background .15s, color .15s;
     }
 
+        .fd-back:hover,
         .fd-btn:hover {
             background: #f3f4f6;
+            color: #222;
         }
+
+    .fd-btn {
+        font-weight: 500;
+    }
 
     .fd-header {
         background: #fff;
@@ -244,7 +251,7 @@
                     <div>
                         <div class="fd-label">Date of Birth</div>
                         <div class="fd-value">
-                            @(Model.DateOfBirth.HasValue? Model.DateOfBirth.Value.ToString("dd MMM yyyy") : "—")
+                            @(Model.DateOfBirth.HasValue? Model.DateOfBirth.Value.ToString("dd-MM-yyyy") : "—")
                         </div>
                     </div>
 

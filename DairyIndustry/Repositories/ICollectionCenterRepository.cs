@@ -9,13 +9,13 @@ namespace DairyIndustry.Repositories
     public interface ICollectionCenterRepository
     {
 
-        // Dashboard — calls Collection.usp_Staff_Dashboard (3 result sets)
-        //StaffDashboardViewModel GetStaffDashboard(int staffId);
         StaffCenterModel GetStaffCenter(int staffId);
         TodaySummaryModel GetTodaySummary(int staffId);
         List<ShiftStatusModel> GetShiftStatus(int staffId);
         List<InventoryModel> GetInventory(int staffId);
         FarmerStatsModel GetFarmerStats(int staffId);
+        List<TopFarmerModel> GetTopFarmersThisMonth(int staffId);
+        PaymentStatsModel GetPaymentStats(int staffId);
         List<RejectionReasonModel> GetRejectionReasons(int staffId);
         List<CollectionRejectionTrendModel> GetCollectionVsRejectionTrend(int staffId);
 

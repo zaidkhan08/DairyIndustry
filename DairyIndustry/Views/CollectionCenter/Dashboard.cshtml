@@ -364,21 +364,42 @@
 
 
     <!-- ================================================================
-         2. ALERT STRIP — PENDING APPROVALS · PAYMENTS · REJECTED
+         2.FARMER PAYMENTS- PENDING,PROCESSED, FAILED
     ================================================================ -->
-    <div class="alert-strip">
+    <div class="kpi-grid" style="margin-bottom:16px;">
 
-
-        <div class="alert-card red">
-            <div class="alert-label">
-                <i class="bi bi-currency-rupee alert-icon" style="color:var(--red);"></i>
-                Pending payments
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--amber-light);color:var(--amber-dark);">
+                <i class="bi bi-hourglass-split"></i>
             </div>
-            <div class="alert-value" style="color:var(--red);">₹@Model.FarmerStats.TotalPendingPaymentAmount.ToString("N0")</div>
-            <div class="alert-sub">@Model.FarmerStats.FarmersPendingPayment farmers owed</div>
+            <div class="kpi-label">Pending payments</div>
+            <div class="kpi-value">
+                <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.PaymentStats.PendingAmount.ToString("N0")
+            </div>
+            <div class="kpi-sub">@Model.PaymentStats.PendingCount farmers owed</div>
         </div>
 
-       
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--green-light);color:var(--green-dark);">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="kpi-label">Processed payments</div>
+            <div class="kpi-value">
+                <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.PaymentStats.ProcessedAmount.ToString("N0")
+            </div>
+            <div class="kpi-sub">@Model.PaymentStats.ProcessedCount payments done</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:var(--red-light);color:var(--red-dark);">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="kpi-label">Failed payments</div>
+            <div class="kpi-value">
+                <i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.PaymentStats.FailedAmount.ToString("N0")
+            </div>
+            <div class="kpi-sub">@Model.PaymentStats.FailedCount payments failed</div>
+        </div>
 
     </div>
 
@@ -409,13 +430,7 @@
                 <i class="bi bi-wallet2"></i>
             </div>
             <div class="kpi-label">Amount today</div>
-            <div class="kpi-value">₹@Model.TodaySummary.TotalAmountToday.ToString("N0")</div>
-            <div class="kpi-sub">
-                @if (Model.TodaySummary.TotalMilkToday > 0)
-                {
-                    <text>Avg ₹@((Model.TodaySummary.TotalAmountToday / Model.TodaySummary.TotalMilkToday).ToString("N2"))/L</text>
-                }
-            </div>
+            <div class="kpi-value"><i class="bi bi-currency-rupee" style="font-size:18px;"></i>@Model.TodaySummary.TotalAmountToday.ToString("N0")</div>
         </div>
 
         <div class="kpi-card">
@@ -450,52 +465,7 @@
     </div>
 
 
-    <!-- ================================================================
-         4. QUALITY KPIs (Avg Fat + CLR)
-    ================================================================ -->
-    @if (Model.TodaySummary.AvgFatToday.HasValue || Model.TodaySummary.AvgCLRToday.HasValue)
-    {
-        <div class="kpi-grid" style="margin-bottom:16px;">
-
-            @if (Model.TodaySummary.AvgFatToday.HasValue)
-            {
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background:var(--amber-light);color:var(--amber-dark);">
-                        <i class="bi bi-speedometer2"></i>
-                    </div>
-                    <div class="kpi-label">Avg fat today</div>
-                    <div class="kpi-value">@Model.TodaySummary.AvgFatToday.Value.ToString("N1")%</div>
-                    <div class="kpi-sub">Across all entries</div>
-                </div>
-            }
-
-            @if (Model.TodaySummary.AvgCLRToday.HasValue)
-            {
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background:var(--blue-light);color:var(--blue-dark);">
-                        <i class="bi bi-activity"></i>
-                    </div>
-                    <div class="kpi-label">Avg CLR today</div>
-                    <div class="kpi-value">@Model.TodaySummary.AvgCLRToday.Value.ToString("N1")</div>
-                    <div class="kpi-sub">Corrected lactometer reading</div>
-                </div>
-            }
-
-            <div class="kpi-card">
-                <div class="kpi-icon" style="background:var(--green-light);color:var(--green-dark);">
-                    <i class="bi bi-receipt"></i>
-                </div>
-                <div class="kpi-label">Total entries</div>
-                <div class="kpi-value">@Model.TodaySummary.TotalEntriesToday</div>
-                <div class="kpi-sub">
-                    <i class="bi bi-sunrise" style="color:var(--amber);"></i> @Model.TodaySummary.MorningEntries &nbsp;
-                    <i class="bi bi-moon" style="color:var(--blue);"></i> @Model.TodaySummary.EveningEntries
-                </div>
-            </div>
-
-        </div>
-    }
-
+    
 
     <!-- ================================================================
          5. FARMER OVERVIEW + SHIFT STATUS
@@ -540,22 +510,7 @@
                 <div class="prog-bar" style="width:@activePercent%;background:var(--green);"></div>
             </div>
 
-            <hr class="dash-divider" />
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:10px;text-align:center;">
-                    <div style="font-size:11px;color:var(--label);margin-bottom:3px;">
-                        <i class="bi bi-truck"></i> Delivered today
-                    </div>
-                    <div style="font-size:20px;font-weight:700;color:var(--green);">@Model.FarmerStats.FarmersDeliveredToday</div>
-                </div>
-                <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:10px;text-align:center;">
-                    <div style="font-size:11px;color:var(--label);margin-bottom:3px;">
-                        <i class="bi bi-credit-card"></i> Owed payment
-                    </div>
-                    <div style="font-size:20px;font-weight:700;color:var(--blue);">@Model.FarmerStats.FarmersPendingPayment</div>
-                </div>
-            </div>
+            
 
         </div>
 
@@ -612,14 +567,14 @@
                             {
                                 <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
                                     <div style="font-size:10px;color:var(--label);">AVG FAT</div>
-                                    <div style="font-size:13px;font-weight:600;color:var(--amber);">@shift.AvgFat.Value.ToString("N1")%</div>
+                                    <div style="font-size:13px;font-weight:600;color:var(--amber);">@shift.AvgFat</div>
                                 </div>
                             }
                             @if (shift.AvgCLR.HasValue)
                             {
                                 <div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:8px;text-align:center;">
                                     <div style="font-size:10px;color:var(--label);">AVG CLR</div>
-                                    <div style="font-size:13px;font-weight:600;color:var(--blue);">@shift.AvgCLR.Value.ToString("N1")</div>
+                                    <div style="font-size:13px;font-weight:600;color:var(--blue);">@shift.AvgCLR</div>
                                 </div>
                             }
                         </div>
@@ -656,75 +611,184 @@
                 Rejection Reasons
             </div>
 
-            <div style="height:320px;">
+            <div style="height:280px;">
                 <canvas id="rejectionDonutChart"></canvas>
             </div>
         </div>
 
     </div>
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px; align-items:start;">
 
-    <!-- ================================================================
-         8. INVENTORY STATUS
-    ================================================================ -->
-    <div class="dash-card" style="margin-top:16px;">
+        <!-- TOP FARMERS -->
+       
+        
+            <div class="dash-card" style="margin-bottom:16px;">
 
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
-            <div class="sec-label" style="margin:0;">Inventory status</div>
-            @{
-                var highUsage = Model.Inventory.Where(x => x.CapacityUsedPct >= 85).ToList();
-            }
-            @if (highUsage.Any())
-            {
-                <span class="badge-pill bp-red"><i class="bi bi-exclamation-triangle-fill" style="font-size:10px;"></i> @highUsage.Count alert(s)</span>
-            }
-            else
-            {
-                <span class="badge-pill bp-green"><i class="bi bi-check-circle-fill" style="font-size:10px;"></i> All normal</span>
-            }
-        </div>
+                <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                flex-wrap:wrap;gap:8px;margin-bottom:14px;">
 
-        <div class="inv-grid">
-            @foreach (var item in Model.Inventory)
-            {
-                var pct = (int)item.CapacityUsedPct;
-                var barColor = pct >= 85 ? "var(--red)" : pct >= 65 ? "var(--amber)" : "var(--green)";
-                var textColor = pct >= 85 ? "var(--red-dark)" : pct >= 65 ? "var(--amber-dark)" : "var(--green-dark)";
-
-                <div class="inv-card">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                        <i class="bi bi-droplet-half" style="color:var(--blue);font-size:15px;"></i>
-                        <span style="font-size:12px;font-weight:600;color:var(--text);">@item.MilkTypeName</span>
+                    <div class="sec-label" style="margin:0;">
+                        Top farmers this month
                     </div>
-                    <div style="font-size:20px;font-weight:700;color:@textColor;margin-bottom:6px;">@pct%</div>
-                    <div class="prog-wrap">
-                        <div class="prog-bar" style="width:@pct%;background:@barColor;"></div>
+
+                    <span style="font-size:11px;color:var(--muted);">
+                        <i class="bi bi-calendar3"></i>
+                        @DateTime.Now.ToString("MMMM yyyy")
+                    </span>
+
+                </div>
+
+                @if (!Model.TopFarmers.Any())
+                {
+                    <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">
+                        <i class="bi bi-people" style="font-size:24px;display:block;margin-bottom:6px;"></i>
+                        No collection data for this month yet
                     </div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:7px;">
-                        <span>@item.AvailableQuantity.ToString("N0") L available</span>
-                        @if (item.CenterCapacity.HasValue)
+                }
+                else
+                {
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--card-border);">
+                                    <th style="text-align:left;padding:8px 10px;
+                                       font-size:11px;font-weight:600;
+                                       color:var(--label);text-transform:uppercase;
+                                       letter-spacing:.05em;">
+                                        Farmer
+                                    </th>
+                                    <th style="text-align:right;padding:8px 10px;
+                                       font-size:11px;font-weight:600;
+                                       color:var(--label);text-transform:uppercase;
+                                       letter-spacing:.05em;">
+                                        Quantity
+                                    </th>
+                                    <th style="text-align:right;padding:8px 10px;
+                                       font-size:11px;font-weight:600;
+                                       color:var(--label);text-transform:uppercase;
+                                       letter-spacing:.05em;">
+                                        Amount
+                                    </th>
+                                    <th style="text-align:right;padding:8px 10px;
+                                       font-size:11px;font-weight:600;
+                                       color:var(--label);text-transform:uppercase;
+                                       letter-spacing:.05em;">
+                                        Days
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var farmer in Model.TopFarmers)
+                                {
+                                    <tr style="border-bottom:1px solid var(--card-border);
+                                           transition:background .15s;"
+                                        onmouseover="this.style.background='var(--gray-light)'"
+                                        onmouseout="this.style.background='transparent'">
+
+                                        <td style="padding:10px 10px;">
+                                            <div style="display:flex;align-items:center;gap:10px;">
+
+                                                <div style="width:32px;height:32px;border-radius:50%;
+                                                        background:var(--green-light);
+                                                        color:var(--green-dark);
+                                                        font-size:12px;font-weight:700;
+                                                        display:flex;align-items:center;
+                                                        justify-content:center;flex-shrink:0;">
+                                                    @(string.Concat(farmer.FarmerName
+                                                                                                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                                                                                .Take(2).Select(w => w[0].ToString().ToUpper())))
+                                        </div>
+
+                                                <div>
+                                                    <div style="font-weight:600;color:var(--text);">
+                                                        @farmer.FarmerName
+                                                    </div>
+                                                    <div style="font-size:11px;color:var(--label);">
+                                                        @farmer.FarmerCode
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </td>
+
+                                        <td style="padding:10px;text-align:right;">
+                                            <span style="font-weight:600;color:var(--green-dark);">
+                                                @farmer.TotalQty.ToString("N1") L
+                                            </span>
+                                        </td>
+
+                                        <td style="padding:10px;text-align:right;">
+                                            <span style="font-weight:600;color:var(--text);">
+                                                <i class="bi bi-currency-rupee"
+                                                   style="font-size:11px;"></i>@farmer.TotalAmount.ToString("N0")
+                                            </span>
+                                        </td>
+
+                                        <td style="padding:10px;text-align:right;">
+                                            <span class="badge-pill bp-blue">
+                                                <i class="bi bi-calendar-check"
+                                                   style="font-size:10px;"></i>
+                                                @farmer.DaysDelivered
+                                            </span>
+                                        </td>
+
+                                    </tr>
+                                                        }
+                            </tbody>
+
+                        </table>
+                    </div>
+                }
+
+            </div>
+
+        <!-- INVENTORY STATUS — merged into one card, no separate inv-cards per type -->
+        <div class="dash-card" style="margin-bottom:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+                <div class="sec-label" style="margin:0;">Inventory status</div>
+               
+            </div>
+
+            <!-- Single grey card containing all milk types as stacked rows -->
+            <div class="inv-card">
+                @foreach (var item in Model.Inventory)
+                {
+                    var pct = (int)item.CapacityUsedPct;
+                    var barColor = pct >= 85 ? "var(--red)" : pct >= 65 ? "var(--amber)" : "var(--green)";
+                    var textColor = pct >= 85 ? "var(--red-dark)" : pct >= 65 ? "var(--amber-dark)" : "var(--green-dark)";
+
+                    <div style="margin-bottom:14px;">
+                        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                            <span style="color:var(--text);font-weight:600;">@item.MilkTypeName</span>
+                            <span style="font-weight:700;color:@textColor;">@pct%</span>
+                        </div>
+                        <div class="prog-wrap">
+                            <div class="prog-bar" style="width:@pct%;background:@barColor;"></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px;">
+                            <span>@item.AvailableQuantity.ToString("N0") L available</span>
+                            @if (item.CenterCapacity.HasValue)
+                            {
+                                <span>of @item.CenterCapacity.Value.ToString("N0") L</span>
+                            }
+                        </div>
+                        @if (pct >= 85)
                         {
-                            <span>of @item.CenterCapacity.Value.ToString("N0") L</span>
+                            <div style="font-size:11px;color:var(--red-dark);margin-top:4px;font-weight:600;">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Near capacity
+                            </div>
                         }
                     </div>
-                    @if (pct >= 85)
-                    {
-                        <div style="font-size:11px;color:var(--red-dark);margin-top:5px;font-weight:600;">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Near capacity
-                        </div>
-                    }
-                </div>
-            }
+                }
+            </div>
         </div>
 
-        @if (!Model.Inventory.Any())
-        {
-            <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
-                <i class="bi bi-inbox" style="font-size:24px;display:block;margin-bottom:6px;"></i>
-                No inventory data available
-            </div>
-        }
-
     </div>
+
+    
 
 </div>
 
@@ -842,74 +906,61 @@ new Chart(ctx, {
 
 </script>
 <script>
-
     (function () {
-
-            labels: [
-                @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => $"'{x.RejectionReason}'")))
-            ]
-
         const data = [
-            @Html.Raw(string.Join(",",
-                        Model.RejectionReasons
-                        .Select(x => x.RejectionCount)))
+            @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => x.RejectionCount)))
         ];
 
-            new Chart(document.getElementById('rejectionDonutChart'), {
-        type: 'doughnut',
-        data: {
-            labels: [
-                @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => $"'{x.RejectionReason}'")))
-            ],
-            datasets: [{
-                data: [
-                    @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => x.RejectionCount)))
+        new Chart(document.getElementById('rejectionDonutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    @Html.Raw(string.Join(",", Model.RejectionReasons.Select(x => $"'{x.ChartLabel}'")))
                 ],
-                backgroundColor: [
-                    '#ef4444',
-                    '#f59e0b',
-                    '#3b82f6',
-                    '#10b981',
-                    '#8b5cf6',
-                    '#6b7280'
-                ],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 12
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',     // donut thickness
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        padding: 18,
-                        font: {
-                            size: 12
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#ef4444',
+                        '#f59e0b',
+                        '#3b82f6',
+                        '#10b981',
+                        '#8b5cf6',
+                        '#6b7280'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 18,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const data = context.dataset.data;
+                                const total = data.reduce((a, b) => a + b, 0);
+                                const value = context.parsed;
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${percentage}%`;
+                            }
                         }
                     }
-                },
-                    tooltip: {
-        callbacks: {
-            label: function(context) {
-
-                const data = context.dataset.data;
-                const total = data.reduce((a, b) => a + b, 0);
-
-                const value = context.parsed;
-                const percentage = ((value / total) * 100).toFixed(1);
-
-                return `${context.label}: ${percentage}%`;
+                }
             }
-        }
-    }
-            }
-        }
-    });
+        });
     })();
 </script>
