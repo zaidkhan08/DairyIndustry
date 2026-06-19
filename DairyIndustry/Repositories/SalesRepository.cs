@@ -46,7 +46,7 @@ namespace DairyIndustry.Repositories
                        d.ContactNumber, d.Email, d.GSTIN, d.Status
                 FROM   Admin.Users        u
                 INNER JOIN Admin.Roles         r ON r.RoleId       = u.RoleId
-                INNER JOIN Sales.Distributors  d ON d.DistributorId = u.StaffId
+                INNER JOIN Sales.Distributors  d ON d.DistributorId = u.DistributorId
                 WHERE  u.Username = @Username
                   AND  r.RoleName = 'Distributor'";
             using var con = _db.GetConnection();

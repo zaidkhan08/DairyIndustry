@@ -68,6 +68,20 @@ namespace DairyIndustry.Controllers
                 case "HR Manager":
                     return RedirectToAction("Index", "HR");
                 case "Distributor":
+                    var distLogin = _salesRepo.GetDistributorForLogin(user.Username);
+                    if (distLogin == null || !distLogin.IsActive)
+                    {
+                        ViewBag.Error = "Your distributor account is not yet approved. Please contact admin.";
+                        return View();
+                    }
+                    HttpContext.Session.SetInt32("DistributorId", distLogin.DistributorId);
+                    HttpContext.Session.SetString("DistributorName", distLogin.DistributorName ?? user.Username);
+                    // Profile completeness session keys — used by sidebar indicator
+                    HttpContext.Session.SetString("DistributorLocation", distLogin.Location ?? "");
+                    HttpContext.Session.SetString("DistributorContact", distLogin.ContactNumber ?? "");
+                    HttpContext.Session.SetString("DistributorEmail", distLogin.Email ?? "");
+                    HttpContext.Session.SetString("DistributorAddress", ""); // not in login result model
+                    HttpContext.Session.SetString("DistributorGSTIN", distLogin.GSTIN ?? "");
                     return RedirectToAction("Dashboard", "Sales");
                 default:
                     return RedirectToAction("Login", "Admin");
@@ -203,17 +217,7 @@ namespace DairyIndustry.Controllers
                 HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
                 HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
             }
-            //Mohit
-            if(user.RoleName=="Distributor")
-            {
-                    HttpContext.Session.SetInt32("DistributorId", distLogin.DistributorId);
-                    HttpContext.Session.SetString("DistributorName", distLogin.DistributorName ?? username);
-                    HttpContext.Session.SetString("DistributorLocation", distLogin.Location ?? "");
-                    HttpContext.Session.SetString("DistributorContact", distLogin.ContactNumber ?? "");
-                    HttpContext.Session.SetString("DistributorEmail", distLogin.Email ?? "");
-                    HttpContext.Session.SetString("DistributorAddress", ""); 
-                    HttpContext.Session.SetString("DistributorGSTIN", distLogin.GSTIN ?? "");
-            }
+            
         }
 
         private string MaskEmail(string email)
