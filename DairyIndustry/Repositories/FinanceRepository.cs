@@ -1401,9 +1401,9 @@ namespace DairyIndustry.Repositories
                         vm.Summary = new StaffPaymentSummary
                         {
                             TotalPayments = Convert.ToInt32(r["TotalPayments"]),
-                            ProcessedCount = Convert.ToInt32(r["ProcessedCount"]),
-                            PendingCount = Convert.ToInt32(r["PendingCount"]),
-                            FailedCount = Convert.ToInt32(r["FailedCount"]),
+                            ProcessedCount = r["ProcessedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["ProcessedCount"]),
+                            PendingCount = r["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["PendingCount"]),
+                            FailedCount = r["FailedCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["FailedCount"]),
                             TotalAmountPaid = Convert.ToDecimal(r["TotalAmountPaid"]),
                             TotalAmountPending = Convert.ToDecimal(r["TotalAmountPending"]),
                             ScopeLabel = "Staff Payments"

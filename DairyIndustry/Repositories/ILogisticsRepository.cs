@@ -5,6 +5,7 @@ namespace DairyIndustry.Repositories
 {
     public interface ILogisticsRepository
     {
+        DriverDashboardViewModel GetDriverDashboard(int driverId);
         void SaveEmailOtp(string email, string otpCode);
         bool VerifyEmailOtp(string email, string otpCode);
 
@@ -15,8 +16,7 @@ namespace DairyIndustry.Repositories
         List<DriversModel> GetAllDrivers();
         void UpdateDriverStatus(int driverId, string status);
 
-        int AddVehicle(int driverId, string vehicleNumber, decimal capacity,
-                         string vehicleRcPath);
+        Task<int> AddVehicleAsync(int driverId, string vehicleNumber, decimal capacity, string rcPath);
         List<VehiclesModel> GetVehiclesByDriverId(int driverId);
         List<VehiclesModel> GetAllVehicles();
         void UpdateVehicleStatus(int vehicleId, string status);
@@ -26,11 +26,10 @@ namespace DairyIndustry.Repositories
         DriverContactInfo GetDriverContactInfo(int driverId);
         DriverContactInfo GetDriverContactInfoByVehicleId(int vehicleId);
         Task SendDriverStatusEmailAsync(string toEmail, string driverName,
-        string username, string status);
-
+                                                      string username, string status);
         Task SendVehicleStatusEmailAsync(string toEmail, string driverName,
-                                                       string vehicleNumber, string status);
-        async Task SendSmtpEmailAsync(string toEmail, string subject, string htmlBody);
+                                                               string vehicleNumber, string status);
+        //Task SendEmailAsync(string toEmail, string subject, string htmlBody);
 
     }
 }

@@ -1,412 +1,694 @@
-﻿@model DairyIndustry.Models.Logistics.DriversModel
+﻿@model DairyIndustry.Models.Logistics.DriverDashboardViewModel
 @{
     ViewData["Title"] = "Driver Dashboard";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    var vehicles = ViewBag.Vehicles as List<DairyIndustry.Models.Logistics.VehiclesModel>;
-    var transfers = ViewBag.Transfers as List<DairyIndustry.Models.Admin.MilkTransferModel>;
+    var driver = Model.Driver;
+    var transfers = Model.Transfers;
+    var vehicles = Model.Vehicles;
+    var loss = Model.LossSummary;
+    var notifs = Model.Notifications;
 
-    // Summary stats
-    int totalVehicles = vehicles?.Count ?? 0;
-    int activeVehicles = vehicles?.Count(v => v.Status == "Active" || v.Status == "Approved") ?? 0;
-    int pendingVehicles = vehicles?.Count(v => v.Status == "Pending") ?? 0;
-    int totalTrips = transfers?.Count ?? 0;
-    int completedTrips = transfers?.Count(t => t.TransferStatus == "Received") ?? 0;
-    int pendingTrips = transfers?.Count(t => t.TransferStatus != "Received") ?? 0;
-    decimal totalDispatched = transfers?.Sum(t => t.DispatchQty) ?? 0;
-    decimal totalReceived = transfers?.Where(t => t.ReceivedQty.HasValue).Sum(t => t.ReceivedQty ?? 0) ?? 0;
-    decimal totalLoss = transfers?.Where(t => t.LossQty.HasValue).Sum(t => t.LossQty ?? 0) ?? 0;
+    // ── Summary stats ────────────────────────────────────────────────────
+    int totalVehicles = vehicles.Count;
+    int activeVehicles = vehicles.Count(v => v.Status == "Active" || v.Status == "Approved");
+    int pendingVehicles = vehicles.Count(v => v.Status == "Pending");
+    int totalTrips = transfers.Count;
+    int completedTrips = transfers.Count(t => t.TransferStatus == "Received");
+    int pendingTrips = transfers.Count(t => t.TransferStatus != "Received");
+    decimal totalDispatched = transfers.Sum(t => t.DispatchQty);
+    decimal totalReceived = transfers.Where(t => t.ReceivedQty.HasValue).Sum(t => t.ReceivedQty ?? 0);
+    decimal lossVariance = totalDispatched > 0 ? Math.Round((loss.TotalLossLitres / totalDispatched) * 100, 2) : 0;
+    int unreadCount = notifs.Count(n => !n.IsRead);
 
-    // Last 5 transfers for recent activity
-    var recentTransfers = transfers?.OrderByDescending(t => t.DispatchDate).Take(5).ToList();
+    // ── Chart: last 10 transfers (dispatch vs received) ──────────────────
+    var chart10 = transfers.OrderByDescending(t => t.DispatchDate).Take(10)
+                           .OrderBy(t => t.DispatchDate).ToList();
+    string cLabels = string.Join(",", chart10.Select(t => $"'T-{t.TransferId}'"));
+    string cDispatch = string.Join(",", chart10.Select(t => t.DispatchQty.ToString("F1")));
+    string cReceived = string.Join(",", chart10.Select(t => (t.ReceivedQty ?? 0).ToString("F1")));
+    string cLoss = string.Join(",", chart10.Select(t => (t.LossQty ?? 0).ToString("F2")));
 
-    // Chart data for last 7 transfers
-    var chartTransfers = transfers?.OrderByDescending(t => t.DispatchDate).Take(7).OrderBy(t => t.DispatchDate).ToList();
-    var chartLabels = chartTransfers != null ? string.Join(",", chartTransfers.Select(t => $"'{t.DispatchDate:dd MMM}'")) : "";
-    var chartDispatch = chartTransfers != null ? string.Join(",", chartTransfers.Select(t => t.DispatchQty.ToString("F1"))) : "";
-    var chartReceived = chartTransfers != null ? string.Join(",", chartTransfers.Select(t => (t.ReceivedQty ?? 0).ToString("F1"))) : "";
+    // ── Chart: monthly trip count ─────────────────────────────────────────
+    var monthly = transfers
+        .GroupBy(t => new { t.DispatchDate.Year, t.DispatchDate.Month })
+        .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+        .TakeLast(6)
+        .ToList();
+    string mLabels = string.Join(",", monthly.Select(g => $"'{new DateTime(g.Key.Year, g.Key.Month, 1):MMM yy}'"));
+    string mCounts = string.Join(",", monthly.Select(g => g.Count()));
 
-    string GetStatusBadgeClass(string s) => s switch
+    // ── Helpers ──────────────────────────────────────────────────────────
+    string BadgeClass(string s) => s switch
     {
-        "Active" or "Approved" or "Received" => "pill-Approved",
-        "Pending" => "pill-Pending",
-        _ => "pill-Rejected"
+        "Active" or "Approved" or "Received" => "badge-approved",
+        "Pending" => "badge-pending",
+        _ => "badge-rejected"
+    };
+    string SeverityBadge(string s) => s switch
+    {
+        "danger" => "badge-rejected",
+        "warning" => "badge-pending",
+        _ => "badge-info"
+    };
+    string SeverityIcon(string s) => s switch
+    {
+        "danger" => "bi-exclamation-octagon-fill text-danger",
+        "warning" => "bi-exclamation-triangle-fill text-warning",
+        _ => "bi-info-circle-fill text-primary"
     };
 }
 
-<!-- Custom Styles to perfectly match image_3f9839.png -->
 <style>
-    body {
-        background-color: #f8fafc;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    .breadcrumb-custom {
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    /* Top Border Accent Container Cards from image_3f9839.png */
-    .premium-stat-card {
-        background: #ffffff;
+    .db-card {
+        background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    .db-card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .db-card-header span {
+            font-weight: 700;
+            font-size: .9rem;
+            color: #1e293b;
+        }
+
+    .db-card-body {
         padding: 20px;
     }
 
-    .stat-blue {
-        border-top: 4px solid #3b82f6;
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 18px 20px;
+        height: 100%;
     }
 
-    .stat-green {
-        border-top: 4px solid #10b981;
-    }
+        .stat-card.border-blue {
+            border-top: 4px solid #3b82f6;
+        }
 
-    .stat-info {
-        border-top: 4px solid #0ea5e9;
-    }
+        .stat-card.border-green {
+            border-top: 4px solid #10b981;
+        }
 
-    .stat-red {
-        border-top: 4px solid #ef4444;
-    }
+        .stat-card.border-sky {
+            border-top: 4px solid #0ea5e9;
+        }
 
-    .card-title-text {
-        font-size: 0.78rem;
-        font-weight: 600;
+        .stat-card.border-red {
+            border-top: 4px solid #ef4444;
+        }
+
+    .stat-label {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-weight: 700;
         color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: 4px;
     }
 
-    .panel-header-text {
-        font-size: 0.92rem;
-        font-weight: 700;
-        color: #1f2937;
+    .stat-value {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #111827;
+        font-variant-numeric: tabular-nums;
     }
 
-    /* Clean Data Tables */
-    .table-clean th {
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #4b5563;
-        font-weight: 700;
-        border-bottom: 2px solid #f1f5f9;
-        padding: 12px 16px;
-        background-color: #ffffff;
-        white-space: nowrap;
+    .stat-sub {
+        font-size: .72rem;
+        color: #9ca3af;
+        margin-top: 6px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 6px;
     }
 
-    .table-clean td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #1f2937;
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-
-    /* Soft Pill Badges for Operational States */
-    .pill-counter-badge {
-        font-weight: 600;
-        font-size: 0.78rem;
-        padding: 4px 10px;
+    .badge-approved {
+        background: #dcfce7;
+        color: #15803d;
+        font-size: .73rem;
+        padding: 3px 10px;
         border-radius: 6px;
+        font-weight: 600;
         display: inline-block;
     }
 
-    .pill-Approved {
-        background-color: #dcfce7;
-        color: #15803d;
-    }
-
-    .pill-Pending {
-        background-color: #fffbeb;
+    .badge-pending {
+        background: #fffbeb;
         color: #b45309;
-    }
-
-    .pill-Rejected {
-        background-color: #fef2f2;
-        color: #991b1b;
-    }
-
-    .btn-custom-blue {
-        background-color: #2563eb;
-        color: white;
-        border: none;
+        font-size: .73rem;
+        padding: 3px 10px;
         border-radius: 6px;
-        font-weight: 500;
+        font-weight: 600;
+        display: inline-block;
     }
 
-        .btn-custom-blue:hover {
-            background-color: #1d4ed8;
-            color: white;
+    .badge-rejected {
+        background: #fef2f2;
+        color: #991b1b;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-info {
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: .73rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .tbl th {
+        font-size: .74rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #4b5563;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 10px 16px;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .tbl td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #f8fafc;
+        font-size: .88rem;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+
+    .tbl tbody tr:hover {
+        background: #fafbfc;
+    }
+
+    .notif-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .notif-row:last-child {
+            border-bottom: none;
         }
+
+    .notif-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 15px;
+    }
+
+        .notif-icon.danger {
+            background: #fef2f2;
+        }
+
+        .notif-icon.warning {
+            background: #fffbeb;
+        }
+
+        .notif-icon.info {
+            background: #eff6ff;
+        }
+
+    .notif-title {
+        font-size: .85rem;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 2px;
+    }
+
+    .notif-msg {
+        font-size: .78rem;
+        color: #6b7280;
+        line-height: 1.4;
+    }
+
+    .notif-time {
+        font-size: .7rem;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
+    .vehicle-chip {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+        .vehicle-chip .vnum {
+            font-weight: 700;
+            font-size: .9rem;
+            color: #1e293b;
+        }
+
+        .vehicle-chip .vcap {
+            font-size: .75rem;
+            color: #6b7280;
+        }
+
+    .avatar-circle {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .shift-badge {
+        font-size: .7rem;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+    }
 </style>
 
 <div class="container-fluid px-4 py-3">
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        <div class="alert alert-success border-0 mb-3" style="border-radius:8px">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
         </div>
     }
 
-    <!-- ── WELCOME BANNER PROFILE OVERVIEW ── -->
-    <div class="card premium-stat-card stat-blue p-4 mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-auto">
-                <div class="bg-light text-primary border rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width:56px; height:56px; font-size:1.35rem; flex-shrink:0;">
-                    @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
+    <!-- ══════════════════════════════════════════════════════
+         WELCOME BANNER
+    ══════════════════════════════════════════════════════ -->
+    <div class="stat-card border-blue mb-4 p-4">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="avatar-circle">@(driver?.DriverName?[0].ToString().ToUpper() ?? "D")</div>
+            <div class="flex-grow-1">
+                <h4 class="fw-bold mb-1 text-dark">Welcome back, @(driver?.DriverName ?? "Driver")!</h4>
+                <div class="text-muted small d-flex flex-wrap gap-3">
+                    <span><i class="bi bi-card-text me-1"></i>Licence: <strong class="font-monospace">@driver?.LicenseNo</strong></span>
+                    <span><i class="bi bi-telephone me-1"></i>@(driver?.Phone ?? "No phone")</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>Since @driver?.RegisteredOn.ToString("MMM yyyy")</span>
                 </div>
             </div>
-            <div class="col">
-                <h4 class="fw-bold text-dark mb-0.5">Welcome back, @(Model?.DriverName ?? "Transport Operator")!</h4>
-                <div class="text-muted small">
-                    <i class="bi bi-card-text me-1.5 text-secondary"></i>Licence: <span class="text-secondary font-monospace fw-medium">@Model?.LicenseNo</span>
-                    <span class="text-muted mx-2">&middot;</span>
-                    <i class="bi bi-calendar3 me-1.5 text-secondary"></i>Member Since: @Model?.RegisteredOn.ToString("MMM yyyy")
-                </div>
-            </div>
-            <div class="col-md-auto d-flex align-items-center gap-2 flex-wrap justify-content-md-end">
-                <span class="pill-counter-badge pill-@Model?.Status">
-                    Account Status: @Model?.Status
-                </span>
-                <a asp-action="RegisterVehicle" class="btn btn-custom-blue btn-sm px-3 py-2 shadow-sm" style="border-radius: 6px;">
-                    <i class="bi bi-plus-lg me-1"></i> Add Fleet Vehicle
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                @if (unreadCount > 0)
+                {
+                    <span class="badge-pending">
+                        <i class="bi bi-bell-fill me-1"></i>@unreadCount new alert@(unreadCount > 1 ? "s" : "")
+                    </span>
+                }
+                <span class="badge-@(driver?.Status == "Active" ? "approved" : "pending")">@driver?.Status</span>
+                <a asp-action="RegisterVehicle" class="btn btn-primary btn-sm px-3" style="border-radius:6px">
+                    <i class="bi bi-plus-lg me-1"></i>Add Vehicle
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- ── METRIC CARDS OVERVIEW MATRIX ── -->
+    <!-- ══════════════════════════════════════════════════════
+         ROW 1 — 4 KPI CARDS
+    ══════════════════════════════════════════════════════ -->
     <div class="row g-3 mb-4">
-        <!-- Metric Box: Vehicles -->
         <div class="col-6 col-xl-3">
-            <div class="premium-stat-card stat-blue d-flex flex-column justify-content-between h-100">
-                <div>
-                    <p class="card-title-text mb-1">Total Fleet Size</p>
-                    <h3 class="fw-bold mb-0 text-dark font-monospace">@totalVehicles</h3>
-                </div>
-                <div class="mt-2 pt-1 border-top small font-monospace d-flex justify-content-between text-muted" style="font-size: 11px;">
+            <div class="stat-card border-blue">
+                <div class="stat-label">Fleet Size</div>
+                <div class="stat-value">@totalVehicles</div>
+                <div class="stat-sub">
                     <span class="text-success fw-bold">@activeVehicles Active</span>
-                    <span>@pendingVehicles Staged</span>
+                    &nbsp;·&nbsp;@pendingVehicles Pending
                 </div>
             </div>
         </div>
-
-        <!-- Metric Box: Trips -->
         <div class="col-6 col-xl-3">
-            <div class="premium-stat-card stat-green d-flex flex-column justify-content-between h-100">
-                <div>
-                    <p class="card-title-text mb-1">Logistics Trips</p>
-                    <h3 class="fw-bold mb-0 text-dark font-monospace">@totalTrips</h3>
-                </div>
-                <div class="mt-2 pt-1 border-top small font-monospace d-flex justify-content-between text-muted" style="font-size: 11px;">
-                    <span class="text-success fw-bold">@completedTrips Closed</span>
-                    <span>@pendingTrips Route</span>
+            <div class="stat-card border-green">
+                <div class="stat-label">Total Trips</div>
+                <div class="stat-value">@totalTrips</div>
+                <div class="stat-sub">
+                    <span class="text-success fw-bold">@completedTrips Completed</span>
+                    &nbsp;·&nbsp;@pendingTrips In Transit
                 </div>
             </div>
         </div>
-
-        <!-- Metric Box: Capacity Volumes -->
         <div class="col-6 col-xl-3">
-            <div class="premium-stat-card stat-info d-flex flex-column justify-content-between h-100">
-                <div>
-                    <p class="card-title-text mb-1">Dispatched Fluid</p>
-                    <h3 class="fw-bold mb-0 text-dark font-monospace">@totalDispatched.ToString("N0") <span class="fs-6 text-muted font-normal">L</span></h3>
-                </div>
-                <div class="mt-2 pt-1 border-top small text-muted font-monospace" style="font-size: 11px;">
-                    Received: <span class="text-info fw-bold">@totalReceived.ToString("N0") L</span>
-                </div>
+            <div class="stat-card border-sky">
+                <div class="stat-label">Total Dispatched</div>
+                <div class="stat-value">@totalDispatched.ToString("N0") <small class="fs-6 text-muted fw-normal">L</small></div>
+                <div class="stat-sub">Received: <span class="text-info fw-bold">@totalReceived.ToString("N0") L</span></div>
             </div>
         </div>
-
-        <!-- Metric Box: Losses Variance -->
         <div class="col-6 col-xl-3">
-            <div class="premium-stat-card stat-red d-flex flex-column justify-content-between h-100">
-                <div>
-                    <p class="card-title-text mb-1">Transit Loss Deficit</p>
-                    <h3 class="fw-bold mb-0 text-dark font-monospace">@totalLoss.ToString("N1") <span class="fs-6 text-muted font-normal">L</span></h3>
-                </div>
-                <div class="mt-2 pt-1 border-top small font-monospace text-muted" style="font-size: 11px;">
-                    @if (totalDispatched > 0)
-                    {
-                        decimal lossPercent = (totalLoss / totalDispatched) * 100;
-                        <span>Loss Variance: <span class="fw-bold @(lossPercent > 2 ? "text-danger" : "text-success")">@lossPercent.ToString("N2")%</span></span>
-                    }
-                    else
-                    {
-                        <span>No variance logged</span>
-                    }
+            <div class="stat-card border-red">
+                <div class="stat-label">Transit Loss</div>
+                <div class="stat-value">@loss.TotalLossLitres.ToString("N1") <small class="fs-6 text-muted fw-normal">L</small></div>
+                <div class="stat-sub">
+                    Loss rate:
+                    <span class="fw-bold @(lossVariance > 2 ? "text-danger" : "text-success")">@lossVariance%</span>
+                    &nbsp;·&nbsp;@loss.TotalLossEvents events
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── SECONDARY ROW: ANALYTICS CHART & COMPACT PROFILE MODULE ── -->
+    <!-- ══════════════════════════════════════════════════════
+         ROW 2 — DISPATCH/RECEIVED BAR CHART + NOTIFICATIONS
+    ══════════════════════════════════════════════════════ -->
     <div class="row g-4 mb-4">
-        <!-- Analytics Flow Chart Block -->
+
+        <!-- Bar chart: last 10 transfers -->
         <div class="col-xl-8">
-            <div class="card premium-stat-card border-0 p-0 h-100" style="border: 1px solid #e2e8f0 !important;">
-                <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between">
-                    <span class="panel-header-text"><i class="bi bi-bar-chart-line text-primary me-2"></i>Yield Analytics &mdash; Last 7 Transfers</span>
-                    <a asp-action="MyTransfers" class="btn btn-light border btn-sm px-3" style="border-radius: 6px; font-size: 0.82rem;">View Full Logs</a>
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-bar-chart-line text-primary me-2"></i>Dispatch vs Received — Last 10 Trips</span>
+                    <a asp-action="MyTransfers" class="btn btn-light border btn-sm" style="font-size:.8rem">Full Log →</a>
                 </div>
-                <div class="card-body p-4">
-                    @if (transfers == null || !transfers.Any())
+                <div class="db-card-body">
+                    @if (!transfers.Any())
                     {
                         <div class="text-center py-5 text-muted small">
-                            <i class="bi bi-bar-chart display-6 d-block mb-2 text-secondary opacity-50"></i>
-                            No active performance data mappings recorded for this node profile yet.
+                            <i class="bi bi-bar-chart display-6 d-block mb-2 opacity-25"></i>No transfer data yet.
                         </div>
                     }
                     else
                     {
-                        <div style="position: relative; width: 100%; height: 260px;">
-                            <canvas id="transferChart"></canvas>
+                        <div style="position:relative; height:260px">
+                            <canvas id="barChart"></canvas>
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Identity Profile Data List Panel -->
+      @*   <!-- Notifications panel -->
         <div class="col-xl-4">
-            <div class="card premium-stat-card border-0 p-0 h-100" style="border: 1px solid #e2e8f0 !important;">
-                <div class="p-3 bg-white border-bottom">
-                    <span class="panel-header-text"><i class="bi bi-shield-identity text-primary me-2"></i>Operator Metadata Profile</span>
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span>
+                        <i class="bi bi-bell text-warning me-2"></i>Alerts
+                        @if (unreadCount > 0)
+                        {
+                            <span class="badge-pending ms-1">@unreadCount</span>
+                        }
+                    </span>
                 </div>
-                <div class="card-body p-4">
-                    <div class="text-center mb-4 pb-2 border-bottom">
-                        <div class="bg-light text-primary border rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm mx-auto mb-2" style="width:64px; height:64px; font-size:1.5rem;">
-                            @(Model?.DriverName?[0].ToString().ToUpper() ?? "D")
+                <div class="db-card-body" style="max-height:320px; overflow-y:auto">
+                    @if (!notifs.Any())
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-bell-slash display-6 d-block mb-2 opacity-25"></i>No new alerts.
                         </div>
-                        <h6 class="fw-bold text-dark mb-0.5">@Model?.DriverName</h6>
-                        <span class="text-muted font-monospace small" style="font-size: 12px;"><i class="bi bi-at text-secondary"></i>@Model?.Username</span>
-                    </div>
+                    }
+                    else
+                    {
+                        @foreach (var n in notifs)
+                        {
+                            <div class="notif-row" id="notif-@n.NotificationId">
+                                <div class="notif-icon @n.Severity">
+                                    <i class="bi @SeverityIcon(n.Severity)"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="notif-title">@n.Title</div>
+                                    <div class="notif-msg">@n.Message</div>
+                                    <div class="notif-time"><i class="bi bi-clock me-1"></i>@n.CreatedAt.ToString("dd MMM, hh:mm tt")</div>
+                                </div>
+                                @if (!n.IsRead)
+                                {
+                                    <button class="btn btn-sm btn-light border p-1" style="font-size:.7rem; height:24px; align-self:center"
+                                            onclick="markRead(@n.NotificationId)" title="Mark as read">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div> *@
+    </div>
 
-                    <div class="d-flex flex-column gap-3">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center me-3" style="width:36px; height:36px; border-radius: 6px;"><i class="bi bi-card-text text-primary"></i></div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">License Mapping Reference</small>
-                                <span class="fw-bold text-dark small font-monospace">@Model?.LicenseNo</span>
-                            </div>
+    <!-- ══════════════════════════════════════════════════════
+         ROW 3 — MONTHLY TRIP TREND + LOSS BREAKDOWN PIE
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+        <!-- Monthly trip count line chart -->
+        <div class="col-xl-7">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-graph-up text-success me-2"></i>Monthly Trip Trend (last 6 months)</span>
+                </div>
+                <div class="db-card-body">
+                    @if (!transfers.Any())
+                    {
+                        <div class="text-center py-4 text-muted small opacity-50">No data.</div>
+                    }
+                    else
+                    {
+                        <div style="position:relative; height:220px">
+                            <canvas id="lineChart"></canvas>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center me-3" style="width:36px; height:36px; border-radius: 6px;"><i class="bi bi-telephone text-success"></i></div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Contact Endpoint</small>
-                                <span class="fw-bold text-dark small font-monospace">@(Model?.Phone ?? "Not Mapped")</span>
-                            </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Loss breakdown donut -->
+        <div class="col-xl-5">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-pie-chart text-danger me-2"></i>Loss Category Breakdown</span>
+                </div>
+                <div class="db-card-body d-flex align-items-center justify-content-center gap-4 flex-wrap">
+                    @if (loss.TotalLossEvents == 0)
+                    {
+                        <div class="text-center text-muted small">
+                            <i class="bi bi-check-circle-fill text-success display-6 d-block mb-2"></i>
+                            No loss events recorded — great work!
                         </div>
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center me-3" style="width:36px; height:36px; border-radius: 6px;"><i class="bi bi-truck text-info"></i></div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Fleet Configuration Capacity</small>
-                                <span class="fw-bold text-dark small font-monospace">@totalVehicles Mapped &middot; @activeVehicles Active</span>
-                            </div>
+                    }
+                    else
+                    {
+                        <div style="width:160px; height:160px; position:relative">
+                            <canvas id="pieChart"></canvas>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-2 bg-light border d-flex align-items-center justify-content-center me-3" style="width:36px; height:36px; border-radius: 6px;"><i class="bi bi-calendar-check text-warning"></i></div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Onboarding Date</small>
-                                <span class="fw-bold text-dark small">@Model?.RegisteredOn.ToString("MMMM dd, yyyy")</span>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#ef4444;display:inline-block"></span>
+                                <span class="small">Severe <strong>(@loss.SevereCount)</strong></span>
                             </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+                                <span class="small">Moderate <strong>(@loss.ModerateCount)</strong></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:50%;background:#3b82f6;display:inline-block"></span>
+                                <span class="small">Minor <strong>(@loss.MinorCount)</strong></span>
+                            </div>
+                            <hr class="my-1">
+                            <div class="small text-muted">Avg loss: <strong>@loss.AvgLossPct.ToString("N2")%</strong></div>
+                            <div class="small text-muted">Worst: <strong>@loss.MaxSingleLoss.ToString("N1") L</strong></div>
                         </div>
-                    </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── LOWER GRID MODULE: RECENT TRANSFERS DATA STREAM ── -->
-    <div class="card premium-stat-card stat-blue p-0">
-        <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <span class="panel-header-text"><i class="bi bi-clock-history text-primary me-2"></i>Staged Recent Transfer Sequences</span>
-            <a asp-action="MyTransfers" class="btn btn-light border btn-sm px-3" style="border-radius: 6px; font-size: 0.82rem;">Open Full Ledger</a>
+    <!-- ══════════════════════════════════════════════════════
+         ROW 4 — VEHICLES + RECENT TRANSFERS TABLE
+    ══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+        <!-- Vehicles -->
+        <div class="col-xl-4">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-truck text-primary me-2"></i>My Vehicles (@totalVehicles)</span>
+                    <a asp-action="VehicleStatus" class="btn btn-light border btn-sm" style="font-size:.8rem">Manage</a>
+                </div>
+                <div class="db-card-body d-flex flex-column gap-2">
+                    @if (!vehicles.Any())
+                    {
+                        <div class="text-center text-muted small py-3 opacity-50">No vehicles registered.</div>
+                    }
+                    else
+                    {
+                        @foreach (var v in vehicles)
+                        {
+                            <div class="vehicle-chip">
+                                <div>
+                                    <div class="vnum"><i class="bi bi-truck me-1 text-primary"></i>@v.VehicleNumber</div>
+                                    <div class="vcap">Capacity: @v.Capacity L &nbsp;·&nbsp; Since @v.RegisteredOn.ToString("MMM yyyy")</div>
+                                </div>
+                                <span class="badge-@BadgeClass(v.Status)">@v.Status</span>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
         </div>
-        <div class="card-body p-0">
-            @if (recentTransfers == null || !recentTransfers.Any())
-            {
-                <div class="text-center py-5 text-muted small">
-                    <i class="bi bi-bezier2 display-6 d-block mb-2 text-secondary opacity-50"></i>
-                    No active transport logs mapped to this node timeline profile yet.
+
+        <!-- Recent 7 transfers table -->
+        <div class="col-xl-8">
+            <div class="db-card h-100">
+                <div class="db-card-header">
+                    <span><i class="bi bi-clock-history text-primary me-2"></i>Recent Transfers</span>
+                    <a asp-action="MyTransfers" class="btn btn-light border btn-sm" style="font-size:.8rem">All Trips →</a>
                 </div>
-            }
-            else
-            {
-                <div class="table-responsive" style="overflow-x: hidden;">
-                    <table class="table table-clean align-middle mb-0">
-                        <thead class="bg-light text-muted small text-uppercase">
-                            <tr>
-                                <th class="ps-4">Trip Code Token</th>
-                                <th>Supply Chain Facility Route</th>
-                                <th>Dispatched Fluid Vol</th>
-                                <th class="text-center pe-4" style="width: 140px;">Arrived State</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var t in recentTransfers)
-                            {
+                <div class="table-responsive">
+                    @if (!transfers.Any())
+                    {
+                        <div class="text-center py-5 text-muted small opacity-50">No transfers logged yet.</div>
+                    }
+                    else
+                    {
+                        <table class="table tbl mb-0">
+                            <thead>
                                 <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark mb-0.5">#@t.TransferId</div>
-                                        <div class="text-muted small font-monospace" style="font-size: 11px;"><i class="bi bi-calendar3 me-1.5"></i>@t.DispatchDate.ToString("dd MMM yyyy")</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-dark mb-0.5" style="font-size: 0.88rem;">@t.CenterName</div>
-                                        <div class="text-muted small" style="font-size: 11px;"><i class="bi bi-arrow-right-short me-1"></i>Delivered via transit pipeline to @t.PlantName</div>
-                                    </td>
-                                    <td>
-                                        <span class="fw-bold text-dark font-monospace">@t.DispatchQty.ToString("N0")</span> <span class="text-muted small">L</span>
-                                    </td>
-                                    <td class="text-center pe-4">
-                                        <span class="pill-counter-badge @GetStatusBadgeClass(t.TransferStatus)">
-                                            @(t.TransferStatus == "Received" ? "Completed" : "In Transit")
-                                        </span>
-                                    </td>
+                                    <th class="ps-3">Transfer</th>
+                                    <th>Route</th>
+                                    <th>Dispatch</th>
+                                    <th>Received</th>
+                                    <th>Loss</th>
+                                    <th class="text-center pe-3">QC Fat</th>
+                                    <th class="text-center pe-3">Status</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in transfers.Take(7))
+                                {
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="fw-bold">#@t.TransferId</div>
+                                            <div style="font-size:.72rem; color:#9ca3af">@t.DispatchDate.ToString("dd MMM")</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold" style="font-size:.82rem">@t.CenterName</div>
+                                            <div style="font-size:.71rem; color:#9ca3af">→ @t.PlantName</div>
+                                        </td>
+                                        <td><span class="font-monospace fw-bold">@t.DispatchQty.ToString("N0")</span><span class="text-muted" style="font-size:.75rem"> L</span></td>
+                                        <td>
+                                            @if (t.ReceivedQty.HasValue)
+                                            {
+                                                <span class="font-monospace fw-bold">@t.ReceivedQty.Value.ToString("N0")</span>
+                                    
+                                                <span class="text-muted" style="font-size:.75rem"> L</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (t.LossQty.HasValue && t.LossQty > 0)
+                                            {
+                                                <span class="@(t.LossPercent > 5 ? "text-danger" : t.LossPercent > 2 ? "text-warning" : "text-success") fw-bold font-monospace">@t.LossPercent.ToString("N1")%</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-success">0%</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (t.TestedFat.HasValue)
+                                            {
+                                                <span class="font-monospace">@t.TestedFat.Value.ToString("N1")</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-muted" style="font-size:.75rem">—</span>
+                                            }
+                                        </td>
+                                        <td class="text-center pe-3">
+                                            <span class="badge-@BadgeClass(t.TransferStatus)">
+                                                @(t.TransferStatus == "Received" ? "Done" : "Transit")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
                 </div>
-            }
+            </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    @if (transfers != null && transfers.Any())
+    @if (transfers.Any())
     {
         <script>
-            document.addEventListener("DOMContentLoaded", function() {
-                const ctx = document.getElementById('transferChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
+            document.addEventListener("DOMContentLoaded", function () {
+
+                // ── Shared defaults ───────────────────────────────────────
+                Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+                Chart.defaults.font.size   = 11;
+                Chart.defaults.color       = "#6b7280";
+
+                // ── 1. Bar chart: dispatch vs received ───────────────────
+                new Chart(document.getElementById("barChart").getContext("2d"), {
+                    type: "bar",
                     data: {
-                        labels: [@Html.Raw(chartLabels)],
+                        labels: [@Html.Raw(cLabels)],
                         datasets: [
                             {
-                                label: 'Dispatched Fluid (L)',
-                                data: [@Html.Raw(chartDispatch)],
-                                backgroundColor: 'rgba(59,130,246,0.12)',
-                                borderColor: '#3b82f6',
+                                label: "Dispatched (L)",
+                                data: [@Html.Raw(cDispatch)],
+                                backgroundColor: "rgba(59,130,246,0.15)",
+                                borderColor: "#3b82f6",
                                 borderWidth: 1.5,
-                                borderRadius: 4,
-                                borderSkipped: false
+                                borderRadius: 4
                             },
                             {
-                                label: 'Unloaded Refinery (L)',
-                                data: [@Html.Raw(chartReceived)],
-                                backgroundColor: 'rgba(16,185,129,0.12)',
-                                borderColor: '#10b981',
+                                label: "Received (L)",
+                                data: [@Html.Raw(cReceived)],
+                                backgroundColor: "rgba(16,185,129,0.15)",
+                                borderColor: "#10b981",
                                 borderWidth: 1.5,
-                                borderRadius: 4,
-                                borderSkipped: false
+                                borderRadius: 4
+                            },
+                            {
+                                label: "Loss (L)",
+                                data: [@Html.Raw(cLoss)],
+                                backgroundColor: "rgba(239,68,68,0.15)",
+                                borderColor: "#ef4444",
+                                borderWidth: 1.5,
+                                borderRadius: 4
                             }
                         ]
                     },
@@ -414,23 +696,102 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: { usePointStyle: true, boxWidth: 6, font: { family: '-apple-system, sans-serif', size: 11 } }
-                            },
-                            tooltip: { mode: 'index', intersect: false }
+                            legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6 } },
+                            tooltip: { mode: "index", intersect: false }
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: { color: 'rgba(0,0,0,0.03)' },
-                                ticks: { font: { size: 10 }, callback: v => v + ' L' }
+                                grid: { color: "rgba(0,0,0,0.04)" },
+                                ticks: { callback: v => v + " L" }
                             },
-                            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                            x: { grid: { display: false } }
                         }
                     }
                 });
+
+                // ── 2. Line chart: monthly trips ─────────────────────────
+                @if (monthly.Any())
+                {
+                    <text>
+                    new Chart(document.getElementById("lineChart").getContext("2d"), {
+                        type: "line",
+                        data: {
+                            labels: [@Html.Raw(mLabels)],
+                            datasets: [{
+                                label: "Trips",
+                                data: [@Html.Raw(mCounts)],
+                                borderColor: "#10b981",
+                                backgroundColor: "rgba(16,185,129,0.08)",
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: "#10b981",
+                                pointRadius: 4,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 },
+                                    grid: { color: "rgba(0,0,0,0.04)" }
+                                },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                    </text>
+                }
+
+                // ── 3. Doughnut: loss breakdown ──────────────────────────
+                @if (loss.TotalLossEvents > 0)
+                {
+                    <text>
+                    new Chart(document.getElementById("pieChart").getContext("2d"), {
+                        type: "doughnut",
+                        data: {
+                            labels: ["Severe", "Moderate", "Minor"],
+                            datasets: [{
+                                data: [@loss.SevereCount, @loss.ModerateCount, @loss.MinorCount],
+                                backgroundColor: ["#ef4444", "#f59e0b", "#3b82f6"],
+                                borderWidth: 0,
+                                hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: "68%",
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => " " + ctx.label + ": " + ctx.parsed + " events"
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    </text>
+                }
             });
         </script>
     }
+
+    <script>
+        function markRead(id) {
+            fetch('/Logistics/MarkNotificationRead', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' },
+                body: JSON.stringify({ notificationId: id })
+            }).then(() => {
+                const el = document.getElementById('notif-' + id);
+                if (el) el.style.opacity = '0.45';
+            });
+        }
+    </script>
 }
