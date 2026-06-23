@@ -191,8 +191,7 @@
                                 <thead>
                                     <tr>
                                         <th class="ps-4" style="width: 70px;">#</th>
-                                        <th>State ID</th>
-                                        <th>State Jurisdiction Name</th>
+                                        <th>State</th>
                                         <th>Child Cities</th>
                                     </tr>
                                 </thead>
@@ -209,9 +208,8 @@
                                             int cityCount = cities.Count(c => c.StateId == state.StateId);
                                             <tr>
                                                 <td class="ps-4 text-muted small">@sr</td>
-                                                <td><span class="badge bg-light text-dark border">#@state.StateId</span></td>
                                                 <td class="fw-bold text-dark"><i class="bi bi-geo-alt text-muted me-2"></i>@state.StateName</td>
-                                                <td><span class="metric-badge px-2 py-1 pill-blue small">@cityCount cities linked</span></td>
+                                                <td><span class="metric-badge px-2 py-1 pill-blue small">@cityCount cities</span></td>
                                             </tr>
                                             sr++;
                                         }
@@ -268,10 +266,9 @@
                                 <thead>
                                     <tr>
                                         <th class="ps-4" style="width: 70px;">#</th>
-                                        <th>City ID</th>
                                         <th>City Name</th>
-                                        <th>Parent State</th>
-                                        <th>Linked Villages</th>
+                                        <th>State</th>
+                                        <th>Villages</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -287,7 +284,6 @@
                                             int villageCount = villages.Count(v => v.CityId == city.CityId);
                                             <tr>
                                                 <td class="ps-4 text-muted small">@sr</td>
-                                                <td><span class="badge bg-light text-dark border">#@city.CityId</span></td>
                                                 <td class="fw-bold text-dark"><i class="bi bi-building text-muted me-2"></i>@city.CityName</td>
                                                 <td><span class="metric-badge px-2 py-1 pill-blue small">@city.StateName</span></td>
                                                 <td><span class="metric-badge px-2 py-1 pill-green small">@villageCount villages</span></td>
@@ -353,10 +349,9 @@
                                 <thead>
                                     <tr>
                                         <th class="ps-4" style="width: 70px;">#</th>
-                                        <th>Village ID</th>
                                         <th>Village Name</th>
-                                        <th>City Cluster</th>
-                                        <th>State Jurisdiction</th>
+                                        <th>City</th>
+                                        <th>State</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -371,7 +366,6 @@
                                         {
                                             <tr>
                                                 <td class="ps-4 text-muted small">@sr</td>
-                                                <td><span class="badge bg-light text-dark border">#@village.VillageId</span></td>
                                                 <td class="fw-bold text-dark"><i class="bi bi-map text-muted me-2"></i>@village.VillageName</td>
                                                 <td><span class="metric-badge px-2 py-1 pill-green small">@village.CityName</span></td>
                                                 <td><span class="metric-badge px-2 py-1 pill-blue small">@village.StateName</span></td>
