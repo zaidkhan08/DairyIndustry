@@ -12,367 +12,477 @@
         --blue-dark: #1d4ed8;
         --blue-mid: #2563eb;
         --blue-light: #eff6ff;
-        --blue-border: #93c5fd;
-        --radius-card: 16px;
-        --radius-input: 10px;
+        --blue-border: #bfdbfe;
+        --radius-card: 14px;
+        --radius-input: 8px;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --gray-900: #111827;
     }
 
-    body {
-        background: #f4f6f8;
+    body { background: #f4f6f8; }
+
+    /* ── Page header ── */
+    .ef-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
     }
 
-    /* ── Section cards ── */
+    .ef-page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ef-page-title i {
+        color: var(--blue-mid);
+        font-size: 20px;
+    }
+
+    .ef-page-subtitle {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin: 0;
+    }
+
+    .btn-ef-back {
+        height: 36px;
+        padding: 0 16px;
+        border-radius: var(--radius-input);
+        border: 1px solid var(--gray-200);
+        background: #fff;
+        color: var(--gray-500);
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: background .15s, color .15s;
+        white-space: nowrap;
+    }
+
+    .btn-ef-back:hover {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    /* ── Two-column layout ── */
+    .ef-layout {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    /* ── Cards ── */
     .ef-card {
         background: #fff;
-        border: 0.5px solid #e2e8f0;
+        border: 1px solid var(--gray-200);
         border-radius: var(--radius-card);
         margin-bottom: 16px;
         overflow: hidden;
     }
 
+    .ef-card:last-child { margin-bottom: 0; }
+
     .ef-card-header {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 14px 20px;
-        border-bottom: 0.5px solid #f1f5f9;
-        font-size: 14px;
-        font-weight: 600;
-        color: #1e293b;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--gray-100);
     }
 
-    .ef-section-icon {
-        width: 32px;
-        height: 32px;
+    .ef-card-header-icon {
+        width: 30px;
+        height: 30px;
         border-radius: 8px;
         background: var(--blue-light);
         color: var(--blue-mid);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
+        font-size: 14px;
         flex-shrink: 0;
     }
 
-    .ef-card-body {
-        padding: 20px;
-    }
-
-    /* ── Inputs ── */
-    .form-control,
-    .form-select {
-        height: 44px;
-        border-radius: var(--radius-input);
-        border: 0.5px solid #cbd5e1;
-        font-size: 13.5px;
-        color: #1e293b;
-        background: #fff;
-        transition: border-color .2s;
-    }
-
-        .form-control:focus,
-        .form-select:focus {
-            box-shadow: none;
-            border-color: var(--blue-mid);
-        }
-
-    .form-label {
-        font-size: 12px;
+    .ef-card-header-text {
+        font-size: 14px;
         font-weight: 600;
-        color: #64748b;
+        color: var(--gray-900);
+    }
+
+    .ef-card-header-sub {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-left: 4px;
+        font-weight: 400;
+    }
+
+    .ef-card-body { padding: 20px; }
+
+    /* ── Form fields ── */
+    .form-label {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--gray-500);
         margin-bottom: 5px;
         text-transform: uppercase;
-        letter-spacing: .4px;
+        letter-spacing: .5px;
+        display: block;
+    }
+
+    .form-label .req {
+        color: #ef4444;
+        margin-left: 2px;
+    }
+
+    .form-control,
+    .form-select {
+        height: 40px;
+        border-radius: var(--radius-input);
+        border: 1px solid var(--gray-200);
+        font-size: 13.5px;
+        color: var(--gray-900);
+        background: #fff;
+        transition: border-color .2s, box-shadow .2s;
+        width: 100%;
+        padding: 0 12px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: var(--blue-mid);
+        box-shadow: 0 0 0 3px rgba(37,99,235,.08);
     }
 
     .readonly-field {
-        background: #f8fafc !important;
-        color: #94a3b8 !important;
+        background: var(--gray-50) !important;
+        color: var(--gray-400) !important;
         cursor: not-allowed;
     }
 
-    /* ── Avatar upload ── */
-    .avatar-wrap {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding-bottom: 20px;
-        border-bottom: 0.5px solid #f1f5f9;
-        margin-bottom: 20px;
+    .field-hint {
+        font-size: 11.5px;
+        color: var(--gray-400);
+        margin-top: 4px;
     }
 
-    .avatar-circle {
-        width: 76px;
-        height: 76px;
+    /* ── Sidebar cards ── */
+    .ef-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Profile photo card */
+    .ef-photo-preview {
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
         object-fit: cover;
         border: 3px solid var(--blue-border);
         background: var(--blue-light);
-        flex-shrink: 0;
+        display: block;
+        margin: 0 auto 16px;
     }
 
-    .upload-zone {
+    .ef-file-row {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-input);
+        overflow: hidden;
+        height: 38px;
+        background: #fff;
+    }
+
+    .ef-file-label {
+        height: 100%;
+        padding: 0 14px;
+        background: var(--gray-100);
+        border-right: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--gray-700);
+        cursor: pointer;
+        white-space: nowrap;
+        margin: 0;
+    }
+
+    .ef-file-name {
+        padding: 0 12px;
+        font-size: 12.5px;
+        color: var(--gray-400);
         flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-        .upload-zone .form-control {
-            font-size: 13px;
-        }
+    /* Note card */
+    .ef-note-card {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: var(--radius-card);
+        padding: 16px;
+    }
+
+    .ef-note-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 10px;
+    }
+
+    .ef-note-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        font-size: 12.5px;
+        color: #78350f;
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    .ef-note-item:last-child { margin-bottom: 0; }
+
+    .ef-note-item i { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
 
     /* ── Doc cards ── */
     .doc-card {
-        background: #f8fafc;
-        border: 0.5px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 16px;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        padding: 14px;
     }
 
     .doc-card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
-        .doc-card-header span {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-    /* ── Doc status line (mirrors the read-only farmer details view) ── */
-    .doc-status-line {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 14px;
-        margin-bottom: 14px;
-        border-bottom: 0.5px solid #e2e8f0;
+    .doc-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-700);
     }
 
-    .doc-status-text {
-        font-size: 12.5px;
+    .doc-status {
+        font-size: 12px;
         color: #16a34a;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--gray-200);
     }
 
-        .doc-status-text.is-empty {
-            color: #94a3b8;
-        }
+    .doc-status.empty { color: var(--gray-400); }
 
     /* ── Action bar ── */
     .ef-action-bar {
-        position: sticky;
-        bottom: 0;
         background: #fff;
-        border-top: 0.5px solid #e2e8f0;
-        padding: 14px 20px;
+        border-top: 1px solid var(--gray-200);
+        padding: 14px 0;
         display: flex;
         justify-content: flex-end;
         gap: 10px;
-        z-index: 100;
+        margin-top: 16px;
     }
 
-    .btn-ef-cancel {
-        height: 44px;
-        padding: 0 22px;
+    .btn-cancel {
+        height: 40px;
+        padding: 0 20px;
         border-radius: var(--radius-input);
-        border: 0.5px solid #cbd5e1;
+        border: 1px solid var(--gray-200);
         background: #fff;
-        color: #64748b !important;
+        color: var(--gray-500) !important;
         font-size: 13.5px;
         font-weight: 500;
         text-decoration: none !important;
         display: inline-flex;
         align-items: center;
-        cursor: pointer;
+        gap: 6px;
         transition: background .15s;
+        cursor: pointer;
     }
 
-        .btn-ef-cancel:hover {
-            background: #f8fafc;
-            color: #475569 !important;
-        }
+    .btn-cancel:hover { background: var(--gray-50); }
 
-    .btn-ef-save {
-        height: 44px;
-        padding: 0 24px;
+    .btn-save {
+        height: 40px;
+        padding: 0 22px;
         border-radius: var(--radius-input);
         border: none;
         background: var(--blue-dark);
-        color: var(--blue-light);
+        color: #fff;
         font-size: 13.5px;
         font-weight: 600;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 7px;
+        cursor: pointer;
         transition: opacity .15s;
     }
 
-        .btn-ef-save:hover {
-            opacity: .88;
-            color: var(--blue-light);
-        }
-
-    /* ── Top header card ── */
-    .ef-top-card {
-        background: #fff;
-        border: 0.5px solid #e2e8f0;
-        border-radius: var(--radius-card);
-        padding: 16px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-        .ef-top-card h4 {
-            font-size: 17px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-    .ef-farmer-code {
-        display: inline-block;
-        font-size: 12px;
-        color: #64748b;
-        background: #f1f5f9;
-        border: 0.5px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 3px 10px;
-    }
-
-    .btn-ef-back {
-        height: 38px;
-        padding: 0 16px;
-        border-radius: var(--radius-input);
-        border: 0.5px solid #cbd5e1;
-        background: #fff;
-        color: #64748b;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        text-decoration: none;
-        transition: background .15s;
-    }
-
-        .btn-ef-back:hover {
-            background: #f8fafc;
-            color: #475569;
-        }
+    .btn-save:hover { opacity: .88; }
 
     /* ── Toast ── */
-    .ef-toast {
+    .me-toast-container {
         position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--blue-dark);
-        color: var(--blue-light);
-        border-radius: 14px;
-        padding: 14px 18px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        top: 1.25rem;
+        right: 1.25rem;
         z-index: 9999;
-        min-width: 260px;
-        max-width: 340px;
-        opacity: 0;
-        transform: translateY(-12px);
-        transition: opacity .3s, transform .3s;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         pointer-events: none;
     }
 
-        .ef-toast.show {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-    .ef-toast-icon {
-        width: 32px;
-        height: 32px;
-        background: rgba(255,255,255,.15);
-        border-radius: 50%;
+    .me-toast {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        flex-shrink: 0;
+        gap: 10px;
+        padding: 13px 18px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 500;
+        min-width: 280px;
+        max-width: 360px;
+        box-shadow: 0 4px 20px rgba(0,0,0,.13);
+        pointer-events: all;
+        animation: toastIn .25s ease forwards;
+        position: relative;
+        overflow: hidden;
     }
 
-    .ef-toast-title {
-        font-size: 13px;
-        font-weight: 600;
+        .me-toast::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            animation: toastBar var(--toast-dur, 4s) linear forwards;
+            border-radius: 0 0 10px 10px;
+        }
+
+    .me-toast-info {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
     }
 
-    .ef-toast-sub {
-        font-size: 11.5px;
-        opacity: .75;
-        margin-top: 2px;
+        .me-toast-info::after {
+            background: #2563eb;
+        }
+
+    .me-toast-danger {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 
-    .ef-toast-close {
+        .me-toast-danger::after {
+            background: #dc2626;
+        }
+
+    .me-toast-close {
         margin-left: auto;
         background: none;
         border: none;
-        color: var(--blue-light);
-        opacity: .7;
         cursor: pointer;
-        font-size: 14px;
-        padding: 0;
+        font-size: 16px;
         line-height: 1;
+        color: inherit;
+        opacity: .55;
+        padding: 0;
+        flex-shrink: 0;
     }
 
-    @@media (max-width: 768px) {
-        .avatar-circle {
-            width: 60px;
-            height: 60px;
+        .me-toast-close:hover {
+            opacity: 1;
         }
 
-        .ef-action-bar {
-            flex-direction: column;
+    @@keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
         }
 
-        .btn-ef-cancel, .btn-ef-save {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes toastOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+    }
+
+    @@keyframes toastBar {
+        from {
             width: 100%;
-            justify-content: center;
         }
+
+        to {
+            width: 0%;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .ef-layout { grid-template-columns: 1fr; }
+        .ef-sidebar { flex-direction: row; flex-wrap: wrap; }
+        .ef-sidebar > * { flex: 1 1 280px; }
+    }
+
+    @@media (max-width: 600px) {
+        .ef-action-bar { flex-direction: column; }
+        .btn-cancel, .btn-save { width: 100%; justify-content: center; }
     }
 </style>
 
-<!-- ── TOAST ── -->
-<div class="ef-toast" id="efToast">
-    <div class="ef-toast-icon">
-        <i class="bi bi-check-lg"></i>
-    </div>
-    <div>
-        <div class="ef-toast-title">Farmer updated successfully</div>
-        <div class="ef-toast-sub" id="efToastSub">Changes saved for @Model.FarmerName</div>
-    </div>
-    <button class="ef-toast-close" onclick="hideToast()" aria-label="Dismiss">
-        <i class="bi bi-x-lg"></i>
-    </button>
-</div>
+<!-- TOAST -->
+<!-- TOAST -->
+<div class="me-toast-container" id="toastContainer"></div>
 
 <div class="container-fluid py-4 px-4">
 
-    <!-- TOP HEADER -->
-    <div class="ef-top-card">
+    <!-- PAGE HEADER -->
+    <div class="ef-page-header">
         <div>
-            <h4>
-                <i class="bi bi-pencil-square text-primary"></i>
+            <h1 class="ef-page-title">
+                <i class="bi bi-pencil-square"></i>
                 Edit Farmer
-            </h4>
-            <span class="ef-farmer-code">@Model.FarmerCode</span>
+            </h1>
+            <p class="ef-page-subtitle">Updating — @Model.FarmerName &nbsp;·&nbsp; <span style="font-family:monospace">@Model.FarmerCode</span></p>
         </div>
-        <a asp-action="CenterFarmerDetails"
-           asp-route-id="@Model.FarmerId"
-           class="btn-ef-back">
-            <i class="bi bi-arrow-left"></i> Back
+        <a asp-action="CenterFarmerDetails" asp-route-id="@Model.FarmerId" class="btn-ef-back">
+            <i class="bi bi-arrow-left"></i> Back to Details
         </a>
     </div>
 
@@ -381,262 +491,252 @@
         <input type="hidden" asp-for="FarmerId" />
         <input type="hidden" asp-for="ProfilePhoto" />
 
-        <!-- ══════════════ PERSONAL ══════════════ -->
-        <div class="ef-card">
-            <div class="ef-card-header">
-                <div class="ef-section-icon"><i class="bi bi-person-fill"></i></div>
-                Personal Information
-            </div>
-            <div class="ef-card-body">
+        <div class="ef-layout">
 
-                <div class="avatar-wrap">
-                    <img id="photoPreview"
-                         src="@(string.IsNullOrEmpty(Model.ProfilePhoto) ? "/images/user.png" : Model.ProfilePhoto)"
-                         class="avatar-circle" alt="Profile photo" />
-                    <div class="upload-zone">
-                        <label class="form-label">Profile Photo</label>
-                        <div style="display:flex;align-items:center;border:0.5px solid #cbd5e1;border-radius:10px;overflow:hidden;height:44px;background:#fff">
-                            <label for="photoFileInput" style="height:100%;padding:0 16px;background:#f1f5f9;border-right:0.5px solid #cbd5e1;display:flex;align-items:center;font-size:13px;font-weight:500;color:#374151;cursor:pointer;white-space:nowrap;margin:0">
-                                Choose File
-                            </label>
-                            <span id="photoFileName" style="padding:0 14px;font-size:13px;color:#94a3b8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                No file chosen
-                            </span>
-                        </div>
-                        <input type="file" id="photoFileInput" name="PhotoFile" accept="image/*" style="display:none" onchange="previewPhoto(this)" />
-                        <div class="mt-1" style="font-size:11.5px;color:#94a3b8">JPG, PNG or GIF · max 2 MB</div>
-                    </div>
-                </div>
+            <!-- ════ LEFT COLUMN ════ -->
+            <div class="ef-main">
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Farmer Name</label>
-                        <input asp-for="FarmerName" class="form-control" />
+                <!-- PERSONAL INFORMATION -->
+                <div class="ef-card">
+                    <div class="ef-card-header">
+                        <div class="ef-card-header-icon"><i class="bi bi-person-fill"></i></div>
+                        <span class="ef-card-header-text">Personal Information</span>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Phone</label>
-                        <input asp-for="Phone" class="form-control" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input asp-for="Email" class="form-control readonly-field" readonly />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Date of Birth</label>
-                        <input asp-for="DateOfBirth" type="date" class="form-control" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Gender</label>
-                        <select asp-for="Gender" class="form-select">
-                            <option value="">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Aadhaar Number</label>
-                        <input value="@Model.AadhaarNumber"
-                               class="form-control readonly-field"
-                               readonly />
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- ══════════════ LOCATION ══════════════ -->
-        <div class="ef-card">
-            <div class="ef-card-header">
-                <div class="ef-section-icon"><i class="bi bi-geo-alt-fill"></i></div>
-                Location
-            </div>
-            <div class="ef-card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">State</label>
-                        <select asp-for="StateId"
-                                id="stateSelect"
-                                class="form-select"
-                                onchange="loadCities(this.value)">
-                            <option value="">Select State</option>
-                            @foreach (var s in Model.States)
-                            {
-                                <option value="@s.StateId"
-                                        selected="@(Model.StateId == s.StateId)">
-                                    @s.StateName
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">City</label>
-                        <select asp-for="CityId"
-                                id="citySelect"
-                                class="form-select"
-                                onchange="loadVillages(this.value)">
-                            <option value="">Select City</option>
-                            @foreach (var c in Model.Cities)
-                            {
-                                <option value="@c.CityId"
-                                        selected="@(Model.CityId == c.CityId)">
-                                    @c.CityName
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Village</label>
-                        <select asp-for="VillageId"
-                                id="villageSelect"
-                                class="form-select">
-                            <option value="">Select Village</option>
-                            @foreach (var v in Model.Villages)
-                            {
-                                <option value="@v.VillageId"
-                                        selected="@(Model.VillageId == v.VillageId)">
-                                    @v.VillageName
-                                </option>
-                            }
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════ BANK ══════════════ -->
-        <div class="ef-card">
-            <div class="ef-card-header">
-                <div class="ef-section-icon"><i class="bi bi-bank2"></i></div>
-                Bank Details
-            </div>
-            <div class="ef-card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Bank Name</label>
-                        <input asp-for="BankName" class="form-control" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Account Number</label>
-                        <input asp-for="AccountNumber" class="form-control" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">IFSC Code</label>
-                        <input asp-for="IFSCCode" class="form-control text-uppercase" />
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════════════ DOCUMENTS ══════════════ -->
-        <div class="ef-card">
-            <div class="ef-card-header">
-                <div class="ef-section-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
-                Documents
-            </div>
-            <div class="ef-card-body">
-                <div class="row g-3">
-
-                    <!-- AADHAAR -->
-                    <div class="col-md-6">
-                        <div class="doc-card">
-                            <div class="doc-card-header">
-                                <span><i class="bi bi-card-heading me-1 text-primary"></i> Aadhaar Card</span>
-                                @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
-                                {
-                                    <a href="@Model.AadhaarCardPath"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-primary"
-                                       style="font-size:12px;padding:3px 10px;border-radius:7px">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                }
+                    <div class="ef-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Farmer Name <span class="req">*</span></label>
+                                <input asp-for="FarmerName" class="form-control" placeholder="Full name" />
                             </div>
-
-                            <div class="doc-status-line">
-                                @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
-                                {
-                                    <span class="doc-status-text">Document uploaded</span>
-                                }
-                                else
-                                {
-                                    <span class="doc-status-text is-empty">No document uploaded</span>
-                                }
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input asp-for="Phone" class="form-control" placeholder="10-digit mobile" />
                             </div>
-
-                            <label class="form-label">Replace document</label>
-                            <input type="file"
-                                   name="AadhaarFile"
-                                   class="form-control"
-                                   style="height:38px;font-size:13px"
-                                   accept="image/*,.pdf" />
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input asp-for="Email" class="form-control readonly-field" readonly />
+                                <div class="field-hint">Cannot be changed here</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Birth</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Aadhaar Number</label>
+                                <input value="@Model.AadhaarNumber" class="form-control readonly-field" readonly />
+                                <div class="field-hint">Cannot be changed here</div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- PASSBOOK -->
-                    <div class="col-md-6">
-                        <div class="doc-card">
-                            <div class="doc-card-header">
-                                <span><i class="bi bi-book me-1 text-primary"></i> Passbook</span>
-                                @if (!string.IsNullOrEmpty(Model.PassbookPath))
-                                {
-                                    <a href="@Model.PassbookPath"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-primary"
-                                       style="font-size:12px;padding:3px 10px;border-radius:7px">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                }
+                <!-- LOCATION -->
+                <div class="ef-card">
+                    <div class="ef-card-header">
+                        <div class="ef-card-header-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                        <span class="ef-card-header-text">Location</span>
+                    </div>
+                    <div class="ef-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">State</label>
+                                <select asp-for="StateId" id="stateSelect" class="form-select"
+                                        onchange="loadCities(this.value)">
+                                    <option value="">Select State</option>
+                                    @foreach (var s in Model.States)
+                                    {
+                                        <option value="@s.StateId" selected="@(Model.StateId == s.StateId)">@s.StateName</option>
+                                    }
+                                </select>
                             </div>
-
-                            <div class="doc-status-line">
-                                @if (!string.IsNullOrEmpty(Model.PassbookPath))
-                                {
-                                    <span class="doc-status-text">Document uploaded</span>
-                                }
-                                else
-                                {
-                                    <span class="doc-status-text is-empty">No document uploaded</span>
-                                }
+                            <div class="col-md-4">
+                                <label class="form-label">City</label>
+                                <select asp-for="CityId" id="citySelect" class="form-select"
+                                        onchange="loadVillages(this.value)">
+                                    <option value="">Select City</option>
+                                    @foreach (var c in Model.Cities)
+                                    {
+                                        <option value="@c.CityId" selected="@(Model.CityId == c.CityId)">@c.CityName</option>
+                                    }
+                                </select>
                             </div>
-
-                            <label class="form-label">Replace document</label>
-                            <input type="file"
-                                   name="PassbookFile"
-                                   class="form-control"
-                                   style="height:38px;font-size:13px"
-                                   accept="image/*,.pdf" />
+                            <div class="col-md-4">
+                                <label class="form-label">Village</label>
+                                <select asp-for="VillageId" id="villageSelect" class="form-select">
+                                    <option value="">Select Village</option>
+                                    @foreach (var v in Model.Villages)
+                                    {
+                                        <option value="@v.VillageId" selected="@(Model.VillageId == v.VillageId)">@v.VillageName</option>
+                                    }
+                                </select>
+                            </div>
                         </div>
                     </div>
-
                 </div>
-            </div>
-        </div>
 
-        <!-- ══════════════ ACTION BAR ══════════════ -->
-        <div class="ef-action-bar">
-            <a asp-action="CenterFarmerDetails"
-               asp-route-id="@Model.FarmerId"
-               class="btn-ef-cancel">
-                Cancel
-            </a>
-            <button type="submit" class="btn-ef-save">
-                Update Farmer
-            </button>
+                <!-- BANK DETAILS -->
+                <div class="ef-card">
+                    <div class="ef-card-header">
+                        <div class="ef-card-header-icon"><i class="bi bi-bank2"></i></div>
+                        <span class="ef-card-header-text">Bank Details</span>
+                    </div>
+                    <div class="ef-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Bank Name</label>
+                                <input asp-for="BankName" class="form-control" placeholder="e.g. SBI" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Account Number</label>
+                                <input asp-for="AccountNumber" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">IFSC Code</label>
+                                <input asp-for="IFSCCode" class="form-control" style="text-transform:uppercase" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOCUMENTS -->
+                <div class="ef-card">
+                    <div class="ef-card-header">
+                        <div class="ef-card-header-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                        <span class="ef-card-header-text">Documents</span>
+                    </div>
+                    <div class="ef-card-body">
+                        <div class="row g-3">
+
+                            <!-- Aadhaar -->
+                            <div class="col-md-6">
+                                <div class="doc-card">
+                                    <div class="doc-card-header">
+                                        <span class="doc-card-title"><i class="bi bi-card-heading me-1 text-primary"></i> Aadhaar Card</span>
+                                        @if (!string.IsNullOrEmpty(Model.AadhaarCardPath))
+                                        {
+                                            <a href="@Model.AadhaarCardPath" target="_blank"
+                                               class="btn btn-sm btn-outline-primary"
+                                               style="font-size:12px;padding:2px 10px;border-radius:6px">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        }
+                                    </div>
+                                    <div class="doc-status @(string.IsNullOrEmpty(Model.AadhaarCardPath) ? "empty" : "")">
+                                        <i class="bi @(string.IsNullOrEmpty(Model.AadhaarCardPath) ? "bi-dash-circle" : "bi-check-circle-fill")"></i>
+                                        @(string.IsNullOrEmpty(Model.AadhaarCardPath) ? "No document uploaded" : "Document uploaded")
+                                    </div>
+                                    <label class="form-label">Replace document</label>
+                                    <input type="file" name="AadhaarFile" class="form-control"
+                                           style="height:36px;font-size:13px" accept="image/*,.pdf" />
+                                </div>
+                            </div>
+
+                            <!-- Passbook -->
+                            <div class="col-md-6">
+                                <div class="doc-card">
+                                    <div class="doc-card-header">
+                                        <span class="doc-card-title"><i class="bi bi-book me-1 text-primary"></i> Passbook</span>
+                                        @if (!string.IsNullOrEmpty(Model.PassbookPath))
+                                        {
+                                            <a href="@Model.PassbookPath" target="_blank"
+                                               class="btn btn-sm btn-outline-primary"
+                                               style="font-size:12px;padding:2px 10px;border-radius:6px">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        }
+                                    </div>
+                                    <div class="doc-status @(string.IsNullOrEmpty(Model.PassbookPath) ? "empty" : "")">
+                                        <i class="bi @(string.IsNullOrEmpty(Model.PassbookPath) ? "bi-dash-circle" : "bi-check-circle-fill")"></i>
+                                        @(string.IsNullOrEmpty(Model.PassbookPath) ? "No document uploaded" : "Document uploaded")
+                                    </div>
+                                    <label class="form-label">Replace document</label>
+                                    <input type="file" name="PassbookFile" class="form-control"
+                                           style="height:36px;font-size:13px" accept="image/*,.pdf" />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                
+
+            </div>
+            <!-- end left column -->
+
+            <!-- ════ RIGHT SIDEBAR ════ -->
+            <div class="ef-sidebar">
+
+                <!-- Profile Photo card -->
+                <div class="ef-card">
+                    <div class="ef-card-header">
+                        <div class="ef-card-header-icon"><i class="bi bi-camera-fill"></i></div>
+                        <span class="ef-card-header-text">Profile Photo</span>
+                    </div>
+                    <div class="ef-card-body">
+                        <img id="photoPreview"
+                             src="@(string.IsNullOrEmpty(Model.ProfilePhoto) ? "/images/user.png" : Model.ProfilePhoto)"
+                             class="ef-photo-preview" alt="Profile photo" />
+
+                        <div class="ef-file-row">
+                            <label for="photoFileInput" class="ef-file-label">Choose File</label>
+                            <span id="photoFileName" class="ef-file-name">No file chosen</span>
+                        </div>
+                        <input type="file" id="photoFileInput" name="PhotoFile" accept="image/*"
+                               style="display:none" onchange="previewPhoto(this)" />
+                        <div class="field-hint mt-2" style="text-align:center">Leave empty to keep existing photo</div>
+                    </div>
+                </div>
+
+                <!-- Note card -->
+                <div class="ef-note-card">
+                    <div class="ef-note-item">
+                        <i class="bi bi-lock-fill" style="color:#d97706"></i>
+                        Email and Aadhaar number are locked — contact Admin for changes.
+                    </div>
+                    <div class="ef-note-item">
+                        <i class="bi bi-file-earmark-check" style="color:#d97706"></i>
+                        Uploading a new document will replace the existing one.
+                    </div>
+                    <div class="ef-note-item">
+                        <i class="bi bi-telephone-fill" style="color:#d97706"></i>
+                        Always verify new phone/bank details with the farmer in person.
+                    </div>
+                </div>
+
+            </div>
+            <!-- end sidebar -->
+            <!-- ACTION BAR -->
+            <div class="ef-action-bar">
+                <a asp-action="CenterFarmerDetails" asp-route-id="@Model.FarmerId" class="btn-cancel">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-check-lg"></i> Update Farmer
+                </button>
+            </div>
+
         </div>
+        <!-- end ef-layout -->
 
     </form>
 </div>
-
 @section Scripts {
 
     @if (TempData["Success"] != null)
     {
         <script>
-            window.addEventListener('DOMContentLoaded', function () {
-                document.getElementById('efToastSub').textContent =
-                    '@Html.Raw(TempData["Success"])';
-                showToast();
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast('info', 'bi-check-circle-fill', '@Html.Raw(TempData["Success"])');
             });
         </script>
     }
@@ -644,31 +744,37 @@
     @if (TempData["Error"] != null)
     {
         <script>
-            window.addEventListener('DOMContentLoaded', function () {
-                var t = document.getElementById('efToast');
-                t.style.background = '#991b1b';
-                document.querySelector('.ef-toast-title').textContent = 'Update failed';
-                document.getElementById('efToastSub').textContent =
-                    '@Html.Raw(TempData["Error"])';
-                showToast();
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast('danger', 'bi-x-circle-fill', '@Html.Raw(TempData["Error"])');
             });
         </script>
     }
 
     <script>
-
-        // ── Toast helpers ──
-        function showToast() {
-            var t = document.getElementById('efToast');
-            t.classList.add('show');
-            setTimeout(hideToast, 4000);
+        function showToast(type, icon, message, duration) {
+            duration = duration || 4000;
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'me-toast me-toast-' + type;
+            toast.style.setProperty('--toast-dur', (duration / 1000) + 's');
+            toast.innerHTML =
+                '<i class="bi ' + icon + '" style="font-size:16px;flex-shrink:0;"></i>' +
+                '<span>' + message + '</span>' +
+                '<button class="me-toast-close" aria-label="Close">&#x2715;</button>';
+            toast.querySelector('.me-toast-close').addEventListener('click', function () {
+                dismissToast(toast);
+            });
+            container.appendChild(toast);
+            setTimeout(function () { dismissToast(toast); }, duration);
         }
 
-        function hideToast() {
-            document.getElementById('efToast').classList.remove('show');
+        function dismissToast(toast) {
+            toast.style.animation = 'toastOut .25s ease forwards';
+            setTimeout(function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 250);
         }
 
-        // ── Photo preview ──
         function previewPhoto(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -677,65 +783,49 @@
                 };
                 reader.readAsDataURL(input.files[0]);
                 document.getElementById('photoFileName').textContent = input.files[0].name;
-                document.getElementById('photoFileName').style.color = '#1e293b';
+                document.getElementById('photoFileName').style.color = '#111827';
             }
         }
 
-        // ── Load cities ──
         function loadCities(stateId, selectedCityId, callback) {
-            document.getElementById('citySelect').innerHTML =
-                '<option value="">Select City</option>';
-            document.getElementById('villageSelect').innerHTML =
-                '<option value="">Select Village</option>';
-
+            document.getElementById('citySelect').innerHTML = '<option value="">Select City</option>';
+            document.getElementById('villageSelect').innerHTML = '<option value="">Select Village</option>';
             if (!stateId) return;
-
             fetch('/Farmer/GetCities?stateId=' + stateId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var city = document.getElementById('citySelect');
                     data.forEach(function (x) {
                         var sel = x.cityId == selectedCityId ? 'selected' : '';
-                        city.innerHTML +=
-                            '<option value="' + x.cityId + '" ' + sel + '>' + x.cityName + '</option>';
+                        city.innerHTML += '<option value="' + x.cityId + '" ' + sel + '>' + x.cityName + '</option>';
                     });
                     if (callback) callback();
                 });
         }
 
-        // ── Load villages ──
         function loadVillages(cityId, selectedVillageId) {
-            document.getElementById('villageSelect').innerHTML =
-                '<option value="">Select Village</option>';
-
+            document.getElementById('villageSelect').innerHTML = '<option value="">Select Village</option>';
             if (!cityId) return;
-
             fetch('/Farmer/GetVillages?cityId=' + cityId)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var village = document.getElementById('villageSelect');
                     data.forEach(function (x) {
                         var sel = x.villageId == selectedVillageId ? 'selected' : '';
-                        village.innerHTML +=
-                            '<option value="' + x.villageId + '" ' + sel + '>' + x.villageName + '</option>';
+                        village.innerHTML += '<option value="' + x.villageId + '" ' + sel + '>' + x.villageName + '</option>';
                     });
                 });
         }
 
-        // ── Auto-load dropdowns on edit ──
         window.addEventListener('DOMContentLoaded', function () {
             var stateId   = document.getElementById('stateSelect').value;
             var cityId    = document.getElementById('citySelect').value;
             var villageId = document.getElementById('villageSelect').value;
-
             if (stateId) {
                 loadCities(stateId, cityId, function () {
-                    if (cityId) {
-                        loadVillages(cityId, villageId);
-                    }
+                    if (cityId) loadVillages(cityId, villageId);
                 });
             }
         });
-
     </script>
 }

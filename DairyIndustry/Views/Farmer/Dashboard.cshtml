@@ -2,7 +2,9 @@
 
 @{
     ViewData["Title"] = "My Dashboard";
-    Layout = "_FarmerLayout";
+    // Layout = "_FarmerLayout";
+    Layout = "_AdminLayout";
+
     var farmerName = Context.Session.GetString("FarmerName");
     var farmerCode = Context.Session.GetString("FarmerCode");
 }
@@ -39,8 +41,6 @@
 
     .dash-wrap {
         padding: 24px;
-        max-width: 1280px;
-        margin: 0 auto;
     }
 
     .dash-card {

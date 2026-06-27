@@ -287,7 +287,126 @@
             padding: 16px;
         }
     }
+    /* ── Toasts ── */
+    .me-toast-container {
+        position: fixed;
+        top: 1.25rem;
+        right: 1.25rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
 
+    .me-toast {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 18px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 500;
+        min-width: 280px;
+        max-width: 360px;
+        box-shadow: 0 4px 20px rgba(0,0,0,.13);
+        pointer-events: all;
+        animation: toastIn .25s ease forwards;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .me-toast::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            animation: toastBar var(--toast-dur, 4s) linear forwards;
+            border-radius: 0 0 10px 10px;
+        }
+
+    .me-toast-success {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+        .me-toast-success::after {
+            background: #16a34a;
+        }
+
+    .me-toast-danger {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+        .me-toast-danger::after {
+            background: #dc2626;
+        }
+
+    .me-toast-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        color: inherit;
+        opacity: .55;
+        padding: 0;
+        flex-shrink: 0;
+    }
+
+        .me-toast-close:hover {
+            opacity: 1;
+        }
+
+    .me-toast-info {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+        .me-toast-info::after {
+            background: #2563eb;
+        }
+
+    @@keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes toastOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+    }
+
+    @@keyframes toastBar {
+        from {
+            width: 100%;
+        }
+
+        to {
+            width: 0%;
+        }
+    }
 </style>
 
 <div class="page-wrap">
@@ -310,16 +429,25 @@
 
         <div class="form-body">
 
-            <!-- ALERTS -->
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger">@TempData["Error"]</div>
-            }
+            <!-- ALERTS → toasts -->
+            <div class="me-toast-container" id="toastContainer"></div>
+
             @if (TempData["Success"] != null)
             {
-                <div class="alert alert-success">@TempData["Success"]</div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        showToast('info', 'bi-truck', '@Html.Raw(TempData["Success"])');
+                    });
+                </script>
             }
-
+            @if (TempData["Error"] != null)
+            {
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        showToast('danger', 'bi-x-circle-fill', '@Html.Raw(TempData["Error"])');
+                    });
+                </script>
+            }
             <form asp-action="Dispatch" method="post">
 
                 @Html.AntiForgeryToken()
@@ -569,5 +697,33 @@
             }
         });
 
+
+                // ── Toast system ──────────────────────────────────────────
+        function showToast(type, icon, message, duration) {
+            duration = duration || 4000;
+            var container = document.getElementById('toastContainer');
+
+            var toast = document.createElement('div');
+            toast.className = 'me-toast me-toast-' + type;
+            toast.style.setProperty('--toast-dur', (duration / 1000) + 's');
+            toast.innerHTML =
+                '<i class="bi ' + icon + '" style="font-size:16px;flex-shrink:0;"></i>' +
+                '<span>' + message + '</span>' +
+                '<button class="me-toast-close" aria-label="Close">&#x2715;</button>';
+
+            toast.querySelector('.me-toast-close').addEventListener('click', function () {
+                dismissToast(toast);
+            });
+
+            container.appendChild(toast);
+            setTimeout(function () { dismissToast(toast); }, duration);
+        }
+
+        function dismissToast(toast) {
+            toast.style.animation = 'toastOut .25s ease forwards';
+            setTimeout(function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 250);
+        }
     </script>
 }

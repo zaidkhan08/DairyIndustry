@@ -1,0 +1,406 @@
+﻿@{
+    ViewData["Title"] = "Verify OTP";
+    Layout = "_DairyLayout";
+}
+
+<style>
+    :root {
+        --navy: #1d4ed8;
+        --navy-dark: #1e3a8a;
+        --navy-light: #eff6ff;
+        --navy-border: #bfdbfe;
+        --gray-border: #e2e8f0;
+        --gray-text: #6b7280;
+        --white: #ffffff;
+        --radius: 12px;
+        --radius-sm: 8px;
+    }
+
+    .otp-page {
+        padding: 2.5rem 1rem 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .otp-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--white);
+        border: 1px solid var(--gray-border);
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+
+    .otp-card-head {
+        padding: 1.1rem 1.5rem;
+        background: var(--navy-light);
+        border-bottom: 1px solid var(--navy-border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .otp-card-head-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: var(--navy);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .otp-card-head h2 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--navy-dark);
+        margin: 0;
+    }
+
+    .otp-card-head p {
+        font-size: 12px;
+        color: var(--gray-text);
+        margin: 2px 0 0;
+    }
+
+    .otp-card-body {
+        padding: 1.5rem;
+    }
+
+    /* info strip — single line, no wrap */
+    .otp-info {
+        font-size: 12.5px;
+        background: var(--navy-light);
+        border: 1px solid var(--navy-border);
+        color: var(--navy-dark);
+        border-radius: var(--radius-sm);
+        padding: 10px 13px;
+        margin-bottom: 1.25rem;
+        line-height: 1.55;
+        text-align: center;
+    }
+
+        .otp-info strong {
+            word-break: break-all;
+        }
+
+    .otp-boxes {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .otp-box {
+        width: 46px;
+        height: 52px;
+        border: 1.5px solid var(--gray-border);
+        border-radius: var(--radius-sm);
+        font-size: 22px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--navy-dark);
+        outline: none;
+        transition: border .15s, box-shadow .15s;
+        font-family: inherit;
+        background: var(--white);
+    }
+
+        .otp-box:focus {
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+        }
+
+        .otp-box.filled {
+            border-color: var(--navy);
+        }
+
+    .otp-btn {
+        width: 100%;
+        height: 42px;
+        background: var(--navy);
+        border: none;
+        border-radius: var(--radius-sm);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background .15s;
+        margin-bottom: 1rem;
+    }
+
+        .otp-btn:hover:not(:disabled) {
+            background: var(--navy-dark);
+        }
+
+        .otp-btn:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+        }
+
+    /* bottom row: expiry left | resend right */
+    .otp-footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12.5px;
+        color: var(--gray-text);
+    }
+
+    .otp-expiry-text {
+        font-size: 12.5px;
+        color: var(--gray-text);
+    }
+
+        .otp-expiry-text span {
+            font-weight: 700;
+            color: var(--navy-dark);
+        }
+
+        .otp-expiry-text.warning span {
+            color: #dc2626;
+        }
+
+    .otp-resend-wrap {
+        font-size: 12.5px;
+        color: var(--gray-text);
+        text-align: right;
+    }
+
+        .otp-resend-wrap a {
+            color: var(--navy);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+            .otp-resend-wrap a:hover {
+                text-decoration: underline;
+            }
+
+        .otp-resend-wrap strong {
+            color: var(--navy-dark);
+        }
+
+    .alert-error {
+        font-size: 12.5px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        border-radius: var(--radius-sm);
+        padding: 10px 13px;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .alert-success {
+        font-size: 12.5px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        border-radius: var(--radius-sm);
+        padding: 10px 13px;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+</style>
+
+<div class="otp-page">
+    <div class="otp-card">
+
+        <div class="otp-card-head">
+            <div class="otp-card-head-icon">&#9993;</div>
+            <div>
+                <h2>Email Verification</h2>
+                <p>Enter the OTP sent to your registered email</p>
+            </div>
+        </div>
+
+        <div class="otp-card-body">
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert-error">@TempData["Error"]</div>
+            }
+
+            <div id="resendMsg"></div>
+
+            <div class="otp-info">
+                A 6-digit OTP has been sent to <strong>@ViewBag.MaskedEmail</strong>.<br />
+                Please enter it below to verify your identity.
+            </div>
+
+            <form asp-action="VerifyFirstLoginOtp" method="post" id="otpForm" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="otp" id="otpHidden" />
+
+                <div class="otp-boxes">
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="0" autocomplete="off" />
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="1" autocomplete="off" />
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="2" autocomplete="off" />
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="3" autocomplete="off" />
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="4" autocomplete="off" />
+                    <input class="otp-box" type="text" inputmode="numeric" maxlength="1" data-idx="5" autocomplete="off" />
+                </div>
+
+                <button type="submit" class="otp-btn" id="verifyBtn" disabled>
+                    Verify &amp; Continue
+                </button>
+            </form>
+
+            <!-- footer row: expiry LEFT | resend RIGHT -->
+            <div class="otp-footer-row">
+                <div class="otp-expiry-text" id="expiryText">
+                    OTP expires in <span id="expiryTime">10:00</span>
+                </div>
+                <div class="otp-resend-wrap">
+                    <span id="resendTimerWrap">Resend in <strong id="resendCountdown">30</strong>s</span>
+                    <a id="resendLink" style="display:none" onclick="resendOtp()">Resend OTP</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const boxes     = document.querySelectorAll('.otp-box');
+        const hiddenOtp = document.getElementById('otpHidden');
+        const verifyBtn = document.getElementById('verifyBtn');
+
+        // ── OTP box navigation ──────────────────────────────────────────
+        boxes.forEach((box, i) => {
+            box.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 1);
+                this.classList.toggle('filled', this.value !== '');
+                if (this.value && i < 5) boxes[i + 1].focus();
+                syncOtp();
+            });
+
+            box.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !this.value && i > 0) {
+                    boxes[i - 1].value = '';
+                    boxes[i - 1].classList.remove('filled');
+                    boxes[i - 1].focus();
+                    syncOtp();
+                }
+            });
+
+            box.addEventListener('paste', function (e) {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData)
+                    .getData('text').replace(/\D/g, '').slice(0, 6);
+                pasted.split('').forEach((ch, j) => {
+                    if (boxes[j]) { boxes[j].value = ch; boxes[j].classList.add('filled'); }
+                });
+                boxes[Math.min(pasted.length, 5)].focus();
+                syncOtp();
+            });
+        });
+
+        function syncOtp() {
+            const val = Array.from(boxes).map(b => b.value).join('');
+            hiddenOtp.value    = val;
+            verifyBtn.disabled = val.length !== 6;
+        }
+
+        // ── Expiry countdown (10 min = 600 s) ──────────────────────────
+        const EXPIRY_TOTAL  = 600;
+        let expiryLeft      = EXPIRY_TOTAL;
+        const expiryTimeEl  = document.getElementById('expiryTime');
+        const expiryTextEl  = document.getElementById('expiryText');
+
+        const expiryTimer = setInterval(() => {
+            expiryLeft--;
+            const m = Math.floor(expiryLeft / 60).toString().padStart(2, '0');
+            const s = (expiryLeft % 60).toString().padStart(2, '0');
+            expiryTimeEl.textContent = `${m}:${s}`;
+
+            if (expiryLeft <= 60) {
+                expiryTextEl.classList.add('warning');
+            }
+
+            if (expiryLeft <= 0) {
+                clearInterval(expiryTimer);
+                expiryTimeEl.textContent = '00:00';
+                verifyBtn.disabled = true;
+                boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
+                hiddenOtp.value = '';
+                document.getElementById('resendMsg').innerHTML =
+                    '<div class="alert-error">OTP has expired. Please click Resend OTP to get a new one.</div>';
+            }
+        }, 1000);
+
+        // ── Resend cooldown (60 s) ──────────────────────────────────────
+        let resendSec         = 30;
+        const resendTimerWrap = document.getElementById('resendTimerWrap');
+        const resendLink      = document.getElementById('resendLink');
+        const resendCountdown = document.getElementById('resendCountdown');
+
+        let resendTimer = setInterval(tickResend, 1000);
+
+        function tickResend() {
+            resendSec--;
+            resendCountdown.textContent = resendSec;
+            if (resendSec <= 0) {
+                clearInterval(resendTimer);
+                resendTimerWrap.style.display = 'none';
+                resendLink.style.display      = 'inline';
+            }
+        }
+
+        // ── Resend OTP ──────────────────────────────────────────────────
+        function resendOtp() {
+            resendLink.style.display = 'none';
+
+            fetch('@Url.Action("ResendFirstLoginOtp", "Farmer")', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken':
+                        document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                const msgEl = document.getElementById('resendMsg');
+
+                if (data.success) {
+                    msgEl.innerHTML = '<div class="alert-success">OTP resent successfully. Please check your email.</div>';
+
+                    // Reset expiry
+                    expiryLeft = EXPIRY_TOTAL;
+                    expiryTimeEl.textContent = '10:00';
+                    expiryTextEl.classList.remove('warning');
+
+                    // Reset resend cooldown
+                    resendSec = 30;
+                    resendCountdown.textContent = 30;
+                    resendTimerWrap.style.display = 'inline';
+                    resendLink.style.display      = 'none';
+                    resendTimer = setInterval(tickResend, 1000);
+
+                    // Clear boxes
+                    boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
+                    hiddenOtp.value    = '';
+                    verifyBtn.disabled = true;
+                    boxes[0].focus();
+
+                } else {
+                    msgEl.innerHTML = `<div class="alert-error">${data.message}</div>`;
+                    resendLink.style.display = 'inline';
+                }
+
+                setTimeout(() => msgEl.innerHTML = '', 5000);
+            });
+        }
+
+        boxes[0].focus();
+    </script>
+}

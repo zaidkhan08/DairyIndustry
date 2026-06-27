@@ -70,5 +70,9 @@ namespace DairyIndustry.Repositories
 
         //farmer payment history
         List<FarmerPaymentHistoryModel> GetPaymentHistory(int farmerId);
+
+
+        //when farmer login first time hw have to verify to change password
+        Task<(string OTPCode, string Email)?> SendFirstLoginOTPAsync(int farmerId);
     }
 }

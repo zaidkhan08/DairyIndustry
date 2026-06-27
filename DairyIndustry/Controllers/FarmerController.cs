@@ -34,6 +34,7 @@ namespace DairyIndustry.Controllers
 
         //dashboard
 
+        [SessionAuthorize("Farmer")]
         public IActionResult Dashboard()
         {
             int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
@@ -504,9 +505,11 @@ namespace DairyIndustry.Controllers
             return View();
         }
 
-        //  Login POST
+        // ─────────────────────────────────────────────────────────────────────────────
+        // LOGIN POST
+        // ─────────────────────────────────────────────────────────────────────────────
         [HttpPost]
-        public IActionResult Login(FarmerLoginViewModel model)
+        public async Task<IActionResult> Login(FarmerLoginViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
@@ -523,13 +526,116 @@ namespace DairyIndustry.Controllers
             HttpContext.Session.SetInt32("FarmerId", farmer.FarmerId);
             HttpContext.Session.SetString("FarmerCode", farmer.FarmerCode);
             HttpContext.Session.SetString("FarmerName", farmer.FarmerName);
+            HttpContext.Session.SetString("RoleName", "Farmer");
+            HttpContext.Session.SetString("Username", farmer.FarmerName);
 
             if (farmer.IsFirstLogin)
-                return RedirectToAction("ChangePassword");
+            {
+                var otpResult = await _farmerRepo.SendFirstLoginOTPAsync(farmer.FarmerId);
+
+                if (otpResult == null)
+                {
+                    ModelState.AddModelError("", "Unable to send OTP. Please contact support.");
+                    return View(model);
+                }
+
+                await _emailService.SendOtpEmailAsync(otpResult.Value.Email, otpResult.Value.OTPCode);
+
+                // Mask email: ra****@gmail.com
+                string email = otpResult.Value.Email;
+                int atIdx = email.IndexOf('@');
+                string masked = atIdx > 2
+                    ? email[..2] + new string('*', atIdx - 2) + email[atIdx..]
+                    : email[..1] + "***" + email[atIdx..];
+
+                HttpContext.Session.SetString("FirstLoginMaskedEmail", masked);
+                HttpContext.Session.SetString("AfterChangePassword", "Dashboard"); // ← first login goes to Dashboard
+
+                return RedirectToAction("VerifyFirstLoginOtp");
+            }
 
             return RedirectToAction("Dashboard");
         }
 
+        // ─────────────────────────────────────────────────────────────────────────────
+        // VERIFY FIRST LOGIN OTP — GET
+        // ─────────────────────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult VerifyFirstLoginOtp()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+            if (farmerId == 0)
+                return RedirectToAction("Login");
+
+            ViewBag.MaskedEmail = HttpContext.Session.GetString("FirstLoginMaskedEmail") ?? "your registered email";
+            return View();
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // VERIFY FIRST LOGIN OTP — POST
+        // ─────────────────────────────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyFirstLoginOtp(string otp)
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+            if (farmerId == 0)
+                return RedirectToAction("Login");
+
+            if (string.IsNullOrWhiteSpace(otp) || otp.Length != 6)
+            {
+                TempData["Error"] = "Please enter the 6-digit OTP.";
+                ViewBag.MaskedEmail = HttpContext.Session.GetString("FirstLoginMaskedEmail");
+                return View();
+            }
+
+            var farmerCode = HttpContext.Session.GetString("FarmerCode");
+            var farmerInfo = _farmerRepo.GetFarmerEmailByCode(farmerCode);
+
+            if (farmerInfo == null || string.IsNullOrWhiteSpace(farmerInfo.Value.Email))
+            {
+                TempData["Error"] = "Session expired. Please login again.";
+                return RedirectToAction("Login");
+            }
+
+            bool isValid = await _farmerRepo.VerifyOtpAsync(farmerInfo.Value.Email, otp.Trim());
+
+            if (!isValid)
+            {
+                TempData["Error"] = "Invalid or expired OTP. Please try again.";
+                ViewBag.MaskedEmail = HttpContext.Session.GetString("FirstLoginMaskedEmail");
+                return View();
+            }
+
+            // OTP verified
+            HttpContext.Session.SetString("OtpVerifiedForFirstLogin", "true");
+            HttpContext.Session.Remove("FirstLoginMaskedEmail");
+
+            return RedirectToAction("ChangePassword");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // RESEND OTP — AJAX POST
+        // ─────────────────────────────────────────────────────────────────────────────
+        [HttpPost]
+        public async Task<JsonResult> ResendFirstLoginOtp()
+        {
+            int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
+            if (farmerId == 0)
+                return Json(new { success = false, message = "Session expired. Please login again." });
+
+            var otpResult = await _farmerRepo.SendFirstLoginOTPAsync(farmerId);
+            if (otpResult == null)
+                return Json(new { success = false, message = "Unable to resend OTP. Please contact support." });
+
+            await _emailService.SendOtpEmailAsync(otpResult.Value.Email, otpResult.Value.OTPCode);
+            return Json(new { success = true, message = "OTP resent successfully." });
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // CHANGE PASSWORD — GET
+        // (used by both: first login flow AND profile page)
+        // ─────────────────────────────────────────────────────────────────────────────
         [HttpGet]
         public IActionResult ChangePassword()
         {
@@ -537,18 +643,29 @@ namespace DairyIndustry.Controllers
             if (farmerId == 0)
                 return RedirectToAction("Login");
 
+            string afterChange = HttpContext.Session.GetString("AfterChangePassword") ?? "Dashboard";
+            if (afterChange == "Dashboard" &&
+                HttpContext.Session.GetString("OtpVerifiedForFirstLogin") != "true")
+            {
+                return RedirectToAction("VerifyFirstLoginOtp");
+            }
+
+            ViewBag.FromProfile = (afterChange == "Profile"); // ← add this
             return View();
         }
-
+        // ─────────────────────────────────────────────────────────────────────────────
+        // CHANGE PASSWORD — POST
+        // ─────────────────────────────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ChangePassword(string currentPassword, string newPassword, string confirmPassword)
         {
+
+            ViewBag.FromProfile = (HttpContext.Session.GetString("AfterChangePassword") == "Profile");
             int farmerId = HttpContext.Session.GetInt32("FarmerId") ?? 0;
             if (farmerId == 0)
                 return RedirectToAction("Login");
 
-            // Client-side guard (browser usually catches these first)
             if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
             {
                 TempData["Error"] = "New password must be at least 6 characters.";
@@ -571,20 +688,38 @@ namespace DairyIndustry.Controllers
 
             if (result == "Success")
             {
-                TempData["Success"] = "Password changed successfully. Welcome!";
-                return RedirectToAction("Dashboard");
+                // Clear first-login flags
+                HttpContext.Session.Remove("OtpVerifiedForFirstLogin");
+
+                // Where to go after success
+                string goTo = HttpContext.Session.GetString("AfterChangePassword") ?? "Dashboard";
+                HttpContext.Session.Remove("AfterChangePassword");
+
+                TempData["Success"] = "Password changed successfully!";
+
+                return goTo == "Profile"
+                    ? RedirectToAction("Profile")
+                    : RedirectToAction("Dashboard");
             }
 
-            // SP returned "InvalidPassword"
             TempData["Error"] = "Current password is incorrect. " +
                                 "Your default password is the last 4 digits of your registered mobile number.";
             return View();
         }
 
+        // ─────────────────────────────────────────────────────────────────────────────
+        // CHANGE PASSWORD FROM PROFILE — sets session flag then redirects
+        // ─────────────────────────────────────────────────────────────────────────────
+        [SessionAuthorize("Farmer")]
+        public IActionResult ChangePasswordFromProfile()
+        {
+            HttpContext.Session.SetString("AfterChangePassword", "Profile");
+            return RedirectToAction("ChangePassword");
+        }
+
         // =========================
         // LOGOUT
         // =========================
-        
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
@@ -592,7 +727,7 @@ namespace DairyIndustry.Controllers
         }
 
 
-
+        [SessionAuthorize("Farmer")]
         //Tody's milk Entries
         public IActionResult TodayMilk()
         {
@@ -606,6 +741,7 @@ namespace DairyIndustry.Controllers
             return View(data);
         }
 
+        [SessionAuthorize("Farmer")]
         //all milk Entries for farmer
         public IActionResult AllMilkEntriesFarmer()
         {
@@ -618,7 +754,7 @@ namespace DairyIndustry.Controllers
 
             return View(data);
         }
-
+        [SessionAuthorize("Farmer")]
         // VIEW RECEIPT
         public IActionResult ViewReceipt(int id)
         {
@@ -629,7 +765,7 @@ namespace DairyIndustry.Controllers
 
             return View(data);
         }
-
+        [SessionAuthorize("Farmer")]
         // DOWNLOAD PDF
         public IActionResult DownloadReceipt(int id)
         {
@@ -683,7 +819,7 @@ namespace DairyIndustry.Controllers
             return File(pdf, "application/pdf", "MilkReceipt.pdf");
         }
 
-
+        [SessionAuthorize("Farmer")]
         //farmer profile
         public IActionResult Profile()
         {
@@ -875,7 +1011,7 @@ namespace DairyIndustry.Controllers
             return Json(centers);
         }
 
-
+        [SessionAuthorize("Farmer")]
         //milk rejection entries (history) for farmer
         public IActionResult RejectionHistory(DateTime? fromDate, DateTime? toDate)
         {
@@ -894,6 +1030,8 @@ namespace DairyIndustry.Controllers
 
             return View(data);
         }
+
+        [SessionAuthorize("Farmer")]
         public IActionResult PaymentHistory()
         {
             int farmerId = (int)HttpContext.Session.GetInt32("FarmerId");

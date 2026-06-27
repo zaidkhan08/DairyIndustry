@@ -2,7 +2,9 @@
 
 @{
     Layout = "_FarmerLayout";
-    ViewData["Title"] = "Today's Milk";
+    // ViewData["Title"] = "Today's Milk";
+    Layout = "_AdminLayout";
+
 
     var totalQty = Model?.Sum(x => x.Quantity) ?? 0;
     var totalAmount = Model?.Sum(x => x.Amount) ?? 0;
@@ -405,15 +407,11 @@
                             <td>
                                 @if (item.Shift == "Morning")
                                 {
-                                    <span class="shift-pill shift-morning">
-                                        <i class="bi bi-brightness-high" style="font-size:.72rem;"></i> Morning
-                                    </span>
+                                    <span class="shift-pill shift-morning">Morning</span>
                                 }
                                 else
                                 {
-                                    <span class="shift-pill shift-evening">
-                                        <i class="bi bi-moon-stars" style="font-size:.72rem;"></i> Evening
-                                    </span>
+                                    <span class="shift-pill shift-evening">Evening</span>
                                 }
                             </td>
                             <td><span class="milk-chip">@item.MilkTypeName</span></td>

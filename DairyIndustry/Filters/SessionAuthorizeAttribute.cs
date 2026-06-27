@@ -21,31 +21,54 @@ namespace DairyIndustry.Filters
                 .Where(r => !string.IsNullOrEmpty(r))
                 .ToArray();
         }
-
         public void OnActionExecuting(ActionExecutingContext context)
         {
             var userId = context.HttpContext.Session.GetInt32("UserId");
+            var farmerId = context.HttpContext.Session.GetInt32("FarmerId");
             var roleName = context.HttpContext.Session.GetString("RoleName");
 
-           
-
-            // Not logged in
-            if (userId == null || string.IsNullOrEmpty(roleName))
+            // Not logged in — check either UserId or FarmerId
+            if ((userId == null && farmerId == null) || string.IsNullOrEmpty(roleName))
             {
-                context.Result = new RedirectToActionResult("Login", "Admin", null);
+                // Redirect Farmers to Farmer login, everyone else to Admin login
+                if (roleName == "Farmer" || (userId == null && farmerId != null))
+                    context.Result = new RedirectToActionResult("Login", "Farmer", null);
+                else
+                    context.Result = new RedirectToActionResult("Login", "Admin", null);
                 return;
             }
 
-            // Logged in but role doesn't match any of the required roles
+            // Logged in but role doesn't match
             if (_requiredRoles.Length > 0 && !_requiredRoles.Contains(roleName))
             {
-                context.Result = new ViewResult
-                {
-                    ViewName = "AccessDenied"
-                };
+                context.Result = new ViewResult { ViewName = "AccessDenied" };
                 return;
             }
         }
+        //public void OnActionExecuting(ActionExecutingContext context)
+        //{
+        //    var userId = context.HttpContext.Session.GetInt32("UserId");
+        //    var roleName = context.HttpContext.Session.GetString("RoleName");
+
+
+
+        //    // Not logged in
+        //    if (userId == null || string.IsNullOrEmpty(roleName))
+        //    {
+        //        context.Result = new RedirectToActionResult("Login", "Admin", null);
+        //        return;
+        //    }
+
+        //    // Logged in but role doesn't match any of the required roles
+        //    if (_requiredRoles.Length > 0 && !_requiredRoles.Contains(roleName))
+        //    {
+        //        context.Result = new ViewResult
+        //        {
+        //            ViewName = "AccessDenied"
+        //        };
+        //        return;
+        //    }
+        //}
 
         public void OnActionExecuted(ActionExecutedContext context) { }
     }

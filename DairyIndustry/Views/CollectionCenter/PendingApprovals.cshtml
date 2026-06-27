@@ -19,8 +19,6 @@
     /* ── Page ── */
     .pa-page {
         padding: 1.5rem;
-        max-width: 1100px;
-        margin: 0 auto;
     }
 
     .pa-header {
@@ -565,11 +563,11 @@
         <p class="modal-title">Approve Registration?</p>
         <p class="modal-sub">You are about to approve</p>
         <p class="modal-name" id="approveModalFarmerName">—</p>
-        <p class="modal-desc">Once approved, the farmer's profile will be activated and linked to your collection center</p>
+        <p class="modal-desc">Once approved, the farmer's account will be activated and linked to your collection center</p>
         <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick="closeApproveModal()">Cancel</button>
             <button type="button" class="modal-confirm" onclick="submitApprove()">
-                <i class="bi bi-check-circle-fill"></i> Yes, Approve
+                Yes, Approve
             </button>
         </div>
     </div>
@@ -744,24 +742,16 @@
 
                     <!-- ── Action Bar ── -->
                     <div class="action-bar">
-                        <form method="post"
-                              asp-controller="CollectionCenter"
-                              asp-action="ApproveFarmer"
-                              class="d-inline"
-                              id="approveForm-@f.FarmerId">
+                        <form method="post" asp-controller="CollectionCenter" asp-action="ApproveFarmer" class="d-inline" id="approveForm-@f.FarmerId">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="farmerId" value="@f.FarmerId" />
-                            <button type="button" class="btn-approve"
-                                    onclick="openApproveModal(@f.FarmerId, '@f.FarmerName')">
-                                <i class="bi bi-check-circle-fill"></i> Approve
+                            <button type="button" class="btn-approve" onclick="openApproveModal(@f.FarmerId, '@f.FarmerName')">
+                                Approve
                             </button>
                         </form>
 
-                        <a asp-controller="CollectionCenter"
-                           asp-action="RejectFarmer"
-                           asp-route-farmerId="@f.FarmerId"
-                           class="btn-reject">
-                            <i class="bi bi-x-circle"></i> Reject
+                        <a asp-controller="CollectionCenter" asp-action="RejectFarmer" asp-route-farmerId="@f.FarmerId" class="btn-reject">
+                            Reject
                         </a>
 
                         <span class="sys-id">ID #@f.FarmerId</span>

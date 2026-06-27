@@ -970,6 +970,59 @@ namespace DairyIndustry.Repository
 
             return result;
         }
+        public async Task<(string OTPCode, string Email)?> SendFirstLoginOTPAsync(int farmerId)
+        {
+            // Step 1: Get farmer email
+            string email = null;
 
+            using (var con = _dbHelper.GetConnection())
+            {
+                using var cmd = new SqlCommand(@"
+            SELECT Email 
+            FROM Farmer.Farmers 
+            WHERE FarmerId = @FarmerId 
+              AND IsFirstLogin = 1 
+              AND ApprovalStatus = 'Approved'", con);
+
+                cmd.Parameters.AddWithValue("@FarmerId", farmerId);
+                await con.OpenAsync();
+                var result = await cmd.ExecuteScalarAsync();
+
+                if (result == null || result == DBNull.Value)
+                    return null;
+
+                email = result.ToString().Trim();
+            }
+
+            // Step 2: Expire all previous unused OTPs for this email
+            using (var con = _dbHelper.GetConnection())
+            {
+                using var cmd = new SqlCommand(@"
+            UPDATE Farmer.EmailOTPs 
+            SET IsUsed = 1 
+            WHERE Email = @Email AND IsUsed = 0", con);
+
+                cmd.Parameters.AddWithValue("@Email", email);
+                await con.OpenAsync();
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Step 3: Generate OTP and insert
+            string otp = new Random().Next(100000, 999999).ToString();
+
+            using (var con = _dbHelper.GetConnection())
+            {
+                using var cmd = new SqlCommand(@"
+            INSERT INTO Farmer.EmailOTPs (Email, OTPCode, ExpiryTime, IsUsed, CreatedAt)
+            VALUES (@Email, @OTPCode, DATEADD(MINUTE, 10, GETDATE()), 0, GETDATE())", con);
+
+                cmd.Parameters.AddWithValue("@Email", email);
+                cmd.Parameters.AddWithValue("@OTPCode", otp);
+                await con.OpenAsync();
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            return (OTPCode: otp, Email: email);
+        }
     }
 }

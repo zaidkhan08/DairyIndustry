@@ -1,14 +1,28 @@
 ﻿@model List<DairyIndustry.Models.FarmerModel.FarmerPaymentHistoryModel>
 @{
     ViewData["Title"] = "Payment History";
-    Layout = "_FarmerLayout";
+    // Layout = "_FarmerLayout";
+    Layout = "_AdminLayout";
+
 }
+
 <style>
+    a[title="View Receipt"]:hover {
+        background: #dbeafe !important;
+    }
+
+    a[title="Download Receipt"]:hover {
+        background: #14532d !important;
+    }
+
+    .dropdown-menu {
+        z-index: 9999 !important;
+    }
     .table-card {
         background: #fff;
         border: 1px solid #e8eef6;
         border-radius: 16px;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .table-card-header {
@@ -169,6 +183,22 @@
             min-width: 700px;
         }
     }
+
+    .dropdown-menu {
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        padding: 6px;
+    }
+
+    .dropdown-item {
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+
+        .dropdown-item:hover {
+            background-color: #f8fafc;
+        }
+
 </style>
 
 <!-- Page Header -->
@@ -279,6 +309,44 @@
                                     };
                                 }
                                 <span class="status-pill @pillClass">@p.PaymentStatus</span>
+                            </td>
+                            <td>
+                                @if (p.PaymentStatus == "Processed")
+                                {
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light border"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   asp-controller="Finance"
+                                                   asp-action="ViewReceipt"
+                                                   asp-route-id="@p.PaymentId"
+                                                   target="_blank">
+                                                    <i class="bi bi-eye me-2"></i>View Receipt
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item"
+                                                   asp-controller="Finance"
+                                                   asp-action="DownloadReceipt"
+                                                   asp-route-id="@p.PaymentId">
+                                                    <i class="bi bi-download me-2"></i>Download Receipt
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:#cbd5e1;">—</span>
+                                }
                             </td>
                         </tr>
                         row++;

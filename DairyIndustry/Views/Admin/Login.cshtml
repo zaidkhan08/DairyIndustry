@@ -1,6 +1,6 @@
-﻿@{
-    Layout = null;
-    ViewData["Title"] = "Login";
+﻿﻿@{
+Layout = null;
+ViewData["Title"] = "Login";
 }
 <!DOCTYPE html>
 <html>
@@ -227,7 +227,7 @@
                     color: #4bbcd8;
                 }
 
-       
+
 
         /* Login button */
         .btn-login {
@@ -275,22 +275,19 @@
 
         /* Responsive */
         @@media (max-width: 700px) {
-            .login-wrapper
+            .login-wrapper {
+                flex-direction: column;
+                width: 95vw;
+                min-height: auto;
+            }
 
-        {
-            flex-direction: column;
-            width: 95vw;
-            min-height: auto;
-        }
+            .left-panel {
+                min-height: 200px;
+            }
 
-        .left-panel {
-            min-height: 200px;
-        }
-
-        .right-panel {
-            padding: 36px 28px;
-        }
-
+            .right-panel {
+                padding: 36px 28px;
+            }
         }
     </style>
 </head>
@@ -404,7 +401,7 @@
                         <span>Trust this device for 30 days</span>
                     </label>
                 </div> *@
-                
+
                 <button type="submit" class="btn-login">LOG IN</button>
             </form>
         </div>
