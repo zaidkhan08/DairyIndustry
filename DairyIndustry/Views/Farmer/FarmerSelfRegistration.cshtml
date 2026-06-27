@@ -257,6 +257,30 @@
     }
 
     }
+
+    .page-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 16px;
+        border-radius: 8px;
+        border: 1.5px solid var(--navy-border);
+        background: var(--white);
+        color: var(--navy);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .15s, border-color .15s;
+    }
+
+        .page-back-btn:hover {
+            background: var(--navy-light);
+            border-color: var(--navy);
+            color: var(--navy);
+        }
 </style>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -307,6 +331,12 @@
 </div>
 
 <div class="page-wrap">
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:1rem;">
+        <a asp-controller="Farmer" asp-action="Login" class="page-back-btn">
+            <i class="ti ti-arrow-left" style="font-size:13px"></i> Back
+        </a>
+    </div>
     <h2 class="sr-only">Farmer Self Registration Form</h2>
 
     <div class="page-header">
