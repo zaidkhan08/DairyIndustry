@@ -1,161 +1,185 @@
 ﻿@{
+    Layout = null;
     ViewBag.Title = "Driver Registration";
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>DMS | Driver Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-<style>
-    body {
-        background-color: #f8fafc;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    .breadcrumb-custom {
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    /* Top Border Accent Container Cards from image_3f9839.png */
-    .premium-form-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-top: 4px solid #3b82f6; /* Blue Accent Line */
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-
-    .panel-header-text {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    /* Step Sequence Indicators */
-    .pill-step-active {
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 700;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #3b82f6;
-    }
-
-    .pill-step-disabled {
-        background-color: #ffffff;
-        color: #9ca3af;
-        font-weight: 600;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #cbd5e1;
-    }
-
-    .btn-custom-blue {
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-
-        .btn-custom-blue:hover {
-            background-color: #1d4ed8;
-            color: white;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
         }
-</style>
 
-<div class="container-fluid px-4 py-3">
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
 
-    <div class="mb-4">
-        <h4 class="fw-bold mb-0 text-dark">Driver Registration</h4>
-        <div class="breadcrumb-custom mt-1">
-            <span>Logistics Portal</span> &gt; <span class="text-muted">Onboarding</span> &gt; <span class="text-muted">Step 1 of 3 (Email Verification)</span>
-        </div>
-    </div>
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+            border-color: #2563eb;
+        }
 
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-5">
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.3);
+        }
 
-            <div class="d-flex align-items-center mb-4 px-2">
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-active">1</div>
-                    <small class="text-primary fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Email</small>
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @@keyframes floating {
+            0%
+
+        {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-15px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
+
+        }
+
+        .pill-step-active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #fff;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pill-step-disabled {
+            background-color: #ffffff;
+            color: #9ca3af;
+            font-weight: 600;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e5e7eb;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full">
+        <div class="max-w-6xl w-full mx-auto bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+
+            <!-- Left Side - Branding -->
+            <div class="w-full md:w-1/2 gradient-bg text-white p-10 flex flex-col justify-center items-center">
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-2">Driver Registration</h1>
+                    <p class="text-white/80">Join the DMS logistics network in a few quick steps.</p>
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-disabled">2</div>
-                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Verify OTP</small>
-                </div>
-                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-disabled">3</div>
-                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Details</small>
+                <div class="relative w-full max-w-xs">
+                    <img src="~/uploads/Logo/bookcover.png" alt="Registration Illustration" class="w-full h-auto floating" />
                 </div>
             </div>
 
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
-                </div>
-            }
-            @if (ViewBag.Success != null)
-            {
-                <div class="alert alert-success border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-                    <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.Success
-                </div>
-            }
+            <!-- Right Side - Form -->
+            <div class="w-full md:w-1/2 p-10 flex flex-col justify-center">
 
-            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
-                <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-4">
-                    <div class="d-flex align-items-center justify-content-center" style="width:36px; height:36px; border-radius:6px; background:#eff6ff;">
-                        <i class="bi bi-envelope-open text-primary" style="font-size: 1.05rem;"></i>
+                <div class="text-center mb-6">
+                    <div class="mb-4 flex justify-center">
+                        <img alt="logo" src="~/uploads/Logo/logo.png" class="h-12" />
                     </div>
-                    <div>
-                        <div class="panel-header-text">Identity Verification</div>
-                        <div class="text-muted tiny" style="font-size: 11px;">Staging a secure 6-digit verification hash routing setup.</div>
-                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800">Email Verification</h1>
                 </div>
 
-                <form method="post" asp-action="SendOtp" asp-controller="Logistics">
+                <div class="flex items-center justify-center mb-6">
+                    <div class="flex flex-col items-center">
+                        <div class="pill-step-active">1</div>
+                    </div>
+                    <div class="flex-grow border-t-2 border-gray-200 mx-2" style="max-width: 60px;"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="pill-step-disabled">2</div>
+                    </div>
+                    <div class="flex-grow border-t-2 border-gray-200 mx-2" style="max-width: 60px;"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="pill-step-disabled">3</div>
+                    </div>
+                </div>
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert-danger rounded-lg shadow-sm mb-4 px-4 py-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                    </div>
+                }
+                @if (ViewBag.Success != null)
+                {
+                    <div class="alert-success rounded-lg shadow-sm mb-4 px-4 py-3" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.Success
+                    </div>
+                }
+
+                <form method="post" asp-action="SendOtp" asp-controller="Logistics" class="space-y-5">
                     @Html.AntiForgeryToken()
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary mb-1">Full Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-person small"></i></span>
-                            <input type="text" name="driverName" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. Ramesh Patel" required />
-                        </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="driverName"
+                               class="w-full border border-gray-300 rounded-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                               placeholder="e.g. Ramesh Patel" required />
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold text-secondary mb-1">Email Address <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-envelope small"></i></span>
-                            <input type="email" name="email" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="yourname@gmail.com" required />
-                        </div>
-                        <div class="form-text text-muted tiny mt-1">Make sure it is valid; an OTP security key streams straight to this address.</div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Email Address <span class="text-red-500">*</span></label>
+                        <input type="email" name="email"
+                               class="w-full border border-gray-300 rounded-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                               placeholder="yourname@gmail.com" required />
                     </div>
 
-                    <button type="submit" class="btn btn-custom-blue w-100 py-2.5">
-                        <i class="bi bi-send-fill me-1.5"></i> Send Verification OTP
+                    <button type="submit" class="gradient-bg btn-hover transition-all w-full py-3 rounded-md text-white font-semibold tracking-wide">
+                        <i class="bi bi-send-fill me-1"></i> Send Verification OTP
                     </button>
                 </form>
 
-                <div class="text-center mt-4 pt-3 border-top" style="font-size: 0.85rem;">
-                    <span class="text-muted">Already registered within the system network?</span>
-                    <a asp-action="Login" asp-controller="Admin" class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
+                <div class="text-center mt-6 pt-4 border-t border-gray-100 text-sm">
+                    <span class="text-gray-500">Already registered?</span>
+                    <a asp-action="Login" asp-controller="Admin" class="font-bold ml-1 hover:underline" style="color:#2563eb;">
                         Login here
                     </a>
                 </div>
             </div>
-
         </div>
-    </div>
-</div>
+    </main>
+
+</body>
+</html>

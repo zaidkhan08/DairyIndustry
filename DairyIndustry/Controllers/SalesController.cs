@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace DairyIndustry.Controllers
 {
-    [SessionAuthorize]
+    //[SessionAuthorize]
     public class SalesController : Controller
     {
         private readonly ISalesRepository _repo;
@@ -1107,8 +1107,12 @@ namespace DairyIndustry.Controllers
     {
         private readonly ISalesRepository _repo;
         public DistributorRegisterController(ISalesRepository repo) => _repo = repo;
-
-        public IActionResult Index() => View("Register", new DistributorRegisterModel());
+        
+        [HttpGet]
+        public IActionResult Index() 
+        {
+            return View("~/Views/DistributorRegister/Register.cshtml",new DistributorRegisterModel());
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]

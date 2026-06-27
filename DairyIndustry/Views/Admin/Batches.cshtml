@@ -271,7 +271,6 @@
                 <table class="table table-clean align-middle mb-0" id="batchTable">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width:70px;">ID</th>
                             <th>Collection Center</th>
                             <th>Operation Shift</th>
                             <th>Target Date</th>
@@ -286,7 +285,6 @@
                         @foreach (var batch in Model)
                         {
                             <tr class="batch-row" role="button" onclick="window.location='@Url.Action("BatchDetail", "Admin", new { id = batch.BatchId })'">
-                                <td class="ps-4 text-muted small fw-medium">#@batch.BatchId</td>
                                 <td class="fw-bold text-dark">@batch.CenterName</td>
                                 <td>
                                     @{

@@ -1,264 +1,283 @@
 ﻿@{
+    Layout = null;
     ViewBag.Title = "Complete Registration";
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>DMS | Complete Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-<!-- Custom Styles to perfectly match image_3f9839.png -->
-<style>
-    body {
-        background-color: #f8fafc;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    .breadcrumb-custom {
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    /* Top Border Accent Container Cards from image_3f9839.png */
-    .premium-form-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-top: 4px solid #3b82f6; /* Blue Accent Stripe */
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-
-    .form-section-header {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #4b5563;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 6px;
-    }
-
-    /* Soft Structural Badges */
-    .pill-badge-green {
-        background-color: #dcfce7;
-        color: #15803d;
-        font-weight: 600;
-        font-size: 0.82rem;
-        padding: 4px 12px;
-        border-radius: 6px;
-        border: 1px solid #bbf7d0;
-        display: inline-block;
-    }
-
-    .pill-step-active {
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 700;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #3b82f6;
-    }
-
-    .pill-step-done {
-        background-color: #dcfce7;
-        color: #15803d;
-        font-weight: 700;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #10b981;
-    }
-
-    .btn-custom-blue {
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-
-        .btn-custom-blue:hover {
-            background-color: #1d4ed8;
-            color: white;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
         }
-</style>
 
-<div class="container-fluid px-4 py-3">
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
 
-    <!-- Workspace Header Layout -->
-    <div class="mb-4">
-        <h4 class="fw-bold mb-0 text-dark">Complete Registration</h4>
-        <div class="breadcrumb-custom mt-1">
-            <span>Logistics Portal</span> &gt; <span class="text-muted">Onboarding</span> &gt; <span class="text-muted">Step 3 of 3 (Details Verification)</span>
-        </div>
-    </div>
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+            border-color: #2563eb;
+        }
 
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-9 col-lg-7">
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.3);
+        }
 
-            <!-- Progress Step Indicator Mapping Nodes -->
-            <div class="d-flex align-items-center mb-4 px-2">
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-done">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-                    <small class="text-success fw-bold mt-1" style="font-size:0.72rem; uppercase; letter-spacing:0.3px;">Email Staged</small>
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @@keyframes floating {
+            0%
+
+        {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-15px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
+
+        }
+
+        .form-section-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 6px;
+        }
+
+        .pill-badge-green {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #bbf7d0;
+            display: inline-block;
+        }
+
+        .pill-step-done {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #10b981;
+        }
+
+        .pill-step-active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #fff;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        #dlDropZone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full">
+        <div class="max-w-5xl w-full mx-auto bg-white rounded-xl shadow-xl overflow-hidden flex flex-col lg:flex-row">
+
+            <!-- Left Side - Branding -->
+            <div class="w-full lg:w-1/3 gradient-bg text-white p-8 flex flex-col justify-center items-center">
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold mb-2">Driver Profile</h1>
+                    <p class="text-white/80 text-sm">Almost done — finish setting up your account.</p>
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-success mx-2 mb-3"></div>
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-done">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-                    <small class="text-success fw-bold mt-1" style="font-size:0.72rem; uppercase; letter-spacing:0.3px;">Token Verified</small>
+                <div class="relative w-full max-w-[200px]">
+                    <img src="~/uploads/Logo/bookcover.png" alt="Registration Illustration" class="w-full h-auto floating" />
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-primary border-dashed mx-2 mb-3" style="border-top-style: dashed !important;"></div>
-                <div class="d-flex flex-column align-items-center">
+
+                <div class="flex items-center justify-center mt-8 w-full">
+                    <div class="pill-step-done"><i class="bi bi-check-lg"></i></div>
+                    <div class="flex-grow border-t-2 border-white/40 mx-2"></div>
+                    <div class="pill-step-done"><i class="bi bi-check-lg"></i></div>
+                    <div class="flex-grow border-t-2 border-dashed border-white/40 mx-2"></div>
                     <div class="pill-step-active">3</div>
-                    <small class="text-primary fw-bold mt-1" style="font-size:0.72rem; uppercase; letter-spacing:0.3px;">Driver Profile</small>
                 </div>
             </div>
 
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
-                </div>
-            }
+            <!-- Right Side - Form -->
+            <div class="w-full lg:w-2/3 p-8 lg:p-10">
 
-            <!-- Verified Context Soft Badge Alert -->
-            <div class="text-center mb-4">
-                <div class="pill-badge-green font-monospace">
-                    <i class="bi bi-shield-check me-1.5"></i>Email Identity Verified: <strong>@ViewBag.Email</strong>
+                <div class="mb-6">
+                    <div class="mb-3 flex justify-center lg:justify-start">
+                        <img alt="logo" src="~/uploads/Logo/logo.png" class="h-10" />
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 text-center lg:text-left">Complete Registration</h1>
                 </div>
-            </div>
 
-            <!-- Master Form Card Input Container Frame -->
-            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4 mb-5">
-                <form asp-action="CompleteRegistration" asp-controller="Logistics" method="post" enctype="multipart/form-data">
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert-danger rounded-lg shadow-sm mb-4 px-4 py-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                    </div>
+                }
+
+                <div class="text-center mb-5">
+                    <div class="pill-badge-green font-monospace">
+                        <i class="bi bi-shield-check me-1"></i>Verified: <strong>@ViewBag.Email</strong>
+                    </div>
+                </div>
+
+                <form asp-action="CompleteRegistration" asp-controller="Logistics" method="post" enctype="multipart/form-data" class="space-y-6">
                     @Html.AntiForgeryToken()
 
-                    <!-- SUBSECTION 1: PERSONAL INFORMATION -->
-                    <h6 class="form-section-header mb-3"><i class="bi bi-person me-2 text-primary"></i>Personal Identification Data</h6>
+                    <!-- Personal Info -->
+                    <div>
+                        <h6 class="form-section-header mb-3"><i class="bi bi-person me-2" style="color:#2563eb;"></i>Personal Info</h6>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary mb-1">Full Legal Name</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-person small"></i></span>
-                            <input type="text" class="form-control border-start-0 ps-1" value="@ViewBag.Name" readonly style="background:#fafbfc; border-radius: 0 6px 6px 0; padding: 10px;" />
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Full Name</label>
+                            <input type="text" class="w-full border border-gray-200 rounded-md px-4 py-2.5 text-gray-600 bg-gray-50" value="@ViewBag.Name" readonly />
                         </div>
-                    </div>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Driving Licence Number <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-card-text small"></i></span>
-                                <input type="text" name="licenseNo" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. GJ01 20200012345" required />
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Driving Licence No. <span class="text-red-500">*</span></label>
+                                <input type="text" name="licenseNo"
+                                       class="w-full border border-gray-300 rounded-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                                       placeholder="e.g. GJ01 20200012345" required />
                             </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Mobile Contact Phone</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-telephone small"></i></span>
-                                <input type="tel" name="phone" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="e.g. 9876543210" />
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Phone</label>
+                                <input type="tel" name="phone"
+                                       class="w-full border border-gray-300 rounded-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                                       placeholder="e.g. 9876543210" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- SUBSECTION 2: SECURE PORTAL ACCESS CREDENTIALS -->
-                    <h6 class="form-section-header mb-3"><i class="bi bi-shield-lock me-2 text-primary"></i>Portal Security Access Credentials</h6>
+                    <!-- Credentials -->
+                    <div>
+                        <h6 class="form-section-header mb-3"><i class="bi bi-shield-lock me-2" style="color:#2563eb;"></i>Account Credentials</h6>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Account Username Identity <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-at small"></i></span>
-                                <input type="text" name="username" class="form-control border-start-0 ps-1 text-dark" style="border-radius: 0 6px 6px 0; padding: 10px;" placeholder="Choose secure user identity" required />
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Username <span class="text-red-500">*</span></label>
+                                <input type="text" name="username"
+                                       class="w-full border border-gray-300 rounded-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                                       placeholder="Choose a username" required />
                             </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Account Entry Passphrase <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 6px 0 0 6px;"><i class="bi bi-lock small"></i></span>
-                                <input type="password" name="password" id="passwordInput" class="form-control border-start-0 ps-1 text-dark" style="padding: 10px;" placeholder="Minimum 6 characters" minlength="6" required />
-                                <button type="button" class="btn btn-outline-secondary px-3" style="border-radius: 0 6px 6px 0;" onclick="togglePassword()">
-                                    <i class="bi bi-eye" id="eyeIcon"></i>
-                                </button>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Password <span class="text-red-500">*</span></label>
+                                <div class="flex">
+                                    <input type="password" name="password" id="passwordInput"
+                                           class="w-full border border-gray-300 rounded-l-md px-4 py-2.5 text-gray-800 outline-none transition-all input-focus"
+                                           placeholder="Minimum 6 characters" minlength="6" required />
+                                    <button type="button" onclick="togglePassword()"
+                                            class="px-3 border border-l-0 border-gray-300 rounded-r-md text-gray-500 hover:bg-gray-50">
+                                        <i class="bi bi-eye" id="eyeIcon"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SUBSECTION 3: LEGAL DOCUMENT CLEARING CENTER -->
-                    <h6 class="form-section-header mb-3"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Document Verification Clearing Center</h6>
+                    <!-- Document Upload -->
+                    <div>
+                        <h6 class="form-section-header mb-3"><i class="bi bi-file-earmark-arrow-up me-2" style="color:#2563eb;"></i>Document Upload</h6>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold text-secondary mb-1">Driving Licence Document <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Driving Licence Document <span class="text-red-500">*</span></label>
 
-                        <div class="border border-2 border-dashed rounded-3 p-4 bg-light text-center position-relative mb-2" id="dlDropZone" style="cursor:pointer; transition: all 0.2s ease; border-color: #cbd5e1 !important; border-style: dashed !important;">
-                            <i class="bi bi-cloud-arrow-up text-primary opacity-75 display-6 d-block mb-1"></i>
-                            <p class="mb-1 fw-bold text-dark" style="font-size: 0.92rem;">Click to upload or drag & drop copy variant</p>
-                            <p class="text-muted tiny mb-2">Accepts clear scans of JPG, PNG or PDF formats &middot; Maximum file size 5 MB</p>
-                            <input type="file" name="drivingLicenseFile" id="dlFile" accept=".jpg,.jpeg,.png,.pdf" required class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor:pointer;" />
+                        <div class="rounded-lg p-6 bg-gray-50 text-center relative mb-2" id="dlDropZone" style="cursor:pointer;">
+                            <i class="bi bi-cloud-arrow-up text-3xl mb-1 d-block" style="color:#2563eb; opacity:0.8;"></i>
+                            <p class="mb-1 font-bold text-gray-800 text-sm">Click to upload or drag &amp; drop</p>
+                            <p class="text-gray-400 text-xs mb-0">JPG, PNG or PDF &middot; Max 5 MB</p>
+                            <input type="file" name="drivingLicenseFile" id="dlFile" accept=".jpg,.jpeg,.png,.pdf" required
+                                   class="absolute top-0 left-0 w-full h-full opacity-0" style="cursor:pointer;" />
                         </div>
 
-                        <!-- Staged File Status Badge Wrapper Box -->
-                        <div id="dlFileInfo" class="mt-2 d-none">
-                            <div class="alert alert-primary border-0 py-2 px-3 d-flex align-items-center gap-2 mb-0" style="border-radius: 6px; background-color: #eff6ff;">
-                                <i class="bi bi-file-earmark-check-fill text-primary"></i>
-                                <span id="dlFileName" class="small fw-bold text-dark font-monospace text-truncate" style="max-width: 75%;"></span>
-                                <span id="dlFileSize" class="small text-muted font-monospace"></span>
+                        <div id="dlFileInfo" class="mt-2 hidden">
+                            <div class="flex items-center gap-2 rounded-md px-3 py-2" style="background-color: #eff6ff;">
+                                <i class="bi bi-file-earmark-check-fill" style="color:#2563eb;"></i>
+                                <span id="dlFileName" class="text-sm font-bold text-gray-800 font-monospace truncate" style="max-width: 75%;"></span>
+                                <span id="dlFileSize" class="text-sm text-gray-400 font-monospace"></span>
                             </div>
                         </div>
-                        <div class="form-text text-muted tiny mt-1">Upload a high-fidelity scan of the front face. Internal administrative audits authorize profile visibility parameters within 24 hours of form submission.</div>
                     </div>
 
-                    <!-- Submission Pipeline Authorization Button Node -->
-                    <button type="submit" class="btn btn-custom-blue w-100 py-2.5 mt-2">
-                        <i class="bi bi-send-check me-1.5"></i> Submit Registration Pipeline
+                    <button type="submit" class="gradient-bg btn-hover transition-all w-full py-3 rounded-md text-white font-semibold tracking-wide">
+                        <i class="bi bi-send-check me-1"></i> Submit Registration
                     </button>
-
-                    <p class="text-center text-muted small mt-3 mb-0">
-                        <i class="bi bi-clock-history text-secondary me-1"></i> System parameters restrict application access until terminal review actions confirm valid document entries.
-                    </p>
                 </form>
+
             </div>
-
         </div>
-    </div>
-</div>
+    </main>
 
-@section Scripts {
-    <script>
-        // Selected operational file metadata hydration event loop hook
-        document.getElementById('dlFile').addEventListener('change', function () {
-            const file = this.files[0];
-            const info = document.getElementById('dlFileInfo');
-            if (file) {
-                document.getElementById('dlFileName').textContent = file.name;
-                document.getElementById('dlFileSize').textContent =
-                    '(' + (file.size / 1024).toFixed(1) + ' KB)';
-                info.classList.remove('d-none');
-                document.getElementById('dlDropZone').style.borderColor = '#2563eb';
-                document.getElementById('dlDropZone').style.backgroundColor = '#eff6ff';
-            } else {
-                info.classList.add('d-none');
-            }
-        });
+    @section Scripts {
+        <script>
+            document.getElementById('dlFile').addEventListener('change', function () {
+                const file = this.files[0];
+                const info = document.getElementById('dlFileInfo');
+                if (file) {
+                    document.getElementById('dlFileName').textContent = file.name;
+                    document.getElementById('dlFileSize').textContent =
+                        '(' + (file.size / 1024).toFixed(1) + ' KB)';
+                    info.classList.remove('hidden');
+                    document.getElementById('dlDropZone').style.borderColor = '#2563eb';
+                    document.getElementById('dlDropZone').style.backgroundColor = '#eff6ff';
+                } else {
+                    info.classList.add('hidden');
+                }
+            });
 
-        // Passphrase visibility input layout toggle properties
-        function togglePassword() {
-            const input = document.getElementById('passwordInput');
-            const icon  = document.getElementById('eyeIcon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('bi-eye', 'bi-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            function togglePassword() {
+                const input = document.getElementById('passwordInput');
+                const icon = document.getElementById('eyeIcon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                }
             }
-        }
-    </script>
-}
+        </script>
+    }
+</body>
+</html>
