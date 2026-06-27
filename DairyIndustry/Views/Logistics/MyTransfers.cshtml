@@ -171,7 +171,7 @@
                 <table class="table table-clean align-middle mb-0" id="transferTable">
                     <thead>
                         <tr>
-                            <th class="ps-4">Trip Tracking Token</th>
+                            <th class="ps-4">Transfer</th>
                             <th>Supply Chain Path Parameters</th>
                             <th class="text-end">Dispatched Volume</th>
                             <th class="text-end">Refinery Receipt</th>
@@ -195,7 +195,6 @@
                             {
                                 <tr data-status="@t.TransferStatus" data-search="@($"#{t.TransferId} {t.CenterName} {t.PlantName} {t.VehicleNumber}".ToLower())">
                                     <td class="ps-4">
-                                        <div class="fw-bold text-dark mb-0.5" style="font-size: 0.92rem;">#@t.TransferId</div>
                                         <div class="text-muted font-monospace small" style="font-size: 11px;">
                                             <i class="bi bi-calendar3 me-1.5"></i>@t.DispatchDate.ToString("dd MMM yyyy")
                                         </div>
