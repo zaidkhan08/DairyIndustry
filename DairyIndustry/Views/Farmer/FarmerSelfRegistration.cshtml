@@ -15,13 +15,13 @@
     }
 
     :root {
-        --navy: #1B3A6B;
-        --navy-dark: #122850;
-        --navy-mid: #2E5496;
-        --navy-light: #E8EEF8;
-        --navy-border: #C2D0E8;
-        --navy-hover: #D4E0F3;
-        --accent: #2563EB;
+        --navy: #1d4ed8;
+        --navy-dark: #1e3a8a;
+        --navy-mid: #2563eb;
+        --navy-light: #eff6ff;
+        --navy-border: #bfdbfe;
+        --navy-hover: #dbeafe;
+        --accent: #3b82f6;
         --red: #DC2626;
         --red-light: #FEF2F2;
         --green-ok: #16A34A;
@@ -33,7 +33,6 @@
         --radius: 10px;
         --radius-sm: 6px;
     }
-
     body { font-family: 'Segoe UI',system-ui,-apple-system,sans-serif; background: var(--gray-bg); color: #111827 }
     .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap }
 
@@ -107,7 +106,17 @@
 
     /* ── STEP BAR ── */
     .step-bar { display:flex;align-items:flex-start;justify-content:center;margin-bottom:1.75rem;position:relative }
-    .step-bar::before { content:'';position:absolute;top:18px;left:calc(50% - (3 * 120px / 2));width:calc(3 * 120px);height:2px;background:var(--gray-border) }
+    /* .step-bar::before { content:'';position:absolute;top:18px;left:calc(50% - (3 * 120px / 2));width:calc(3 * 120px);height:2px;background:var(--gray-border) } */
+
+  /*   .step-bar::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: calc(50% - (4 * 120px / 2)); 
+        width: calc(4 * 120px); 
+        height: 2px;
+        background: var(--gray-border);
+    } */
     .step-item { display:flex;flex-direction:column;align-items:center;gap:6px;width:120px;position:relative;z-index:1 }
     .step-dot { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border:2px solid var(--gray-border);background:var(--white);color:var(--gray-hint);transition:all .25s;position:relative;z-index:2 }
     .step-item.active .step-dot { background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 0 0 4px var(--navy-light) }
@@ -115,7 +124,15 @@
     .step-label { font-size:11px;color:var(--gray-hint);text-align:center;font-weight:500;letter-spacing:0.3px }
     .step-item.active .step-label { color:var(--navy);font-weight:600 }
     .step-item.done   .step-label { color:var(--navy-mid) }
-    .step-connector { flex:1;height:2px;background:var(--gray-border);margin-top:18px;transition:background .3s }
+
+    .step-connector {
+        flex: 1;
+        height: 2px;
+        background: var(--gray-border);
+        margin-top: 18px;
+        transition: background .3s;
+        z-index: 0;
+    }
     .step-connector.done-line { background:var(--navy-border) }
 
     /* ── PROGRESS ── */
@@ -159,7 +176,7 @@
     .input-group { display:flex;gap:8px;align-items:flex-start }
     .input-group input { flex:1 }
 
-    .verified-badge {
+    /* .verified-badge {
         display: none;
         align-items: center;
         gap: 5px;
@@ -172,6 +189,22 @@
         border-radius: 20px white-space:nowrap; 
         align-self: center; 
         flex-shrink: 0;
+    } */
+
+    .verified-badge {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #16A34A;
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        padding: 4px 10px;
+        border-radius: 20px;
+        align-self: center;
+        flex-shrink: 0;
+        white-space: nowrap;
     }
     .verified-badge.show { display:inline-flex }
     .verified-badge i { font-size:13px }
@@ -243,7 +276,9 @@
         </div>
         <div class="otp-body">
             <div class="otp-desc">
-                A 6-digit code was sent to <strong id="otpEmailDisplay"></strong>. It is valid for 10 minutes.
+                A 6-digit code was sent to <strong id="otpEmailDisplay"></strong>
+                <br>
+                <span style="color:var(--gray-hint);font-size:12px;">Valid for 10 minutes. Do not share this code with anyone.</span>
             </div>
             <div class="otp-label">Enter verification code</div>
             <div class="otp-digits">
@@ -729,7 +764,27 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+    
+    
     <script>
+        function maskEmail(email) {
+            var parts = email.split('@@');
+
+            if (parts.length !== 2) return email;
+
+            var username = parts[0];
+            var domain = parts[1];
+
+            if (username.length <= 2) {
+                username = username[0] + '*';
+            } else {
+                username = username.substring(0, 2) +
+                           '*'.repeat(username.length - 2);
+            }
+
+            return username + '@@' + domain;
+        }
+
         // =============================================
         // STATE
         // =============================================
@@ -982,6 +1037,8 @@
             }
         }
 
+
+
         // =============================================
         // OTP SEND
         // =============================================
@@ -1010,7 +1067,7 @@
                     btn.className = 'btn-otp';
                     btn.innerHTML = 'Resend OTP';
                     btn.onclick   = handleSendOtp;
-                    document.getElementById('otpEmailDisplay').textContent = email;
+                    document.getElementById('otpEmailDisplay').textContent = maskEmail(email);
                     openOtp();
                     startOtpTimers();
                     showToast('OTP sent to ' + email + '. Check your inbox.', 'info');

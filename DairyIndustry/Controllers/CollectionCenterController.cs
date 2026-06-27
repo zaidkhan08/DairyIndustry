@@ -742,10 +742,9 @@ namespace DairyIndustry.Controllers
                     dispatchDate: model.DispatchDate
                 );
 
-                TempData["Success"] =
-                    $"Dispatched {model.DispatchQty:F2} L successfully! " +
-                    $"Transfer ID: {transferId}. " +
-                    $"Center inventory updated.";
+               
+                // After
+                TempData["Success"] = $"Dispatched {model.DispatchQty:F2} L successfully!<br>Transfer ID: {transferId}. Center inventory updated.";
 
                 return RedirectToAction("DispatchHistory");
             }

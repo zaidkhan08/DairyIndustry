@@ -163,25 +163,57 @@
     }
 
     /* PAGINATION */
+    /* PAGINATION */
     .pagination-wrap {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 14px;
-        font-size: 12px;
-        color: #666;
+        padding: 12px 16px;
+        font-size: 12.5px;
+        color: #6c757d;
+        border-top: 1px solid #e9ecef;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
     }
 
-    .page-btn {
-        padding: 5px 10px;
-        border: 1px solid #ddd;
-        background: #fff;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
+    .page-btns {
+        display: flex;
+        gap: 4px;
+        align-items: center;
     }
+
+    .pg-btn {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        font-size: 12.5px;
+        color: #495057;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s;
+    }
+
+        .pg-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .pg-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .pg-btn.disabled {
+            opacity: .4;
+            pointer-events: none;
+            cursor: default;
+        }
+    
 
         .page-btn.active {
             background: #2563eb;
@@ -248,8 +280,7 @@
                         <th>Status</th>
                         <th>Reason</th>
                         <th>Remarks</th>
-                        <th>Receipt</th>
-                        <th>Download</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -300,24 +331,29 @@
                             <td>
                                 @if (item.Status == "Accepted")
                                 {
-                                    <a asp-action="MilkReceipt" asp-route-id="@item.CollectionId">View</a>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light px-2 py-1"
+                                                type="button"
+                                                data-bs-toggle="dropdown">
+                                            ⋯
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size:13px; min-width:150px;">
+                                            <li>
+                                                <a class="dropdown-item" asp-action="MilkReceipt" asp-route-id="@item.CollectionId" target="_blank">
+                                                    View Receipt
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" asp-action="DownloadReceipt" asp-route-id="@item.CollectionId">
+                                                    Download PDF
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 }
                                 else
                                 {
-
-                                    <span>-</span>
-                                }
-                            </td>
-
-                            <td>
-                                @if (item.Status == "Accepted")
-                                {
-                                    <a asp-action="DownloadReceipt" asp-route-id="@item.CollectionId">PDF</a>
-                                }
-                                else
-                                {
-
-                                    <span>-</span>
+                                    <span class="text-muted">-</span>
                                 }
                             </td>
 
@@ -330,120 +366,123 @@
         </div>
 
         <!-- PAGINATION -->
+        <!-- PAGINATION -->
         <div class="pagination-wrap">
-
-            <div>
-                Showing <span id="showFrom">0</span> to
-                <span id="showTo">0</span> of
-                <span id="totalCount">@Model.Count</span> entries
-            </div>
-
-            <div id="pagination"></div>
-
+            <span id="paginationInfo">Showing 0–0 of 0 entries</span>
+            <div class="page-btns" id="paginationBtns"></div>
         </div>
 
     </div>
 </div>
-
 <script>
-
     const rows = Array.from(document.querySelectorAll("tbody tr"));
-    const buttons = document.querySelectorAll(".filter-btn");
+    const filterBtns = document.querySelectorAll(".filter-btn");
 
-    const searchInput = document.getElementById("searchInput");
-    const shiftFilter = document.getElementById("shiftFilter");
-    const dateFilter = document.getElementById("dateFilter");
-    const resetBtn = document.getElementById("resetFilters");
-
-    const pagination = document.getElementById("pagination");
-    const showFrom = document.getElementById("showFrom");
-    const showTo = document.getElementById("showTo");
-    const totalCount = document.getElementById("totalCount");
+    const searchInput  = document.getElementById("searchInput");
+    const shiftFilter  = document.getElementById("shiftFilter");
+    const dateFilter   = document.getElementById("dateFilter");
+    const resetBtn     = document.getElementById("resetFilters");
+    const paginationInfo = document.getElementById("paginationInfo");
+    const paginationBtns = document.getElementById("paginationBtns");
 
     let currentStatus = "all";
-    let currentPage = 1;
-    const pageSize = 10;
+    let currentPage   = 1;
+    const PAGE_SIZE   = 10;
 
     function getFilteredRows() {
-
         const search = searchInput.value.toLowerCase();
-        const shift = shiftFilter.value;
-        const date = dateFilter.value;
+        const shift  = shiftFilter.value;
+        const date   = dateFilter.value;
 
         return rows.filter(row => {
-
-            const name = row.querySelector(".farmer-name")?.innerText.toLowerCase() || "";
-            const code = row.querySelector(".farmer-code")?.innerText.toLowerCase() || "";
-
+            const name    = row.querySelector(".farmer-name")?.innerText.toLowerCase() || "";
+            const code    = row.querySelector(".farmer-code")?.innerText.toLowerCase() || "";
             const rowStatus = row.dataset.status;
-            const rowShift = row.dataset.shift;
-            const rowDate = row.dataset.date;
+            const rowShift  = row.dataset.shift;
+            const rowDate   = row.dataset.date;
 
-            let ok = true;
-
-            if (currentStatus !== "all" && rowStatus !== currentStatus) ok = false;
-            if (!name.includes(search) && !code.includes(search)) ok = false;
-            if (shift !== "all" && rowShift !== shift) ok = false;
-            if (date && rowDate !== date) ok = false;
-
-            return ok;
+            if (currentStatus !== "all" && rowStatus !== currentStatus) return false;
+            if (!name.includes(search) && !code.includes(search))       return false;
+            if (shift !== "all" && rowShift !== shift)                   return false;
+            if (date && rowDate !== date)                                 return false;
+            return true;
         });
     }
 
     function renderTable() {
+        const filtered   = getFilteredRows();
+        const total      = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        currentPage      = Math.min(currentPage, totalPages);
 
-        const filtered = getFilteredRows();
-        const total = filtered.length;
-
-        const pages = Math.ceil(total / pageSize);
-        if (currentPage > pages) currentPage = 1;
-
-        const start = (currentPage - 1) * pageSize;
-        const end = start + pageSize;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end   = Math.min(start + PAGE_SIZE, total);
 
         rows.forEach(r => r.style.display = "none");
-
-        const pageRows = filtered.slice(start, end);
-
-        pageRows.forEach((row, i) => {
+        filtered.slice(start, end).forEach((row, i) => {
             row.style.display = "";
             row.querySelector(".row-no").innerText = start + i + 1;
         });
 
-        showFrom.innerText = total ? start + 1 : 0;
-        showTo.innerText = Math.min(end, total);
-        totalCount.innerText = total;
+        const from = total === 0 ? 0 : start + 1;
+        paginationInfo.textContent =
+            `Showing ${from}–${end} of ${total} entr${total !== 1 ? "ies" : "y"}`;
 
-        renderPagination(pages);
+        renderPagination(totalPages);
     }
 
-    function renderPagination(pages) {
+    function renderPagination(totalPages) {
+        paginationBtns.innerHTML = "";
 
-        pagination.innerHTML = "";
-
-        if (pages <= 1) return;
-
-        for (let i = 1; i <= pages; i++) {
-
-            const btn = document.createElement("button");
-            btn.className = "page-btn";
-            btn.innerText = i;
-
-            if (i === currentPage) btn.classList.add("active");
-
-            btn.onclick = () => {
-                currentPage = i;
-                renderTable();
-            };
-
-            pagination.appendChild(btn);
+        function addBtn(label, page, cls) {
+            const el = document.createElement("button");
+            el.className = "pg-btn" + (cls ? " " + cls : "");
+            el.innerHTML = label;
+            if (cls !== "disabled") {
+                el.onclick = () => { currentPage = page; renderTable(); };
+            }
+            paginationBtns.appendChild(el);
         }
+
+        addBtn('<i class="bi bi-chevron-left" style="font-size:11px"></i>',
+            currentPage - 1, currentPage === 1 ? "disabled" : "");
+
+        buildPageList(currentPage, totalPages).forEach(p => {
+            if (p === "…") {
+                const el = document.createElement("span");
+                el.className = "pg-btn disabled";
+                el.textContent = "…";
+                paginationBtns.appendChild(el);
+            } else {
+                addBtn(p, p, p === currentPage ? "active" : "");
+            }
+        });
+
+        addBtn('<i class="bi bi-chevron-right" style="font-size:11px"></i>',
+            currentPage + 1, currentPage === totalPages ? "disabled" : "");
     }
 
-    // EVENTS
-    buttons.forEach(b => {
+    function buildPageList(cur, total) {
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+        const pages = [];
+        if (cur <= 4) {
+            for (let i = 1; i <= 5; i++) pages.push(i);
+            pages.push("…"); pages.push(total);
+        } else if (cur >= total - 3) {
+            pages.push(1); pages.push("…");
+            for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+            pages.push(1); pages.push("…");
+            pages.push(cur - 1); pages.push(cur); pages.push(cur + 1);
+            pages.push("…"); pages.push(total);
+        }
+        return pages;
+    }
+
+    // ── Events ──
+    filterBtns.forEach(b => {
         b.addEventListener("click", function () {
-            buttons.forEach(x => x.classList.remove("active"));
+            filterBtns.forEach(x => x.classList.remove("active"));
             this.classList.add("active");
             currentStatus = this.dataset.status;
             currentPage = 1;
@@ -451,23 +490,20 @@
         });
     });
 
-    searchInput.addEventListener("keyup", () => { currentPage = 1; renderTable(); });
+    searchInput.addEventListener("input",  () => { currentPage = 1; renderTable(); });
     shiftFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
-    dateFilter.addEventListener("change", () => { currentPage = 1; renderTable(); });
+    dateFilter.addEventListener("change",  () => { currentPage = 1; renderTable(); });
 
     resetBtn.addEventListener("click", () => {
         searchInput.value = "";
         shiftFilter.value = "all";
-        dateFilter.value = "";
-        currentStatus = "all";
-        currentPage = 1;
-
-        buttons.forEach(b => b.classList.remove("active"));
+        dateFilter.value  = "";
+        currentStatus     = "all";
+        currentPage       = 1;
+        filterBtns.forEach(b => b.classList.remove("active"));
         document.querySelector('[data-status="all"]').classList.add("active");
-
         renderTable();
     });
 
     renderTable();
-
 </script>

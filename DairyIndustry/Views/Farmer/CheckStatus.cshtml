@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Check Registration Status";
     Layout = "_DairyLayout";
+    bool hasTwoCol = Model.Searched && Model.FarmerId != null;
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -15,148 +16,128 @@
     }
 
     :root {
-        --navy: #1B3A6B;
-        --navy-dark: #122850;
-        --navy-mid: #2E5496;
-        --navy-light: #E8EEF8;
-        --navy-border: #C2D0E8;
-        --accent: #2563EB;
-        --red: #DC2626;
-        --red-light: #FEF2F2;
-        --green-ok: #16A34A;
-        --yellow: #D97706;
-        --yellow-light: #FFFBEB;
-        --yellow-border: #FDE68A;
-        --gray-bg: #F5F7FA;
-        --gray-border: #D1D5DB;
-        --gray-text: #6B7280;
-        --gray-hint: #9CA3AF;
-        --white: #FFFFFF;
+        --navy: #1d4ed8;
+        --navy-dark: #1e3a8a;
+        --navy-light: #eff6ff;
+        --navy-border: #bfdbfe;
+        --gray-border: #e2e8f0;
+        --gray-text: #6b7280;
+        --gray-hint: #9ca3af;
+        --white: #ffffff;
         --radius: 12px;
         --radius-sm: 8px;
     }
 
-    body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: var(--gray-bg);
-        color: #111827
-    }
-
-    .page-wrap {
-        max-width: 520px;
-        margin: 0 auto;
-        padding: 2rem 1rem 3rem
-    }
-
-    /* ── HEADER ── */
-    .page-header {
-        text-align: center;
-        margin-bottom: 1.75rem
-    }
-
-    .brand-chip {
-        display: inline-flex;
+    /* ── PAGE WRAPPER ── */
+    .cs-page {
+        padding: 2.5rem 1.5rem 3rem;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 7px;
-        background: var(--navy-light);
-        color: var(--navy);
-        font-size: 12px;
-        font-weight: 600;
-        padding: 5px 14px;
-        border-radius: 20px;
-        margin-bottom: 14px;
-        border: 1px solid var(--navy-border);
-        letter-spacing: 0.3px
     }
 
-        .brand-chip i {
-            font-size: 15px
+    .cs-page-header {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+        .cs-page-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--navy-dark);
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
         }
 
-    .page-header h1 {
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--navy-dark);
-        margin-bottom: 5px;
-        letter-spacing: -0.3px
+        .cs-page-header p {
+            font-size: 13.5px;
+            color: var(--gray-text);
+        }
+
+    /* ── GRID ── */
+    .cs-grid {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: 860px;
+        align-items: start;
     }
 
-    .page-header p {
-        font-size: 13.5px;
-        color: var(--gray-text)
-    }
+        .cs-grid.single {
+            grid-template-columns: 480px;
+            justify-content: center;
+        }
 
     /* ── CARD ── */
-    .card {
+    .cs-card {
         background: var(--white);
         border: 1px solid var(--gray-border);
         border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-        margin-bottom: 1.25rem
     }
 
-    .card-head {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--gray-border);
+    .cs-card-head {
+        padding: .9rem 1.25rem;
+        background: var(--navy-light);
+        border-bottom: 1px solid var(--navy-border);
         display: flex;
         align-items: center;
-        gap: 12px;
-        background: var(--navy-light)
+        gap: 10px;
     }
 
-    .card-head-icon {
-        width: 36px;
-        height: 36px;
+    .cs-card-head-icon {
+        width: 34px;
+        height: 34px;
         border-radius: 8px;
         background: var(--navy);
+        color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
-        font-size: 18px;
-        flex-shrink: 0
+        font-size: 17px;
+        flex-shrink: 0;
     }
 
-    .card-head-text h2 {
-        font-size: 14px;
+    .cs-card-head h2 {
+        font-size: 13.5px;
         font-weight: 600;
-        color: var(--navy-dark)
+        color: var(--navy-dark);
     }
 
-    .card-head-text p {
-        font-size: 12px;
+    .cs-card-head p {
+        font-size: 11.5px;
         color: var(--gray-text);
-        margin-top: 2px
+        margin-top: 1px;
     }
 
-    .card-body {
-        padding: 1.5rem
+    .cs-card-body {
+        padding: 1.25rem;
     }
 
-    /* ── FIELD ── */
-    .field {
+    /* ── FORM ── */
+    .cs-field {
         display: flex;
         flex-direction: column;
         gap: 5px;
-        margin-bottom: 1rem
+        margin-bottom: 1rem;
     }
 
-        .field label {
+        .cs-field label {
             font-size: 12.5px;
             font-weight: 600;
             color: #374151;
             display: flex;
             align-items: center;
-            gap: 4px
+            gap: 4px;
         }
 
-            .field label .req {
+            .cs-field label .req {
                 color: var(--navy);
-                font-size: 13px
             }
 
-        .field input {
+        .cs-field input {
             width: 100%;
             height: 42px;
             padding: 0 12px;
@@ -167,20 +148,20 @@
             border-radius: var(--radius-sm);
             outline: none;
             transition: border .15s, box-shadow .15s;
-            font-family: inherit
+            font-family: inherit;
         }
 
-            .field input:focus {
+            .cs-field input:focus {
                 border-color: var(--navy);
-                box-shadow: 0 0 0 3px rgba(27,58,107,0.12)
+                box-shadow: 0 0 0 3px rgba(29,78,216,.12);
             }
 
     /* ── BUTTON ── */
-    .btn {
-        height: 44px;
+    .cs-btn {
+        height: 42px;
         width: 100%;
         border-radius: var(--radius-sm);
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 600;
         cursor: pointer;
         border: 1.5px solid;
@@ -188,518 +169,479 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 7px;
         transition: background .15s, border-color .15s, transform .1s;
-        text-decoration: none
+        text-decoration: none;
     }
 
-        .btn:active {
-            transform: scale(0.98)
+        .cs-btn:active {
+            transform: scale(0.98);
         }
 
-    .btn-primary {
+    .cs-btn-primary {
         background: var(--navy);
         border-color: var(--navy);
-        color: #fff
+        color: #fff;
     }
 
-        .btn-primary:hover {
+        .cs-btn-primary:hover {
             background: var(--navy-dark);
-            border-color: var(--navy-dark)
+            border-color: var(--navy-dark);
         }
 
-    .btn-outline {
+    .cs-btn-outline {
         background: var(--white);
-        border-color: var(--gray-border);
-        color: #374151
+        border-color: var(--navy-border);
+        color: var(--navy);
     }
 
-        .btn-outline:hover {
-            background: var(--gray-bg)
+        .cs-btn-outline:hover {
+            background: var(--navy-light);
         }
 
-    .btn-success-action {
-        background: var(--green-ok);
-        border-color: var(--green-ok);
-        color: #fff
-    }
-
-        .btn-success-action:hover {
-            background: #15803D;
-            border-color: #15803D
-        }
-
-    .btn-danger-action {
-        background: var(--white);
-        border-color: var(--red);
-        color: var(--red)
-    }
-
-        .btn-danger-action:hover {
-            background: var(--red-light)
-        }
-
-    /* ── STATUS BADGE ── */
-    .badge {
+    /* ── BADGE ── */
+    .cs-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        padding: 4px 10px;
+        padding: 3px 10px;
         border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600
+        font-size: 11.5px;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
-    .badge-pending {
-        background: var(--yellow-light);
-        color: var(--yellow);
-        border: 1px solid var(--yellow-border)
+    .cs-badge-pending {
+        background: #fefce8;
+        color: #92400e;
+        border: 1px solid #fde68a;
     }
 
-    .badge-approved {
-        background: #F0FDF4;
-        color: var(--green-ok);
-        border: 1px solid #BBF7D0
+    .cs-badge-approved {
+        background: var(--navy-light);
+        color: var(--navy);
+        border: 1px solid var(--navy-border);
     }
 
-    .badge-rejected {
-        background: var(--red-light);
-        color: var(--red);
-        border: 1px solid #FECACA
+    .cs-badge-rejected {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 
-    /* ── RESULT CARD HEADER ── */
-    .result-head {
-        padding: 1rem 1.5rem;
+    /* ── RESULT HEAD ── */
+    .cs-result-head {
+        padding: .9rem 1.25rem;
+        border-bottom: 1px solid var(--gray-border);
         display: flex;
         align-items: center;
-        gap: 12px
+        gap: 10px;
     }
 
-    .result-head-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+    .cs-result-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0
+        font-size: 19px;
+        flex-shrink: 0;
+        background: var(--navy-light);
+        color: var(--navy);
     }
 
-        .result-head-icon.pending {
-            background: var(--yellow-light);
-            color: var(--yellow)
+        .cs-result-icon.pending {
+            background: #fefce8;
+            color: #b45309;
         }
 
-        .result-head-icon.approved {
-            background: #F0FDF4;
-            color: var(--green-ok)
+        .cs-result-icon.rejected {
+            background: #fef2f2;
+            color: #dc2626;
         }
 
-        .result-head-icon.rejected {
-            background: var(--red-light);
-            color: var(--red)
-        }
-
-    .result-head-title {
-        font-size: 15px;
+    .cs-result-title {
+        font-size: 14.5px;
         font-weight: 700;
-        color: #111827
+        color: #111827;
     }
 
-    .result-head-sub {
-        font-size: 12px;
+    .cs-result-sub {
+        font-size: 11.5px;
         color: var(--gray-text);
-        margin-top: 2px
+        margin-top: 2px;
     }
 
     /* ── INFO ROWS ── */
-    .info-rows {
-        border-top: 1px solid var(--gray-border)
+    .cs-info-rows {
+        padding: .25rem 0;
     }
 
-    .info-row {
+    .cs-info-row {
         display: flex;
-        align-items: center;
-        padding: 11px 1.5rem;
-        border-bottom: 1px solid var(--gray-border);
-        gap: 12px
+        align-items: baseline;
+        padding: 9px 1.25rem;
+        gap: 12px;
     }
 
-    .info-rows {
-        border-top: none /* ← remove border-top */
-    }
-
-    .info-row {
-        display: flex;
-        align-items: center;
-        padding: 11px 1.5rem;
-        border-bottom: none; /* ← remove border-bottom */
-        gap: 12px
-    }
-        .info-row:last-child {
-            border-bottom: none
-        }
-
-    .info-row-key {
-        font-size: 11.5px;
+    .cs-info-key {
+        font-size: 11px;
         font-weight: 600;
         color: var(--gray-hint);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        width: 110px;
-        flex-shrink: 0
+        letter-spacing: .5px;
+        width: 90px;
+        flex-shrink: 0;
     }
 
-    .info-row-val {
+    .cs-info-val {
         font-size: 13.5px;
         color: #111827;
         font-weight: 500;
-        flex: 1
+        flex: 1;
     }
 
+        .cs-info-val.muted {
+            color: var(--gray-text);
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .cs-info-val.red-val {
+            color: #dc2626;
+        }
+
     /* ── FARMER CODE ── */
-    .farmer-code-box {
-        margin: 1rem 1.5rem;
-        padding: 14px 16px;
+    .cs-code-box {
+        margin: .5rem 1.25rem .75rem;
+        padding: 12px 14px;
         background: var(--navy-light);
         border: 1px solid var(--navy-border);
         border-radius: var(--radius-sm);
         display: flex;
         align-items: center;
-        gap: 12px
+        gap: 10px;
     }
 
-    .farmer-code-label {
-        font-size: 11px;
+    .cs-code-label {
+        font-size: 10.5px;
         font-weight: 600;
         color: var(--gray-text);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 3px
+        letter-spacing: .5px;
+        margin-bottom: 3px;
     }
 
-    .farmer-code-value {
-        font-size: 22px;
-        font-weight: 500;
+    .cs-code-value {
+        font-size: 20px;
+        font-weight: 600;
         color: var(--navy-dark);
-        letter-spacing: 2px
+        letter-spacing: 2px;
     }
 
-    /* ── NOTICE BOX ── */
-    .notice-box {
-        margin: 0 1.5rem 1.25rem;
-        padding: 11px 14px;
+    /* ── NOTICE ── */
+    .cs-notice {
+        margin: 0 1.25rem .75rem;
+        padding: 10px 13px;
         border-radius: var(--radius-sm);
         display: flex;
         align-items: flex-start;
-        gap: 9px;
+        gap: 8px;
         font-size: 12.5px;
-        line-height: 1.6
+        line-height: 1.55;
+        background: var(--navy-light);
+        border: 1px solid var(--navy-border);
+        color: var(--navy-dark);
     }
 
-        .notice-box.warning {
-            background: var(--yellow-light);
-            border: 1px solid var(--yellow-border);
-            color: #92400E
+        .cs-notice.warn {
+            background: #fefce8;
+            border-color: #fde68a;
+            color: #78350f;
         }
 
-        .notice-box.success {
-            background: #F0FDF4;
-            border: 1px solid #BBF7D0;
-            color: #14532D
+        .cs-notice.danger {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
         }
 
-        .notice-box.danger {
-            background: var(--red-light);
-            border: 1px solid #FECACA;
-            color: #991B1B
-        }
-
-        .notice-box i {
-            font-size: 15px;
+        .cs-notice i {
+            font-size: 14px;
             flex-shrink: 0;
-            margin-top: 1px
+            margin-top: 1px;
         }
 
-    /* ── ACTION AREA ── */
-    .action-area {
-        padding: 1rem 1.5rem 1.5rem;
+    /* ── ACTION ── */
+    .cs-action {
+        padding: .75rem 1.25rem 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: 10px
+        gap: 9px;
     }
 
-    /* ── NOT FOUND ── */
-    .not-found-box {
+    /* ── NOT FOUND (stacked below form in single col) ── */
+    .cs-not-found-wrap {
+        width: 480px;
+        margin-top: 1.25rem;
+    }
+
+    .cs-empty {
         text-align: center;
-        padding: 2.5rem 1.5rem
+        padding: 2.25rem 1.5rem;
     }
 
-    .not-found-icon {
-        width: 56px;
-        height: 56px;
+    .cs-empty-icon {
+        width: 52px;
+        height: 52px;
         border-radius: 50%;
-        background: var(--yellow-light);
-        border: 1px solid var(--yellow-border);
+        background: var(--navy-light);
+        border: 1px solid var(--navy-border);
+        color: var(--navy);
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 1rem;
-        font-size: 24px;
-        color: var(--yellow)
+        font-size: 22px;
     }
 
-    .not-found-box h3 {
-        font-size: 16px;
+    .cs-empty h3 {
+        font-size: 15px;
         font-weight: 700;
         color: #111827;
-        margin-bottom: 6px
+        margin-bottom: 5px;
     }
 
-    .not-found-box p {
+    .cs-empty p {
         font-size: 13px;
         color: var(--gray-text);
-        margin-bottom: 1.25rem;
-        line-height: 1.6
+        margin-bottom: 1.1rem;
+        line-height: 1.6;
     }
 
     /* ── BOTTOM LINKS ── */
-    .bottom-links {
+    .cs-links {
         text-align: center;
-        margin-top: 1.25rem;
+        margin-top: 1.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 16px
+        gap: 14px;
     }
 
-        .bottom-links a {
+        .cs-links a {
             font-size: 13px;
             color: var(--navy);
             font-weight: 500;
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 5px
+            gap: 5px;
         }
 
-            .bottom-links a:hover {
-                text-decoration: underline
+            .cs-links a:hover {
+                text-decoration: underline;
             }
 
-        .bottom-links .sep {
+        .cs-links .sep {
             width: 1px;
-            height: 14px;
-            background: var(--gray-border)
+            height: 13px;
+            background: var(--gray-border);
         }
 
-    @@media(max-width: 480px) {
-        .page-wrap {
-            padding: 1.25rem 0.75rem 2rem
+    @@media(max-width: 700px) {
+        .cs-grid, .cs-grid.single {
+            grid-template-columns: 1fr;
+            max-width: 100%;
         }
 
-        .card-body, .action-area {
-            padding: 1.25rem
-        }
-
-        .info-row {
-            padding: 10px 1.25rem
-        }
-
-        .farmer-code-box, .notice-box {
-            margin-left: 1.25rem;
-            margin-right: 1.25rem
-        }
-
-        .result-head {
-            padding: 1rem 1.25rem
+        .cs-not-found-wrap {
+            width: 100%;
         }
     }
 </style>
 
-<div class="page-wrap">
+<div class="cs-page">
 
-    <!-- Header -->
-    <div class="page-header">
+    <div class="cs-page-header">
         <h1>Registration status</h1>
         <p>Enter your mobile number to check your application status</p>
     </div>
 
-    <!-- Search form -->
-    <div class="card">
-        <div class="card-head">
-            <div class="card-head-icon"><i class="ti ti-device-mobile-search"></i></div>
-            <div class="card-head-text">
-                <h2>Check your status</h2>
-                <p>Enter your registered 10-digit mobile number</p>
-            </div>
-        </div>
-        <div class="card-body">
-            <form method="post" asp-controller="Farmer" asp-action="CheckStatus">
-                @Html.AntiForgeryToken()
-                <div class="field">
-                    <label>Mobile number <span class="req">*</span></label>
-                    <input type="text" name="Phone" value="@Model.Phone" maxlength="10"
-                           placeholder="Enter your 10-digit mobile number"
-                           inputmode="numeric" />
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="ti ti-search" style="font-size:16px"></i> Check status
-                </button>
-            </form>
-        </div>
-    </div>
+    <!-- Grid: 2-col only when a real result (Pending/Approved/Rejected) exists -->
+    <div class="cs-grid @(hasTwoCol ? "" : "single")">
 
-    <!-- Results -->
-    @if (Model.Searched)
+        <!-- Search form -->
+        <div class="cs-card">
+            <div class="cs-card-head">
+                <div class="cs-card-head-icon"><i class="ti ti-device-mobile-search"></i></div>
+                <div>
+                    <h2>Check your status</h2>
+                    <p>Enter your registered 10-digit mobile number</p>
+                </div>
+            </div>
+            <div class="cs-card-body">
+                <form method="post" asp-controller="Farmer" asp-action="CheckStatus">
+                    @Html.AntiForgeryToken()
+                    <div class="cs-field">
+                        <label>Mobile number <span class="req">*</span></label>
+                        <input type="text" name="Phone" value="@Model.Phone"
+                               maxlength="10" placeholder="10-digit mobile number"
+                               inputmode="numeric" />
+                    </div>
+                    <button type="submit" class="cs-btn cs-btn-primary">
+                        <i class="ti ti-search" style="font-size:15px"></i> Check status
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right column: Pending / Approved / Rejected only -->
+        @if (hasTwoCol)
+        {
+            if (Model.ApprovalStatus == "Pending")
+            {
+                <div class="cs-card">
+                    <div class="cs-result-head">
+                        <div class="cs-result-icon pending"><i class="ti ti-clock"></i></div>
+                        <div style="flex:1">
+                            <div class="cs-result-title">Application under review</div>
+                            <div class="cs-result-sub">Being reviewed by center staff</div>
+                        </div>
+                        <span class="cs-badge cs-badge-pending">
+                            <i class="ti ti-clock" style="font-size:10px"></i> Pending
+                        </span>
+                    </div>
+                    <div class="cs-info-rows">
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Name</div>
+                            <div class="cs-info-val">@Model.FarmerName</div>
+                        </div>
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Center</div>
+                            <div class="cs-info-val">@Model.CenterName</div>
+                        </div>
+                    </div>
+                    <div class="cs-notice warn">
+                        <i class="ti ti-info-circle"></i>
+                        <span>Your application is under review. Please visit the center or wait for staff to contact you — usually <strong>1–2 working days</strong>.</span>
+                    </div>
+                </div>
+            }
+            else if (Model.ApprovalStatus == "Approved")
+            {
+                <div class="cs-card">
+                    <div class="cs-result-head">
+                        <div class="cs-result-icon"><i class="ti ti-circle-check"></i></div>
+                        <div style="flex:1">
+                            <div class="cs-result-title">Application approved!</div>
+                            <div class="cs-result-sub">Your farmer account is active and ready</div>
+                        </div>
+                        <span class="cs-badge cs-badge-approved">
+                            <i class="ti ti-circle-check" style="font-size:10px"></i> Approved
+                        </span>
+                    </div>
+                    <div class="cs-info-rows">
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Name</div>
+                            <div class="cs-info-val">@Model.FarmerName</div>
+                        </div>
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Center</div>
+                            <div class="cs-info-val">@Model.CenterName</div>
+                        </div>
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Password</div>
+                            <div class="cs-info-val muted">Last 4 digits of your mobile number</div>
+                        </div>
+                    </div>
+                    <div class="cs-code-box">
+                        <i class="ti ti-id-badge" style="font-size:22px;color:var(--navy);flex-shrink:0"></i>
+                        <div>
+                            <div class="cs-code-label">Your farmer code</div>
+                            <div class="cs-code-value">@Model.FarmerCode</div>
+                        </div>
+                    </div>
+                    <div class="cs-notice">
+                        <i class="ti ti-circle-check"></i>
+                        <span>Account active! Use your farmer code and the last 4 digits of your mobile as password to log in.</span>
+                    </div>
+                    <div class="cs-action">
+                        <a asp-controller="Farmer" asp-action="Login" class="cs-btn cs-btn-primary">
+                            <i class="ti ti-login" style="font-size:15px"></i> Go to login
+                        </a>
+                    </div>
+                </div>
+            }
+            else if (Model.ApprovalStatus == "Rejected")
+            {
+                <div class="cs-card">
+                    <div class="cs-result-head">
+                        <div class="cs-result-icon rejected"><i class="ti ti-circle-x"></i></div>
+                        <div style="flex:1">
+                            <div class="cs-result-title">Application rejected</div>
+                            <div class="cs-result-sub">Your registration could not be approved</div>
+                        </div>
+                        <span class="cs-badge cs-badge-rejected">
+                            <i class="ti ti-circle-x" style="font-size:10px"></i> Rejected
+                        </span>
+                    </div>
+                    <div class="cs-info-rows">
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Name</div>
+                            <div class="cs-info-val">@Model.FarmerName</div>
+                        </div>
+                        <div class="cs-info-row">
+                            <div class="cs-info-key">Center</div>
+                            <div class="cs-info-val">@Model.CenterName</div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.ApprovalRemark))
+                        {
+                            <div class="cs-info-row">
+                                <div class="cs-info-key">Reason</div>
+                                <div class="cs-info-val red-val">@Model.ApprovalRemark</div>
+                            </div>
+                        }
+                    </div>
+                    <div class="cs-notice danger">
+                        <i class="ti ti-alert-circle"></i>
+                        <span>Please correct the issue and re-apply. Contact the center for further information.</span>
+                    </div>
+                    <div class="cs-action">
+                        <a asp-controller="Farmer" asp-action="FarmerSelfRegistration"
+                           class="cs-btn cs-btn-outline">
+                            <i class="ti ti-refresh" style="font-size:15px"></i> Re-apply
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+
+    </div><!-- /cs-grid -->
+    <!-- Not found: stacked below form, same width as form card, no second column -->
+    @if (Model.Searched && Model.FarmerId == null)
     {
-        @if (Model.FarmerId == null)
-        {
-            <!-- Not found -->
-            <div class="card">
-                <div class="not-found-box">
-                    <div class="not-found-icon"><i class="ti ti-user-search"></i></div>
+        <div class="cs-not-found-wrap">
+            <div class="cs-card">
+                <div class="cs-empty">
+                    <div class="cs-empty-icon"><i class="ti ti-user-search"></i></div>
                     <h3>No record found</h3>
-                    <p>No registration was found for this mobile number. Please check the number or register as a new farmer.</p>
-                    <a asp-controller="Farmer" asp-action="Register" class="btn btn-outline" style="width:auto;padding:0 24px">
-                        <i class="ti ti-user-plus" style="font-size:16px"></i> Register now
-                    </a>
-                </div>
-            </div>
-        }
-        else if (Model.ApprovalStatus == "Pending")
-        {
-            <!-- Pending -->
-            <div class="card">
-                <div class="result-head">
-                    <div class="result-head-icon pending"><i class="ti ti-clock"></i></div>
-                    <div>
-                        <div class="result-head-title">Application under review</div>
-                        <div class="result-head-sub">Your request is being reviewed by center staff</div>
-                    </div>
-                    <div style="margin-left:auto">
-                        <span class="badge badge-pending"><i class="ti ti-clock" style="font-size:11px"></i> Pending</span>
-                    </div>
-                </div>
-                <div class="info-rows">
-                    <div class="info-row">
-                        <div class="info-row-key">Name</div>
-                        <div class="info-row-val">@Model.FarmerName</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-row-key">Center</div>
-                        <div class="info-row-val">@Model.CenterName</div>
-                    </div>
-                </div>
-                <div class="notice-box warning">
-                    <i class="ti ti-info-circle"></i>
-                    <span>Your request is under review. Please visit the center or wait for staff to contact you. This usually takes <strong>1–2 working days</strong>.</span>
-                </div>
-            </div>
-        }
-        else if (Model.ApprovalStatus == "Approved")
-        {
-            <!-- Approved -->
-            <div class="card">
-                <div class="result-head">
-                    <div class="result-head-icon approved"><i class="ti ti-circle-check"></i></div>
-                    <div>
-                        <div class="result-head-title">Application approved!</div>
-                        <div class="result-head-sub">Your farmer account is active and ready</div>
-                    </div>
+                    <p>No registration was found for this mobile number.<br>Please check the number or register as a new farmer.</p>
                     
                 </div>
-                <div class="info-rows">
-                    <div class="info-row">
-                        <div class="info-row-key">Name</div>
-                        <div class="info-row-val">@Model.FarmerName</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-row-key">Center</div>
-                        <div class="info-row-val">@Model.CenterName</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-row-key">Password</div>
-                        <div class="info-row-val" style="color:var(--gray-text);font-style:italic">Last 4 digits of your mobile number</div>
-                    </div>
-                </div>
-
-                <!-- Farmer code highlight -->
-                <div class="farmer-code-box">
-                    <div>
-                        <div class="farmer-code-label">Your farmer code</div>
-                        <div class="farmer-code-value" style="font-size:16px;letter-spacing:1px">@Model.FarmerCode</div>
-                    </div>
-                </div>
-
-                <div class="notice-box success">
-                    <i class="ti ti-circle-check"></i>
-                    <span>Your account is active! Use your farmer code and password to log in and start recording milk collection.</span>
-                </div>
-
-                <div class="action-area">
-                    <a asp-controller="Farmer" asp-action="Login" class="btn btn-success-action">
-                         Go to login
-                    </a>
-                </div>
             </div>
-        }
-        else if (Model.ApprovalStatus == "Rejected")
-        {
-            <!-- Rejected -->
-            <div class="card">
-                <div class="result-head">
-                    <div class="result-head-icon rejected"><i class="ti ti-circle-x"></i></div>
-                    <div>
-                        <div class="result-head-title">Application rejected</div>
-                        <div class="result-head-sub">Your registration could not be approved</div>
-                    </div>
-                    <div style="margin-left:auto">
-                        <span class="badge badge-rejected"><i class="ti ti-circle-x" style="font-size:11px"></i> Rejected</span>
-                    </div>
-                </div>
-                <div class="info-rows">
-                    <div class="info-row">
-                        <div class="info-row-key">Name</div>
-                        <div class="info-row-val">@Model.FarmerName</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-row-key">Center</div>
-                        <div class="info-row-val">@Model.CenterName</div>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.ApprovalRemark))
-                    {
-                        <div class="info-row">
-                            <div class="info-row-key">Reason</div>
-                            <div class="info-row-val" style="color:var(--red)">@Model.ApprovalRemark</div>
-                        </div>
-                    }
-                </div>
-
-                <div class="notice-box danger">
-                    <i class="ti ti-alert-circle"></i>
-                    <span>Your registration was rejected. Please correct the issue and re-apply. Contact the center for more information.</span>
-                </div>
-
-                <div class="action-area">
-                    <a asp-controller="Farmer" asp-action="Register" class="btn btn-danger-action">
-                        <i class="ti ti-refresh" style="font-size:16px"></i> Re-apply
-                    </a>
-                </div>
-            </div>
-        }
+        </div>
     }
 
     <!-- Bottom links -->
-    <div class="bottom-links">
+    <div class="cs-links">
         <a asp-controller="Farmer" asp-action="Login">
-            <i class="ti ti-arrow-left" style="font-size:13px"></i> Back to login
+            <i class="ti ti-arrow-left" style="font-size:12px"></i> Back to login
         </a>
         <div class="sep"></div>
-        <a asp-controller="Farmer" asp-action="Register">
-            <i class="ti ti-user-plus" style="font-size:13px"></i> New registration
+        <a asp-controller="Farmer" asp-action="FarmerSelfRegistration">
+            <i class="ti ti-user-plus" style="font-size:12px"></i> New registration
         </a>
     </div>
 

@@ -11,7 +11,7 @@
 
     .mr-page {
         padding: 24px;
-        background: #fff;
+        background: #f5f6f8;
         min-height: 100vh;
     }
 
@@ -23,9 +23,10 @@
     .mr-topbar {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 14px;
         gap: 8px;
         flex-wrap: wrap;
+        max-width: 740px;
+        margin: 0 auto 14px auto;
     }
 
     .mr-btn {
@@ -249,8 +250,8 @@
     <div class="mr-wrap">
 
         <div class="mr-topbar">
-            <a asp-action="AllMilkEntries" class="mr-btn">← Back</a>
-            <a asp-action="DownloadReceipt" asp-route-id="@Model.CollectionId" class="mr-btn mr-btn-dark">⬇ Download PDF</a>
+            <a asp-action="AllMilkEntriesCenter" class="mr-btn">Back</a>
+            <a asp-action="DownloadReceipt" asp-route-id="@Model.CollectionId" class="mr-btn mr-btn-dark">Download PDF</a>
         </div>
 
         <div class="mr-rc">

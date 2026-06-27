@@ -1,7 +1,7 @@
 ﻿@model DairyIndustry.Models.Finance.CenterWalletViewModel
 @{
     ViewData["Title"] = "Center Wallet";
-    Layout = "~/Views/Shared/_ProductionLayout.cshtml";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     decimal netBalance = Model.Summary.TotalReceived - Model.Summary.TotalStaffCost;
     decimal utilization = Model.Summary.TotalReceived > 0
         ? Math.Round((Model.Summary.TotalStaffCost / Model.Summary.TotalReceived) * 100, 1)

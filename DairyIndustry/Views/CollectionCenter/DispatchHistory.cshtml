@@ -267,7 +267,7 @@
 
                             <td class="row-no"></td>
 
-                            <td class="fw-semibold text-primary">@row.TransferId</td>
+                            <td class="fw-semibold">@row.TransferId</td>
 
                             <td>
                                 <div class="fw-semibold">@row.BatchDate.ToString("dd MMM yyyy")</div>
@@ -282,7 +282,7 @@
 
                             <td>@row.PlantName</td>
 
-                            <td class="fw-bold text-primary">@row.DispatchQty.ToString("F2") L</td>
+                            <td class="fw-bold">@row.DispatchQty.ToString("F2") L</td>
 
                             <td>
                                 @if (row.IsReceived)
@@ -303,7 +303,7 @@
                                 }
                                 else if (row.IsReceived)
                                 {
-                                    <span class="text-success">0.00 L</span>
+                                    <span class="text-success fw-bold">0.00 L</span>
                                 }
                                 else
                                 {
@@ -315,11 +315,11 @@
                             <td>
                                 @if (row.IsReceived)
                                 {
-                                    <span class="badge bg-success">Received</span>
+                                    <span class="badge" style="background:#dcfce7; color:#16a34a;">Received</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-warning text-dark">In Transit</span>
+                                    <span class="badge" style="background:#fef9c3; color:#a16207;">In Transit</span>
                                 }
                             </td>
 
@@ -333,16 +333,13 @@
         </div>
 
         <!-- PAGINATION -->
+        
         <div class="pagination-wrap">
-
             <div>
-                Showing <span id="showFrom">0</span> to
-                <span id="showTo">0</span> of
+                Showing <span id="showFrom">0</span>–<span id="showTo">0</span> of
                 <span id="totalCount">@Model.Count</span> entries
             </div>
-
-            <div id="pagination"></div>
-
+            <div id="pagination" style="display:flex; align-items:center; gap:4px;"></div>
         </div>
 
     </div>
@@ -409,27 +406,37 @@
         renderPagination(pages);
     }
 
-    function renderPagination(pages) {
+        function renderPagination(pages) {
 
         pagination.innerHTML = "";
-
         if (pages <= 1) return;
 
-        for (let i = 1; i <= pages; i++) {
+        // Prev arrow
+        let prev = document.createElement("button");
+        prev.innerHTML = "&#8249;";
+        prev.className = "page-btn";
+        prev.disabled = currentPage === 1;
+        prev.style.opacity = currentPage === 1 ? "0.4" : "1";
+        prev.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); } };
+        pagination.appendChild(prev);
 
+        // Page number buttons
+        for (let i = 1; i <= pages; i++) {
             let btn = document.createElement("button");
             btn.innerText = i;
-            btn.className = "page-btn";
-
-            if (i === currentPage) btn.classList.add("active");
-
-            btn.onclick = () => {
-                currentPage = i;
-                renderTable();
-            };
-
+            btn.className = "page-btn" + (i === currentPage ? " active" : "");
+            btn.onclick = () => { currentPage = i; renderTable(); };
             pagination.appendChild(btn);
         }
+
+        // Next arrow
+        let next = document.createElement("button");
+        next.innerHTML = "&#8250;";
+        next.className = "page-btn";
+        next.disabled = currentPage === pages;
+        next.style.opacity = currentPage === pages ? "0.4" : "1";
+        next.onclick = () => { if (currentPage < pages) { currentPage++; renderTable(); } };
+        pagination.appendChild(next);
     }
 
     // EVENTS

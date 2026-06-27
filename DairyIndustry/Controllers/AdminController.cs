@@ -65,6 +65,8 @@ namespace DairyIndustry.Controllers
 
                 case "Collection Agent":
                     return RedirectToAction("Dashboard", "CollectionCenter");
+                case "Farmer":
+                    return RedirectToAction("Dashboard", "Farmer");
                 case "HR Manager":
                     return RedirectToAction("Index", "HR");
                 case "Distributor":
@@ -217,7 +219,7 @@ namespace DairyIndustry.Controllers
                 HttpContext.Session.SetInt32("PlantId", user.PlantId.Value);
                 HttpContext.Session.SetString("PlantName", user.PlantName ?? "");
             }
-            
+
         }
 
         private string MaskEmail(string email)

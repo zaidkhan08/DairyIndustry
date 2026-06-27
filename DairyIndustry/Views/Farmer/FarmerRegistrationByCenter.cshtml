@@ -656,11 +656,14 @@
             display: flex;
         }
 
-    /* ── OTP MODAL ── */
+    /* AFTER */
     .fr-overlay {
         position: fixed;
-        inset: 0;
-        z-index: 1055;
+        top: 0;
+        left: 0; 
+        width: 100vw; 
+        height: 100vh;
+        z-index: 9999;
         background: rgba(17,24,39,.45);
         display: flex;
         align-items: center;
@@ -741,8 +744,7 @@
         font-size: .79rem;
         color: #1e40af;
         margin-bottom: 1.1rem;
-        word-break: break-all;
-        line-height: 1.4;
+        line-height: 1.5;
     }
 
         .fr-otp-dest i {
@@ -1026,7 +1028,7 @@
                             <input asp-for="Email" id="Email" class="fr-input"
                                    placeholder="farmer@example.com" type="email" autocomplete="off" />
                             <button type="button" class="fr-otp-btn" id="sendOtpBtn">
-                                <i class="bi bi-send"></i> Send OTP
+                                Send OTP
                             </button>
                             <div class="fr-verified" id="emailVerifiedBadge">
                                 <i class="bi bi-patch-check-fill"></i> Verified
@@ -1323,9 +1325,7 @@
                 <h3>Ready to submit?</h3>
                 <p>All fields marked <span style="color:var(--danger)">*</span> are required.</p>
             </div>
-            <button type="submit" class="fr-submit" id="submitBtn">
-                <i class="bi bi-check-circle"></i> Register Farmer
-            </button>
+            <button type="submit" class="fr-submit" id="submitBtn">Register Farmer</button>
         </div>
 
     </form>
@@ -1343,9 +1343,8 @@
         </div>
         <div class="fr-modal-body">
             <div class="fr-otp-dest">
-                <i class="bi bi-envelope-at"></i>
-                A 6-digit code was sent to <strong id="otpTargetEmail" style="margin-left:.25rem"></strong>.
-                It is valid for 10 minutes.
+                
+                <span>A 6-digit code was sent to&nbsp;<strong id="otpTargetEmail"></strong>. It is valid for <strong>10 minutes</strong>.</span>
             </div>
             <div class="fr-modal-lbl">Enter Verification Code</div>
             <div class="fr-otp-boxes">
@@ -1371,12 +1370,8 @@
             </div>
         </div>
         <div class="fr-modal-foot">
-            <button type="button" class="fr-modal-cancel" id="otpCancelBtn">
-                <i class="bi bi-x"></i> Cancel
-            </button>
-            <button type="button" class="fr-modal-verify" id="verifyOtpBtn">
-                <i class="bi bi-shield-check"></i> Verify
-            </button>
+            <button type="button" class="fr-modal-cancel" id="otpCancelBtn">Cancel</button>
+            <button type="button" class="fr-modal-verify" id="verifyOtpBtn">Verify</button>
         </div>
     </div>
 </div>

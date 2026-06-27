@@ -2,7 +2,9 @@
 
 @{
     ViewData["Title"] = "Rejection History";
-    Layout = "_FarmerLayout";
+    // Layout = "_FarmerLayout";
+    Layout = "_AdminLayout";
+
 
     int srNo = 1;
 }
@@ -459,15 +461,11 @@
                                 <td>
                                     @if (r.Shift == "Morning")
                                     {
-                                        <span class="badge-shift-morning">
-                                            <i class="bi bi-brightness-high-fill" style="font-size:0.65rem;"></i> Morning
-                                        </span>
+                                        <span class="badge-shift-morning">Morning</span>
                                     }
                                     else
                                     {
-                                        <span class="badge-shift-evening">
-                                            <i class="bi bi-moon-stars-fill" style="font-size:0.65rem;"></i> Evening
-                                        </span>
+                                        <span class="badge-shift-evening">Evening</span>
                                     }
                                 </td>
 
