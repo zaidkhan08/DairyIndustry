@@ -1,225 +1,234 @@
 ﻿@{
+    Layout = null;
     ViewBag.Title = "Verify OTP";
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>DMS | Verify OTP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-<!-- Custom Styles to perfectly match image_3f9839.png -->
-<style>
-    body {
-        background-color: #f8fafc;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    .breadcrumb-custom {
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    /* Top Border Accent Container Cards from image_3f9839.png */
-    .premium-form-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-top: 4px solid #3b82f6; /* Blue Accent Line */
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-
-    .panel-header-text {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    /* Step Sequence Indicators */
-    .pill-step-active {
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 700;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #3b82f6;
-    }
-
-    .pill-step-done {
-        background-color: #dcfce7;
-        color: #15803d;
-        font-weight: 700;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #10b981;
-    }
-
-    .pill-step-disabled {
-        background-color: #ffffff;
-        color: #9ca3af;
-        font-weight: 600;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #cbd5e1;
-    }
-
-    /* Branded Helper Badges */
-    .pill-badge-blue {
-        background-color: #eff6ff;
-        color: #1e40af;
-        font-weight: 600;
-        font-size: 0.82rem;
-        padding: 6px 14px;
-        border-radius: 6px;
-        border: 1px solid #bfdbfe;
-        display: inline-block;
-    }
-
-    .btn-custom-blue {
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-
-        .btn-custom-blue:hover {
-            background-color: #1d4ed8;
-            color: white;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
         }
-</style>
 
-<div class="container-fluid px-4 py-3">
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
 
-    <!-- Workspace Header Layout -->
-    <div class="mb-4">
-        <h4 class="fw-bold mb-0 text-dark">Driver Registration</h4>
-        <div class="breadcrumb-custom mt-1">
-            <span>Logistics Portal</span> &gt; <span class="text-muted">Onboarding</span> &gt; <span class="text-muted">Step 2 of 3 (OTP Validation)</span>
-        </div>
-    </div>
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.3);
+        }
 
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-5">
+        .transition-all {
+            transition: all 0.3s ease;
+        }
 
-            <!-- Progress Step Indicator Nodes -->
-            <div class="d-flex align-items-center mb-4 px-2">
-                <div class="d-flex flex-column align-items-center">
-                    <div class="pill-step-done">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-                    <small class="text-success fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Email</small>
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @@keyframes floating {
+            0%
+
+        {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-15px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
+
+        }
+
+        .pill-step-active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #fff;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pill-step-done {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #10b981;
+        }
+
+        .pill-step-disabled {
+            background-color: #ffffff;
+            color: #9ca3af;
+            font-weight: 600;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e5e7eb;
+        }
+
+        .pill-badge-blue {
+            background-color: #eff6ff;
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+            display: inline-block;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        .otp-input-box {
+            letter-spacing: 10px;
+            font-size: 1.6rem;
+        }
+
+            .otp-input-box:focus {
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+                border-color: #2563eb;
+            }
+
+        #countdown {
+            font-weight: 700;
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full">
+        <div class="max-w-6xl w-full mx-auto bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+
+            <!-- Left Side - Branding -->
+            <div class="w-full md:w-1/2 gradient-bg text-white p-10 flex flex-col justify-center items-center">
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-2">Verify OTP</h1>
+                    <p class="text-white/80">Enter the code sent to your email to continue.</p>
                 </div>
-                <div class="flex-grow-1 border-top border-2 border-success mx-2 mb-3"></div>
-                <div class="d-flex flex-column align-items-center">
+                <div class="relative w-full max-w-xs">
+                    <img src="~/uploads/Logo/bookcover.png" alt="OTP Illustration" class="w-full h-auto floating" />
+                </div>
+
+                <div class="flex items-center justify-center mt-8 w-full max-w-xs">
+                    <div class="pill-step-done"><i class="bi bi-check-lg"></i></div>
+                    <div class="flex-grow border-t-2 border-white/40 mx-2"></div>
                     <div class="pill-step-active">2</div>
-                    <small class="text-primary fw-bold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Verify OTP</small>
-                </div>
-                <div class="flex-grow-1 border-top border-2 border-secondary mx-2 mb-3" style="border-color: #e2e8f0 !important;"></div>
-                <div class="d-flex flex-column align-items-center">
+                    <div class="flex-grow border-t-2 border-white/40 mx-2"></div>
                     <div class="pill-step-disabled">3</div>
-                    <small class="text-muted fw-semibold mt-1" style="font-size:0.72rem; text-transform: uppercase; letter-spacing:0.3px;">Details</small>
                 </div>
             </div>
 
-            <!-- Alerts System Wrapper Box -->
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
-                </div>
-            }
-            @if (TempData["Info"] != null)
-            {
-                <div class="alert alert-info border-0 shadow-sm mb-4" style="border-radius: 8px;" role="alert">
-                    <i class="bi bi-info-circle-fill me-2"></i> @TempData["Info"]
-                </div>
-            }
+            <!-- Right Side - OTP Form -->
+            <div class="w-full md:w-1/2 p-10 flex flex-col justify-center">
 
-            <!-- Master Verification Card Frame -->
-            <div class="card premium-form-card border-start-0 border-end-0 border-bottom-0 p-4">
-                <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-4">
-                    <div class="d-flex align-items-center justify-content-center" style="width:36px; height:36px; border-radius:6px; background:#eff6ff;">
-                        <i class="bi bi-shield-check text-primary" style="font-size: 1.1rem;"></i>
+                <div class="text-center mb-6">
+                    <div class="mb-4 flex justify-center">
+                        <img alt="logo" src="~/uploads/Logo/logo.png" class="h-12" />
                     </div>
-                    <div>
-                        <div class="panel-header-text">Verify Verification Key</div>
-                        <div class="text-muted tiny" style="font-size: 11px;">Input the token code sent to your mail profile.</div>
-                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Verify OTP</h1>
+                    <span class="pill-badge-blue font-monospace">
+                        <i class="bi bi-envelope-open me-1"></i>@ViewBag.Email
+                    </span>
                 </div>
 
-                <!-- Masked Identity Badge Frame -->
-                <div class="text-center mb-4">
-                    <div class="pill-badge-blue font-monospace">
-                        <i class="bi bi-envelope-open me-1.5 small"></i>@ViewBag.Email
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert-danger rounded-lg shadow-sm mb-4 px-4 py-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
                     </div>
-                </div>
+                }
+                @if (TempData["Info"] != null)
+                {
+                    <div class="alert-info rounded-lg shadow-sm mb-4 px-4 py-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i> @TempData["Info"]
+                    </div>
+                }
 
-                <p class="text-muted small text-center mb-4">
-                    Provide the 6-digit numeric entry block listed in your message context headers. Security parameters expire this code tracking line in 10 minutes.
-                </p>
-
-                <!-- Core Form Fields Grid -->
-                <form asp-action="VerifyOtp" asp-controller="Logistics" method="post">
+                <form asp-action="VerifyOtp" asp-controller="Logistics" method="post" class="space-y-5">
                     @Html.AntiForgeryToken()
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold text-secondary mb-2 d-block text-center">6-Digit Verification Token</label>
-                        <input type="text" name="otpCode" class="form-control form-control-lg text-center fw-bold text-primary border-primary mx-auto font-monospace"
-                               style="letter-spacing:10px; font-size:1.6rem; max-width: 280px; border-radius: 8px;"
-                               maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="------" autocomplete="one-time-code" required />
-                        <div class="form-text text-muted tiny text-center mt-1.5">Numerical entries only &middot; 6 characters limits</div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-2 text-center">6-Digit Code</label>
+                        <input type="text" name="otpCode"
+                               class="otp-input-box w-full text-center font-bold rounded-lg border border-gray-300 outline-none transition-all mx-auto block font-monospace"
+                               style="max-width: 280px; padding: 12px;" maxlength="6" inputmode="numeric" pattern="\d{6}"
+                               placeholder="------" autocomplete="one-time-code" required />
                     </div>
 
-                    <!-- Submission Trigger -->
-                    <button type="submit" class="btn btn-custom-blue w-100 py-2.5">
-                        <i class="bi bi-shield-check-fill me-1.5"></i> Verify Secure OTP
+                    <button type="submit" class="gradient-bg btn-hover transition-all w-full py-3 rounded-md text-white font-semibold tracking-wide">
+                        <i class="bi bi-shield-check-fill me-1"></i> Verify OTP
                     </button>
                 </form>
 
-                <!-- Footer Operations Options Navigation Link Bar -->
-                <div class="text-center mt-4 pt-3 border-top" style="font-size: 0.85rem;">
-                    <span class="text-muted">Missing code payload?</span>
-                    <a asp-action="RegisterDriver" asp-controller="Logistics" class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
+                <div class="text-center mt-6 text-sm text-gray-500">
+                    Expires in <span id="countdown">10:00</span>
+                </div>
+
+                <div class="text-center mt-4 pt-4 border-t border-gray-100 text-sm">
+                    <span class="text-gray-500">Didn't get the code?</span>
+                    <a asp-action="RegisterDriver" asp-controller="Logistics" class="font-bold ml-1 hover:underline" style="color:#2563eb;">
                         ← Go back and resend
                     </a>
                 </div>
             </div>
-
-            <!-- Global Countdown Expiration Status Wrapper Row -->
-            <div class="text-center mt-3 small text-secondary">
-                Token link remains operational for: <span id="countdown" class="fw-bold text-primary">10:00</span>
-            </div>
-
         </div>
-    </div>
-</div>
+    </main>
 
-@section Scripts {
-    <script>
-        // 10-Minute Security Token Lifecycle Countdown Engine
-        let seconds = 600;
-        const el = document.getElementById('countdown');
-        const timer = setInterval(() => {
-            seconds--;
-            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-            const s = String(seconds % 60).padStart(2, '0');
-            el.textContent = m + ':' + s;
-            if (seconds <= 60) {
-                el.style.color = '#ef4444';
-            }
-            if (seconds <= 0) {
-                clearInterval(timer);
-                el.textContent = 'Expired';
-                el.style.color = '#ef4444';
-            }
-        }, 1000);
-    </script>
-}
+    @section Scripts {
+        <script>
+            let seconds = 600;
+            const el = document.getElementById('countdown');
+            const timer = setInterval(() => {
+                seconds--;
+                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const s = String(seconds % 60).padStart(2, '0');
+                el.textContent = m + ':' + s;
+                if (seconds <= 60) {
+                    el.style.color = '#ef4444';
+                }
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    el.textContent = 'Expired';
+                    el.style.color = '#ef4444';
+                }
+            }, 1000);
+        </script>
+    }
+</body>
+</html>
